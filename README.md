@@ -69,6 +69,33 @@ Grab the latest installer for your platform from the
 > verify every release is built directly from this repository by GitHub
 > Actions.
 
+### ⚠️ About the "Windows protected your PC" warning
+
+Because ScribeDog's installers aren't (yet) signed with a paid code-signing
+certificate, Windows SmartScreen shows this warning the first time you run a
+freshly downloaded installer. **This is expected and not a sign that
+anything is wrong** — it simply means the binary hasn't built up enough
+reputation with Microsoft yet, not that it's been flagged as malicious.
+Every release is built transparently from this repository's source by
+GitHub Actions, so you can always verify what went into it.
+
+To proceed:
+
+1. Click **"More info"**.
+
+   <img src="src/assets/smartscreen01.png" alt="SmartScreen warning – click More info" width="400">
+
+2. Click **"Run anyway"**.
+
+   <img src="src/assets/smartscreen02.png" alt="SmartScreen warning – click Run anyway" width="400">
+
+**Heads-up:** some antivirus/security suites also run their own scan on the
+installer during setup (in addition to, or instead of, SmartScreen). This is
+normal for unsigned, less widely distributed apps — just let the scan
+finish. If you want to double-check what's actually in a given release,
+compare it against the corresponding [GitHub Actions build](https://github.com/snooky234/scribedog/actions)
+and the source in this repository.
+
 ---
 
 ## Features
