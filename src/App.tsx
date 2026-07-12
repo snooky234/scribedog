@@ -125,6 +125,12 @@ function App() {
   const renameFolderPath = useAppStore((state) => state.renameFolderPath);
   const deleteFilePath = useAppStore((state) => state.deleteFilePath);
   const deleteFolderPath = useAppStore((state) => state.deleteFolderPath);
+  const sortMode = useAppStore((state) => state.sortMode);
+  const manualOrder = useAppStore((state) => state.manualOrder);
+  const fileMtimeMs = useAppStore((state) => state.fileMtimeMs);
+  const emptyFolderMtimeMs = useAppStore((state) => state.emptyFolderMtimeMs);
+  const setSortMode = useAppStore((state) => state.setSortMode);
+  const moveTreeEntry = useAppStore((state) => state.moveTreeEntry);
   const loadAiSettings = useAiSettingsStore((state) => state.loadSettings);
   const aiSettings = useAiSettingsStore((state) => state.settings);
   const updateAiSettings = useAiSettingsStore((state) => state.updateSettings);
@@ -533,6 +539,10 @@ function App() {
             folderError={folderError}
             isLoading={isLoading}
             pendingFolderRename={pendingFolderRename}
+            sortMode={sortMode}
+            manualOrder={manualOrder}
+            fileMtimeMs={fileMtimeMs}
+            emptyFolderMtimeMs={emptyFolderMtimeMs}
             onOpenFolder={openFolderSafely}
             onCreateFile={() => void handleCreateFile()}
             onCreateFileRequest={(targetDirectory) => void handleCreateFile(targetDirectory)}
@@ -542,6 +552,8 @@ function App() {
             onDeleteFolderRequest={requestDeleteFolder}
             onRenameFolder={renameFolderPath}
             onRenameFile={renameFilePath}
+            onMoveEntry={moveTreeEntry}
+            onSetSortMode={(mode) => void setSortMode(mode)}
             onAiSettingsRequest={() => {
               setSettingsInitialTab("general");
               setIsAiSettingsOpen(true);

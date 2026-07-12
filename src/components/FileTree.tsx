@@ -14,14 +14,18 @@ import { useTranslation } from "react-i18next";
 import { dirname, join } from "@tauri-apps/api/path";
 
 import { cn } from "@/lib/utils";
-import { getRelativeDisplayPath } from "@/lib/fileSystem";
+import { getRelativeDisplayPath, type MarkdownFileRecord } from "@/lib/fileSystem";
 import {
   buildFileTree,
   getAncestorFolderPaths,
+  getNodeMtimeMs,
   getStoredExpandedFolderPaths,
+  isDescendantRelativePath,
   setStoredExpandedFolderPaths,
   type FileTreeNode
 } from "@/lib/fileTree";
+import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
+import type { MoveTreeEntryInput } from "@/store/useAppStore";
 
 const INDENT_BASE_REM = 0.5;
 const INDENT_STEP_REM = 0.9;
@@ -31,6 +35,18 @@ export type PendingFolderRename = {
   requestId: number;
 };
 
+type DropPosition = "above" | "below" | "into";
+
+type DropIndicator = {
+  key: string;
+  position: DropPosition;
+};
+
+type NodeContext = {
+  parentRelativePath: string;
+  indexInSiblings: number;
+};
+
 type FileTreeProps = {
   folderPath: string;
   filePaths: string[];
@@ -38,18 +54,43 @@ type FileTreeProps = {
   selectedFilePath: string | null;
   dirtyFilePaths: string[];
   pendingFolderRename?: PendingFolderRename | null;
+  sortMode: SortMode;
+  manualOrder: ManualOrderMap;
+  fileMtimeMs: Record<string, number>;
+  emptyFolderMtimeMs: Record<string, number>;
   onSelectFilePath: (filePath: string) => Promise<void>;
   onCreateFileRequest: (targetDirectory: string) => void;
   onDeleteFileRequest: (filePath: string) => void;
   onDeleteFolderRequest: (folderPath: string) => void;
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
+  onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
   onRequestEditorFocus?: () => void;
   focusRequestId?: number;
 };
 
 function getNodeKey(node: FileTreeNode): string {
   return `${node.kind}:${node.relativePath}`;
+}
+
+// In "modified" sort mode, shown next to the name: just the time for changes
+// from today (local timezone), otherwise just the date. Sorting itself
+// always uses the exact timestamp (see fileTree.ts), this is display-only.
+function formatModifiedLabel(mtimeMs: number, locale: string): string {
+  if (!mtimeMs) {
+    return "";
+  }
+
+  const date = new Date(mtimeMs);
+  const now = new Date();
+  const isSameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  return isSameDay
+    ? new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(date)
+    : new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
 }
 
 // For arrow-key navigation, the visible tree (collapsed folders are skipped)
@@ -76,6 +117,27 @@ function flattenVisibleNodes(
   return result;
 }
 
+// Maps every node's key to its parent folder's relativePath and its index
+// among the currently displayed siblings, so a drag & drop can compute the
+// insertion point relative to the target row.
+function buildNodeContextMap(nodes: FileTreeNode[]): Map<string, NodeContext> {
+  const map = new Map<string, NodeContext>();
+
+  const visit = (parentRelativePath: string, children: FileTreeNode[]) => {
+    children.forEach((child, index) => {
+      map.set(getNodeKey(child), { parentRelativePath, indexInSiblings: index });
+
+      if (child.kind === "folder") {
+        visit(child.relativePath, child.children);
+      }
+    });
+  };
+
+  visit("", nodes);
+
+  return map;
+}
+
 type FileContextMenuState =
   | { kind: "file"; filePath: string; x: number; y: number }
   | { kind: "folder"; relativePath: string; x: number; y: number };
@@ -94,6 +156,9 @@ type TreeNodeRowProps = {
   renamingTarget: RenamingTarget | null;
   renameDraft: string;
   renameInputRef: React.RefObject<HTMLInputElement>;
+  sortMode: SortMode;
+  dragSourceKey: string | null;
+  dropIndicator: DropIndicator | null;
   onToggleFolder: (relativePath: string) => void;
   onSelectFilePath: (filePath: string) => Promise<void>;
   onFileContextMenu: (filePath: string, x: number, y: number) => void;
@@ -103,6 +168,10 @@ type TreeNodeRowProps = {
   onCommitRename: () => void;
   onCancelRename: () => void;
   registerItemRef: (key: string, element: HTMLButtonElement | null) => void;
+  onRowDragStart: (node: FileTreeNode) => void;
+  onRowDropIndicatorChange: (key: string, position: DropPosition | null) => void;
+  onRowDrop: (node: FileTreeNode, position: DropPosition) => void;
+  onRowDragEnd: () => void;
 };
 
 function TreeNodeRow({
@@ -115,6 +184,9 @@ function TreeNodeRow({
   renamingTarget,
   renameDraft,
   renameInputRef,
+  sortMode,
+  dragSourceKey,
+  dropIndicator,
   onToggleFolder,
   onSelectFilePath,
   onFileContextMenu,
@@ -123,14 +195,65 @@ function TreeNodeRow({
   onRenameDraftChange,
   onCommitRename,
   onCancelRename,
-  registerItemRef
+  registerItemRef,
+  onRowDragStart,
+  onRowDropIndicatorChange,
+  onRowDrop,
+  onRowDragEnd
 }: TreeNodeRowProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const paddingLeft = `${INDENT_BASE_REM + depth * INDENT_STEP_REM}rem`;
   const key = getNodeKey(node);
   // Roving tabindex: only the active row is reachable via Tab, all others are
   // focused with arrow keys (see handleTreeKeyDown).
   const tabIndex = activeKey === key ? 0 : -1;
+  const modifiedLabel =
+    sortMode === "modified"
+      ? formatModifiedLabel(getNodeMtimeMs(node), i18n.resolvedLanguage ?? i18n.language)
+      : "";
+
+  const isDragEnabled = sortMode === "manual";
+  const isDragSource = dragSourceKey === key;
+  const activeDropPosition = dropIndicator?.key === key ? dropIndicator.position : null;
+
+  const dragHandlers = isDragEnabled
+    ? {
+        draggable: true,
+        onDragStart: (event: React.DragEvent<HTMLButtonElement>) => {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", key);
+          onRowDragStart(node);
+        },
+        onDragOver: (event: React.DragEvent<HTMLButtonElement>) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+
+          const rect = event.currentTarget.getBoundingClientRect();
+          const ratio = (event.clientY - rect.top) / rect.height;
+
+          let position: DropPosition;
+
+          if (node.kind === "folder" && ratio >= 0.25 && ratio <= 0.75) {
+            position = "into";
+          } else {
+            position = ratio < 0.5 ? "above" : "below";
+          }
+
+          onRowDropIndicatorChange(key, position);
+        },
+        onDragLeave: () => {
+          onRowDropIndicatorChange(key, null);
+        },
+        onDrop: (event: React.DragEvent<HTMLButtonElement>) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onRowDrop(node, activeDropPosition ?? "below");
+        },
+        onDragEnd: () => {
+          onRowDragEnd();
+        }
+      }
+    : {};
 
   if (node.kind === "folder") {
     const isExpanded = expandedFolderPaths.has(node.relativePath);
@@ -175,7 +298,13 @@ function TreeNodeRow({
             type="button"
             role="treeitem"
             aria-expanded={isExpanded}
-            className="file-tree__row file-tree__row--folder"
+            className={cn(
+              "file-tree__row file-tree__row--folder",
+              isDragSource && "file-tree__row--drag-source",
+              activeDropPosition === "above" && "file-tree__row--drop-above",
+              activeDropPosition === "below" && "file-tree__row--drop-below",
+              activeDropPosition === "into" && "file-tree__row--drop-into"
+            )}
             style={{ paddingLeft }}
             title={node.relativePath}
             tabIndex={tabIndex}
@@ -188,12 +317,14 @@ function TreeNodeRow({
               event.preventDefault();
               onFolderContextMenu(node.relativePath, event.clientX, event.clientY);
             }}
+            {...dragHandlers}
           >
             <span className="file-tree__chevron" aria-hidden="true">
               {isExpanded ? <ChevronDown /> : <ChevronRight />}
             </span>
             {isExpanded ? <FolderOpen aria-hidden="true" /> : <Folder aria-hidden="true" />}
             <span className="file-tree__name">{node.name}</span>
+            {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
           </button>
         )}
 
@@ -211,6 +342,9 @@ function TreeNodeRow({
                 renamingTarget={renamingTarget}
                 renameDraft={renameDraft}
                 renameInputRef={renameInputRef}
+                sortMode={sortMode}
+                dragSourceKey={dragSourceKey}
+                dropIndicator={dropIndicator}
                 onToggleFolder={onToggleFolder}
                 onSelectFilePath={onSelectFilePath}
                 onFileContextMenu={onFileContextMenu}
@@ -220,6 +354,10 @@ function TreeNodeRow({
                 onCommitRename={onCommitRename}
                 onCancelRename={onCancelRename}
                 registerItemRef={registerItemRef}
+                onRowDragStart={onRowDragStart}
+                onRowDropIndicatorChange={onRowDropIndicatorChange}
+                onRowDrop={onRowDrop}
+                onRowDragEnd={onRowDragEnd}
               />
             ))}
           </ul>
@@ -272,7 +410,10 @@ function TreeNodeRow({
           aria-selected={isSelected}
           className={cn(
             "file-tree__row file-tree__row--file",
-            isSelected && "file-tree__row--active"
+            isSelected && "file-tree__row--active",
+            isDragSource && "file-tree__row--drag-source",
+            activeDropPosition === "above" && "file-tree__row--drop-above",
+            activeDropPosition === "below" && "file-tree__row--drop-below"
           )}
           style={{ paddingLeft }}
           title={node.relativePath}
@@ -286,10 +427,12 @@ function TreeNodeRow({
             event.preventDefault();
             onFileContextMenu(node.filePath, event.clientX, event.clientY);
           }}
+          {...dragHandlers}
         >
           <span className="file-tree__chevron" aria-hidden="true" />
           <FileText aria-hidden="true" />
           <span className="file-tree__name">{node.name}</span>
+          {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
           {isDirty ? (
             <span
               className="sidebar-panel__item-dirty"
@@ -310,12 +453,17 @@ export function FileTree({
   selectedFilePath,
   dirtyFilePaths,
   pendingFolderRename,
+  sortMode,
+  manualOrder,
+  fileMtimeMs,
+  emptyFolderMtimeMs,
   onSelectFilePath,
   onCreateFileRequest,
   onDeleteFileRequest,
   onDeleteFolderRequest,
   onRenameFolder,
   onRenameFile,
+  onMoveEntry,
   onRequestEditorFocus,
   focusRequestId
 }: FileTreeProps) {
@@ -327,6 +475,8 @@ export function FileTree({
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [renamingTarget, setRenamingTarget] = useState<RenamingTarget | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
+  const [dragSourceKey, setDragSourceKey] = useState<string | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(null);
   const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const renameInputRef = useRef<HTMLInputElement>(null);
   const skipRenameCommitRef = useRef(false);
@@ -337,16 +487,29 @@ export function FileTree({
   const lastHandledFolderRenameRequestIdRef = useRef<number | undefined>(undefined);
 
   const treeNodes = useMemo(() => {
-    const records = filePaths.map((filePath) => ({
+    const records: MarkdownFileRecord[] = filePaths.map((filePath) => ({
       filePath,
-      relativePath: getRelativeDisplayPath(folderPath, filePath)
+      relativePath: getRelativeDisplayPath(folderPath, filePath),
+      mtimeMs: fileMtimeMs[filePath] ?? 0
     }));
     const emptyFolderRelativePaths = emptyFolderPaths.map((emptyFolderPath) =>
       getRelativeDisplayPath(folderPath, emptyFolderPath)
     );
+    const emptyFolderOwnMtimeMs: Record<string, number> = {};
 
-    return buildFileTree(records, emptyFolderRelativePaths);
-  }, [folderPath, filePaths, emptyFolderPaths]);
+    emptyFolderPaths.forEach((emptyFolderPath) => {
+      emptyFolderOwnMtimeMs[getRelativeDisplayPath(folderPath, emptyFolderPath)] =
+        emptyFolderMtimeMs[emptyFolderPath] ?? 0;
+    });
+
+    return buildFileTree(records, emptyFolderRelativePaths, {
+      sortMode,
+      manualOrder,
+      emptyFolderOwnMtimeMs
+    });
+  }, [folderPath, filePaths, emptyFolderPaths, fileMtimeMs, emptyFolderMtimeMs, sortMode, manualOrder]);
+
+  const nodeContextByKey = useMemo(() => buildNodeContextMap(treeNodes), [treeNodes]);
 
   const flatNodes = useMemo(
     () => flattenVisibleNodes(treeNodes, expandedFolderPaths),
@@ -608,6 +771,96 @@ export function FileTree({
     });
   };
 
+  const handleRowDragStart = useCallback((node: FileTreeNode) => {
+    setDragSourceKey(getNodeKey(node));
+  }, []);
+
+  const handleRowDropIndicatorChange = useCallback((key: string, position: DropPosition | null) => {
+    setDropIndicator((current) => {
+      if (position === null) {
+        return current?.key === key ? null : current;
+      }
+
+      if (current?.key === key && current.position === position) {
+        return current;
+      }
+
+      return { key, position };
+    });
+  }, []);
+
+  const handleRowDragEnd = useCallback(() => {
+    setDragSourceKey(null);
+    setDropIndicator(null);
+  }, []);
+
+  const handleRowDrop = useCallback(
+    (targetNode: FileTreeNode, position: DropPosition) => {
+      const sourceKey = dragSourceKey;
+      setDragSourceKey(null);
+      setDropIndicator(null);
+
+      if (!sourceKey) {
+        return;
+      }
+
+      const separatorIndex = sourceKey.indexOf(":");
+      const sourceKind = sourceKey.slice(0, separatorIndex) as "file" | "folder";
+      const sourceRelativePath = sourceKey.slice(separatorIndex + 1);
+      const targetKey = getNodeKey(targetNode);
+
+      if (sourceKey === targetKey) {
+        return;
+      }
+
+      if (sourceKind === "folder" && isDescendantRelativePath(sourceRelativePath, targetNode.relativePath)) {
+        return;
+      }
+
+      void (async () => {
+        const sourcePath = await join(folderPath, sourceRelativePath);
+
+        let targetParentDirectory: string;
+        let targetIndex: number;
+
+        if (position === "into" && targetNode.kind === "folder") {
+          targetParentDirectory = await join(folderPath, targetNode.relativePath);
+          targetIndex = targetNode.children.length;
+        } else {
+          const context = nodeContextByKey.get(targetKey);
+
+          if (!context) {
+            return;
+          }
+
+          targetParentDirectory = context.parentRelativePath
+            ? await join(folderPath, context.parentRelativePath)
+            : folderPath;
+
+          targetIndex = position === "above" ? context.indexInSiblings : context.indexInSiblings + 1;
+
+          const sourceContext = nodeContextByKey.get(sourceKey);
+
+          if (
+            sourceContext &&
+            sourceContext.parentRelativePath === context.parentRelativePath &&
+            sourceContext.indexInSiblings < context.indexInSiblings
+          ) {
+            targetIndex -= 1;
+          }
+        }
+
+        await onMoveEntry({
+          kind: sourceKind,
+          sourcePath,
+          targetParentDirectory,
+          targetIndex
+        });
+      })();
+    },
+    [dragSourceKey, folderPath, nodeContextByKey, onMoveEntry]
+  );
+
   return (
     <>
       <ul
@@ -628,6 +881,9 @@ export function FileTree({
             renamingTarget={renamingTarget}
             renameDraft={renameDraft}
             renameInputRef={renameInputRef}
+            sortMode={sortMode}
+            dragSourceKey={dragSourceKey}
+            dropIndicator={dropIndicator}
             onToggleFolder={toggleFolder}
             onSelectFilePath={onSelectFilePath}
             onFileContextMenu={(filePath, x, y) => setContextMenu({ kind: "file", filePath, x, y })}
@@ -639,6 +895,10 @@ export function FileTree({
             onCommitRename={() => void commitRename()}
             onCancelRename={cancelRename}
             registerItemRef={registerItemRef}
+            onRowDragStart={handleRowDragStart}
+            onRowDropIndicatorChange={handleRowDropIndicatorChange}
+            onRowDrop={handleRowDrop}
+            onRowDragEnd={handleRowDragEnd}
           />
         ))}
       </ul>

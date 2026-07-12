@@ -1,10 +1,34 @@
-import { FileText, FolderOpen, FolderPlus, Keyboard, Plus, Settings2, Trash2 } from "lucide-react";
+import {
+  ArrowDownAZ,
+  ArrowUpDown,
+  Clock,
+  FileText,
+  FolderOpen,
+  FolderPlus,
+  GripVertical,
+  Keyboard,
+  Plus,
+  Settings2,
+  Trash2
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  Menu,
+  MenuPopup,
+  MenuPortal,
+  MenuPositioner,
+  MenuRadioGroup,
+  MenuRadioItem,
+  MenuRadioItemIndicator,
+  MenuTrigger
+} from "@/components/ui/menu";
 import { FileTree, type PendingFolderRename } from "@/components/FileTree";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatFolderLabel } from "@/lib/fileSystem";
+import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
+import type { MoveTreeEntryInput } from "@/store/useAppStore";
 
 type SidebarProps = {
   folderPath: string | null;
@@ -15,6 +39,10 @@ type SidebarProps = {
   folderError: string | null;
   isLoading: boolean;
   pendingFolderRename: PendingFolderRename | null;
+  sortMode: SortMode;
+  manualOrder: ManualOrderMap;
+  fileMtimeMs: Record<string, number>;
+  emptyFolderMtimeMs: Record<string, number>;
   onOpenFolder: () => void;
   onCreateFile: () => void;
   onCreateFileRequest: (targetDirectory: string) => void;
@@ -24,6 +52,8 @@ type SidebarProps = {
   onDeleteFolderRequest: (folderPath: string) => void;
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
+  onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
+  onSetSortMode: (mode: SortMode) => void;
   onAiSettingsRequest: () => void;
   onShortcutsRequest: () => void;
   onRequestEditorFocus: () => void;
@@ -39,6 +69,10 @@ export function Sidebar({
   folderError,
   isLoading,
   pendingFolderRename,
+  sortMode,
+  manualOrder,
+  fileMtimeMs,
+  emptyFolderMtimeMs,
   onOpenFolder,
   onCreateFile,
   onCreateFileRequest,
@@ -48,6 +82,8 @@ export function Sidebar({
   onDeleteFolderRequest,
   onRenameFolder,
   onRenameFile,
+  onMoveEntry,
+  onSetSortMode,
   onAiSettingsRequest,
   onShortcutsRequest,
   onRequestEditorFocus,
@@ -108,6 +144,49 @@ export function Sidebar({
           >
             <Trash2 />
           </Button>
+
+          <Menu>
+            <MenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isLoading || folderPath === null}
+                  aria-label={t("sidebar.sortMode")}
+                  title={t("sidebar.sortMode")}
+                >
+                  <ArrowUpDown />
+                </Button>
+              }
+            />
+            <MenuPortal>
+              <MenuPositioner>
+                <MenuPopup>
+                  <MenuRadioGroup
+                    value={sortMode}
+                    onValueChange={(value) => onSetSortMode(value as SortMode)}
+                  >
+                    <MenuRadioItem value="name">
+                      <ArrowDownAZ className="size-4" aria-hidden="true" />
+                      {t("sidebar.sortModeName")}
+                      <MenuRadioItemIndicator />
+                    </MenuRadioItem>
+                    <MenuRadioItem value="modified">
+                      <Clock className="size-4" aria-hidden="true" />
+                      {t("sidebar.sortModeModified")}
+                      <MenuRadioItemIndicator />
+                    </MenuRadioItem>
+                    <MenuRadioItem value="manual">
+                      <GripVertical className="size-4" aria-hidden="true" />
+                      {t("sidebar.sortModeManual")}
+                      <MenuRadioItemIndicator />
+                    </MenuRadioItem>
+                  </MenuRadioGroup>
+                </MenuPopup>
+              </MenuPositioner>
+            </MenuPortal>
+          </Menu>
 
           <Button
             type="button"
@@ -176,12 +255,17 @@ export function Sidebar({
             selectedFilePath={selectedFilePath}
             dirtyFilePaths={dirtyFilePaths}
             pendingFolderRename={pendingFolderRename}
+            sortMode={sortMode}
+            manualOrder={manualOrder}
+            fileMtimeMs={fileMtimeMs}
+            emptyFolderMtimeMs={emptyFolderMtimeMs}
             onSelectFilePath={onSelectFilePath}
             onCreateFileRequest={onCreateFileRequest}
             onDeleteFileRequest={onDeleteFileRequest}
             onDeleteFolderRequest={onDeleteFolderRequest}
             onRenameFolder={onRenameFolder}
             onRenameFile={onRenameFile}
+            onMoveEntry={onMoveEntry}
             onRequestEditorFocus={onRequestEditorFocus}
             focusRequestId={sidebarFocusRequestId}
           />

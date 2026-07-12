@@ -411,6 +411,7 @@ body.is-resizing-sidebar {
 }
 
 .file-tree__row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -464,8 +465,44 @@ body.is-resizing-sidebar {
   text-overflow: ellipsis;
 }
 
+.file-tree__mtime {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: rgba(var(--muted-rgb), 0.2);
+  white-space: nowrap;
+}
+
 .file-tree__row--renaming {
   cursor: default;
+}
+
+.file-tree__row--drag-source {
+  opacity: 0.5;
+}
+
+.file-tree__row--drop-above::before,
+.file-tree__row--drop-below::after {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--blue-fg);
+}
+
+.file-tree__row--drop-above::before {
+  top: 0;
+}
+
+.file-tree__row--drop-below::after {
+  bottom: 0;
+}
+
+.file-tree__row--drop-into {
+  background: rgba(var(--surface-active-rgb), 0.96);
+  outline: 2px solid var(--blue-fg);
+  outline-offset: -2px;
 }
 
 .file-tree__rename-input {
@@ -1904,9 +1941,9 @@ p.detail-panel__version {
   right: 0;
   bottom: 1.4rem;
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   line-height: 1;
-  color: rgba(var(--text-rgb), 0.08);
+  color: rgba(var(--muted-rgb), 0.2);
   text-align: center;
   user-select: none;
 }

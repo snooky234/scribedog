@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Smile } from "lucide-react";
@@ -29,6 +29,7 @@ import { emojiDataRu } from "@/lib/emojiKeywordsRu";
 import { emojiDataIt } from "@/lib/emojiKeywordsIt";
 import { emojiDataUk } from "@/lib/emojiKeywordsUk";
 import { useDismissablePopover } from "@/lib/useDismissablePopover";
+import { usePopoverOverflowAlign } from "@/lib/usePopoverOverflowAlign";
 import type { SupportedLanguage } from "@/i18n";
 
 const EMOJI_DATA: Record<SupportedLanguage, unknown> = {
@@ -69,7 +70,9 @@ type EmojiSelection = {
 export function EmojiPicker({ editor }: EmojiPickerProps) {
   const { t, i18n } = useTranslation();
   const language = (i18n.resolvedLanguage ?? i18n.language) as SupportedLanguage;
-  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
+  const [anchor, setAnchor] = useState<{ top: number; left: number; right: number } | null>(null);
+  const [align, setAlign] = useState<"left" | "right">("left");
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const isOpen = anchor !== null;
 
@@ -78,6 +81,7 @@ export function EmojiPicker({ editor }: EmojiPickerProps) {
   };
 
   useDismissablePopover(isOpen, close);
+  usePopoverOverflowAlign(anchor, popoverRef, setAlign);
 
   const insertEmoji = (emoji: EmojiSelection) => {
     const value = emoji.native ?? emoji.shortcodes;
@@ -113,7 +117,8 @@ export function EmojiPicker({ editor }: EmojiPickerProps) {
           }
 
           const rect = event.currentTarget.getBoundingClientRect();
-          setAnchor({ top: rect.bottom + 6, left: rect.left });
+          setAlign("left");
+          setAnchor({ top: rect.bottom + 6, left: rect.left, right: window.innerWidth - rect.right });
         }}
       >
         <Smile />
@@ -122,10 +127,11 @@ export function EmojiPicker({ editor }: EmojiPickerProps) {
       {anchor
         ? createPortal(
             <div
+              ref={popoverRef}
               className="editor-popover emoji-picker"
               role="menu"
               aria-label={t("emojiPicker.selectEmoji")}
-              style={{ top: anchor.top, left: anchor.left }}
+              style={align === "right" ? { top: anchor.top, right: anchor.right } : { top: anchor.top, left: anchor.left }}
               onClick={(event) => event.stopPropagation()}
             >
               <Picker

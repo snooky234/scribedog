@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Table } from "lucide-react";
@@ -8,6 +8,7 @@ import type { Editor } from "@tiptap/react";
 
 import { Button } from "@/components/ui/button";
 import { useDismissablePopover } from "@/lib/useDismissablePopover";
+import { usePopoverOverflowAlign } from "@/lib/usePopoverOverflowAlign";
 
 const MAX_ROWS = 8;
 const MAX_COLS = 8;
@@ -18,8 +19,10 @@ type TableGridPickerProps = {
 
 export function TableGridPicker({ editor }: TableGridPickerProps) {
   const { t } = useTranslation();
-  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
+  const [anchor, setAnchor] = useState<{ top: number; left: number; right: number } | null>(null);
+  const [align, setAlign] = useState<"left" | "right">("left");
   const [hovered, setHovered] = useState<{ row: number; col: number } | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const isOpen = anchor !== null;
 
@@ -29,6 +32,7 @@ export function TableGridPicker({ editor }: TableGridPickerProps) {
   };
 
   useDismissablePopover(isOpen, close);
+  usePopoverOverflowAlign(anchor, popoverRef, setAlign);
 
   const insertTable = (rows: number, cols: number) => {
     editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
@@ -59,7 +63,8 @@ export function TableGridPicker({ editor }: TableGridPickerProps) {
           }
 
           const rect = event.currentTarget.getBoundingClientRect();
-          setAnchor({ top: rect.bottom + 6, left: rect.left });
+          setAlign("left");
+          setAnchor({ top: rect.bottom + 6, left: rect.left, right: window.innerWidth - rect.right });
         }}
       >
         <Table />
@@ -68,10 +73,11 @@ export function TableGridPicker({ editor }: TableGridPickerProps) {
       {anchor
         ? createPortal(
             <div
+              ref={popoverRef}
               className="editor-popover table-grid-picker"
               role="menu"
               aria-label={t("tableGridPicker.chooseSize")}
-              style={{ top: anchor.top, left: anchor.left }}
+              style={align === "right" ? { top: anchor.top, right: anchor.right } : { top: anchor.top, left: anchor.left }}
               onClick={(event) => event.stopPropagation()}
             >
               <div

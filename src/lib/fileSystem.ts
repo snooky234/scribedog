@@ -10,6 +10,7 @@ import {
   readTextFile,
   remove,
   rename,
+  stat,
   writeFile,
   writeTextFile
 } from "@tauri-apps/plugin-fs";
@@ -19,6 +20,8 @@ export const ABSOLUTE_URL_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
 export const FOLDER_FILES_CHANGED_EVENT = "scribedog-folder-files-changed";
 
 const IMAGES_FOLDER_NAME = "images";
+
+export const VAULT_META_DIR_NAME = ".scribedog";
 
 const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   "image/png": "png",
@@ -56,6 +59,7 @@ type DirectoryEntry = {
 export type MarkdownFileRecord = {
   filePath: string;
   relativePath: string;
+  mtimeMs: number;
 };
 
 function isMarkdownFile(name: string): boolean {
@@ -98,16 +102,34 @@ async function collectMarkdownFiles(
     const entryPath = await join(currentPath, entry.name);
 
     if (entry.isDirectory && !entry.isSymlink) {
+      if (entry.name === VAULT_META_DIR_NAME) {
+        continue;
+      }
+
       await collectMarkdownFiles(rootPath, entryPath, accumulator);
       continue;
     }
 
     if ((entry.isFile || entry.isSymlink) && isMarkdownFile(entry.name)) {
+      const mtimeMs = await stat(entryPath)
+        .then((info) => info.mtime?.getTime() ?? 0)
+        .catch(() => 0);
+
       accumulator.push({
         filePath: entryPath,
-        relativePath: getRelativeDisplayPath(rootPath, entryPath)
+        relativePath: getRelativeDisplayPath(rootPath, entryPath),
+        mtimeMs
       });
     }
+  }
+}
+
+export async function getPathMtimeMs(path: string): Promise<number> {
+  try {
+    const info = await stat(path);
+    return info.mtime?.getTime() ?? 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -329,6 +351,66 @@ async function resolveImageRootRelativePaths(
   }
 
   return rootRelativePaths;
+}
+
+/**
+ * Rewrites relative image references in markdown so they keep pointing at
+ * the correct location after the file itself moved to a different folder
+ * depth (the "images/" folder always stays at the vault root).
+ */
+export async function rewriteRelativeImagePaths(
+  markdown: string,
+  oldFileDirPath: string,
+  newFilePath: string,
+  folderPath: string
+): Promise<string> {
+  const matches = Array.from(markdown.matchAll(IMAGE_MARKDOWN_PATTERN));
+
+  if (matches.length === 0) {
+    return markdown;
+  }
+
+  const replacements: Array<{ start: number; end: number; value: string }> = [];
+
+  for (const match of matches) {
+    const rawSrc = match[1];
+    const matchIndex = match.index;
+
+    if (matchIndex === undefined || ABSOLUTE_URL_PATTERN.test(rawSrc)) {
+      continue;
+    }
+
+    const srcStart = matchIndex + match[0].indexOf("(") + 1;
+    const srcEnd = srcStart + rawSrc.length;
+
+    try {
+      const absolutePath = await join(oldFileDirPath, rawSrc);
+      const rootRelativePath = getRelativeDisplayPath(folderPath, absolutePath);
+      const newRelativeSrc = await getRelativeImageMarkdownPath(folderPath, newFilePath, rootRelativePath);
+
+      if (newRelativeSrc !== rawSrc) {
+        replacements.push({ start: srcStart, end: srcEnd, value: newRelativeSrc });
+      }
+    } catch {
+      // Invalid path — leave the reference untouched.
+    }
+  }
+
+  if (replacements.length === 0) {
+    return markdown;
+  }
+
+  let result = "";
+  let cursor = 0;
+
+  for (const replacement of replacements) {
+    result += markdown.slice(cursor, replacement.start) + replacement.value;
+    cursor = replacement.end;
+  }
+
+  result += markdown.slice(cursor);
+
+  return result;
 }
 
 /**

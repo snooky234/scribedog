@@ -16,14 +16,31 @@ import {
   readMarkdownFile,
   renameMarkdownFile,
   renameMarkdownFolder,
+  rewriteRelativeImagePaths,
   setLastOpenedFolderPath,
   watchMarkdownFolder,
   writeMarkdownFile
 } from "@/lib/fileSystem";
+import { getChildBasenamesByParent, isDescendantRelativePath } from "@/lib/fileTree";
+import {
+  readManualOrder,
+  readSortMode,
+  writeManualOrder,
+  writeSortMode,
+  type ManualOrderMap,
+  type SortMode
+} from "@/lib/vaultMeta";
 
 type FileDocumentState = {
   content: string;
   baseContent: string;
+};
+
+export type MoveTreeEntryInput = {
+  kind: "file" | "folder";
+  sourcePath: string;
+  targetParentDirectory: string;
+  targetIndex: number;
 };
 
 type AppState = {
@@ -42,6 +59,10 @@ type AppState = {
   folderError: string | null;
   fileError: string | null;
   saveError: string | null;
+  sortMode: SortMode;
+  manualOrder: ManualOrderMap;
+  fileMtimeMs: Record<string, number>;
+  emptyFolderMtimeMs: Record<string, number>;
   openFolder: () => Promise<boolean>;
   openFolderAtPath: (folderPath: string) => Promise<boolean>;
   refreshFolderFiles: () => Promise<boolean>;
@@ -56,6 +77,9 @@ type AppState = {
   renameFolderPath: (folderPath: string, newBaseName: string) => Promise<boolean>;
   deleteFilePath: (filePath: string) => Promise<boolean>;
   deleteFolderPath: (folderPath: string) => Promise<boolean>;
+  setSortMode: (mode: SortMode) => Promise<void>;
+  reorderWithinFolder: (parentDirectory: string, orderedBasenames: string[]) => Promise<boolean>;
+  moveTreeEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
 };
 
 function toErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -161,10 +185,183 @@ function isPathInsideFolder(path: string, folderPath: string): boolean {
   return normalizePathKey(path).startsWith(`${normalizePathKey(folderPath)}/`);
 }
 
-function createLoadedFolderState(
+function getBasename(path: string): string {
+  return path.replace(/\\/g, "/").split("/").pop() ?? path;
+}
+
+function buildFileMtimeMap(markdownFiles: MarkdownFileRecord[]): Record<string, number> {
+  const map: Record<string, number> = {};
+
+  for (const record of markdownFiles) {
+    map[record.filePath] = record.mtimeMs;
+  }
+
+  return map;
+}
+
+/**
+ * Diffs a manual-order sidecar against what actually exists on disk: appends
+ * children that showed up externally (e.g. created outside the app) at the
+ * end (alphabetically among themselves), and drops entries for basenames or
+ * folders that no longer exist. No-ops (and never touches disk) when there
+ * is no manual order yet, so vaults that never use Manual mode never get a
+ * `.scribedog/` folder created for them.
+ */
+async function reconcileManualOrder(
+  vaultFolderPath: string,
+  manualOrder: ManualOrderMap,
+  markdownFiles: MarkdownFileRecord[],
+  emptyFolderRelativePaths: string[]
+): Promise<ManualOrderMap> {
+  if (Object.keys(manualOrder).length === 0) {
+    return manualOrder;
+  }
+
+  const actualChildrenByParent = getChildBasenamesByParent(markdownFiles, emptyFolderRelativePaths);
+  const next: ManualOrderMap = {};
+  let didChange = false;
+
+  for (const [parentRelativePath, storedOrder] of Object.entries(manualOrder)) {
+    const actualChildren = actualChildrenByParent.get(parentRelativePath);
+
+    if (!actualChildren) {
+      didChange = true;
+      continue;
+    }
+
+    const actualSet = new Set(actualChildren);
+    const filtered = storedOrder.filter((name) => actualSet.has(name));
+
+    if (filtered.length !== storedOrder.length) {
+      didChange = true;
+    }
+
+    const knownSet = new Set(filtered);
+    const missing = actualChildren
+      .filter((name) => !knownSet.has(name))
+      .sort((left, right) => left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" }));
+
+    if (missing.length > 0) {
+      didChange = true;
+    }
+
+    next[parentRelativePath] = [...filtered, ...missing];
+  }
+
+  if (!didChange) {
+    return manualOrder;
+  }
+
+  void writeManualOrder(vaultFolderPath, next).catch(() => undefined);
+
+  return next;
+}
+
+function persistManualOrderIfChanged(
+  vaultFolderPath: string,
+  previous: ManualOrderMap,
+  next: ManualOrderMap
+): void {
+  if (next !== previous) {
+    void writeManualOrder(vaultFolderPath, next).catch(() => undefined);
+  }
+}
+
+function appendManualOrderEntry(
+  manualOrder: ManualOrderMap,
+  parentRelativePath: string,
+  basename: string
+): ManualOrderMap {
+  const entry = manualOrder[parentRelativePath];
+
+  if (!entry) {
+    return manualOrder;
+  }
+
+  return { ...manualOrder, [parentRelativePath]: [...entry, basename] };
+}
+
+function removeManualOrderEntry(
+  manualOrder: ManualOrderMap,
+  parentRelativePath: string,
+  basename: string
+): ManualOrderMap {
+  const entry = manualOrder[parentRelativePath];
+
+  if (!entry) {
+    return manualOrder;
+  }
+
+  return { ...manualOrder, [parentRelativePath]: entry.filter((name) => name !== basename) };
+}
+
+function renameManualOrderEntry(
+  manualOrder: ManualOrderMap,
+  parentRelativePath: string,
+  oldBasename: string,
+  newBasename: string
+): ManualOrderMap {
+  const entry = manualOrder[parentRelativePath];
+
+  if (!entry) {
+    return manualOrder;
+  }
+
+  return {
+    ...manualOrder,
+    [parentRelativePath]: entry.map((name) => (name === oldBasename ? newBasename : name))
+  };
+}
+
+function rekeyManualOrderFolderPrefix(
+  manualOrder: ManualOrderMap,
+  oldRelativePath: string,
+  newRelativePath: string
+): ManualOrderMap {
+  const next: ManualOrderMap = {};
+  let didChange = false;
+
+  for (const [key, value] of Object.entries(manualOrder)) {
+    if (key === oldRelativePath) {
+      next[newRelativePath] = value;
+      didChange = true;
+    } else if (key.startsWith(`${oldRelativePath}/`)) {
+      next[`${newRelativePath}${key.slice(oldRelativePath.length)}`] = value;
+      didChange = true;
+    } else {
+      next[key] = value;
+    }
+  }
+
+  return didChange ? next : manualOrder;
+}
+
+function removeManualOrderFolderPrefix(
+  manualOrder: ManualOrderMap,
+  relativePath: string
+): ManualOrderMap {
+  const next: ManualOrderMap = {};
+
+  for (const [key, value] of Object.entries(manualOrder)) {
+    if (key !== relativePath && !key.startsWith(`${relativePath}/`)) {
+      next[key] = value;
+    }
+  }
+
+  return next;
+}
+
+async function createLoadedFolderState(
   folderPath: string,
   markdownFiles: MarkdownFileRecord[]
 ) {
+  const [sortMode, storedManualOrder] = await Promise.all([
+    readSortMode(folderPath),
+    readManualOrder(folderPath)
+  ]);
+
+  const manualOrder = await reconcileManualOrder(folderPath, storedManualOrder, markdownFiles, []);
+
   return {
     folderPath,
     filePaths: markdownFiles.map((record) => record.filePath),
@@ -178,7 +375,11 @@ function createLoadedFolderState(
     isRefreshing: false,
     isDirty: false,
     fileError: null,
-    saveError: null
+    saveError: null,
+    sortMode,
+    manualOrder,
+    fileMtimeMs: buildFileMtimeMap(markdownFiles),
+    emptyFolderMtimeMs: {} as Record<string, number>
   };
 }
 
@@ -198,6 +399,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   folderError: null,
   fileError: null,
   saveError: null,
+  sortMode: "name",
+  manualOrder: {},
+  fileMtimeMs: {},
+  emptyFolderMtimeMs: {},
   openFolder: async () => {
     set({ isLoading: true, folderError: null });
 
@@ -211,9 +416,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       await allowMarkdownFolderAccess(folderPath);
       const markdownFiles = await listMarkdownFiles(folderPath);
+      const loadedState = await createLoadedFolderState(folderPath, markdownFiles);
 
       set({
-        ...createLoadedFolderState(folderPath, markdownFiles),
+        ...loadedState,
         isLoading: false,
         folderError: null
       });
@@ -241,9 +447,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await allowMarkdownFolderAccess(folderPath);
       const markdownFiles = await listMarkdownFiles(folderPath);
+      const loadedState = await createLoadedFolderState(folderPath, markdownFiles);
 
       set({
-        ...createLoadedFolderState(folderPath, markdownFiles),
+        ...loadedState,
         isLoading: false,
         folderError: null
       });
@@ -262,7 +469,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   refreshFolderFiles: async () => {
-    const { folderPath, selectedFilePath, fileDocuments } = get();
+    const { folderPath, selectedFilePath, fileDocuments, manualOrder, emptyFolderPaths } = get();
 
     if (!folderPath) {
       return false;
@@ -283,10 +490,21 @@ export const useAppStore = create<AppState>((set, get) => ({
         selectedFilePath
       );
       const selectedDocument = selectedFilePath ? nextDocuments[selectedFilePath] : null;
+      const emptyFolderRelativePaths = emptyFolderPaths.map((path) =>
+        getRelativeDisplayPath(folderPath, path)
+      );
+      const nextManualOrder = await reconcileManualOrder(
+        folderPath,
+        manualOrder,
+        markdownFiles,
+        emptyFolderRelativePaths
+      );
 
       set({
         filePaths: nextFilePaths,
         fileDocuments: nextDocuments,
+        fileMtimeMs: buildFileMtimeMap(markdownFiles),
+        manualOrder: nextManualOrder,
         selectedFilePath: selectedDocument ? selectedFilePath : null,
         selectedFileContent: selectedDocument ? selectedDocument.content : null,
         selectedFileBaseContent: selectedDocument ? selectedDocument.baseContent : null,
@@ -515,8 +733,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       await writeMarkdownFile(newFilePath, "");
 
+      const parentRelativePath = getRelativeDisplayPath(folderPath, resolvedTargetDirectory);
+      const currentManualOrder = get().manualOrder;
+      const nextManualOrder = appendManualOrderEntry(
+        currentManualOrder,
+        parentRelativePath,
+        getBasename(newFilePath)
+      );
+      persistManualOrderIfChanged(folderPath, currentManualOrder, nextManualOrder);
+
       set({
         filePaths: insertFilePathSorted(filePaths, newFilePath),
+        manualOrder: nextManualOrder,
         fileDocuments: {
           ...fileDocuments,
           [newFilePath]: { content: "", baseContent: "" }
@@ -557,8 +785,18 @@ export const useAppStore = create<AppState>((set, get) => ({
         i18n.t("store.newFolderBaseName")
       );
 
+      const parentRelativePath = getRelativeDisplayPath(folderPath, targetDirectory);
+      const currentManualOrder = get().manualOrder;
+      const nextManualOrder = appendManualOrderEntry(
+        currentManualOrder,
+        parentRelativePath,
+        getBasename(newFolderPath)
+      );
+      persistManualOrderIfChanged(folderPath, currentManualOrder, nextManualOrder);
+
       set({
         emptyFolderPaths: [...emptyFolderPaths, newFolderPath],
+        manualOrder: nextManualOrder,
         fileError: null
       });
 
@@ -617,11 +855,31 @@ export const useAppStore = create<AppState>((set, get) => ({
         ? await remapPathUnderRenamedFolder(currentState.selectedFilePath, folderPath, newFolderPath)
         : currentState.selectedFilePath;
 
+      let nextManualOrder = currentState.manualOrder;
+
+      if (currentState.folderPath) {
+        const vaultRootPath = currentState.folderPath;
+        const oldRelativePath = getRelativeDisplayPath(vaultRootPath, folderPath);
+        const newRelativePath = getRelativeDisplayPath(vaultRootPath, newFolderPath);
+        const parentRelativePath = getRelativeDisplayPath(vaultRootPath, parentDirectory);
+
+        nextManualOrder = renameManualOrderEntry(
+          nextManualOrder,
+          parentRelativePath,
+          getBasename(folderPath),
+          getBasename(newFolderPath)
+        );
+        nextManualOrder = rekeyManualOrderFolderPrefix(nextManualOrder, oldRelativePath, newRelativePath);
+
+        persistManualOrderIfChanged(vaultRootPath, currentState.manualOrder, nextManualOrder);
+      }
+
       set({
         filePaths: nextFilePaths,
         emptyFolderPaths: nextEmptyFolderPaths,
         fileDocuments: nextDocuments,
         selectedFilePath: nextSelectedFilePath,
+        manualOrder: nextManualOrder,
         fileError: null
       });
 
@@ -680,6 +938,21 @@ export const useAppStore = create<AppState>((set, get) => ({
         nextDocuments[newFilePath] = movedDocument;
       }
 
+      let nextManualOrder = currentState.manualOrder;
+
+      if (currentState.folderPath) {
+        const parentRelativePath = getRelativeDisplayPath(currentState.folderPath, targetDirectory);
+
+        nextManualOrder = renameManualOrderEntry(
+          nextManualOrder,
+          parentRelativePath,
+          getBasename(filePath),
+          getBasename(newFilePath)
+        );
+
+        persistManualOrderIfChanged(currentState.folderPath, currentState.manualOrder, nextManualOrder);
+      }
+
       set({
         filePaths: insertFilePathSorted(
           currentState.filePaths.filter((path) => path !== filePath),
@@ -690,6 +963,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           currentState.selectedFilePath === filePath
             ? newFilePath
             : currentState.selectedFilePath,
+        manualOrder: nextManualOrder,
         fileError: null
       });
 
@@ -721,6 +995,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       const isSelected = selectedFilePath === filePath;
       const currentState = get();
 
+      let nextManualOrder = currentState.manualOrder;
+
+      if (folderPath) {
+        const parentDirectory = await dirname(filePath);
+        const parentRelativePath = getRelativeDisplayPath(folderPath, parentDirectory);
+
+        nextManualOrder = removeManualOrderEntry(nextManualOrder, parentRelativePath, getBasename(filePath));
+        persistManualOrderIfChanged(folderPath, currentState.manualOrder, nextManualOrder);
+      }
+
       set({
         filePaths: currentState.filePaths.filter((path) => path !== filePath),
         fileDocuments: nextDocuments,
@@ -728,6 +1012,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         selectedFileContent: isSelected ? null : currentState.selectedFileContent,
         selectedFileBaseContent: isSelected ? null : currentState.selectedFileBaseContent,
         isDirty: isSelected ? false : currentState.isDirty,
+        manualOrder: nextManualOrder,
         fileError: null
       });
 
@@ -756,6 +1041,20 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
       }
 
+      let nextManualOrder = currentState.manualOrder;
+
+      if (currentState.folderPath) {
+        const vaultRootPath = currentState.folderPath;
+        const parentDirectory = await dirname(folderPath);
+        const parentRelativePath = getRelativeDisplayPath(vaultRootPath, parentDirectory);
+        const ownRelativePath = getRelativeDisplayPath(vaultRootPath, folderPath);
+
+        nextManualOrder = removeManualOrderEntry(nextManualOrder, parentRelativePath, getBasename(folderPath));
+        nextManualOrder = removeManualOrderFolderPrefix(nextManualOrder, ownRelativePath);
+
+        persistManualOrderIfChanged(vaultRootPath, currentState.manualOrder, nextManualOrder);
+      }
+
       set({
         filePaths: currentState.filePaths.filter((path) => !isPathInsideFolder(path, folderPath)),
         emptyFolderPaths: currentState.emptyFolderPaths.filter(
@@ -768,6 +1067,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         selectedFileContent: isSelectedInside ? null : currentState.selectedFileContent,
         selectedFileBaseContent: isSelectedInside ? null : currentState.selectedFileBaseContent,
         isDirty: isSelectedInside ? false : currentState.isDirty,
+        manualOrder: nextManualOrder,
         fileError: null
       });
 
@@ -775,6 +1075,226 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (error) {
       set({
         fileError: toErrorMessage(error, i18n.t("store.folderDeleteError"))
+      });
+
+      return false;
+    }
+  },
+  setSortMode: async (mode: SortMode) => {
+    const { folderPath } = get();
+
+    set({ sortMode: mode });
+
+    if (!folderPath) {
+      return;
+    }
+
+    void writeSortMode(folderPath, mode).catch(() => undefined);
+  },
+  reorderWithinFolder: async (parentDirectory: string, orderedBasenames: string[]) => {
+    const { folderPath, manualOrder } = get();
+
+    if (!folderPath) {
+      return false;
+    }
+
+    const parentRelativePath = getRelativeDisplayPath(folderPath, parentDirectory);
+    const nextManualOrder = { ...manualOrder, [parentRelativePath]: orderedBasenames };
+
+    set({ manualOrder: nextManualOrder });
+    void writeManualOrder(folderPath, nextManualOrder).catch(() => undefined);
+
+    return true;
+  },
+  moveTreeEntry: async (input: MoveTreeEntryInput) => {
+    const { kind, sourcePath, targetParentDirectory, targetIndex } = input;
+    const state = get();
+    const { folderPath, filePaths, emptyFolderPaths, fileDocuments, manualOrder } = state;
+
+    if (!folderPath) {
+      return false;
+    }
+
+    try {
+      const basename = getBasename(sourcePath);
+      const sourceParentDirectory = await dirname(sourcePath);
+      const isSameParent =
+        normalizePathKey(sourceParentDirectory) === normalizePathKey(targetParentDirectory);
+
+      if (kind === "folder" && !isSameParent) {
+        const sourceRelativePath = getRelativeDisplayPath(folderPath, sourcePath);
+        const targetRelativePath = getRelativeDisplayPath(folderPath, targetParentDirectory);
+
+        if (isDescendantRelativePath(sourceRelativePath, targetRelativePath)) {
+          set({ fileError: i18n.t("store.folderMoveIntoDescendantError") });
+          return false;
+        }
+      }
+
+      let newPath = sourcePath;
+
+      if (!isSameParent) {
+        newPath = await join(targetParentDirectory, basename);
+
+        const destinationExists =
+          kind === "folder"
+            ? await markdownFolderExists(newPath)
+            : filePaths.some((path) => normalizePathKey(path) === normalizePathKey(newPath));
+
+        if (destinationExists) {
+          set({
+            fileError: i18n.t(kind === "folder" ? "store.folderAlreadyExists" : "store.fileAlreadyExists")
+          });
+          return false;
+        }
+      }
+
+      const sourceParentRelativePath = getRelativeDisplayPath(folderPath, sourceParentDirectory);
+      const targetParentRelativePath = getRelativeDisplayPath(folderPath, targetParentDirectory);
+
+      // Lazily seed manual order for both parents from the current on-screen
+      // order, so unrelated siblings don't visually reshuffle.
+      const childrenByParent = getChildBasenamesByParent(
+        filePaths.map((filePath) => ({
+          filePath,
+          relativePath: getRelativeDisplayPath(folderPath, filePath),
+          mtimeMs: 0
+        })),
+        emptyFolderPaths.map((path) => getRelativeDisplayPath(folderPath, path))
+      );
+
+      let seededManualOrder = manualOrder;
+
+      for (const parentRelativePath of new Set([sourceParentRelativePath, targetParentRelativePath])) {
+        if (seededManualOrder[parentRelativePath]) {
+          continue;
+        }
+
+        const currentChildren = childrenByParent.get(parentRelativePath) ?? [];
+        seededManualOrder = {
+          ...seededManualOrder,
+          [parentRelativePath]: [...currentChildren].sort((left, right) =>
+            left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" })
+          )
+        };
+      }
+
+      let nextFilePaths = filePaths;
+      let nextEmptyFolderPaths = emptyFolderPaths;
+      let nextDocuments = fileDocuments;
+      let nextSelectedFilePath = state.selectedFilePath;
+
+      if (!isSameParent) {
+        const affectedFilePaths =
+          kind === "file" ? [sourcePath] : filePaths.filter((path) => isPathInsideFolder(path, sourcePath));
+
+        const preMoveContentByPath = new Map<string, string>();
+
+        for (const path of affectedFilePaths) {
+          const baseContent = fileDocuments[path]?.baseContent;
+          preMoveContentByPath.set(path, baseContent ?? (await readMarkdownFile(path).catch(() => "")));
+        }
+
+        if (kind === "folder") {
+          await renameMarkdownFolder(sourcePath, newPath);
+        } else {
+          await renameMarkdownFile(sourcePath, newPath);
+        }
+
+        nextFilePaths = await Promise.all(
+          filePaths.map((path) => remapPathUnderRenamedFolder(path, sourcePath, newPath))
+        );
+        nextEmptyFolderPaths = await Promise.all(
+          emptyFolderPaths.map((path) => remapPathUnderRenamedFolder(path, sourcePath, newPath))
+        );
+
+        const rewrittenDocuments: Record<string, FileDocumentState> = {};
+
+        for (const [path, document] of Object.entries(fileDocuments)) {
+          const oldIndex = filePaths.indexOf(path);
+          const mappedPath =
+            oldIndex === -1
+              ? await remapPathUnderRenamedFolder(path, sourcePath, newPath)
+              : nextFilePaths[oldIndex];
+
+          if (preMoveContentByPath.has(path)) {
+            const oldDirPath = await dirname(path);
+            const correctedBaseContent = await rewriteRelativeImagePaths(
+              preMoveContentByPath.get(path) ?? "",
+              oldDirPath,
+              mappedPath,
+              folderPath
+            );
+            const correctedContent =
+              document.content === document.baseContent
+                ? correctedBaseContent
+                : await rewriteRelativeImagePaths(document.content, oldDirPath, mappedPath, folderPath);
+
+            rewrittenDocuments[mappedPath] = {
+              content: correctedContent,
+              baseContent: correctedBaseContent
+            };
+          } else {
+            rewrittenDocuments[mappedPath] = document;
+          }
+        }
+
+        nextDocuments = rewrittenDocuments;
+
+        await Promise.all(
+          affectedFilePaths
+            .filter((path) => !(path in fileDocuments))
+            .map(async (path) => {
+              const mappedPath = await remapPathUnderRenamedFolder(path, sourcePath, newPath);
+              const oldDirPath = await dirname(path);
+              const preMoveContent = preMoveContentByPath.get(path) ?? "";
+              const correctedContent = await rewriteRelativeImagePaths(
+                preMoveContent,
+                oldDirPath,
+                mappedPath,
+                folderPath
+              );
+
+              if (correctedContent !== preMoveContent) {
+                await writeMarkdownFile(mappedPath, correctedContent).catch(() => undefined);
+              }
+            })
+        );
+
+        nextSelectedFilePath = state.selectedFilePath
+          ? await remapPathUnderRenamedFolder(state.selectedFilePath, sourcePath, newPath)
+          : state.selectedFilePath;
+      }
+
+      const finalBasename = getBasename(newPath);
+      const withoutSource = { ...seededManualOrder };
+
+      if (withoutSource[sourceParentRelativePath]) {
+        withoutSource[sourceParentRelativePath] = withoutSource[sourceParentRelativePath].filter(
+          (name) => name !== basename
+        );
+      }
+
+      const targetArray = [...(withoutSource[targetParentRelativePath] ?? [])];
+      const clampedIndex = Math.max(0, Math.min(targetIndex, targetArray.length));
+      targetArray.splice(clampedIndex, 0, finalBasename);
+      withoutSource[targetParentRelativePath] = targetArray;
+
+      void writeManualOrder(folderPath, withoutSource).catch(() => undefined);
+
+      set({
+        filePaths: nextFilePaths,
+        emptyFolderPaths: nextEmptyFolderPaths,
+        fileDocuments: nextDocuments,
+        selectedFilePath: nextSelectedFilePath,
+        manualOrder: withoutSource,
+        fileError: null
+      });
+
+      return true;
+    } catch (error) {
+      set({
+        fileError: toErrorMessage(error, i18n.t("store.entryMoveError"))
       });
 
       return false;
