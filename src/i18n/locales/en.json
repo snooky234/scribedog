@@ -42,6 +42,7 @@
     "descriptionCurrent": "The file {{fileLabel}} still has unsaved changes.",
     "descriptionGeneric": "The current file still has unsaved changes.",
     "descriptionTarget": "Choose an action before switching to {{targetLabel}}.",
+    "descriptionAiPending": "There is also an unresolved AI suggestion for this file that hasn't been accepted or discarded yet.",
     "summaryFile": "File",
     "summaryTarget": "Target"
   },
@@ -222,6 +223,12 @@
     "aiTipGeneric": "Tip: Check the AI settings and try again.",
     "aiThinking": "Thinking …",
     "aiGenerating": "AI is writing …"
+  },
+  "aiDiffWidget": {
+    "resultLabel": "AI result",
+    "accept": "Accept",
+    "discard": "Discard",
+    "continueEditing": "Continue editing"
   },
   "fileSystem": {
     "chooseFolderTitle": "Open folder",

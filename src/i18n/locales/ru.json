@@ -42,6 +42,7 @@
     "descriptionCurrent": "В файле {{fileLabel}} есть несохранённые изменения.",
     "descriptionGeneric": "В текущем файле есть несохранённые изменения.",
     "descriptionTarget": "Выберите действие перед переключением на {{targetLabel}}.",
+    "descriptionAiPending": "Кроме того, для этого файла есть предложение ИИ, которое ещё не принято и не отклонено.",
     "summaryFile": "Файл",
     "summaryTarget": "Цель"
   },
@@ -222,6 +223,12 @@
     "aiTipGeneric": "Совет: проверьте настройки ИИ и попробуйте снова.",
     "aiThinking": "Обдумывание …",
     "aiGenerating": "ИИ печатает …"
+  },
+  "aiDiffWidget": {
+    "resultLabel": "Результат ИИ",
+    "accept": "Принять",
+    "discard": "Отклонить",
+    "continueEditing": "Продолжить редактирование"
   },
   "fileSystem": {
     "chooseFolderTitle": "Открыть папку",

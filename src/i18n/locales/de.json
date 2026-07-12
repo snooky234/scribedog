@@ -42,6 +42,7 @@
     "descriptionCurrent": "Die Datei {{fileLabel}} enthält noch ungespeicherte Änderungen.",
     "descriptionGeneric": "Die aktuelle Datei enthält noch ungespeicherte Änderungen.",
     "descriptionTarget": "Bevor zu {{targetLabel}} gewechselt wird, wähle eine Aktion.",
+    "descriptionAiPending": "Außerdem gibt es für diese Datei noch einen nicht übernommenen oder verworfenen KI-Vorschlag.",
     "summaryFile": "Datei",
     "summaryTarget": "Ziel"
   },
@@ -222,6 +223,12 @@
     "aiTipGeneric": "Tipp: Prüfe die KI-Einstellungen und versuche es erneut.",
     "aiThinking": "Denkt nach …",
     "aiGenerating": "KI schreibt …"
+  },
+  "aiDiffWidget": {
+    "resultLabel": "KI-Ergebnis",
+    "accept": "Übernehmen",
+    "discard": "Verwerfen",
+    "continueEditing": "Weiter bearbeiten"
   },
   "fileSystem": {
     "chooseFolderTitle": "Ordner öffnen",

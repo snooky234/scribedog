@@ -25,6 +25,7 @@ import { CodeBlockView } from "@/components/CodeBlockView";
 import { ImageView } from "@/components/ImageView";
 import { Toolbar } from "@/components/Toolbar";
 import { streamAiMarkdown, type AiActionMode } from "@/lib/aiClient";
+import { AiDiffWidget, updateAiDiffWidget } from "@/lib/aiDiffWidget";
 import { AiStreamWidget, updateAiStreamWidget } from "@/lib/aiStreamWidget";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { getRelativeImageMarkdownPath, saveImageToFolder } from "@/lib/fileSystem";
@@ -167,6 +168,7 @@ type EditorProps = {
   editorFocusRequestId?: number;
   onRequestSidebarFocus?: () => void;
   onAiLoadingChange?: (isLoading: boolean) => void;
+  onAiPendingChange?: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
 };
 
@@ -316,6 +318,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     editorFocusRequestId,
     onRequestSidebarFocus,
     onAiLoadingChange,
+    onAiPendingChange,
     onAiSettingsRequest
   },
   ref
@@ -325,9 +328,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const lastSyncedMarkdownRef = useRef(markdown);
   const [aiDraft, setAiDraft] = useState<AiDraft | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isAiDiffOpen, setIsAiDiffOpen] = useState(false);
   const [aiStatus, setAiStatus] = useState<AiStatus>(null);
   const aiSettings = useAiSettingsStore((state) => state.settings);
   const aiStreamDraftRef = useRef<StreamDraft | null>(null);
+  const aiDiffOriginalRef = useRef<{ from: number; to: number; text: string; markdown: string } | null>(null);
+  const aiDiffLastResultRef = useRef<string | null>(null);
   const aiAbortControllerRef = useRef<AbortController | null>(null);
   const [isLinkModifierHeld, setIsLinkModifierHeld] = useState(false);
 
@@ -480,7 +486,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const openAiDraftFromSelection = () => {
     const currentEditor = editorRef.current;
 
-    if (!currentEditor) {
+    if (!currentEditor || aiDiffOriginalRef.current) {
       return;
     }
 
@@ -505,12 +511,109 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     openAiDraftFromSelection();
   };
 
+  // Shows the diff widget for a result against the tracked original — used
+  // while a rewrite is still streaming (isStreaming: true, actions disabled,
+  // updated on every chunk), once a generation finishes, and when a
+  // cancelled "continue editing" round falls back to whatever diff was
+  // showing before it was opened.
+  const showAiDiff = (currentEditor: TipTapEditor, resultMarkdown: string, isStreaming = false) => {
+    const original = aiDiffOriginalRef.current;
+
+    if (!original) {
+      return;
+    }
+
+    aiDiffLastResultRef.current = resultMarkdown;
+    // emitUpdate=false: setEditable's default synthesizes an 'update' event
+    // even though nothing in the document changed — with onMarkdownChange
+    // bound to whichever file is selected *at that moment*, letting that
+    // fire during a file switch would write this document's markdown into
+    // the newly selected file's slot and falsely mark it as unsaved.
+    currentEditor.setEditable(false, false);
+
+    updateAiDiffWidget(currentEditor, {
+      from: original.from,
+      to: original.to,
+      resultMarkdown,
+      isStreaming,
+      onAccept: () => acceptAiDiff(resultMarkdown),
+      onDiscard: () => discardAiDiff(),
+      onContinueEditing: () => continueEditingAiDiff(resultMarkdown)
+    });
+  };
+
+  const clearAiDiff = (currentEditor: TipTapEditor) => {
+    updateAiDiffWidget(currentEditor, null);
+    currentEditor.setEditable(true, false);
+    aiDiffOriginalRef.current = null;
+    aiDiffLastResultRef.current = null;
+    setIsAiDiffOpen(false);
+  };
+
   const closeAiDraft = () => {
     if (isAiLoading) {
       return;
     }
 
     setAiDraft(null);
+
+    // Cancelling the prompt dialog for a "continue editing" round must not
+    // strand the diff in limbo — fall back to whatever result was showing
+    // before that round was started.
+    const currentEditor = editorRef.current;
+
+    if (currentEditor && aiDiffOriginalRef.current && aiDiffLastResultRef.current !== null) {
+      showAiDiff(currentEditor, aiDiffLastResultRef.current);
+    }
+  };
+
+  const acceptAiDiff = (resultMarkdown: string) => {
+    const currentEditor = editorRef.current;
+    const original = aiDiffOriginalRef.current;
+
+    if (!currentEditor || !original) {
+      return;
+    }
+
+    // Clear the diff widget (and its from/to decoration) before mutating the
+    // document: the plugin doesn't remap those positions through unrelated
+    // transactions (the editor is read-only for the whole diff phase), so
+    // clearing after the edit would leave it pointing at stale positions in
+    // the changed document for one dispatch.
+    clearAiDiff(currentEditor);
+    currentEditor
+      .chain()
+      .focus()
+      .insertContentAt({ from: original.from, to: original.to }, resultMarkdown)
+      .run();
+  };
+
+  const discardAiDiff = () => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor) {
+      return;
+    }
+
+    // The original selection was never removed from the document, so
+    // discarding is just clearing the diff widget — nothing to restore.
+    clearAiDiff(currentEditor);
+  };
+
+  const continueEditingAiDiff = (resultMarkdown: string) => {
+    const currentEditor = editorRef.current;
+    const original = aiDiffOriginalRef.current;
+
+    if (!currentEditor || !original) {
+      return;
+    }
+
+    updateAiDiffWidget(currentEditor, null);
+    currentEditor.setEditable(true, false);
+    // aiDiffOriginalRef (and aiDiffLastResultRef) stay set so the diff shown
+    // after this round — or a fallback if the dialog gets cancelled — still
+    // compares against the very first original text.
+    openAiDraft("rewrite", original.from, original.to, resultMarkdown, resultMarkdown);
   };
 
   const runAiDraft = async (prompt: string, includeDocument: boolean, preserveFormatting: boolean) => {
@@ -525,20 +628,30 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     setIsAiLoading(true);
     setAiStatus({ kind: "info", message: t("app.aiRequestRunning") });
 
-    if (draft.mode === "rewrite" && draft.to > draft.from) {
-      currentEditor.view.dispatch(currentEditor.state.tr.delete(draft.from, draft.to));
+    const isRewrite = draft.mode === "rewrite";
+
+    // "insert" streams straight into the document as before. "rewrite" keeps
+    // the original selection untouched and buffers the result instead, so it
+    // can be shown as an accept/discard/continue-editing diff once the
+    // stream finishes rather than overwriting the selection immediately.
+    if (!isRewrite) {
+      aiStreamDraftRef.current = { from: draft.from, to: draft.from, content: "" };
     }
 
-    aiStreamDraftRef.current = { from: draft.from, to: draft.from, content: "" };
-
     // Until the first visible answer chunk arrives, a widget at the insertion
-    // point shows the state: a live preview of the reasoning trace when
-    // thinking is enabled, otherwise a loading animation.
-    const widgetKind = aiSettings.thinkingMode === "off" ? ("loading" as const) : ("thinking" as const);
-    let widgetVisible = true;
+    // point shows a live preview of the reasoning trace when thinking is
+    // enabled — with thinking off there's nothing meaningful to show yet, so
+    // no widget appears at all until writing actually starts (for rewrite
+    // that's when the diff widget takes over and starts growing with each
+    // chunk).
+    const showThinkingWidget = aiSettings.thinkingMode !== "off";
+    let widgetVisible = showThinkingWidget;
     let thinkingText = "";
+    let streamedMarkdown = "";
 
-    updateAiStreamWidget(currentEditor, { pos: draft.from, kind: widgetKind, thinkingText: "" });
+    if (showThinkingWidget) {
+      updateAiStreamWidget(currentEditor, { pos: draft.from, thinkingText: "" });
+    }
 
     const hideWidget = () => {
       if (widgetVisible) {
@@ -572,19 +685,39 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
           const activeEditor = editorRef.current;
 
+          if (!isRewrite) {
+            if (activeEditor) {
+              updateStreamDraft(activeEditor, chunk);
+            }
+
+            return;
+          }
+
+          streamedMarkdown += chunk;
+
           if (activeEditor) {
-            updateStreamDraft(activeEditor, chunk);
+            if (!aiDiffOriginalRef.current) {
+              aiDiffOriginalRef.current = {
+                from: draft.from,
+                to: draft.to,
+                text: draft.selectedText,
+                markdown: draft.selectedMarkdown
+              };
+            }
+
+            setIsAiDiffOpen(true);
+            showAiDiff(activeEditor, streamedMarkdown, true);
           }
         },
         onThinking: (chunk: string) => {
           const activeEditor = editorRef.current;
 
-          if (!widgetVisible || widgetKind !== "thinking" || !activeEditor) {
+          if (!widgetVisible || !activeEditor) {
             return;
           }
 
           thinkingText += chunk;
-          updateAiStreamWidget(activeEditor, { pos: draft.from, kind: "thinking", thinkingText });
+          updateAiStreamWidget(activeEditor, { pos: draft.from, thinkingText });
         }
       };
 
@@ -592,18 +725,33 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         await streamAiMarkdown(aiSettings, request, streamHandlers, abortController.signal)
       );
 
-      const streamDraft = aiStreamDraftRef.current;
+      if (isRewrite) {
+        // Fallback for the edge case where the response arrived without any
+        // streamed chunks (e.g. resolved directly on completion) — the diff
+        // widget was never shown yet, so the original still needs tracking.
+        if (!aiDiffOriginalRef.current) {
+          aiDiffOriginalRef.current = {
+            from: draft.from,
+            to: draft.to,
+            text: draft.selectedText,
+            markdown: draft.selectedMarkdown
+          };
+        }
 
-      if (streamDraft) {
-        currentEditor
-          .chain()
-          .focus()
-          .insertContentAt({ from: streamDraft.from, to: streamDraft.to }, generatedMarkdown)
-          .run();
-      } else if (draft.mode === "rewrite") {
-        currentEditor.chain().focus().insertContentAt({ from: draft.from, to: draft.to }, generatedMarkdown).run();
+        setIsAiDiffOpen(true);
+        showAiDiff(currentEditor, generatedMarkdown, false);
       } else {
-        currentEditor.chain().focus().insertContentAt(draft.from, generatedMarkdown).run();
+        const streamDraft = aiStreamDraftRef.current;
+
+        if (streamDraft) {
+          currentEditor
+            .chain()
+            .focus()
+            .insertContentAt({ from: streamDraft.from, to: streamDraft.to }, generatedMarkdown)
+            .run();
+        } else {
+          currentEditor.chain().focus().insertContentAt(draft.from, generatedMarkdown).run();
+        }
       }
 
       setAiStatus(null);
@@ -631,6 +779,14 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onAiLoadingChange?.(isAiLoading);
   }, [isAiLoading, onAiLoadingChange]);
 
+  // Signals "there is AI work here that would be lost by navigating away" —
+  // broader than isAiLoading (which only covers the chip/cancel button while
+  // a request is in flight): it also stays true for as long as an unresolved
+  // diff is on screen, waiting for accept/discard/continue editing.
+  useEffect(() => {
+    onAiPendingChange?.(isAiLoading || isAiDiffOpen);
+  }, [isAiLoading, isAiDiffOpen, onAiPendingChange]);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ codeBlock: false }),
@@ -652,7 +808,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         html: false,
         breaks: true
       }),
-      AiStreamWidget
+      AiStreamWidget,
+      AiDiffWidget
     ],
     content: normalizeEscapedCheckboxes(markdown),
     editable: true,
@@ -815,6 +972,27 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     lastHandledEditorFocusRequestRef.current = editorFocusRequestId;
     editorRef.current?.commands.focus("start");
   }, [editorFocusRequestId]);
+
+  // Switching to a different file must not leave a stale diff (and a
+  // read-only editor) behind, nor let an in-flight AI request keep running
+  // against this (about to be orphaned) editor instance: since rewrite no
+  // longer dirties the document up front, App.tsx's unsaved-changes guard
+  // can't rely on isDirty alone to block navigation here (see
+  // onAiPendingChange below) — if navigation happens anyway, a request that
+  // finishes after the switch would call onMarkdownChange (bound to
+  // whichever file is selected *at that time*) and silently overwrite the
+  // next file's content with this one's result.
+  useEffect(() => {
+    return () => {
+      aiAbortControllerRef.current?.abort();
+
+      const currentEditor = editorRef.current;
+
+      if (aiDiffOriginalRef.current && currentEditor && !currentEditor.isDestroyed) {
+        clearAiDiff(currentEditor);
+      }
+    };
+  }, [filePath]);
 
   useEffect(() => {
     const currentEditor = editorRef.current;

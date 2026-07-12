@@ -42,6 +42,7 @@
     "descriptionCurrent": "文件 {{fileLabel}} 仍有未保存的更改。",
     "descriptionGeneric": "当前文件仍有未保存的更改。",
     "descriptionTarget": "切换到 {{targetLabel}} 之前，请选择一个操作。",
+    "descriptionAiPending": "此外，此文件还有一个尚未接受或放弃的 AI 建议。",
     "summaryFile": "文件",
     "summaryTarget": "目标"
   },
@@ -222,6 +223,12 @@
     "aiTipGeneric": "提示：请检查 AI 设置并重试。",
     "aiThinking": "思考中……",
     "aiGenerating": "AI 正在生成……"
+  },
+  "aiDiffWidget": {
+    "resultLabel": "AI 结果",
+    "accept": "接受",
+    "discard": "放弃",
+    "continueEditing": "继续编辑"
   },
   "fileSystem": {
     "chooseFolderTitle": "打开文件夹",

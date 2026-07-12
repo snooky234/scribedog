@@ -8,6 +8,7 @@ type UnsavedChangesDialogProps = {
   targetLabel: string | null;
   currentFileLabel: string | null;
   isSaving: boolean;
+  hasPendingAiAction?: boolean;
   onSave: () => void;
   onDiscard: () => void;
   onCancel: () => void;
@@ -18,6 +19,7 @@ export function UnsavedChangesDialog({
   targetLabel,
   currentFileLabel,
   isSaving,
+  hasPendingAiAction = false,
   onSave,
   onDiscard,
   onCancel
@@ -71,6 +73,10 @@ export function UnsavedChangesDialog({
             : t("unsavedDialog.descriptionGeneric")}{" "}
           {targetLabel ? t("unsavedDialog.descriptionTarget", { targetLabel }) : ""}
         </p>
+
+        {hasPendingAiAction ? (
+          <p className="unsaved-dialog__description">{t("unsavedDialog.descriptionAiPending")}</p>
+        ) : null}
 
         <div className="unsaved-dialog__summary">
           <div>

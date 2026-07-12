@@ -83,6 +83,7 @@ function App() {
   const [editorFocusRequestId, setEditorFocusRequestId] = useState(0);
   const [sidebarFocusRequestId, setSidebarFocusRequestId] = useState(0);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isAiActionPending, setIsAiActionPending] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState<number>(getInitialSidebarWidth);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [availableUpdate, setAvailableUpdate] = useState<Update | null>(null);
@@ -174,7 +175,7 @@ function App() {
     : null;
 
   const openFolderSafely = async () => {
-    if (selectedFilePath && isDirty) {
+    if (selectedFilePath && (isDirty || isAiActionPending)) {
       setPendingNavigation({ type: "folder" });
       setIsUnsavedDialogOpen(true);
       return;
@@ -188,7 +189,7 @@ function App() {
       return;
     }
 
-    if (selectedFilePath && isDirty) {
+    if (selectedFilePath && (isDirty || isAiActionPending)) {
       setPendingNavigation({ type: "file", filePath });
       setIsUnsavedDialogOpen(true);
       return;
@@ -295,6 +296,7 @@ function App() {
 
   useEffect(() => {
     setIsAiLoading(false);
+    setIsAiActionPending(false);
   }, [selectedFilePath]);
 
   useEffect(() => {
@@ -685,6 +687,7 @@ function App() {
                       editorFocusRequestId={editorFocusRequestId}
                       onRequestSidebarFocus={() => setSidebarFocusRequestId((id) => id + 1)}
                       onAiLoadingChange={setIsAiLoading}
+                      onAiPendingChange={setIsAiActionPending}
                       onAiSettingsRequest={() => {
                         setSettingsInitialTab("ai");
                         setIsAiSettingsOpen(true);
@@ -709,6 +712,7 @@ function App() {
         targetLabel={pendingTargetLabel}
         currentFileLabel={selectedFileLabel}
         isSaving={isSaving}
+        hasPendingAiAction={isAiActionPending}
         onSave={() => void continuePendingNavigation("save")}
         onDiscard={() => void continuePendingNavigation("discard")}
         onCancel={closeUnsavedDialog}

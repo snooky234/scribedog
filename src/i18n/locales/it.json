@@ -42,6 +42,7 @@
     "descriptionCurrent": "Il file {{fileLabel}} contiene ancora modifiche non salvate.",
     "descriptionGeneric": "Il file corrente contiene ancora modifiche non salvate.",
     "descriptionTarget": "Scegli un'azione prima di passare a {{targetLabel}}.",
+    "descriptionAiPending": "Inoltre, c'è un suggerimento dell'IA per questo file non ancora accettato né scartato.",
     "summaryFile": "File",
     "summaryTarget": "Destinazione"
   },
@@ -222,6 +223,12 @@
     "aiTipGeneric": "Suggerimento: controlla le impostazioni IA e riprova.",
     "aiThinking": "Sto ragionando …",
     "aiGenerating": "L'IA sta scrivendo …"
+  },
+  "aiDiffWidget": {
+    "resultLabel": "Risultato dell'IA",
+    "accept": "Accetta",
+    "discard": "Scarta",
+    "continueEditing": "Continua a modificare"
   },
   "fileSystem": {
     "chooseFolderTitle": "Apri cartella",

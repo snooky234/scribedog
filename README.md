@@ -78,6 +78,7 @@ Grab the latest installer for your platform from the
 - Works out of the box with **Ollama**, **Jan.ai**, and **LM Studio** (local) as well as **OpenAI**, **Anthropic**, and **Mistral** (cloud, bring your own key)
 - Optional toggles to include the whole document as context and to preserve formatting
 - Model "thinking"/reasoning output is filtered automatically — only the final answer touches your document
+- **Review before you accept** — the original passage stays untouched (highlighted in red) while the AI's answer streams in right below it as a live Markdown preview; **accept**, **discard**, or **keep refining** with another prompt before anything actually changes your document
 - Every AI edit is a single atomic change: one `Ctrl+Z` fully undoes it
 
 ### ✍️ True WYSIWYG Markdown editing
@@ -91,8 +92,10 @@ Grab the latest installer for your platform from the
 ### 📂 File management built in
 - Open any folder and ScribeDog finds every `.md` file inside it, shown as a file tree in the sidebar
 - Create, rename, and delete files and folders directly from the sidebar
+- **Flexible sorting** — order the file tree by name, last modified, or switch to manual mode and drag and drop files and folders into your own order
+- Sidebar preferences (sort mode, manual order) are remembered per folder in a small hidden `.scribedog` metadata directory inside the vault
 - Live sync via a native filesystem watcher — changes made outside the app are picked up automatically
-- Safe switching: leaving an unsaved file prompts you to save, discard, or cancel, with a clear dirty indicator
+- Safe switching: leaving an unsaved file (or a pending, undecided AI suggestion) prompts you to save, discard, or cancel, with a clear dirty indicator
 
 ### 🎨 Comfortable to use
 - Light and dark theme
@@ -139,7 +142,6 @@ Ideas on the list for upcoming versions (subject to change, feedback welcome!):
 - 🧘 **Focus mode** — dim everything except the current sentence or paragraph, typewriter scrolling, distraction-free full screen
 - ⚡ **One-click AI presets** — reusable actions like "tighten", "more vivid", "fix grammar", "translate", "formal tone" right in the context menu
 - 📚 **Context notes ("story bible")** — keep character sheets, glossaries, or project notes in a folder and have them automatically included as AI context
-- 🔍 **AI change review** — see exactly what the AI changed as a diff before accepting it, with automatic snapshots
 - 🎯 **Writing goals & statistics** — word-count targets, reading time, daily progress
 - ✒️ **Offline style & readability analysis** — highlight filler words, passive voice, and long sentences; optional local grammar checking (e.g. LanguageTool)
 - 📤 **Export** — PDF, DOCX, and HTML export for sharing and printing

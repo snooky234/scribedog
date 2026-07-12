@@ -42,6 +42,7 @@
     "descriptionCurrent": "Файл {{fileLabel}} усе ще містить незбережені зміни.",
     "descriptionGeneric": "Поточний файл усе ще містить незбережені зміни.",
     "descriptionTarget": "Виберіть дію перед перемиканням на {{targetLabel}}.",
+    "descriptionAiPending": "Крім того, для цього файлу є пропозиція ШІ, яку ще не прийнято й не відхилено.",
     "summaryFile": "Файл",
     "summaryTarget": "Ціль"
   },
@@ -222,6 +223,12 @@
     "aiTipGeneric": "Порада: перевірте налаштування ШІ та спробуйте ще раз.",
     "aiThinking": "Міркує …",
     "aiGenerating": "ШІ пише …"
+  },
+  "aiDiffWidget": {
+    "resultLabel": "Результат ШІ",
+    "accept": "Прийняти",
+    "discard": "Відхилити",
+    "continueEditing": "Продовжити редагування"
   },
   "fileSystem": {
     "chooseFolderTitle": "Відкрити папку",

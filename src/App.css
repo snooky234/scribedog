@@ -900,7 +900,7 @@ body.is-resizing-sidebar {
   color: var(--success-fg);
 }
 
-/* Inline widget at the AI insertion point (reasoning preview or loading animation) */
+/* Inline widget at the AI insertion point (live reasoning-trace preview) */
 .ai-stream-widget {
   display: inline-flex;
   flex-direction: column;
@@ -917,12 +917,6 @@ body.is-resizing-sidebar {
   user-select: none;
 }
 
-.ai-stream-widget--loading {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.55rem;
-}
-
 .ai-stream-widget__label {
   background: linear-gradient(
     90deg,
@@ -936,40 +930,6 @@ body.is-resizing-sidebar {
   color: transparent;
   animation: editor-feedback-shimmer 1.8s linear infinite;
   font-weight: 500;
-}
-
-.ai-stream-widget__dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.ai-stream-widget__dot {
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 9999px;
-  background: rgba(var(--text-rgb),0.7);
-  animation: ai-stream-dot 1.2s ease-in-out infinite;
-}
-
-.ai-stream-widget__dot:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.ai-stream-widget__dot:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-@keyframes ai-stream-dot {
-  0%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.35;
-  }
-  40% {
-    transform: translateY(-0.3rem);
-    opacity: 1;
-  }
 }
 
 .ai-stream-widget__header {
@@ -1006,6 +966,73 @@ body.is-resizing-sidebar {
   overflow-wrap: anywhere;
   font-style: italic;
   color: rgba(var(--text-rgb),0.6);
+}
+
+/* Inline diff shown after an AI rewrite finishes: the original selection
+   stays in place (tinted red), the AI result and its actions render as a
+   widget right after it (tinted green). */
+.ai-diff-widget__original {
+  background: rgba(var(--error-bg-rgb),0.55);
+  border-radius: 0.2rem;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.ai-diff-widget {
+  display: block;
+  margin: 0.4rem 0 0.9rem;
+  user-select: none;
+}
+
+.ai-diff-widget__result {
+  border: 1px solid rgba(var(--success-bg-rgb),0.75);
+  border-radius: 0.75rem;
+  background: rgba(var(--success-bg-rgb),0.5);
+  padding: 0.7rem 0.9rem;
+  user-select: text;
+}
+
+.ai-diff-widget__result-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--success-fg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.ai-diff-widget__result-label--streaming {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--success-bg-rgb),0.6) 0%,
+    var(--success-fg) 50%,
+    rgba(var(--success-bg-rgb),0.6) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: editor-feedback-shimmer 1.8s linear infinite;
+}
+
+.ai-diff-widget__result-content {
+  color: rgba(var(--text-rgb),0.92);
+}
+
+.ai-diff-widget__result-content :first-child {
+  margin-top: 0;
+}
+
+.ai-diff-widget__result-content :last-child {
+  margin-bottom: 0;
+}
+
+.ai-diff-widget__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
 }
 
 @keyframes editor-feedback-sheen {

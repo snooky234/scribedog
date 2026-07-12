@@ -42,6 +42,7 @@
     "descriptionCurrent": "El archivo {{fileLabel}} todavía tiene cambios sin guardar.",
     "descriptionGeneric": "El archivo actual todavía tiene cambios sin guardar.",
     "descriptionTarget": "Elige una acción antes de cambiar a {{targetLabel}}.",
+    "descriptionAiPending": "Además, hay una sugerencia de la IA para este archivo que aún no se ha aceptado ni descartado.",
     "summaryFile": "Archivo",
     "summaryTarget": "Destino"
   },
@@ -222,6 +223,12 @@
     "aiTipGeneric": "Consejo: Revisa la configuración de IA e inténtalo de nuevo.",
     "aiThinking": "Pensando …",
     "aiGenerating": "La IA está escribiendo …"
+  },
+  "aiDiffWidget": {
+    "resultLabel": "Resultado de la IA",
+    "accept": "Aceptar",
+    "discard": "Descartar",
+    "continueEditing": "Seguir editando"
   },
   "fileSystem": {
     "chooseFolderTitle": "Abrir carpeta",

@@ -5,39 +5,18 @@ import type { Editor } from "@tiptap/react";
 
 import i18n from "@/i18n";
 
-// Inline widget at the insertion point that shows either the model's
-// reasoning trace (preview box) or a loading animation while an AI request
-// is running. It lives as a ProseMirror decoration so it sits exactly at the
-// text position and automatically follows document changes, without itself
+// Inline widget at the insertion point showing a live preview of the
+// model's reasoning trace while it's thinking (with thinking off there's
+// nothing meaningful to show before writing starts, so this stays unused).
+// It lives as a ProseMirror decoration so it sits exactly at the text
+// position and automatically follows document changes, without itself
 // becoming part of the document (and thus the markdown).
 export type AiStreamWidgetState = {
   pos: number;
-  kind: "loading" | "thinking";
   thinkingText: string;
 } | null;
 
 const aiStreamWidgetKey = new PluginKey<AiStreamWidgetState>("aiStreamWidget");
-
-function buildLoadingDom(): HTMLElement {
-  const dots = document.createElement("span");
-  dots.className = "ai-stream-widget__dots";
-
-  for (let index = 0; index < 3; index++) {
-    const dot = document.createElement("span");
-    dot.className = "ai-stream-widget__dot";
-    dots.appendChild(dot);
-  }
-
-  const label = document.createElement("span");
-  label.className = "ai-stream-widget__label";
-  label.textContent = i18n.t("editor.aiGenerating");
-
-  const wrap = document.createElement("span");
-  wrap.className = "ai-stream-widget ai-stream-widget--loading";
-  wrap.append(dots, label);
-
-  return wrap;
-}
 
 function buildThinkingDom(thinkingText: string): HTMLElement {
   const pulse = document.createElement("span");
@@ -104,12 +83,10 @@ export const AiStreamWidget = Extension.create({
             }
 
             return DecorationSet.create(state.doc, [
-              Decoration.widget(
-                widget.pos,
-                () =>
-                  widget.kind === "loading" ? buildLoadingDom() : buildThinkingDom(widget.thinkingText),
-                { side: 1, ignoreSelection: true }
-              )
+              Decoration.widget(widget.pos, () => buildThinkingDom(widget.thinkingText), {
+                side: 1,
+                ignoreSelection: true
+              })
             ]);
           }
         }

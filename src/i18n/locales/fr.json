@@ -42,6 +42,7 @@
     "descriptionCurrent": "Le fichier {{fileLabel}} contient encore des modifications non enregistrées.",
     "descriptionGeneric": "Le fichier actuel contient encore des modifications non enregistrées.",
     "descriptionTarget": "Choisissez une action avant de passer à {{targetLabel}}.",
+    "descriptionAiPending": "Il y a également une suggestion de l'IA pour ce fichier qui n'a pas encore été acceptée ni rejetée.",
     "summaryFile": "Fichier",
     "summaryTarget": "Cible"
   },
@@ -222,6 +223,12 @@
     "aiTipGeneric": "Astuce : Vérifiez les paramètres IA et réessayez.",
     "aiThinking": "Réflexion …",
     "aiGenerating": "L'IA rédige …"
+  },
+  "aiDiffWidget": {
+    "resultLabel": "Résultat de l'IA",
+    "accept": "Accepter",
+    "discard": "Rejeter",
+    "continueEditing": "Continuer la modification"
   },
   "fileSystem": {
     "chooseFolderTitle": "Ouvrir un dossier",

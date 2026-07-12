@@ -42,6 +42,7 @@
     "descriptionCurrent": "ファイル {{fileLabel}} にはまだ未保存の変更があります。",
     "descriptionGeneric": "現在のファイルにはまだ未保存の変更があります。",
     "descriptionTarget": "{{targetLabel}} に切り替える前に操作を選択してください。",
+    "descriptionAiPending": "また、このファイルにはまだ承諾も破棄もされていないAIの提案があります。",
     "summaryFile": "ファイル",
     "summaryTarget": "切り替え先"
   },
@@ -222,6 +223,12 @@
     "aiTipGeneric": "ヒント：AI 設定を確認して、もう一度お試しください。",
     "aiThinking": "考え中…",
     "aiGenerating": "AI が生成中…"
+  },
+  "aiDiffWidget": {
+    "resultLabel": "AI の結果",
+    "accept": "適用",
+    "discard": "破棄",
+    "continueEditing": "編集を続ける"
   },
   "fileSystem": {
     "chooseFolderTitle": "フォルダーを開く",
