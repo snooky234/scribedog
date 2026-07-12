@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "updater",
+  "description": "Auto-updater, Windows only",
+  "platforms": ["windows"],
+  "windows": ["main"],
+  "permissions": ["updater:default", "process:allow-restart"]
+}

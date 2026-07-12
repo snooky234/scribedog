@@ -1,0 +1,46 @@
+name: 🐛 Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us what you expected to happen.
+      placeholder: When I ..., ScribeDog ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a folder with ...
+        2. Click on ...
+        3. See error
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: ScribeDog version
+      placeholder: e.g. 0.2.0
+    validations:
+      required: true
+  - type: dropdown
+    id: ai-provider
+    attributes:
+      label: AI provider (if AI-related)
+      options:
+        - Not AI-related
+        - Ollama
+        - Jan.ai
+        - LM Studio
+        - OpenAI
+        - Anthropic
+        - Mistral
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Screenshots, the Markdown file that triggers it, model name, etc.
