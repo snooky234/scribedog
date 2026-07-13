@@ -48,7 +48,7 @@ notes — fluently, privately, and for free.
 
 - 📝 **Note-takers & journalers** — keep a private knowledge folder or diary that no cloud service sees
 - ✉️ **Everyday writers** — letters, applications, emails, meeting notes; let the AI polish tone and wording locally
-- ✍️ **Authors & bloggers** — draft, rewrite, and expand creative text with an AI that never trains on your manuscript
+- ✍️ **Authors & bloggers** — draft, rewrite, and expand creative text with an AI that doesn't train on your manuscript
 - 🧑‍💻 **Developers & documenters** — clean, diff-friendly Markdown files that work with Git and every other tool
 
 ---
@@ -112,7 +112,7 @@ and the source in this repository.
 - **AI spelling & grammar check** — select a passage, press `Ctrl+Shift+X` (or use the toolbar button), and get a clear list of issues with suggested corrections and explanations; apply them one by one or all at once
 
 ### ✍️ True WYSIWYG Markdown editing
-- Powered by [TipTap](https://tiptap.dev/)/ProseMirror — headings, bold, italic, underline, strikethrough, blockquotes, inline code, links, and ordered/bulleted/task lists all render as formatted content, never as raw syntax
+- Powered by [TipTap](https://tiptap.dev/)/ProseMirror — headings, bold, italic, underline, strikethrough, blockquotes, inline code, links, and ordered/bulleted/task lists all render as formatted content instead of raw syntax
 - **Tables** with a visual grid picker and a context menu for adding/removing rows and columns
 - **Images** render inline; resize them by dragging, and the width is persisted back into the Markdown
 - **Code blocks** with a one-click copy button
@@ -136,11 +136,10 @@ and the source in this repository.
 - Window size and maximized state are remembered across restarts
 - Launch ScribeDog on a folder from the command line or (on Windows) via the Explorer context menu
 
-### 🔒 Privacy & security by design
-- No telemetry, no analytics — ScribeDog never collects or transmits usage data
-- On Windows, ScribeDog checks GitHub for a new release on startup (a simple version comparison, no usage data sent); this can be turned off in settings
-- Aside from that optional update check, local AI providers mean the only network call is to the local endpoint *you* configure, and only when you trigger an AI action
-- Cloud AI is strictly **bring-your-own-key**: your key is stored in the operating system's credential store (Windows Credential Manager, macOS Keychain, Linux Secret Service) — never in plain text on disk — and sent only to the provider you chose, with no ScribeDog server in between. The settings dialog shows a clear notice whenever a cloud provider is selected
+### 🔒 Privacy first
+- No telemetry, no analytics — ScribeDog doesn't collect or transmit usage data. The one exception: on Windows, it checks GitHub on startup for a new release (a simple version comparison, no usage data sent), which can be turned off in settings
+- Beyond that optional update check, local AI providers mean the only network call is to the local endpoint *you* configure, and only when you trigger an AI action
+- Cloud AI is strictly **bring-your-own-key**: your key is stored in the operating system's credential store (Windows Credential Manager, macOS Keychain, Linux Secret Service) — not in plain text on disk — and sent only to the provider you chose, with no ScribeDog server in between. The settings dialog shows a clear notice whenever a cloud provider is selected
 - Tauri capabilities are scoped tightly: filesystem access is limited to the folder you open, HTTP access to your configured AI endpoint
 
 ---
