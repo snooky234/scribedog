@@ -20,16 +20,18 @@ import insPlugin from "markdown-it-ins";
 import { Markdown } from "tiptap-markdown";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AiCheckDialog } from "@/components/AiCheckDialog";
 import { AiRewriteDialog } from "@/components/AiRewriteDialog";
 import { CodeBlockView } from "@/components/CodeBlockView";
 import { ImageView } from "@/components/ImageView";
 import { Toolbar } from "@/components/Toolbar";
-import { streamAiMarkdown, type AiActionMode } from "@/lib/aiClient";
+import { checkGrammar, streamAiMarkdown, type AiActionMode, type AiCheckIssue } from "@/lib/aiClient";
 import { AiDiffWidget, updateAiDiffWidget } from "@/lib/aiDiffWidget";
 import { AiStreamWidget, updateAiStreamWidget } from "@/lib/aiStreamWidget";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { getRelativeImageMarkdownPath, saveImageToFolder } from "@/lib/fileSystem";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
+import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 // markdown-it-task-lists also converts numbered checklist syntax ("1. [ ] ...")
 // into <ol data-type="taskList">, but the base extension only recognizes
@@ -330,11 +332,15 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isAiDiffOpen, setIsAiDiffOpen] = useState(false);
   const [aiStatus, setAiStatus] = useState<AiStatus>(null);
+  const [aiCheckIssues, setAiCheckIssues] = useState<AiCheckIssue[] | null>(null);
+  const [aiCheckResolvedCount, setAiCheckResolvedCount] = useState(0);
   const aiSettings = useAiSettingsStore((state) => state.settings);
+  const spellcheckEnabled = useEditorSettingsStore((state) => state.spellcheckEnabled);
   const aiStreamDraftRef = useRef<StreamDraft | null>(null);
   const aiDiffOriginalRef = useRef<{ from: number; to: number; text: string; markdown: string } | null>(null);
   const aiDiffLastResultRef = useRef<string | null>(null);
   const aiAbortControllerRef = useRef<AbortController | null>(null);
+  const aiCheckRangeRef = useRef<{ from: number; to: number } | null>(null);
   const [isLinkModifierHeld, setIsLinkModifierHeld] = useState(false);
 
   useEffect(() => {
@@ -769,6 +775,114 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     }
   };
 
+  const performAiGrammarCheck = async (
+    currentEditor: TipTapEditor,
+    from: number,
+    to: number,
+    selectedText: string
+  ) => {
+    setIsAiLoading(true);
+    setAiStatus({ kind: "info", message: t("app.aiRequestRunning") });
+
+    const abortController = new AbortController();
+    aiAbortControllerRef.current = abortController;
+
+    try {
+      const issues = await checkGrammar(aiSettings, selectedText, abortController.signal);
+
+      aiCheckRangeRef.current = { from, to };
+      setAiCheckIssues(issues);
+      setAiCheckResolvedCount(0);
+      // emitUpdate=false: same reasoning as showAiDiff — no document change
+      // actually happened, so the file-switch/unsaved-changes tracking must
+      // not misattribute a synthetic 'update' event to the current file.
+      currentEditor.setEditable(false, false);
+      setAiStatus(null);
+    } catch (error) {
+      if (abortController.signal.aborted) {
+        setAiStatus(null);
+      } else {
+        setAiStatus({ kind: "error", message: formatAiError(error, t) });
+      }
+    } finally {
+      setIsAiLoading(false);
+      aiAbortControllerRef.current = null;
+    }
+  };
+
+  const runAiGrammarCheck = () => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor || isAiLoading || aiDraft || aiDiffOriginalRef.current || aiCheckIssues !== null) {
+      return;
+    }
+
+    const { from, to, empty } = currentEditor.state.selection;
+
+    if (empty) {
+      return;
+    }
+
+    const selectedText = currentEditor.state.doc.textBetween(from, to, "\n");
+
+    if (!selectedText.trim()) {
+      return;
+    }
+
+    void performAiGrammarCheck(currentEditor, from, to, selectedText);
+  };
+
+  const applyAiCheckIssue = (issue: AiCheckIssue) => {
+    const currentEditor = editorRef.current;
+    const range = aiCheckRangeRef.current;
+
+    if (currentEditor && range) {
+      const currentText = currentEditor.state.doc.textBetween(range.from, range.to, "\n");
+      const matchIndex = currentText.indexOf(issue.original);
+
+      // The AI response carries no reliable character offsets, so the
+      // original passage is located by a plain text search instead. If it
+      // can no longer be found (e.g. the range changed since the check ran),
+      // the issue is dropped without touching the document rather than
+      // blocking the rest of the list.
+      if (matchIndex !== -1) {
+        const foundFrom = range.from + matchIndex;
+        const foundTo = foundFrom + issue.original.length;
+
+        currentEditor
+          .chain()
+          .focus()
+          .insertContentAt({ from: foundFrom, to: foundTo }, issue.suggestion)
+          .run();
+
+        aiCheckRangeRef.current = {
+          from: range.from,
+          to: range.to + (issue.suggestion.length - issue.original.length)
+        };
+      }
+    }
+
+    setAiCheckIssues((current) => (current ? current.filter((entry) => entry !== issue) : current));
+    setAiCheckResolvedCount((count) => count + 1);
+  };
+
+  const applyAllAiCheckIssues = () => {
+    for (const issue of aiCheckIssues ?? []) {
+      applyAiCheckIssue(issue);
+    }
+  };
+
+  const closeAiCheckDialog = () => {
+    const currentEditor = editorRef.current;
+
+    if (currentEditor) {
+      currentEditor.setEditable(true, false);
+    }
+
+    setAiCheckIssues(null);
+    aiCheckRangeRef.current = null;
+  };
+
   const cancelAiRequest = () => {
     aiAbortControllerRef.current?.abort();
   };
@@ -782,10 +896,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   // Signals "there is AI work here that would be lost by navigating away" —
   // broader than isAiLoading (which only covers the chip/cancel button while
   // a request is in flight): it also stays true for as long as an unresolved
-  // diff is on screen, waiting for accept/discard/continue editing.
+  // diff or grammar-check result is on screen, waiting to be accepted,
+  // discarded, or closed.
   useEffect(() => {
-    onAiPendingChange?.(isAiLoading || isAiDiffOpen);
-  }, [isAiLoading, isAiDiffOpen, onAiPendingChange]);
+    onAiPendingChange?.(isAiLoading || isAiDiffOpen || aiCheckIssues !== null);
+  }, [isAiLoading, isAiDiffOpen, aiCheckIssues, onAiPendingChange]);
 
   const editor = useEditor({
     extensions: [
@@ -920,6 +1035,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
         if (key === "k") {
           event.preventDefault();
+          editorRef.current?.chain().focus().toggleCodeBlock().run();
+          return true;
+        }
+
+        if (key === "m") {
+          event.preventDefault();
           handleLinkRequest();
           return true;
         }
@@ -930,9 +1051,51 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return true;
         }
 
-        if (key === "1") {
+        if (key === "-") {
+          event.preventDefault();
+          editorRef.current?.chain().focus().toggleOrderedList().run();
+          return true;
+        }
+
+        if (key === ",") {
           event.preventDefault();
           editorRef.current?.chain().focus().toggleTaskList().run();
+          return true;
+        }
+
+        if (key === "1") {
+          event.preventDefault();
+          editorRef.current?.chain().focus().toggleHeading({ level: 1 }).run();
+          return true;
+        }
+
+        if (key === "2") {
+          event.preventDefault();
+          editorRef.current?.chain().focus().toggleHeading({ level: 2 }).run();
+          return true;
+        }
+
+        if (key === "3") {
+          event.preventDefault();
+          editorRef.current?.chain().focus().toggleHeading({ level: 3 }).run();
+          return true;
+        }
+
+        if (key === "d") {
+          event.preventDefault();
+          editorRef.current?.chain().focus().toggleStrike().run();
+          return true;
+        }
+
+        if (key === "q") {
+          event.preventDefault();
+          editorRef.current?.chain().focus().toggleBlockquote().run();
+          return true;
+        }
+
+        if (key === "g") {
+          event.preventDefault();
+          editorRef.current?.chain().focus().toggleCode().run();
           return true;
         }
 
@@ -942,11 +1105,19 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return true;
         }
 
+        if (key === "x" && event.shiftKey) {
+          if (!view.state.selection.empty) {
+            event.preventDefault();
+            runAiGrammarCheck();
+          }
+          return true;
+        }
+
         return false;
       },
       attributes: {
         class: "editor-view__surface prose dark:prose-invert max-w-none",
-        spellcheck: "false"
+        spellcheck: String(spellcheckEnabled)
       }
     }
   });
@@ -954,6 +1125,13 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   if (editor) {
     editorRef.current = editor;
   }
+
+  // editorProps.attributes is only read once, at editor creation, so a
+  // later toggle of the setting has to be applied to the live DOM node
+  // directly instead of relying on tiptap to re-render it.
+  useEffect(() => {
+    editor?.view.dom.setAttribute("spellcheck", String(spellcheckEnabled));
+  }, [editor, spellcheckEnabled]);
 
   // A focus request from outside (file tree: Tab) moves focus into the editor
   // with the cursor at the document start, so navigation can continue with
@@ -1038,6 +1216,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         editor={editor}
         onLinkRequest={handleLinkRequest}
         onAiRequest={openAiDraftFromSelection}
+        onAiCheckRequest={runAiGrammarCheck}
         onAiSettingsRequest={onAiSettingsRequest}
       />
 
@@ -1063,6 +1242,15 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           void runAiDraft(prompt, includeDocument, preserveFormatting);
         }}
         onCancel={closeAiDraft}
+      />
+
+      <AiCheckDialog
+        open={aiCheckIssues !== null}
+        issues={aiCheckIssues ?? []}
+        resolvedCount={aiCheckResolvedCount}
+        onApply={applyAiCheckIssue}
+        onApplyAll={applyAllAiCheckIssues}
+        onClose={closeAiCheckDialog}
       />
     </div>
   );

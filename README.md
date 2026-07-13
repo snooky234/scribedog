@@ -4,8 +4,8 @@
 
 # ScribeDog
 
-**Your private writing studio — a WYSIWYG Markdown editor with a local AI built in.**\
-**Open source, no cloud required, nothing ever leaves your machine.**
+**Your private writing studio — an AI-powered WYSIWYG Markdown editor.**\
+**Open source, no cloud required — your words stay on your machine.**
 
 [![Latest release](https://img.shields.io/github/v/release/snooky234/scribedog)](https://github.com/snooky234/scribedog/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/snooky234/scribedog/total)](https://github.com/snooky234/scribedog/releases)
@@ -17,8 +17,9 @@
 ScribeDog is a native desktop editor where you write and format text as a
 polished document — no raw `#` or `*` characters in sight — and can select any
 passage and hand it to an AI model to rewrite, extend, translate, or generate
-text. By default that model runs **locally** on your own machine, so no byte
-leaves your device unless you explicitly opt into a cloud provider yourself.
+text. You choose where that model runs: **fully local** on your own machine —
+so no byte ever leaves your device — or with a **cloud provider you trust**,
+using your own API key.
 
 Whatever you write — **personal notes, journals, letters, blog posts,
 documentation, essays, or fiction** — ScribeDog gives you a clean, distraction-free
@@ -33,18 +34,19 @@ place to write it, with an AI assistant that respects one simple rule:
 - ✨ **True WYSIWYG** — headings, tables, images, and lists look like a document, not like syntax
 - 🤖 **AI built in, local by default** — rewrite or generate text with Ollama, Jan.ai, or LM Studio; cloud providers are strictly opt-in
 - 🔓 **100% open source** — MIT-licensed, every release built transparently from this repository by GitHub Actions
-- 🔒 **No telemetry, ever** — no analytics, no phoning home, no account
+- 🔒 **No telemetry** — no analytics, no account; the only automatic network call is an optional, disableable update check
 - ⚡ **Lightweight** — built with Tauri, starts instantly, files stay plain `.md`
 
 **Local AI is genuinely usable today.** You don't need a data center: modern
-open models like **Gemma 3/4** or **Qwen 3** run smoothly on an average gaming
-GPU (8–12 GB VRAM) — and smaller variants even on laptops without a dedicated
-GPU. That's more than enough to rewrite paragraphs, fix tone and grammar,
-draft a letter, or summarize your notes — fluently, privately, and for free.
+open models like **Gemma 3/4** or **Qwen 3** already deliver good results on a
+mid-range gaming GPU with 6 GB VRAM (e.g. an RTX 4050) — and smaller variants
+run even on laptops without a dedicated GPU. That's more than enough to
+rewrite paragraphs, fix tone and grammar, draft a letter, or summarize your
+notes — fluently, privately, and for free.
 
 **Who is ScribeDog for?**
 
-- 📝 **Note-takers & journalers** — keep a private knowledge folder or diary that no cloud service ever sees
+- 📝 **Note-takers & journalers** — keep a private knowledge folder or diary that no cloud service sees
 - ✉️ **Everyday writers** — letters, applications, emails, meeting notes; let the AI polish tone and wording locally
 - ✍️ **Authors & bloggers** — draft, rewrite, and expand creative text with an AI that never trains on your manuscript
 - 🧑‍💻 **Developers & documenters** — clean, diff-friendly Markdown files that work with Git and every other tool
@@ -107,13 +109,15 @@ and the source in this repository.
 - Model "thinking"/reasoning output is filtered automatically — only the final answer touches your document
 - **Review before you accept** — the original passage stays untouched (highlighted in red) while the AI's answer streams in right below it as a live Markdown preview; **accept**, **discard**, or **keep refining** with another prompt before anything actually changes your document
 - Every AI edit is a single atomic change: one `Ctrl+Z` fully undoes it
+- **AI spelling & grammar check** — select a passage, press `Ctrl+Shift+X` (or use the toolbar button), and get a clear list of issues with suggested corrections and explanations; apply them one by one or all at once
 
 ### ✍️ True WYSIWYG Markdown editing
 - Powered by [TipTap](https://tiptap.dev/)/ProseMirror — headings, bold, italic, underline, strikethrough, blockquotes, inline code, links, and ordered/bulleted/task lists all render as formatted content, never as raw syntax
 - **Tables** with a visual grid picker and a context menu for adding/removing rows and columns
 - **Images** render inline; resize them by dragging, and the width is persisted back into the Markdown
 - **Code blocks** with a one-click copy button
-- **Emoji picker** with search (including German keywords)
+- **Emoji picker** with search, including keywords in your local language
+- **Spell check as you type** — optional red-underline spell checking powered by your operating system's built-in spellchecker (toggle it in the toolbar options; on Linux it uses your installed Hunspell/enchant dictionaries)
 - Files are saved as clean, diff-friendly Markdown — fully portable to any other tool
 
 ### 📂 File management built in
@@ -126,16 +130,17 @@ and the source in this repository.
 
 ### 🎨 Comfortable to use
 - Light and dark theme
-- Interface available in **English and German**
+- Interface available in **10 languages** — English, German, Spanish, French, Italian, Portuguese, Russian, Ukrainian, Japanese, and Chinese
 - One-click formatting toolbar with active-state highlighting
 - Built-in keyboard shortcuts cheat sheet (`Ctrl+#`)
-- Window size, position, and maximized state are remembered across restarts
+- Window size and maximized state are remembered across restarts
 - Launch ScribeDog on a folder from the command line or (on Windows) via the Explorer context menu
 
 ### 🔒 Privacy & security by design
-- No telemetry, no analytics — ScribeDog itself never phones home
-- Local AI providers mean the only network call is to the local endpoint *you* configure, and only when you trigger an AI action
-- Cloud AI is strictly **bring-your-own-key**: your key is stored only in local app settings, sent only to the provider you chose, with no ScribeDog server in between. The settings dialog shows a clear notice whenever a cloud provider is selected
+- No telemetry, no analytics — ScribeDog never collects or transmits usage data
+- On Windows, ScribeDog checks GitHub for a new release on startup (a simple version comparison, no usage data sent); this can be turned off in settings
+- Aside from that optional update check, local AI providers mean the only network call is to the local endpoint *you* configure, and only when you trigger an AI action
+- Cloud AI is strictly **bring-your-own-key**: your key is stored in the operating system's credential store (Windows Credential Manager, macOS Keychain, Linux Secret Service) — never in plain text on disk — and sent only to the provider you chose, with no ScribeDog server in between. The settings dialog shows a clear notice whenever a cloud provider is selected
 - Tauri capabilities are scoped tightly: filesystem access is limited to the folder you open, HTTP access to your configured AI endpoint
 
 ---
@@ -163,7 +168,7 @@ locally on your device).
 ## 🗺️ Roadmap — where ScribeDog is heading
 
 ScribeDog aims to become the **private writing studio** for everyone who writes —
-without ever compromising on the local-first, open-source principles above.
+without compromising on the local-first, open-source principles above.
 Ideas on the list for upcoming versions (subject to change, feedback welcome!):
 
 - 🧘 **Focus mode** — dim everything except the current sentence or paragraph, typewriter scrolling, distraction-free full screen
@@ -206,7 +211,7 @@ npm run tauri build
 | UI | React 18 + TypeScript + Vite |
 | Editor engine | [TipTap](https://tiptap.dev/) (ProseMirror) + `tiptap-markdown` |
 | Styling | Tailwind CSS + shadcn/ui + lucide-react icons |
-| State / i18n | Zustand · i18next (English, German) |
+| State / i18n | Zustand · i18next (10 languages) |
 | AI providers | Ollama / Jan.ai / LM Studio (local), OpenAI / Anthropic / Mistral (cloud) via `@tauri-apps/plugin-http` |
 
 ## Contributing

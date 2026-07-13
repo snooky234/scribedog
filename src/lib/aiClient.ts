@@ -3,7 +3,7 @@ import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import i18n from "@/i18n";
 import { type AiProvider, type AiSettings, type AiThinkingMode } from "@/store/useAiSettingsStore";
 
-export type AiActionMode = "insert" | "rewrite";
+export type AiActionMode = "insert" | "rewrite" | "check";
 
 export type AiContentRequest = {
   mode: AiActionMode;
@@ -13,6 +13,12 @@ export type AiContentRequest = {
   documentMarkdown: string;
   includeDocument: boolean;
   preserveFormatting: boolean;
+};
+
+export type AiCheckIssue = {
+  original: string;
+  suggestion: string;
+  explanation: string;
 };
 
 export type AiStreamHandlers = {
@@ -149,7 +155,17 @@ function splitThinkingTags(text: string): { answer: string; thinking: string } {
   return { answer, thinking };
 }
 
+const CHECK_MODE_SYSTEM_PROMPT =
+  "You are a spelling and grammar checker. Analyze the given text and identify spelling and grammar mistakes only — do not suggest stylistic rewrites or wording changes beyond fixing actual errors. Respond ONLY with a single JSON array (no markdown code fences, no explanation text outside the JSON) of issue objects, each with exactly these fields: \"original\" (the exact original passage as it appears in the text, copied verbatim), \"suggestion\" (the corrected replacement text), and \"explanation\" (a short explanation of the issue, written in the same language as the checked text). List issues in the order they appear in the text. If there are no issues, respond with an empty JSON array: [].";
+
 function buildSystemPrompt(request: AiContentRequest, thinkingMode: AiThinkingMode): string {
+  if (request.mode === "check") {
+    const thinkingInstruction =
+      thinkingMode === "off" ? " Do not output any reasoning, notes, or intermediate steps." : "";
+
+    return CHECK_MODE_SYSTEM_PROMPT + thinkingInstruction;
+  }
+
   const baseInstruction =
     "You are a local text tool. Respond only with plain Markdown text — no explanations, and do not wrap the entire response in a code block.";
 
@@ -217,6 +233,10 @@ function resolveMaxOutputTokens(contextLength: number): number {
 }
 
 function buildUserPrompt(request: AiContentRequest): string {
+  if (request.mode === "check") {
+    return request.selectedText;
+  }
+
   const contextSections: string[] = [];
 
   if (request.includeDocument) {
@@ -273,14 +293,15 @@ function extractAnthropicContent(payload: unknown): string {
     .join("");
 }
 
-async function postJson(url: string, body: unknown, extraHeaders?: Record<string, string>) {
+async function postJson(url: string, body: unknown, extraHeaders?: Record<string, string>, signal?: AbortSignal) {
   const response = await tauriFetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...extraHeaders
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal
   });
 
   if (!response.ok) {
@@ -487,7 +508,11 @@ async function streamJsonLines(
   return stripThinkingBlocks(fullContent);
 }
 
-async function requestOllama(settings: AiSettings, request: AiContentRequest): Promise<string> {
+async function requestOllama(
+  settings: AiSettings,
+  request: AiContentRequest,
+  signal?: AbortSignal
+): Promise<string> {
   const body: Record<string, unknown> = {
     model: settings.model,
     stream: false,
@@ -512,7 +537,7 @@ async function requestOllama(settings: AiSettings, request: AiContentRequest): P
     body.think = false;
   }
 
-  const payload = await postJson(new URL("/api/chat", settings.apiUrl).toString(), body);
+  const payload = await postJson(new URL("/api/chat", settings.apiUrl).toString(), body, undefined, signal);
 
   return extractResponseContent(payload, true);
 }
@@ -584,7 +609,11 @@ function supportsThinkingExtension(provider: AiProvider): boolean {
   return provider === "jan" || provider === "lmstudio";
 }
 
-async function requestOpenAiCompatible(settings: AiSettings, request: AiContentRequest): Promise<string> {
+async function requestOpenAiCompatible(
+  settings: AiSettings,
+  request: AiContentRequest,
+  signal?: AbortSignal
+): Promise<string> {
   const requestBody: Record<string, unknown> = {
     model: settings.model,
     messages: [
@@ -612,7 +641,8 @@ async function requestOpenAiCompatible(settings: AiSettings, request: AiContentR
   const payload = await postJson(
     new URL("/v1/chat/completions", settings.apiUrl).toString(),
     requestBody,
-    buildOpenAiCompatibleAuthHeaders(settings)
+    buildOpenAiCompatibleAuthHeaders(settings),
+    signal
   );
 
   return extractResponseContent(payload, false);
@@ -676,7 +706,11 @@ export async function streamOpenAiCompatibleMarkdown(
   );
 }
 
-async function requestAnthropic(settings: AiSettings, request: AiContentRequest): Promise<string> {
+async function requestAnthropic(
+  settings: AiSettings,
+  request: AiContentRequest,
+  signal?: AbortSignal
+): Promise<string> {
   const body = {
     model: settings.model,
     system: buildSystemPrompt(request, settings.thinkingMode),
@@ -688,7 +722,8 @@ async function requestAnthropic(settings: AiSettings, request: AiContentRequest)
   const payload = await postJson(
     new URL("/v1/messages", settings.apiUrl).toString(),
     body,
-    anthropicAuthHeaders(settings.apiKey)
+    anthropicAuthHeaders(settings.apiKey),
+    signal
   );
 
   return extractAnthropicContent(payload);
@@ -815,7 +850,8 @@ export async function streamAiMarkdown(
 
 export async function generateAiMarkdown(
   settings: AiSettings,
-  request: AiContentRequest
+  request: AiContentRequest,
+  signal?: AbortSignal
 ): Promise<string> {
   assertValidEndpoint(settings.provider, settings.apiUrl, settings.apiKey);
 
@@ -825,10 +861,10 @@ export async function generateAiMarkdown(
 
   const rawResponse =
     settings.provider === "ollama"
-      ? await requestOllama(settings, request)
+      ? await requestOllama(settings, request, signal)
       : settings.provider === "anthropic"
-        ? await requestAnthropic(settings, request)
-        : await requestOpenAiCompatible(settings, request);
+        ? await requestAnthropic(settings, request, signal)
+        : await requestOpenAiCompatible(settings, request, signal);
 
   const cleanedResponse = stripThinkingBlocks(rawResponse);
 
@@ -837,4 +873,60 @@ export async function generateAiMarkdown(
   }
 
   return cleanedResponse;
+}
+
+// Strips a leading/trailing ```json ... ``` (or plain ``` ... ```) fence some
+// models wrap JSON output in despite the system prompt asking for raw JSON.
+function stripJsonCodeFence(text: string): string {
+  const trimmed = text.trim();
+  const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+
+  return fenceMatch ? fenceMatch[1].trim() : trimmed;
+}
+
+function parseCheckIssues(rawResponse: string): AiCheckIssue[] {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(stripJsonCodeFence(rawResponse));
+  } catch {
+    throw new Error(i18n.t("aiClient.invalidCheckResponse"));
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error(i18n.t("aiClient.invalidCheckResponse"));
+  }
+
+  return parsed.filter(
+    (entry): entry is AiCheckIssue =>
+      typeof entry === "object" &&
+      entry !== null &&
+      typeof (entry as AiCheckIssue).original === "string" &&
+      (entry as AiCheckIssue).original.length > 0 &&
+      typeof (entry as AiCheckIssue).suggestion === "string"
+  ).map((issue) => ({
+    original: issue.original,
+    suggestion: issue.suggestion,
+    explanation: typeof issue.explanation === "string" ? issue.explanation : ""
+  }));
+}
+
+export async function checkGrammar(
+  settings: AiSettings,
+  selectedText: string,
+  signal?: AbortSignal
+): Promise<AiCheckIssue[]> {
+  const request: AiContentRequest = {
+    mode: "check",
+    prompt: "",
+    selectedText,
+    selectedMarkdown: selectedText,
+    documentMarkdown: "",
+    includeDocument: false,
+    preserveFormatting: false
+  };
+
+  const rawResponse = await generateAiMarkdown(settings, request, signal);
+
+  return parseCheckIssues(rawResponse);
 }

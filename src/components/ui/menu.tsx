@@ -90,6 +90,43 @@ function MenuRadioItemIndicator({
   )
 }
 
+function MenuCheckboxItem({
+  className,
+  closeOnClick = true,
+  children,
+  ...props
+}: MenuPrimitive.CheckboxItem.Props) {
+  return (
+    <MenuPrimitive.CheckboxItem
+      data-slot="menu-checkbox-item"
+      closeOnClick={closeOnClick}
+      className={cn(
+        "relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </MenuPrimitive.CheckboxItem>
+  )
+}
+
+function MenuCheckboxItemIndicator({
+  className,
+  children,
+  ...props
+}: MenuPrimitive.CheckboxItemIndicator.Props) {
+  return (
+    <MenuPrimitive.CheckboxItemIndicator
+      data-slot="menu-checkbox-item-indicator"
+      className={cn("ml-auto flex size-4 items-center justify-center", className)}
+      {...props}
+    >
+      {children ?? <Check className="size-4" />}
+    </MenuPrimitive.CheckboxItemIndicator>
+  )
+}
+
 export {
   Menu,
   MenuTrigger,
@@ -98,5 +135,7 @@ export {
   MenuPopup,
   MenuRadioGroup,
   MenuRadioItem,
-  MenuRadioItemIndicator
+  MenuRadioItemIndicator,
+  MenuCheckboxItem,
+  MenuCheckboxItemIndicator
 }

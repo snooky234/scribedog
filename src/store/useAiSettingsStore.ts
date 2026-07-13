@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
 const AI_SETTINGS_STORAGE_KEY = "scribedog-ai-settings";
@@ -19,7 +20,7 @@ export type AiSettings = {
 type AiSettingsState = {
   settings: AiSettings;
   isLoaded: boolean;
-  loadSettings: () => void;
+  loadSettings: () => Promise<void>;
   updateSettings: (patch: Partial<AiSettings>) => void;
   resetSettings: () => void;
 };
@@ -73,24 +74,54 @@ function readStoredSettings(): AiSettings {
   }
 }
 
+// The API key lives in the OS credential store (Windows Credential Manager,
+// macOS Keychain, Linux Secret Service) instead of localStorage, so it is
+// never written to disk in plain text. Everything else stays in localStorage.
 function persistSettings(settings: AiSettings) {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  const { apiKey, ...persistableSettings } = settings;
+
+  window.localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(persistableSettings));
+  void invoke("store_api_key", { apiKey });
+}
+
+async function loadStoredApiKey(storedSettings: AiSettings): Promise<string> {
+  // Migration: older versions kept the key in localStorage. Move it to the
+  // credential store once, then strip it from localStorage.
+  if (storedSettings.apiKey) {
+    try {
+      await invoke("store_api_key", { apiKey: storedSettings.apiKey });
+      const { apiKey, ...persistableSettings } = storedSettings;
+      window.localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(persistableSettings));
+    } catch {
+      // Keep the key usable in memory even if the credential store is unavailable.
+    }
+
+    return storedSettings.apiKey;
+  }
+
+  try {
+    return await invoke<string>("get_api_key");
+  } catch {
+    return "";
+  }
 }
 
 export const useAiSettingsStore = create<AiSettingsState>((set, get) => ({
   settings: defaultAiSettings,
   isLoaded: false,
-  loadSettings: () => {
+  loadSettings: async () => {
     if (get().isLoaded) {
       return;
     }
 
-    const settings = readStoredSettings();
-    set({ settings, isLoaded: true });
+    const storedSettings = readStoredSettings();
+    const apiKey = await loadStoredApiKey(storedSettings);
+
+    set({ settings: { ...storedSettings, apiKey }, isLoaded: true });
   },
   updateSettings: (patch) => {
     set((state) => {

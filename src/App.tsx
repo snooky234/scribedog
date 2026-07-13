@@ -382,7 +382,7 @@ function App() {
   }, [saveSelectedFile, selectedFilePath, openFolderSafely, handleCreateFile]);
 
   useEffect(() => {
-    loadAiSettings();
+    void loadAiSettings();
   }, [loadAiSettings]);
 
   useEffect(() => {

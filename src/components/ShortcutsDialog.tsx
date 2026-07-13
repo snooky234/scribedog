@@ -29,12 +29,29 @@ const SHORTCUTS: ShortcutDefinition[] = [
     keys: [[{ mod: "ctrl" }, { special: "enter" }]],
     descriptionKey: "shortcutsDialog.items.aiSubmit"
   },
+  {
+    id: "aiCheckDialog",
+    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "X" }]],
+    descriptionKey: "shortcutsDialog.items.aiCheckDialog"
+  },
   { id: "bold", keys: [[{ mod: "ctrl" }, { literal: "B" }]], descriptionKey: "shortcutsDialog.items.bold" },
   { id: "italic", keys: [[{ mod: "ctrl" }, { literal: "I" }]], descriptionKey: "shortcutsDialog.items.italic" },
   { id: "underline", keys: [[{ mod: "ctrl" }, { literal: "U" }]], descriptionKey: "shortcutsDialog.items.underline" },
-  { id: "insertLink", keys: [[{ mod: "ctrl" }, { literal: "K" }]], descriptionKey: "shortcutsDialog.items.insertLink" },
+  { id: "insertLink", keys: [[{ mod: "ctrl" }, { literal: "M" }]], descriptionKey: "shortcutsDialog.items.insertLink" },
   { id: "bulletList", keys: [[{ mod: "ctrl" }, { literal: "." }]], descriptionKey: "shortcutsDialog.items.bulletList" },
-  { id: "checkbox", keys: [[{ mod: "ctrl" }, { literal: "1" }]], descriptionKey: "shortcutsDialog.items.checkbox" },
+  {
+    id: "orderedList",
+    keys: [[{ mod: "ctrl" }, { literal: "-" }]],
+    descriptionKey: "shortcutsDialog.items.orderedList"
+  },
+  { id: "checkbox", keys: [[{ mod: "ctrl" }, { literal: "," }]], descriptionKey: "shortcutsDialog.items.checkbox" },
+  { id: "strikethrough", keys: [[{ mod: "ctrl" }, { literal: "D" }]], descriptionKey: "shortcutsDialog.items.strikethrough" },
+  { id: "heading1", keys: [[{ mod: "ctrl" }, { literal: "1" }]], descriptionKey: "shortcutsDialog.items.heading1" },
+  { id: "heading2", keys: [[{ mod: "ctrl" }, { literal: "2" }]], descriptionKey: "shortcutsDialog.items.heading2" },
+  { id: "heading3", keys: [[{ mod: "ctrl" }, { literal: "3" }]], descriptionKey: "shortcutsDialog.items.heading3" },
+  { id: "blockquote", keys: [[{ mod: "ctrl" }, { literal: "Q" }]], descriptionKey: "shortcutsDialog.items.blockquote" },
+  { id: "inlineCode", keys: [[{ mod: "ctrl" }, { literal: "G" }]], descriptionKey: "shortcutsDialog.items.inlineCode" },
+  { id: "codeBlock", keys: [[{ mod: "ctrl" }, { literal: "K" }]], descriptionKey: "shortcutsDialog.items.codeBlock" },
   {
     id: "moveListItem",
     keys: [
