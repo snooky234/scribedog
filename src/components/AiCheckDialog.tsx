@@ -57,10 +57,7 @@ export function AiCheckDialog({ open, issues, resolvedCount, onApply, onApplyAll
           <div className="ai-check-dialog__empty">
             <CircleCheckBig className="ai-check-dialog__empty-icon" aria-hidden="true" />
             {resolvedCount > 0 ? (
-              <>
-                <p className="ai-check-dialog__empty-title">{t("aiCheckDialog.resolvedTitle")}</p>
-                <p className="ai-check-dialog__empty-description">{t("aiCheckDialog.resolvedDescription")}</p>
-              </>
+              <p className="ai-check-dialog__empty-title">{t("aiCheckDialog.resolvedTitle")}</p>
             ) : (
               <>
                 <p className="ai-check-dialog__empty-title">{t("aiCheckDialog.emptyTitle")}</p>

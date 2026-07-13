@@ -267,8 +267,7 @@
     "close": "关闭",
     "emptyTitle": "未发现问题",
     "emptyDescription": "所选文本看起来没有问题——未发现拼写或语法错误。",
-    "resolvedTitle": "所有错误均已修正！",
-    "resolvedDescription": "文本现在应该没有错误了。"
+    "resolvedTitle": "所有错误均已修正！"
   },
   "fileSystem": {
     "chooseFolderTitle": "打开文件夹",

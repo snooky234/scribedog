@@ -267,8 +267,7 @@
     "close": "Schließen",
     "emptyTitle": "Keine Probleme gefunden",
     "emptyDescription": "Der ausgewählte Text sieht gut aus — es wurden keine Rechtschreib- oder Grammatikfehler gefunden.",
-    "resolvedTitle": "Alle Fehler korrigiert!",
-    "resolvedDescription": "Der Text sollte jetzt fehlerfrei sein."
+    "resolvedTitle": "Alle Fehler korrigiert!"
   },
   "fileSystem": {
     "chooseFolderTitle": "Ordner öffnen",

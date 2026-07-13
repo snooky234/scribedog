@@ -267,8 +267,7 @@
     "close": "Fermer",
     "emptyTitle": "Aucun problème détecté",
     "emptyDescription": "Le texte sélectionné semble correct — aucune erreur d'orthographe ou de grammaire n'a été détectée.",
-    "resolvedTitle": "Toutes les erreurs sont corrigées !",
-    "resolvedDescription": "Le texte devrait maintenant être sans erreur."
+    "resolvedTitle": "Toutes les erreurs sont corrigées !"
   },
   "fileSystem": {
     "chooseFolderTitle": "Ouvrir un dossier",

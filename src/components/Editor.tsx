@@ -837,17 +837,50 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     const range = aiCheckRangeRef.current;
 
     if (currentEditor && range) {
-      const currentText = currentEditor.state.doc.textBetween(range.from, range.to, "\n");
-      const matchIndex = currentText.indexOf(issue.original);
-
       // The AI response carries no reliable character offsets, so the
-      // original passage is located by a plain text search instead. If it
-      // can no longer be found (e.g. the range changed since the check ran),
-      // the issue is dropped without touching the document rather than
-      // blocking the rest of the list.
-      if (matchIndex !== -1) {
-        const foundFrom = range.from + matchIndex;
-        const foundTo = foundFrom + issue.original.length;
+      // original passage is located by a plain text search instead. Plain
+      // string offsets into textBetween() cannot be added to doc positions
+      // (each block boundary is 2 doc positions but only 1 "\n" character),
+      // so the search string is built alongside a per-character map of real
+      // doc positions. If the passage can no longer be found (e.g. the range
+      // changed since the check ran), the issue is dropped without touching
+      // the document rather than blocking the rest of the list.
+      const doc = currentEditor.state.doc;
+      const to = Math.min(range.to, doc.content.size);
+      let text = "";
+      const positions: number[] = [];
+
+      doc.nodesBetween(range.from, to, (node, pos) => {
+        if (node.isText && node.text) {
+          const start = Math.max(range.from, pos);
+          const end = Math.min(to, pos + node.nodeSize);
+
+          for (let i = start; i < end; i += 1) {
+            text += node.text[i - pos];
+            positions.push(i);
+          }
+        } else if (node.isBlock && text.length > 0 && !text.endsWith("\n")) {
+          text += "\n";
+          positions.push(-1);
+        }
+
+        return true;
+      });
+
+      const matchIndex = text.indexOf(issue.original);
+
+      // Trailing block separators carry no real doc position, so the match
+      // end is anchored on the last actual character of the passage.
+      let matchEnd = matchIndex === -1 ? -1 : matchIndex + issue.original.length - 1;
+
+      while (matchEnd > matchIndex && positions[matchEnd] === -1) {
+        matchEnd -= 1;
+      }
+
+      if (matchIndex !== -1 && positions[matchIndex] !== -1 && positions[matchEnd] !== -1) {
+        const foundFrom = positions[matchIndex];
+        const foundTo = positions[matchEnd] + 1;
+        const sizeBefore = doc.content.size;
 
         currentEditor
           .chain()
@@ -857,7 +890,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
         aiCheckRangeRef.current = {
           from: range.from,
-          to: range.to + (issue.suggestion.length - issue.original.length)
+          to: range.to + (currentEditor.state.doc.content.size - sizeBefore)
         };
       }
     }

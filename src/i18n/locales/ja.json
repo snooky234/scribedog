@@ -267,8 +267,7 @@
     "close": "閉じる",
     "emptyTitle": "問題は見つかりませんでした",
     "emptyDescription": "選択したテキストに問題はありません。スペルや文法の誤りは見つかりませんでした。",
-    "resolvedTitle": "すべてのエラーを修正しました！",
-    "resolvedDescription": "テキストにはもうエラーがないはずです。"
+    "resolvedTitle": "すべてのエラーを修正しました！"
   },
   "fileSystem": {
     "chooseFolderTitle": "フォルダーを開く",

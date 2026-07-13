@@ -267,8 +267,7 @@
     "close": "Chiudi",
     "emptyTitle": "Nessun problema trovato",
     "emptyDescription": "Il testo selezionato sembra corretto: non sono stati trovati errori di ortografia o grammatica.",
-    "resolvedTitle": "Tutti gli errori corretti!",
-    "resolvedDescription": "Il testo dovrebbe ora essere privo di errori."
+    "resolvedTitle": "Tutti gli errori corretti!"
   },
   "fileSystem": {
     "chooseFolderTitle": "Apri cartella",

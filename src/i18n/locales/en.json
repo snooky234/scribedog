@@ -267,8 +267,7 @@
     "close": "Close",
     "emptyTitle": "No issues found",
     "emptyDescription": "The selected text looks good — no spelling or grammar issues were found.",
-    "resolvedTitle": "All issues fixed!",
-    "resolvedDescription": "The text should now be error-free."
+    "resolvedTitle": "All issues fixed!"
   },
   "fileSystem": {
     "chooseFolderTitle": "Open folder",

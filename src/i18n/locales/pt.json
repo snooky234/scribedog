@@ -267,8 +267,7 @@
     "close": "Fechar",
     "emptyTitle": "Nenhum problema encontrado",
     "emptyDescription": "O texto selecionado parece correto — nenhum erro ortográfico ou gramatical foi encontrado.",
-    "resolvedTitle": "Todos os erros corrigidos!",
-    "resolvedDescription": "O texto agora deve estar livre de erros."
+    "resolvedTitle": "Todos os erros corrigidos!"
   },
   "fileSystem": {
     "chooseFolderTitle": "Abrir pasta",
