@@ -4379,6 +4379,7 @@ SOFTWARE.
 | json-patch | 3.0.1 | MIT/Apache-2.0 |
 | jsonptr | 0.6.3 | MIT OR Apache-2.0 |
 | keyboard-types | 0.7.0 | MIT OR Apache-2.0 |
+| keyring | 3.6.3 | MIT OR Apache-2.0 |
 | libc | 0.2.186 | MIT OR Apache-2.0 |
 | litemap | 0.8.2 | Unicode-3.0 |
 | litrs | 1.0.0 | MIT OR Apache-2.0 |
@@ -4588,6 +4589,7 @@ SOFTWARE.
 | zerofrom | 0.1.8 | Unicode-3.0 |
 | zerofrom-derive | 0.1.7 | Unicode-3.0 |
 | zeroize | 1.9.0 | Apache-2.0 OR MIT |
+| zeroize_derive | 1.5.0 | Apache-2.0 OR MIT |
 | zerotrie | 0.2.4 | Unicode-3.0 |
 | zerovec | 0.11.6 | Unicode-3.0 |
 | zerovec-derive | 0.11.3 | Unicode-3.0 |
