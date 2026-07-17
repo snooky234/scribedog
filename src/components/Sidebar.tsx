@@ -50,6 +50,8 @@ type SidebarProps = {
   onSelectFilePath: (filePath: string) => Promise<void>;
   onDeleteFileRequest: (filePath: string) => void;
   onDeleteFolderRequest: (folderPath: string) => void;
+  onExportFileRequest: (filePath: string) => void;
+  onExportFolderRequest: (folderPath: string) => void;
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
   onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
@@ -80,6 +82,8 @@ export function Sidebar({
   onSelectFilePath,
   onDeleteFileRequest,
   onDeleteFolderRequest,
+  onExportFileRequest,
+  onExportFolderRequest,
   onRenameFolder,
   onRenameFile,
   onMoveEntry,
@@ -263,6 +267,8 @@ export function Sidebar({
             onCreateFileRequest={onCreateFileRequest}
             onDeleteFileRequest={onDeleteFileRequest}
             onDeleteFolderRequest={onDeleteFolderRequest}
+            onExportFileRequest={onExportFileRequest}
+            onExportFolderRequest={onExportFolderRequest}
             onRenameFolder={onRenameFolder}
             onRenameFile={onRenameFile}
             onMoveEntry={onMoveEntry}

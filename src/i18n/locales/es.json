@@ -14,7 +14,8 @@
       "esc": "Esc",
       "enter": "Intro",
       "rightClick": "Clic derecho"
-    }
+    },
+    "close": "Cerrar"
   },
   "app": {
     "shellLabel": "Interfaz de la aplicación ScribeDog",
@@ -55,6 +56,30 @@
     "titleFolder": "¿Eliminar la carpeta de forma permanente?",
     "descriptionFolderWithName": "La carpeta {{folderLabel}} y todos los archivos que contiene se eliminarán permanentemente del disco.",
     "descriptionFolderGeneric": "La carpeta y todos los archivos que contiene se eliminarán permanentemente del disco."
+  },
+  "exportDialog": {
+    "eyebrowFile": "Exportar archivo",
+    "eyebrowFolder": "Exportar carpeta",
+    "titleFile": "Exportar nota",
+    "titleFolder": "Exportar carpeta",
+    "descriptionFile": "Elige un formato, un nombre de archivo y una carpeta de destino.",
+    "descriptionFolder": "Todas las notas de esta carpeta se exportan de forma recursiva; la estructura de carpetas se conserva.",
+    "formatLabel": "Formato",
+    "fileNameLabel": "Nombre del archivo",
+    "folderNameLabel": "Nombre de la carpeta",
+    "destinationLabel": "Carpeta de destino",
+    "noDestination": "Ninguna carpeta seleccionada",
+    "chooseFolder": "Elegir…",
+    "chooseFolderTitle": "Elegir carpeta de destino",
+    "exportAction": "Exportar",
+    "exporting": "Exportando …",
+    "progress": "Exportando {{completed}} de {{total}}: {{fileName}}",
+    "conflictDescription": "{{fileName}} ya existe en el destino. ¿Sobrescribirlo?",
+    "conflictApplyToAll": "Aplicar a todos los conflictos restantes",
+    "conflictSkip": "Omitir",
+    "conflictOverwrite": "Sobrescribir",
+    "doneSummary": "Exportación finalizada: {{exportedCount}} exportados, {{skippedCount}} omitidos.",
+    "errorMessage": "Error al exportar: {{message}}"
   },
   "settingsDialog": {
     "title": "Configuración",
@@ -154,7 +179,8 @@
     "delete": "Eliminar",
     "rename": "Renombrar",
     "renameInputLabel": "Nombre de la carpeta",
-    "fileRenameInputLabel": "Nombre del archivo"
+    "fileRenameInputLabel": "Nombre del archivo",
+    "export": "Exportar…"
   },
   "toolbar": {
     "formattingLabel": "Herramientas de formato",

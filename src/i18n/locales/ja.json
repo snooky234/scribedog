@@ -14,7 +14,8 @@
       "esc": "Esc",
       "enter": "Enter",
       "rightClick": "右クリック"
-    }
+    },
+    "close": "閉じる"
   },
   "app": {
     "shellLabel": "ScribeDog アプリシェル",
@@ -55,6 +56,30 @@
     "titleFolder": "このフォルダーを完全に削除しますか？",
     "descriptionFolderWithName": "フォルダー {{folderLabel}} とその中のすべてのファイルはディスクから完全に削除されます。",
     "descriptionFolderGeneric": "このフォルダーとその中のすべてのファイルはディスクから完全に削除されます。"
+  },
+  "exportDialog": {
+    "eyebrowFile": "ファイルをエクスポート",
+    "eyebrowFolder": "フォルダーをエクスポート",
+    "titleFile": "ノートをエクスポート",
+    "titleFolder": "フォルダーをエクスポート",
+    "descriptionFile": "形式、ファイル名、保存先フォルダーを選択してください。",
+    "descriptionFolder": "このフォルダー内のすべてのノートが再帰的にエクスポートされ、フォルダー構造は維持されます。",
+    "formatLabel": "形式",
+    "fileNameLabel": "ファイル名",
+    "folderNameLabel": "フォルダー名",
+    "destinationLabel": "保存先フォルダー",
+    "noDestination": "フォルダーが未選択です",
+    "chooseFolder": "選択…",
+    "chooseFolderTitle": "保存先フォルダーを選択",
+    "exportAction": "エクスポート",
+    "exporting": "エクスポート中 …",
+    "progress": "エクスポート中 {{completed}} / {{total}}: {{fileName}}",
+    "conflictDescription": "{{fileName}} は保存先に既に存在します。上書きしますか？",
+    "conflictApplyToAll": "残りのすべての競合に適用",
+    "conflictSkip": "スキップ",
+    "conflictOverwrite": "上書き",
+    "doneSummary": "エクスポート完了: {{exportedCount}} 件エクスポート、{{skippedCount}} 件スキップ。",
+    "errorMessage": "エクスポートに失敗しました: {{message}}"
   },
   "settingsDialog": {
     "title": "設定",
@@ -154,7 +179,8 @@
     "delete": "削除",
     "rename": "名前を変更",
     "renameInputLabel": "フォルダー名",
-    "fileRenameInputLabel": "ファイル名"
+    "fileRenameInputLabel": "ファイル名",
+    "export": "エクスポート…"
   },
   "toolbar": {
     "formattingLabel": "書式設定ツール",

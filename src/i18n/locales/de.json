@@ -14,7 +14,8 @@
       "esc": "Esc",
       "enter": "Enter",
       "rightClick": "Rechtsklick"
-    }
+    },
+    "close": "Schließen"
   },
   "app": {
     "shellLabel": "ScribeDog App-Shell",
@@ -55,6 +56,30 @@
     "titleFolder": "Ordner endgültig löschen?",
     "descriptionFolderWithName": "Der Ordner {{folderLabel}} und alle darin enthaltenen Dateien werden unwiderruflich von der Festplatte gelöscht.",
     "descriptionFolderGeneric": "Der Ordner und alle darin enthaltenen Dateien werden unwiderruflich von der Festplatte gelöscht."
+  },
+  "exportDialog": {
+    "eyebrowFile": "Datei exportieren",
+    "eyebrowFolder": "Ordner exportieren",
+    "titleFile": "Notiz exportieren",
+    "titleFolder": "Ordner exportieren",
+    "descriptionFile": "Format, Dateiname und Zielordner wählen.",
+    "descriptionFolder": "Alle Notizen in diesem Ordner werden rekursiv exportiert; die Ordnerstruktur bleibt erhalten.",
+    "formatLabel": "Format",
+    "fileNameLabel": "Dateiname",
+    "folderNameLabel": "Ordnername",
+    "destinationLabel": "Zielordner",
+    "noDestination": "Kein Ordner gewählt",
+    "chooseFolder": "Auswählen…",
+    "chooseFolderTitle": "Zielordner wählen",
+    "exportAction": "Exportieren",
+    "exporting": "Exportiere …",
+    "progress": "Exportiere {{completed}} von {{total}}: {{fileName}}",
+    "conflictDescription": "{{fileName}} existiert bereits am Zielort. Überschreiben?",
+    "conflictApplyToAll": "Auf alle weiteren Konflikte anwenden",
+    "conflictSkip": "Überspringen",
+    "conflictOverwrite": "Überschreiben",
+    "doneSummary": "Export abgeschlossen: {{exportedCount}} exportiert, {{skippedCount}} übersprungen.",
+    "errorMessage": "Export fehlgeschlagen: {{message}}"
   },
   "settingsDialog": {
     "title": "Einstellungen",
@@ -154,7 +179,8 @@
     "delete": "Löschen",
     "rename": "Umbenennen",
     "renameInputLabel": "Ordnername",
-    "fileRenameInputLabel": "Dateiname"
+    "fileRenameInputLabel": "Dateiname",
+    "export": "Exportieren…"
   },
   "toolbar": {
     "formattingLabel": "Formatierungswerkzeuge",

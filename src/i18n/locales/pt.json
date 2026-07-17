@@ -14,7 +14,8 @@
       "esc": "Esc",
       "enter": "Enter",
       "rightClick": "Clique com o botão direito"
-    }
+    },
+    "close": "Fechar"
   },
   "app": {
     "shellLabel": "Shell do aplicativo ScribeDog",
@@ -55,6 +56,30 @@
     "titleFolder": "Excluir a pasta permanentemente?",
     "descriptionFolderWithName": "A pasta {{folderLabel}} e todos os arquivos nela contidos serão excluídos permanentemente do disco.",
     "descriptionFolderGeneric": "A pasta e todos os arquivos nela contidos serão excluídos permanentemente do disco."
+  },
+  "exportDialog": {
+    "eyebrowFile": "Exportar arquivo",
+    "eyebrowFolder": "Exportar pasta",
+    "titleFile": "Exportar nota",
+    "titleFolder": "Exportar pasta",
+    "descriptionFile": "Escolha um formato, um nome de arquivo e uma pasta de destino.",
+    "descriptionFolder": "Todas as notas desta pasta são exportadas recursivamente; a estrutura de pastas é preservada.",
+    "formatLabel": "Formato",
+    "fileNameLabel": "Nome do arquivo",
+    "folderNameLabel": "Nome da pasta",
+    "destinationLabel": "Pasta de destino",
+    "noDestination": "Nenhuma pasta selecionada",
+    "chooseFolder": "Escolher…",
+    "chooseFolderTitle": "Escolher pasta de destino",
+    "exportAction": "Exportar",
+    "exporting": "Exportando …",
+    "progress": "Exportando {{completed}} de {{total}}: {{fileName}}",
+    "conflictDescription": "{{fileName}} já existe no destino. Sobrescrever?",
+    "conflictApplyToAll": "Aplicar a todos os conflitos restantes",
+    "conflictSkip": "Pular",
+    "conflictOverwrite": "Sobrescrever",
+    "doneSummary": "Exportação concluída: {{exportedCount}} exportados, {{skippedCount}} pulados.",
+    "errorMessage": "Falha na exportação: {{message}}"
   },
   "settingsDialog": {
     "title": "Configurações",
@@ -154,7 +179,8 @@
     "delete": "Excluir",
     "rename": "Renomear",
     "renameInputLabel": "Nome da pasta",
-    "fileRenameInputLabel": "Nome do arquivo"
+    "fileRenameInputLabel": "Nome do arquivo",
+    "export": "Exportar…"
   },
   "toolbar": {
     "formattingLabel": "Ferramentas de formatação",

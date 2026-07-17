@@ -14,7 +14,8 @@
       "esc": "Esc",
       "enter": "Invio",
       "rightClick": "Clic destro"
-    }
+    },
+    "close": "Chiudi"
   },
   "app": {
     "shellLabel": "Shell dell'app ScribeDog",
@@ -55,6 +56,30 @@
     "titleFolder": "Eliminare definitivamente la cartella?",
     "descriptionFolderWithName": "La cartella {{folderLabel}} e tutti i file in essa contenuti verranno eliminati definitivamente dal disco.",
     "descriptionFolderGeneric": "La cartella e tutti i file in essa contenuti verranno eliminati definitivamente dal disco."
+  },
+  "exportDialog": {
+    "eyebrowFile": "Esporta file",
+    "eyebrowFolder": "Esporta cartella",
+    "titleFile": "Esporta nota",
+    "titleFolder": "Esporta cartella",
+    "descriptionFile": "Scegli un formato, un nome file e una cartella di destinazione.",
+    "descriptionFolder": "Tutte le note in questa cartella vengono esportate ricorsivamente; la struttura delle cartelle viene mantenuta.",
+    "formatLabel": "Formato",
+    "fileNameLabel": "Nome file",
+    "folderNameLabel": "Nome cartella",
+    "destinationLabel": "Cartella di destinazione",
+    "noDestination": "Nessuna cartella selezionata",
+    "chooseFolder": "Scegli…",
+    "chooseFolderTitle": "Scegli la cartella di destinazione",
+    "exportAction": "Esporta",
+    "exporting": "Esportazione …",
+    "progress": "Esportazione {{completed}} di {{total}}: {{fileName}}",
+    "conflictDescription": "{{fileName}} esiste già nella destinazione. Sovrascriverlo?",
+    "conflictApplyToAll": "Applica a tutti i conflitti rimanenti",
+    "conflictSkip": "Salta",
+    "conflictOverwrite": "Sovrascrivi",
+    "doneSummary": "Esportazione completata: {{exportedCount}} esportati, {{skippedCount}} saltati.",
+    "errorMessage": "Esportazione non riuscita: {{message}}"
   },
   "settingsDialog": {
     "title": "Impostazioni",
@@ -154,7 +179,8 @@
     "delete": "Elimina",
     "rename": "Rinomina",
     "renameInputLabel": "Nome cartella",
-    "fileRenameInputLabel": "Nome file"
+    "fileRenameInputLabel": "Nome file",
+    "export": "Esporta…"
   },
   "toolbar": {
     "formattingLabel": "Strumenti di formattazione",

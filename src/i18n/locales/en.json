@@ -14,7 +14,8 @@
       "esc": "Esc",
       "enter": "Enter",
       "rightClick": "Right click"
-    }
+    },
+    "close": "Close"
   },
   "app": {
     "shellLabel": "ScribeDog app shell",
@@ -55,6 +56,30 @@
     "titleFolder": "Delete folder permanently?",
     "descriptionFolderWithName": "The folder {{folderLabel}} and all files it contains will be permanently deleted from disk.",
     "descriptionFolderGeneric": "The folder and all files it contains will be permanently deleted from disk."
+  },
+  "exportDialog": {
+    "eyebrowFile": "Export file",
+    "eyebrowFolder": "Export folder",
+    "titleFile": "Export note",
+    "titleFolder": "Export folder",
+    "descriptionFile": "Choose a format, file name, and destination folder.",
+    "descriptionFolder": "All notes in this folder are exported recursively; the folder structure is preserved.",
+    "formatLabel": "Format",
+    "fileNameLabel": "File name",
+    "folderNameLabel": "Folder name",
+    "destinationLabel": "Destination folder",
+    "noDestination": "No folder selected",
+    "chooseFolder": "Choose…",
+    "chooseFolderTitle": "Choose destination folder",
+    "exportAction": "Export",
+    "exporting": "Exporting …",
+    "progress": "Exporting {{completed}} of {{total}}: {{fileName}}",
+    "conflictDescription": "{{fileName}} already exists at the destination. Overwrite it?",
+    "conflictApplyToAll": "Apply to all remaining conflicts",
+    "conflictSkip": "Skip",
+    "conflictOverwrite": "Overwrite",
+    "doneSummary": "Export finished: {{exportedCount}} exported, {{skippedCount}} skipped.",
+    "errorMessage": "Export failed: {{message}}"
   },
   "settingsDialog": {
     "title": "Settings",
@@ -154,7 +179,8 @@
     "delete": "Delete",
     "rename": "Rename",
     "renameInputLabel": "Folder name",
-    "fileRenameInputLabel": "File name"
+    "fileRenameInputLabel": "File name",
+    "export": "Export…"
   },
   "toolbar": {
     "formattingLabel": "Formatting tools",

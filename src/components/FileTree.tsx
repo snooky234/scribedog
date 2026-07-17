@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import {
   ChevronDown,
   ChevronRight,
+  Download,
   FilePlus,
   FileText,
   Folder,
@@ -62,6 +63,8 @@ type FileTreeProps = {
   onCreateFileRequest: (targetDirectory: string) => void;
   onDeleteFileRequest: (filePath: string) => void;
   onDeleteFolderRequest: (folderPath: string) => void;
+  onExportFileRequest: (filePath: string) => void;
+  onExportFolderRequest: (folderPath: string) => void;
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
   onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
@@ -461,6 +464,8 @@ export function FileTree({
   onCreateFileRequest,
   onDeleteFileRequest,
   onDeleteFolderRequest,
+  onExportFileRequest,
+  onExportFolderRequest,
   onRenameFolder,
   onRenameFile,
   onMoveEntry,
@@ -945,6 +950,24 @@ export function FileTree({
               >
                 <Pencil aria-hidden="true" />
                 {t("fileTree.rename")}
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item"
+                onClick={() => {
+                  if (contextMenu.kind === "folder") {
+                    void join(folderPath, contextMenu.relativePath).then(onExportFolderRequest);
+                  } else {
+                    onExportFileRequest(contextMenu.filePath);
+                  }
+
+                  setContextMenu(null);
+                }}
+              >
+                <Download aria-hidden="true" />
+                {t("fileTree.export")}
               </button>
 
               <button

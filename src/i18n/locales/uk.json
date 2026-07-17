@@ -14,7 +14,8 @@
       "esc": "Esc",
       "enter": "Enter",
       "rightClick": "Клацання правою кнопкою"
-    }
+    },
+    "close": "Закрити"
   },
   "app": {
     "shellLabel": "Оболонка застосунку ScribeDog",
@@ -55,6 +56,30 @@
     "titleFolder": "Остаточно видалити папку?",
     "descriptionFolderWithName": "Папку {{folderLabel}} і всі файли в ній буде безповоротно видалено з диска.",
     "descriptionFolderGeneric": "Папку і всі файли в ній буде безповоротно видалено з диска."
+  },
+  "exportDialog": {
+    "eyebrowFile": "Експорт файлу",
+    "eyebrowFolder": "Експорт теки",
+    "titleFile": "Експортувати нотатку",
+    "titleFolder": "Експортувати теку",
+    "descriptionFile": "Виберіть формат, ім'я файлу та теку призначення.",
+    "descriptionFolder": "Усі нотатки в цій теці експортуються рекурсивно; структура тек зберігається.",
+    "formatLabel": "Формат",
+    "fileNameLabel": "Ім'я файлу",
+    "folderNameLabel": "Назва теки",
+    "destinationLabel": "Тека призначення",
+    "noDestination": "Теку не вибрано",
+    "chooseFolder": "Вибрати…",
+    "chooseFolderTitle": "Вибрати теку призначення",
+    "exportAction": "Експортувати",
+    "exporting": "Експорт …",
+    "progress": "Експорт {{completed}} з {{total}}: {{fileName}}",
+    "conflictDescription": "{{fileName}} вже існує в теці призначення. Перезаписати?",
+    "conflictApplyToAll": "Застосувати до всіх подальших конфліктів",
+    "conflictSkip": "Пропустити",
+    "conflictOverwrite": "Перезаписати",
+    "doneSummary": "Експорт завершено: експортовано {{exportedCount}}, пропущено {{skippedCount}}.",
+    "errorMessage": "Помилка експорту: {{message}}"
   },
   "settingsDialog": {
     "title": "Налаштування",
@@ -154,7 +179,8 @@
     "delete": "Видалити",
     "rename": "Перейменувати",
     "renameInputLabel": "Назва папки",
-    "fileRenameInputLabel": "Ім'я файлу"
+    "fileRenameInputLabel": "Ім'я файлу",
+    "export": "Експортувати…"
   },
   "toolbar": {
     "formattingLabel": "Інструменти форматування",

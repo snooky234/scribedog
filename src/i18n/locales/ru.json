@@ -14,7 +14,8 @@
       "esc": "Esc",
       "enter": "Enter",
       "rightClick": "Правый клик"
-    }
+    },
+    "close": "Закрыть"
   },
   "app": {
     "shellLabel": "Оболочка приложения ScribeDog",
@@ -55,6 +56,30 @@
     "titleFolder": "Удалить папку окончательно?",
     "descriptionFolderWithName": "Папка {{folderLabel}} и все файлы в ней будут безвозвратно удалены с диска.",
     "descriptionFolderGeneric": "Папка и все файлы в ней будут безвозвратно удалены с диска."
+  },
+  "exportDialog": {
+    "eyebrowFile": "Экспорт файла",
+    "eyebrowFolder": "Экспорт папки",
+    "titleFile": "Экспортировать заметку",
+    "titleFolder": "Экспортировать папку",
+    "descriptionFile": "Выберите формат, имя файла и папку назначения.",
+    "descriptionFolder": "Все заметки в этой папке экспортируются рекурсивно; структура папок сохраняется.",
+    "formatLabel": "Формат",
+    "fileNameLabel": "Имя файла",
+    "folderNameLabel": "Имя папки",
+    "destinationLabel": "Папка назначения",
+    "noDestination": "Папка не выбрана",
+    "chooseFolder": "Выбрать…",
+    "chooseFolderTitle": "Выбрать папку назначения",
+    "exportAction": "Экспортировать",
+    "exporting": "Экспорт …",
+    "progress": "Экспорт {{completed}} из {{total}}: {{fileName}}",
+    "conflictDescription": "{{fileName}} уже существует в папке назначения. Перезаписать?",
+    "conflictApplyToAll": "Применить ко всем оставшимся конфликтам",
+    "conflictSkip": "Пропустить",
+    "conflictOverwrite": "Перезаписать",
+    "doneSummary": "Экспорт завершён: экспортировано {{exportedCount}}, пропущено {{skippedCount}}.",
+    "errorMessage": "Ошибка экспорта: {{message}}"
   },
   "settingsDialog": {
     "title": "Настройки",
@@ -154,7 +179,8 @@
     "delete": "Удалить",
     "rename": "Переименовать",
     "renameInputLabel": "Имя папки",
-    "fileRenameInputLabel": "Имя файла"
+    "fileRenameInputLabel": "Имя файла",
+    "export": "Экспортировать…"
   },
   "toolbar": {
     "formattingLabel": "Инструменты форматирования",
