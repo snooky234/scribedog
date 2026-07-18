@@ -33,6 +33,7 @@ place to write it, with an AI assistant that respects one simple rule:
 
 - ✨ **True WYSIWYG** — headings, tables, images, and lists look like a document, not like syntax
 - 🤖 **AI built in, local by default** — rewrite or generate text with Ollama, Jan.ai, or LM Studio; cloud providers are strictly opt-in
+- 📥 **Import & export built in** — bring Word, PDF, and HTML files in as Markdown (even images, via AI-powered OCR) and export notes or whole folders to PDF, DOCX, ODT, or HTML
 - 🔓 **100% open source** — MIT-licensed, every release built transparently from this repository by GitHub Actions
 - 🔒 **No telemetry** — no analytics, no account; the only automatic network call is an optional, disableable update check
 - ⚡ **Lightweight** — built with Tauri, starts instantly, files stay plain `.md`
@@ -120,6 +121,19 @@ and the source in this repository.
 - **Spell check as you type** — optional red-underline spell checking powered by your operating system's built-in spellchecker (toggle it in the toolbar options; on Linux it uses your installed Hunspell/enchant dictionaries)
 - Files are saved as clean, diff-friendly Markdown — fully portable to any other tool
 
+### 📥 Import your existing documents
+- **One-click import from the sidebar** — pick one or more files and each becomes a clean Markdown file in your vault
+- **Word (`.docx`), PDF, and HTML** are converted **entirely offline** — structure like headings, lists, emphasis, and tables is preserved as far as the source allows, and no AI or network connection is needed
+- **Embedded images** are extracted into the vault's `images/` folder and linked automatically, just like pasted images
+- **Images become text** — import screenshots, scans, or photos of pages (PNG, JPG, GIF, WebP) and your configured **vision-capable AI model** turns them into editable Markdown via OCR — locally, if that's where your model runs
+- Existing files are never overwritten — name conflicts get a numeric suffix, and a mixed batch imports what it can instead of failing as a whole
+
+### 📤 Export for sharing and printing
+- Right-click any file or folder in the sidebar and choose **Export…** — to **PDF, DOCX, ODT, or HTML**
+- **Whole folders export recursively**, preserving your subfolder structure — turn a project folder into a set of shareable documents in one go
+- Embedded images and emoji come along, rendered in a clean sans-serif document style
+- Safe by design: existing files are never silently overwritten — you're asked per file, with an "apply to all" option, and the last export destination is remembered
+
 ### 📂 File management built in
 - Open any folder and ScribeDog finds every `.md` file inside it, shown as a file tree in the sidebar
 - Create, rename, and delete files and folders directly from the sidebar
@@ -175,7 +189,6 @@ Ideas on the list for upcoming versions (subject to change, feedback welcome!):
 - 📚 **Context notes ("story bible")** — keep character sheets, glossaries, or project notes in a folder and have them automatically included as AI context
 - 🎯 **Writing goals & statistics** — word-count targets, reading time, daily progress
 - ✒️ **Offline style & readability analysis** — highlight filler words, passive voice, and long sentences; optional local grammar checking (e.g. LanguageTool)
-- 📤 **Export** — PDF, DOCX, and HTML export for sharing and printing
 - 💡 **AI autocomplete** — optional inline "ghost text" suggestions while you type, accepted with `Tab`
 
 Have a feature you'd love to see? [Open an issue](https://github.com/snooky234/scribedog/issues) — ScribeDog is shaped by its users.

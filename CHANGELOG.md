@@ -3,6 +3,12 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] - 2026-07-18
+
+### Highlights
+- Add document import for PDF, DOCX, HTML with image extraction
+- Add export to PDF, DOCX, ODT, HTML with emoji and sans-serif styling
+
 ## [0.3.0] - 2026-07-14
 
 ### Highlights
