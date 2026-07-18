@@ -49,6 +49,22 @@ function MenuPopup({ className, ...props }: MenuPrimitive.Popup.Props) {
   )
 }
 
+function MenuItem({ className, closeOnClick = true, children, ...props }: MenuPrimitive.Item.Props) {
+  return (
+    <MenuPrimitive.Item
+      data-slot="menu-item"
+      closeOnClick={closeOnClick}
+      className={cn(
+        "relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </MenuPrimitive.Item>
+  )
+}
+
 function MenuRadioGroup({ ...props }: MenuPrimitive.RadioGroup.Props) {
   return <MenuPrimitive.RadioGroup data-slot="menu-radio-group" {...props} />
 }
@@ -133,6 +149,7 @@ export {
   MenuPortal,
   MenuPositioner,
   MenuPopup,
+  MenuItem,
   MenuRadioGroup,
   MenuRadioItem,
   MenuRadioItemIndicator,

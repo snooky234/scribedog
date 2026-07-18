@@ -154,6 +154,7 @@
       "openFolder": "Abrir pasta",
       "newFile": "Criar novo arquivo",
       "saveFile": "Salvar arquivo",
+      "printFile": "Imprimir arquivo",
       "aiEditDialog": "Abrir diálogo de edição com IA",
       "aiSubmit": "Enviar solicitação de IA (no diálogo de IA)",
       "aiCheckDialog": "Verificar ortografia/gramática do texto selecionado",
@@ -254,6 +255,7 @@
     "aiThinkingOff": "Raciocínio: desativado",
     "optionsMenu": "Mais opções",
     "spellcheckToggle": "Verificação ortográfica (sublinhado vermelho)",
+    "printButton": "Imprimir",
     "spellcheckDictionaryMissing": "Nenhum dicionário ortográfico encontrado para \"{{code}}\". Instale um dicionário Hunspell (por ex. hunspell-{{code}}) através do seu gerenciador de pacotes."
   },
   "emojiPicker": {

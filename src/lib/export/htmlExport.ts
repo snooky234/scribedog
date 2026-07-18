@@ -74,7 +74,8 @@ function renderRuns(runs: InlineRun[], images: ExportImageMap): string {
       const asset = images.get(run.src);
 
       if (asset) {
-        html += `<img src="${asset.originalDataUrl}" alt="${escapeHtml(run.alt)}" />`;
+        const widthAttr = run.width ? ` width="${run.width}"` : "";
+        html += `<img src="${asset.originalDataUrl}" alt="${escapeHtml(run.alt)}"${widthAttr} />`;
       } else if (run.alt) {
         html += `<em>${escapeHtml(run.alt)}</em>`;
       }
@@ -182,6 +183,12 @@ function renderBlocks(blocks: ExportBlock[], images: ExportImageMap): string {
   }
 
   return html;
+}
+
+// Body-only variant for consumers that place the rendered blocks inside an
+// existing document (the in-app print flow) instead of a standalone file.
+export function renderHtmlBody(blocks: ExportBlock[], images: ExportImageMap): string {
+  return renderBlocks(blocks, images);
 }
 
 export function renderHtmlDocument(

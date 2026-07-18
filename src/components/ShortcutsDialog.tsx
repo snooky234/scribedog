@@ -19,6 +19,7 @@ const SHORTCUTS: ShortcutDefinition[] = [
   { id: "openFolder", keys: [[{ mod: "ctrl" }, { literal: "O" }]], descriptionKey: "shortcutsDialog.items.openFolder" },
   { id: "newFile", keys: [[{ mod: "ctrl" }, { literal: "N" }]], descriptionKey: "shortcutsDialog.items.newFile" },
   { id: "saveFile", keys: [[{ mod: "ctrl" }, { literal: "S" }]], descriptionKey: "shortcutsDialog.items.saveFile" },
+  { id: "printFile", keys: [[{ mod: "ctrl" }, { literal: "P" }]], descriptionKey: "shortcutsDialog.items.printFile" },
   {
     id: "aiEditDialog",
     keys: [[{ mod: "ctrl" }, { literal: "E" }], [{ special: "rightClick" }]],

@@ -154,6 +154,7 @@
       "openFolder": "Apri cartella",
       "newFile": "Crea nuovo file",
       "saveFile": "Salva file",
+      "printFile": "Stampa file",
       "aiEditDialog": "Apri finestra di modifica IA",
       "aiSubmit": "Invia richiesta IA (nella finestra IA)",
       "aiCheckDialog": "Controlla ortografia/grammatica del testo selezionato",
@@ -254,6 +255,7 @@
     "aiThinkingOff": "Ragionamento: disattivo",
     "optionsMenu": "Altre opzioni",
     "spellcheckToggle": "Controllo ortografico (sottolineatura rossa)",
+    "printButton": "Stampa",
     "spellcheckDictionaryMissing": "Nessun dizionario ortografico trovato per \"{{code}}\". Installa un dizionario Hunspell (ad es. hunspell-{{code}}) tramite il gestore pacchetti."
   },
   "emojiPicker": {

@@ -154,6 +154,7 @@
       "openFolder": "打开文件夹",
       "newFile": "新建文件",
       "saveFile": "保存文件",
+      "printFile": "打印文件",
       "aiEditDialog": "打开 AI 编辑对话框",
       "aiSubmit": "提交 AI 请求（在 AI 对话框中）",
       "aiCheckDialog": "检查所选文本的拼写/语法",
@@ -254,6 +255,7 @@
     "aiThinkingOff": "思考模式：关",
     "optionsMenu": "更多选项",
     "spellcheckToggle": "拼写检查（红色波浪线）",
+    "printButton": "打印",
     "spellcheckDictionaryMissing": "未找到“{{code}}”的拼写检查词典。请通过你的包管理器安装 Hunspell 词典（例如 hunspell-{{code}}）。"
   },
   "emojiPicker": {

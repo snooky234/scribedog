@@ -13,6 +13,7 @@ import {
   List,
   ListOrdered,
   PawPrint,
+  Printer,
   Quote,
   SpellCheck,
   Strikethrough,
@@ -30,6 +31,7 @@ import {
   Menu,
   MenuCheckboxItem,
   MenuCheckboxItemIndicator,
+  MenuItem,
   MenuPopup,
   MenuPortal,
   MenuPositioner,
@@ -50,6 +52,7 @@ type ToolbarProps = {
   onAiRequest: () => void;
   onAiCheckRequest: () => void;
   onAiSettingsRequest: () => void;
+  onPrintRequest: () => void;
 };
 
 const OPEN_AI_SETTINGS_VALUE = "__open-ai-settings__";
@@ -159,7 +162,7 @@ type MissingDictionary = {
   installCommand: string | null;
 };
 
-function EditorOptionsMenu() {
+function EditorOptionsMenu({ onPrintRequest }: { onPrintRequest: () => void }) {
   const { t, i18n } = useTranslation();
   const spellcheckEnabled = useEditorSettingsStore((state) => state.spellcheckEnabled);
   const setSpellcheckEnabled = useEditorSettingsStore((state) => state.setSpellcheckEnabled);
@@ -210,6 +213,10 @@ function EditorOptionsMenu() {
                 {t("toolbar.spellcheckToggle")}
                 <MenuCheckboxItemIndicator />
               </MenuCheckboxItem>
+              <MenuItem onClick={onPrintRequest}>
+                <Printer className="size-4" />
+                {t("toolbar.printButton")}
+              </MenuItem>
             </MenuPopup>
           </MenuPositioner>
         </MenuPortal>
@@ -245,7 +252,8 @@ export function Toolbar({
   onLinkRequest,
   onAiRequest,
   onAiCheckRequest,
-  onAiSettingsRequest
+  onAiSettingsRequest,
+  onPrintRequest
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [, forceRerender] = useState(0);
@@ -474,7 +482,7 @@ export function Toolbar({
       <div className="editor-toolbar__separator" aria-hidden="true" />
 
       <div className="editor-toolbar__group">
-        <EditorOptionsMenu />
+        <EditorOptionsMenu onPrintRequest={onPrintRequest} />
       </div>
     </div>
   );

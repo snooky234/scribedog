@@ -480,6 +480,16 @@ function App() {
         return;
       }
 
+      if (key === "p") {
+        event.preventDefault();
+
+        if (selectedFilePath) {
+          editorHandleRef.current?.printDocument();
+        }
+
+        return;
+      }
+
       if (key === "#" || event.code === "Backslash") {
         event.preventDefault();
         setIsShortcutsOpen(true);

@@ -17,7 +17,7 @@ export type InlineStyle = {
 
 export type InlineRun =
   | ({ kind: "text"; text: string } & InlineStyle)
-  | { kind: "image"; src: string; alt: string }
+  | { kind: "image"; src: string; alt: string; width: number | null }
   | { kind: "break" };
 
 export type TableCell = {
@@ -110,13 +110,20 @@ function parseInlineTokens(tokens: Token[]): InlineRun[] {
           styleStack.pop();
         }
         break;
-      case "image":
+      case "image": {
+        // The editor stores a drag-resized display width in the image title
+        // (`![alt](src "width=300")`, see Editor.tsx) — CommonMark has no
+        // native image-width syntax.
+        const widthMatch = /^width=(\d+)$/.exec(token.attrGet("title") ?? "");
+
         runs.push({
           kind: "image",
           src: token.attrGet("src") ?? "",
-          alt: token.content ?? ""
+          alt: token.content ?? "",
+          width: widthMatch ? Number(widthMatch[1]) : null
         });
         break;
+      }
       default:
         // html_inline etc. — render raw content as plain text if present.
         if (token.content) {

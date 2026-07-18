@@ -154,6 +154,7 @@
       "openFolder": "Ordner öffnen",
       "newFile": "Neue Datei anlegen",
       "saveFile": "Datei speichern",
+      "printFile": "Datei drucken",
       "aiEditDialog": "KI-Bearbeiten-Dialog öffnen",
       "aiSubmit": "KI-Anfrage absenden (im KI-Dialog)",
       "aiCheckDialog": "Ausgewählten Text auf Rechtschreibung/Grammatik prüfen",
@@ -254,6 +255,7 @@
     "aiThinkingOff": "Denken: aus",
     "optionsMenu": "Weitere Optionen",
     "spellcheckToggle": "Rechtschreibprüfung (rote Unterringelung)",
+    "printButton": "Drucken",
     "spellcheckDictionaryMissing": "Kein Rechtschreib-Wörterbuch für „{{code}}\" gefunden. Installiere z. B. ein Hunspell-Wörterbuch (etwa hunspell-{{code}}) über deinen Paketmanager."
   },
   "emojiPicker": {

@@ -154,6 +154,7 @@
       "openFolder": "フォルダーを開く",
       "newFile": "新規ファイルを作成",
       "saveFile": "ファイルを保存",
+      "printFile": "ファイルを印刷",
       "aiEditDialog": "AI 編集ダイアログを開く",
       "aiSubmit": "AI リクエストを送信（AI ダイアログ内）",
       "aiCheckDialog": "選択したテキストのスペル・文法をチェック",
@@ -254,6 +255,7 @@
     "aiThinkingOff": "思考モード：オフ",
     "optionsMenu": "その他のオプション",
     "spellcheckToggle": "スペルチェック（赤い波線）",
+    "printButton": "印刷",
     "spellcheckDictionaryMissing": "「{{code}}」用のスペルチェック辞書が見つかりません。パッケージマネージャーで Hunspell 辞書（例: hunspell-{{code}}）をインストールしてください。"
   },
   "emojiPicker": {

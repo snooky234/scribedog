@@ -154,6 +154,7 @@
       "openFolder": "Ouvrir un dossier",
       "newFile": "Créer un nouveau fichier",
       "saveFile": "Enregistrer le fichier",
+      "printFile": "Imprimer le fichier",
       "aiEditDialog": "Ouvrir la boîte de dialogue d'édition IA",
       "aiSubmit": "Envoyer la requête IA (dans la boîte de dialogue IA)",
       "aiCheckDialog": "Vérifier l'orthographe/la grammaire du texte sélectionné",
@@ -254,6 +255,7 @@
     "aiThinkingOff": "Réflexion : désactivée",
     "optionsMenu": "Plus d'options",
     "spellcheckToggle": "Vérification orthographique (soulignement rouge)",
+    "printButton": "Imprimer",
     "spellcheckDictionaryMissing": "Aucun dictionnaire orthographique trouvé pour « {{code}} ». Installez un dictionnaire Hunspell (par ex. hunspell-{{code}}) via votre gestionnaire de paquets."
   },
   "emojiPicker": {

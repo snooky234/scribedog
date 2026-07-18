@@ -154,6 +154,7 @@
       "openFolder": "Open folder",
       "newFile": "Create new file",
       "saveFile": "Save file",
+      "printFile": "Print file",
       "aiEditDialog": "Open AI edit dialog",
       "aiSubmit": "Submit AI request (in the AI dialog)",
       "aiCheckDialog": "Check selected text for spelling/grammar",
@@ -254,6 +255,7 @@
     "aiThinkingOff": "Thinking: off",
     "optionsMenu": "More options",
     "spellcheckToggle": "Spell check (red underline)",
+    "printButton": "Print",
     "spellcheckDictionaryMissing": "No spell-check dictionary found for \"{{code}}\". Install a Hunspell dictionary (e.g. hunspell-{{code}}) via your package manager."
   },
   "emojiPicker": {

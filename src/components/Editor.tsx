@@ -30,6 +30,7 @@ import { AiDiffWidget, updateAiDiffWidget } from "@/lib/aiDiffWidget";
 import { AiStreamWidget, updateAiStreamWidget } from "@/lib/aiStreamWidget";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { getRelativeImageMarkdownPath, saveImageToFolder } from "@/lib/fileSystem";
+import { printMarkdown } from "@/lib/print";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
@@ -176,6 +177,7 @@ type EditorProps = {
 
 export type EditorHandle = {
   cancelAiRequest: () => void;
+  printDocument: () => void;
 };
 
 type AiDraft = {
@@ -920,7 +922,24 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     aiAbortControllerRef.current?.abort();
   };
 
-  useImperativeHandle(ref, () => ({ cancelAiRequest }), []);
+  const printDocument = () => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor) {
+      return;
+    }
+
+    const markdownStorage = currentEditor.storage as {
+      markdown?: { getMarkdown: () => string };
+    };
+    const currentMarkdown = markdownStorage.markdown?.getMarkdown() ?? markdown;
+
+    printMarkdown(currentMarkdown, filePath).catch((error: unknown) => {
+      console.error("Print failed:", error);
+    });
+  };
+
+  useImperativeHandle(ref, () => ({ cancelAiRequest, printDocument }), []);
 
   useEffect(() => {
     onAiLoadingChange?.(isAiLoading);
@@ -1251,6 +1270,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         onAiRequest={openAiDraftFromSelection}
         onAiCheckRequest={runAiGrammarCheck}
         onAiSettingsRequest={onAiSettingsRequest}
+        onPrintRequest={printDocument}
       />
 
       <EditorFileContext.Provider value={{ folderPath, filePath }}>
