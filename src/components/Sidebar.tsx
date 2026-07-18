@@ -25,7 +25,7 @@ import {
   MenuRadioItemIndicator,
   MenuTrigger
 } from "@/components/ui/menu";
-import { FileTree, type PendingFolderRename } from "@/components/FileTree";
+import { FileTree, type BatchEntry, type PendingFolderRename } from "@/components/FileTree";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatFolderLabel } from "@/lib/fileSystem";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
@@ -52,8 +52,10 @@ type SidebarProps = {
   onSelectFilePath: (filePath: string) => Promise<void>;
   onDeleteFileRequest: (filePath: string) => void;
   onDeleteFolderRequest: (folderPath: string) => void;
+  onDeleteMultipleRequest: (entries: BatchEntry[]) => void;
   onExportFileRequest: (filePath: string) => void;
   onExportFolderRequest: (folderPath: string) => void;
+  onExportMultipleRequest: (entries: BatchEntry[]) => void;
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
   onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
@@ -85,8 +87,10 @@ export function Sidebar({
   onSelectFilePath,
   onDeleteFileRequest,
   onDeleteFolderRequest,
+  onDeleteMultipleRequest,
   onExportFileRequest,
   onExportFolderRequest,
+  onExportMultipleRequest,
   onRenameFolder,
   onRenameFile,
   onMoveEntry,
@@ -282,8 +286,10 @@ export function Sidebar({
             onCreateFileRequest={onCreateFileRequest}
             onDeleteFileRequest={onDeleteFileRequest}
             onDeleteFolderRequest={onDeleteFolderRequest}
+            onDeleteMultipleRequest={onDeleteMultipleRequest}
             onExportFileRequest={onExportFileRequest}
             onExportFolderRequest={onExportFolderRequest}
+            onExportMultipleRequest={onExportMultipleRequest}
             onRenameFolder={onRenameFolder}
             onRenameFile={onRenameFile}
             onMoveEntry={onMoveEntry}

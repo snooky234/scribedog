@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   EXPORT_FORMATS,
   exportFolderNotes,
+  exportMultipleNotes,
   exportSingleNote,
   getLastExportDirectory,
   getLastExportFormat,
@@ -14,14 +15,26 @@ import {
   type ExportFormat,
   type ExportOutcome,
   type ExportProgress,
-  type MarkdownReader
+  type MarkdownReader,
+  type MultipleExportEntry
 } from "@/lib/export/exporter";
 
-export type ExportDialogTarget = {
-  kind: "file" | "folder";
-  sourcePath: string;
-  defaultName: string;
-};
+export type ExportDialogTarget =
+  | {
+      kind: "file";
+      sourcePath: string;
+      defaultName: string;
+    }
+  | {
+      kind: "folder";
+      sourcePath: string;
+      defaultName: string;
+    }
+  | {
+      kind: "multiple";
+      entries: MultipleExportEntry[];
+      defaultName: string;
+    };
 
 type ExportDialogProps = {
   target: ExportDialogTarget | null;
@@ -153,15 +166,25 @@ export function ExportDialog({ target, readMarkdown, onClose }: ExportDialogProp
               readMarkdown,
               onConflict: resolveConflict
             })
-          : await exportFolderNotes({
-              sourceFolderPath: target.sourcePath,
-              format,
-              targetDirectory,
-              folderName: name.trim(),
-              readMarkdown,
-              onConflict: resolveConflict,
-              onProgress: setProgress
-            });
+          : target.kind === "folder"
+            ? await exportFolderNotes({
+                sourceFolderPath: target.sourcePath,
+                format,
+                targetDirectory,
+                folderName: name.trim(),
+                readMarkdown,
+                onConflict: resolveConflict,
+                onProgress: setProgress
+              })
+            : await exportMultipleNotes({
+                entries: target.entries,
+                format,
+                targetDirectory,
+                folderName: name.trim(),
+                readMarkdown,
+                onConflict: resolveConflict,
+                onProgress: setProgress
+              });
 
       if (result.cancelled) {
         onClose();
@@ -191,6 +214,8 @@ export function ExportDialog({ target, readMarkdown, onClose }: ExportDialogProp
   }
 
   const isFolder = target.kind === "folder";
+  const isMultiple = target.kind === "multiple";
+  const hasMultipleFiles = isFolder || isMultiple;
   const canExport = Boolean(targetDirectory) && name.trim().length > 0;
 
   return (
@@ -203,10 +228,22 @@ export function ExportDialog({ target, readMarkdown, onClose }: ExportDialogProp
         onClick={(event) => event.stopPropagation()}
       >
         <p className="unsaved-dialog__eyebrow">
-          {t(isFolder ? "exportDialog.eyebrowFolder" : "exportDialog.eyebrowFile")}
+          {t(
+            isMultiple
+              ? "exportDialog.eyebrowMultiple"
+              : isFolder
+                ? "exportDialog.eyebrowFolder"
+                : "exportDialog.eyebrowFile"
+          )}
         </p>
         <h3 id="export-dialog-title">
-          {t(isFolder ? "exportDialog.titleFolder" : "exportDialog.titleFile")}
+          {t(
+            isMultiple
+              ? "exportDialog.titleMultiple"
+              : isFolder
+                ? "exportDialog.titleFolder"
+                : "exportDialog.titleFile"
+          )}
         </h3>
 
         {conflict ? (
@@ -215,7 +252,7 @@ export function ExportDialog({ target, readMarkdown, onClose }: ExportDialogProp
               {t("exportDialog.conflictDescription", { fileName: conflict.fileName })}
             </p>
 
-            {isFolder ? (
+            {hasMultipleFiles ? (
               <label className="export-dialog__apply-all">
                 <input
                   type="checkbox"
@@ -230,7 +267,7 @@ export function ExportDialog({ target, readMarkdown, onClose }: ExportDialogProp
               <Button type="button" variant="outline" onClick={handleClose}>
                 {t("common.cancel")}
               </Button>
-              {isFolder ? (
+              {hasMultipleFiles ? (
                 <Button type="button" variant="outline" onClick={() => answerConflict("skip")}>
                   {t("exportDialog.conflictSkip")}
                 </Button>
@@ -258,7 +295,13 @@ export function ExportDialog({ target, readMarkdown, onClose }: ExportDialogProp
         ) : (
           <>
             <p className="unsaved-dialog__description">
-              {t(isFolder ? "exportDialog.descriptionFolder" : "exportDialog.descriptionFile")}
+              {t(
+                isMultiple
+                  ? "exportDialog.descriptionMultiple"
+                  : isFolder
+                    ? "exportDialog.descriptionFolder"
+                    : "exportDialog.descriptionFile"
+              )}
             </p>
 
             <div className="export-dialog__form">
@@ -278,7 +321,7 @@ export function ExportDialog({ target, readMarkdown, onClose }: ExportDialogProp
               </label>
 
               <label className="export-dialog__field">
-                <span>{t(isFolder ? "exportDialog.folderNameLabel" : "exportDialog.fileNameLabel")}</span>
+                <span>{t(hasMultipleFiles ? "exportDialog.folderNameLabel" : "exportDialog.fileNameLabel")}</span>
                 <input
                   ref={nameInputRef}
                   type="text"

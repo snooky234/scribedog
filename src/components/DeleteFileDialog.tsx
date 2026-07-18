@@ -7,6 +7,7 @@ type DeleteFileDialogProps = {
   open: boolean;
   kind?: "file" | "folder";
   fileLabel: string | null;
+  count?: number;
   isDeleting: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -16,6 +17,7 @@ export function DeleteFileDialog({
   open,
   kind = "file",
   fileLabel,
+  count,
   isDeleting,
   onConfirm,
   onCancel
@@ -62,19 +64,25 @@ export function DeleteFileDialog({
         onClick={(event) => event.stopPropagation()}
       >
         <p className="unsaved-dialog__eyebrow">
-          {t(kind === "folder" ? "deleteDialog.eyebrowFolder" : "deleteDialog.eyebrow")}
+          {count !== undefined && count > 1
+            ? t("deleteDialog.eyebrowMultiple")
+            : t(kind === "folder" ? "deleteDialog.eyebrowFolder" : "deleteDialog.eyebrow")}
         </p>
         <h3 id="delete-dialog-title">
-          {t(kind === "folder" ? "deleteDialog.titleFolder" : "deleteDialog.title")}
+          {count !== undefined && count > 1
+            ? t("deleteDialog.titleMultiple")
+            : t(kind === "folder" ? "deleteDialog.titleFolder" : "deleteDialog.title")}
         </h3>
         <p id="delete-dialog-description" className="unsaved-dialog__description">
-          {kind === "folder"
-            ? fileLabel
-              ? t("deleteDialog.descriptionFolderWithName", { folderLabel: fileLabel })
-              : t("deleteDialog.descriptionFolderGeneric")
-            : fileLabel
-              ? t("deleteDialog.descriptionWithName", { fileLabel })
-              : t("deleteDialog.descriptionGeneric")}
+          {count !== undefined && count > 1
+            ? t("deleteDialog.descriptionMultiple", { count })
+            : kind === "folder"
+              ? fileLabel
+                ? t("deleteDialog.descriptionFolderWithName", { folderLabel: fileLabel })
+                : t("deleteDialog.descriptionFolderGeneric")
+              : fileLabel
+                ? t("deleteDialog.descriptionWithName", { fileLabel })
+                : t("deleteDialog.descriptionGeneric")}
         </p>
 
         <div className="unsaved-dialog__actions">

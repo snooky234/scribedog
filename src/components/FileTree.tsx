@@ -48,6 +48,8 @@ type NodeContext = {
   indexInSiblings: number;
 };
 
+export type BatchEntry = { kind: "file" | "folder"; path: string };
+
 type FileTreeProps = {
   folderPath: string;
   filePaths: string[];
@@ -68,6 +70,8 @@ type FileTreeProps = {
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
   onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
+  onDeleteMultipleRequest: (entries: BatchEntry[]) => void;
+  onExportMultipleRequest: (entries: BatchEntry[]) => void;
   onRequestEditorFocus?: () => void;
   focusRequestId?: number;
 };
@@ -120,6 +124,59 @@ function flattenVisibleNodes(
   return result;
 }
 
+// Shift-click/Shift-Arrow range: every key between the anchor and the target
+// (inclusive), in flatNodes order — mirrors standard file-explorer behavior.
+function computeRangeKeys(
+  flatNodes: FileTreeNode[],
+  anchorKey: string | null,
+  targetKey: string
+): Set<string> {
+  const targetIndex = flatNodes.findIndex((node) => getNodeKey(node) === targetKey);
+
+  if (targetIndex === -1) {
+    return new Set([targetKey]);
+  }
+
+  const anchorIndex = anchorKey ? flatNodes.findIndex((node) => getNodeKey(node) === anchorKey) : -1;
+  const startIndex = anchorIndex === -1 ? 0 : Math.min(anchorIndex, targetIndex);
+  const endIndex = anchorIndex === -1 ? targetIndex : Math.max(anchorIndex, targetIndex);
+
+  const result = new Set<string>();
+
+  for (let index = startIndex; index <= endIndex; index += 1) {
+    result.add(getNodeKey(flatNodes[index]));
+  }
+
+  return result;
+}
+
+// Reduces a selection to independent top-level entries: any path whose
+// ancestor folder is also selected is dropped, since batch delete/move/export
+// already recurse into selected folders' full contents.
+function getTopLevelSelection(
+  keys: Iterable<string>,
+  flatNodes: FileTreeNode[]
+): FileTreeNode[] {
+  const nodeByKey = new Map(flatNodes.map((node) => [getNodeKey(node), node]));
+  const keyList = [...keys];
+  const selectedFolderRelativePaths = keyList
+    .map((key) => nodeByKey.get(key))
+    .filter((node): node is FileTreeNode & { kind: "folder" } => node?.kind === "folder")
+    .map((node) => node.relativePath);
+
+  return keyList
+    .map((key) => nodeByKey.get(key))
+    .filter((node): node is FileTreeNode => node !== undefined)
+    .filter(
+      (node) =>
+        !selectedFolderRelativePaths.some(
+          (folderRelativePath) =>
+            folderRelativePath !== node.relativePath &&
+            isDescendantRelativePath(folderRelativePath, node.relativePath)
+        )
+    );
+}
+
 // Maps every node's key to its parent folder's relativePath and its index
 // among the currently displayed siblings, so a drag & drop can compute the
 // insertion point relative to the target row.
@@ -143,7 +200,8 @@ function buildNodeContextMap(nodes: FileTreeNode[]): Map<string, NodeContext> {
 
 type FileContextMenuState =
   | { kind: "file"; filePath: string; x: number; y: number }
-  | { kind: "folder"; relativePath: string; x: number; y: number };
+  | { kind: "folder"; relativePath: string; x: number; y: number }
+  | { kind: "multiple"; keys: string[]; x: number; y: number };
 
 type RenamingTarget =
   | { kind: "file"; relativePath: string }
@@ -154,19 +212,17 @@ type TreeNodeRowProps = {
   depth: number;
   expandedFolderPaths: Set<string>;
   selectedFilePath: string | null;
+  selectedKeys: Set<string>;
   dirtyFilePaths: string[];
   activeKey: string | null;
   renamingTarget: RenamingTarget | null;
   renameDraft: string;
   renameInputRef: React.RefObject<HTMLInputElement>;
   sortMode: SortMode;
-  dragSourceKey: string | null;
+  dragSourceKeys: string[];
   dropIndicator: DropIndicator | null;
-  onToggleFolder: (relativePath: string) => void;
-  onSelectFilePath: (filePath: string) => Promise<void>;
-  onFileContextMenu: (filePath: string, x: number, y: number) => void;
-  onFolderContextMenu: (relativePath: string, x: number, y: number) => void;
-  onActivateNode: (node: FileTreeNode) => void;
+  onRowClick: (node: FileTreeNode, event: React.MouseEvent) => void;
+  onRowContextMenu: (node: FileTreeNode, x: number, y: number) => void;
   onRenameDraftChange: (value: string) => void;
   onCommitRename: () => void;
   onCancelRename: () => void;
@@ -182,19 +238,17 @@ function TreeNodeRow({
   depth,
   expandedFolderPaths,
   selectedFilePath,
+  selectedKeys,
   dirtyFilePaths,
   activeKey,
   renamingTarget,
   renameDraft,
   renameInputRef,
   sortMode,
-  dragSourceKey,
+  dragSourceKeys,
   dropIndicator,
-  onToggleFolder,
-  onSelectFilePath,
-  onFileContextMenu,
-  onFolderContextMenu,
-  onActivateNode,
+  onRowClick,
+  onRowContextMenu,
   onRenameDraftChange,
   onCommitRename,
   onCancelRename,
@@ -216,7 +270,8 @@ function TreeNodeRow({
       : "";
 
   const isDragEnabled = sortMode === "manual";
-  const isDragSource = dragSourceKey === key;
+  const isDragSource = dragSourceKeys.includes(key);
+  const isMultiSelected = selectedKeys.has(key);
   const activeDropPosition = dropIndicator?.key === key ? dropIndicator.position : null;
 
   const dragHandlers = isDragEnabled
@@ -301,8 +356,10 @@ function TreeNodeRow({
             type="button"
             role="treeitem"
             aria-expanded={isExpanded}
+            aria-selected={isMultiSelected}
             className={cn(
               "file-tree__row file-tree__row--folder",
+              isMultiSelected && "file-tree__row--selected",
               isDragSource && "file-tree__row--drag-source",
               activeDropPosition === "above" && "file-tree__row--drop-above",
               activeDropPosition === "below" && "file-tree__row--drop-below",
@@ -312,13 +369,10 @@ function TreeNodeRow({
             title={node.relativePath}
             tabIndex={tabIndex}
             ref={(element) => registerItemRef(key, element)}
-            onClick={() => {
-              onActivateNode(node);
-              onToggleFolder(node.relativePath);
-            }}
+            onClick={(event) => onRowClick(node, event)}
             onContextMenu={(event) => {
               event.preventDefault();
-              onFolderContextMenu(node.relativePath, event.clientX, event.clientY);
+              onRowContextMenu(node, event.clientX, event.clientY);
             }}
             {...dragHandlers}
           >
@@ -340,19 +394,17 @@ function TreeNodeRow({
                 depth={depth + 1}
                 expandedFolderPaths={expandedFolderPaths}
                 selectedFilePath={selectedFilePath}
+                selectedKeys={selectedKeys}
                 dirtyFilePaths={dirtyFilePaths}
                 activeKey={activeKey}
                 renamingTarget={renamingTarget}
                 renameDraft={renameDraft}
                 renameInputRef={renameInputRef}
                 sortMode={sortMode}
-                dragSourceKey={dragSourceKey}
+                dragSourceKeys={dragSourceKeys}
                 dropIndicator={dropIndicator}
-                onToggleFolder={onToggleFolder}
-                onSelectFilePath={onSelectFilePath}
-                onFileContextMenu={onFileContextMenu}
-                onFolderContextMenu={onFolderContextMenu}
-                onActivateNode={onActivateNode}
+                onRowClick={onRowClick}
+                onRowContextMenu={onRowContextMenu}
                 onRenameDraftChange={onRenameDraftChange}
                 onCommitRename={onCommitRename}
                 onCancelRename={onCancelRename}
@@ -410,10 +462,11 @@ function TreeNodeRow({
         <button
           type="button"
           role="treeitem"
-          aria-selected={isSelected}
+          aria-selected={isSelected || isMultiSelected}
           className={cn(
             "file-tree__row file-tree__row--file",
             isSelected && "file-tree__row--active",
+            isMultiSelected && "file-tree__row--selected",
             isDragSource && "file-tree__row--drag-source",
             activeDropPosition === "above" && "file-tree__row--drop-above",
             activeDropPosition === "below" && "file-tree__row--drop-below"
@@ -422,13 +475,10 @@ function TreeNodeRow({
           title={node.relativePath}
           tabIndex={tabIndex}
           ref={(element) => registerItemRef(key, element)}
-          onClick={() => {
-            onActivateNode(node);
-            onSelectFilePath(node.filePath);
-          }}
+          onClick={(event) => onRowClick(node, event)}
           onContextMenu={(event) => {
             event.preventDefault();
-            onFileContextMenu(node.filePath, event.clientX, event.clientY);
+            onRowContextMenu(node, event.clientX, event.clientY);
           }}
           {...dragHandlers}
         >
@@ -469,6 +519,8 @@ export function FileTree({
   onRenameFolder,
   onRenameFile,
   onMoveEntry,
+  onDeleteMultipleRequest,
+  onExportMultipleRequest,
   onRequestEditorFocus,
   focusRequestId
 }: FileTreeProps) {
@@ -478,9 +530,14 @@ export function FileTree({
   );
   const [contextMenu, setContextMenu] = useState<FileContextMenuState | null>(null);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  // Range anchor for Shift-click/Shift-Arrow is activeKey itself; rangeFocusKey
+  // tracks the moving edge across consecutive Shift+Arrow presses so the
+  // anchor stays fixed until a non-Shift interaction resets it.
+  const [rangeFocusKey, setRangeFocusKey] = useState<string | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set());
   const [renamingTarget, setRenamingTarget] = useState<RenamingTarget | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
-  const [dragSourceKey, setDragSourceKey] = useState<string | null>(null);
+  const [dragSourceKeys, setDragSourceKeys] = useState<string[]>([]);
   const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(null);
   const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -577,6 +634,32 @@ export function FileTree({
       return flatNodes.length > 0 ? getNodeKey(flatNodes[0]) : null;
     });
   }, [flatNodes]);
+
+  // Drops selected keys whose node no longer exists in the tree at all (e.g.
+  // after a batch delete/move) — merely collapsing a folder does not clear
+  // selections inside it, only nodes that actually vanished from the data.
+  useEffect(() => {
+    const allKeys = new Set(
+      (function collectAllKeys(nodes: FileTreeNode[]): string[] {
+        const keys: string[] = [];
+
+        for (const node of nodes) {
+          keys.push(getNodeKey(node));
+
+          if (node.kind === "folder") {
+            keys.push(...collectAllKeys(node.children));
+          }
+        }
+
+        return keys;
+      })(treeNodes)
+    );
+
+    setSelectedKeys((currentKeys) => {
+      const nextKeys = new Set([...currentKeys].filter((key) => allKeys.has(key)));
+      return nextKeys.size === currentKeys.size ? currentKeys : nextKeys;
+    });
+  }, [treeNodes]);
 
   // Focus request from outside (editor: Shift+Tab) returns focus to the
   // sidebar, onto the active tree entry.
@@ -693,8 +776,61 @@ export function FileTree({
     }
   }, [folderPath, onRenameFolder, onRenameFile, renameDraft, renamingTarget]);
 
-  const handleActivateNode = (node: FileTreeNode) => {
-    setActiveKey(getNodeKey(node));
+  const toggleFolder = (relativePath: string) => {
+    setExpandedFolderPaths((currentPaths) => {
+      const nextPaths = new Set(currentPaths);
+
+      if (nextPaths.has(relativePath)) {
+        nextPaths.delete(relativePath);
+      } else {
+        nextPaths.add(relativePath);
+      }
+
+      setStoredExpandedFolderPaths(folderPath, nextPaths);
+
+      return nextPaths;
+    });
+  };
+
+  const handleRowClick = (node: FileTreeNode, event: React.MouseEvent) => {
+    const key = getNodeKey(node);
+
+    if (event.ctrlKey || event.metaKey) {
+      setSelectedKeys((currentKeys) => {
+        const nextKeys = new Set(currentKeys);
+
+        if (nextKeys.has(key)) {
+          nextKeys.delete(key);
+        } else {
+          nextKeys.add(key);
+        }
+
+        return nextKeys;
+      });
+      setActiveKey(key);
+      setRangeFocusKey(null);
+      return;
+    }
+
+    if (event.shiftKey) {
+      setSelectedKeys(computeRangeKeys(flatNodes, activeKey, key));
+      setRangeFocusKey(key);
+
+      if (node.kind === "file") {
+        void onSelectFilePath(node.filePath);
+      }
+      return;
+    }
+
+    setSelectedKeys(new Set([key]));
+    setActiveKey(key);
+    setRangeFocusKey(null);
+
+    if (node.kind === "folder") {
+      toggleFolder(node.relativePath);
+    } else {
+      void onSelectFilePath(node.filePath);
+    }
   };
 
   const handleTreeKeyDown = (event: React.KeyboardEvent<HTMLUListElement>) => {
@@ -705,8 +841,9 @@ export function FileTree({
 
       event.preventDefault();
 
-      const currentIndex = activeKey
-        ? flatNodes.findIndex((node) => getNodeKey(node) === activeKey)
+      const anchorForMovement = event.shiftKey ? (rangeFocusKey ?? activeKey) : activeKey;
+      const currentIndex = anchorForMovement
+        ? flatNodes.findIndex((node) => getNodeKey(node) === anchorForMovement)
         : -1;
 
       const nextIndex =
@@ -717,10 +854,24 @@ export function FileTree({
               flatNodes.length - 1
             );
 
-      const nextKey = getNodeKey(flatNodes[nextIndex]);
+      const nextNode = flatNodes[nextIndex];
+      const nextKey = getNodeKey(nextNode);
+
+      itemRefs.current.get(nextKey)?.focus();
+
+      if (event.shiftKey) {
+        setSelectedKeys(computeRangeKeys(flatNodes, activeKey, nextKey));
+        setRangeFocusKey(nextKey);
+        return;
+      }
 
       setActiveKey(nextKey);
-      itemRefs.current.get(nextKey)?.focus();
+      setSelectedKeys(new Set([nextKey]));
+      setRangeFocusKey(null);
+
+      if (nextNode.kind === "file") {
+        void onSelectFilePath(nextNode.filePath);
+      }
       return;
     }
 
@@ -760,25 +911,18 @@ export function FileTree({
     };
   }, [contextMenu]);
 
-  const toggleFolder = (relativePath: string) => {
-    setExpandedFolderPaths((currentPaths) => {
-      const nextPaths = new Set(currentPaths);
+  const handleRowDragStart = useCallback(
+    (node: FileTreeNode) => {
+      const key = getNodeKey(node);
 
-      if (nextPaths.has(relativePath)) {
-        nextPaths.delete(relativePath);
+      if (selectedKeys.has(key) && selectedKeys.size > 1) {
+        setDragSourceKeys([...selectedKeys]);
       } else {
-        nextPaths.add(relativePath);
+        setDragSourceKeys([key]);
       }
-
-      setStoredExpandedFolderPaths(folderPath, nextPaths);
-
-      return nextPaths;
-    });
-  };
-
-  const handleRowDragStart = useCallback((node: FileTreeNode) => {
-    setDragSourceKey(getNodeKey(node));
-  }, []);
+    },
+    [selectedKeys]
+  );
 
   const handleRowDropIndicatorChange = useCallback((key: string, position: DropPosition | null) => {
     setDropIndicator((current) => {
@@ -795,36 +939,39 @@ export function FileTree({
   }, []);
 
   const handleRowDragEnd = useCallback(() => {
-    setDragSourceKey(null);
+    setDragSourceKeys([]);
     setDropIndicator(null);
   }, []);
 
   const handleRowDrop = useCallback(
     (targetNode: FileTreeNode, position: DropPosition) => {
-      const sourceKey = dragSourceKey;
-      setDragSourceKey(null);
+      const sourceKeys = dragSourceKeys;
+      setDragSourceKeys([]);
       setDropIndicator(null);
 
-      if (!sourceKey) {
+      if (sourceKeys.length === 0) {
         return;
       }
 
-      const separatorIndex = sourceKey.indexOf(":");
-      const sourceKind = sourceKey.slice(0, separatorIndex) as "file" | "folder";
-      const sourceRelativePath = sourceKey.slice(separatorIndex + 1);
       const targetKey = getNodeKey(targetNode);
 
-      if (sourceKey === targetKey) {
+      if (sourceKeys.includes(targetKey)) {
         return;
       }
 
-      if (sourceKind === "folder" && isDescendantRelativePath(sourceRelativePath, targetNode.relativePath)) {
+      const topLevelSourceNodes = getTopLevelSelection(sourceKeys, flatNodes);
+
+      if (
+        topLevelSourceNodes.some(
+          (sourceNode) =>
+            sourceNode.kind === "folder" &&
+            isDescendantRelativePath(sourceNode.relativePath, targetNode.relativePath)
+        )
+      ) {
         return;
       }
 
       void (async () => {
-        const sourcePath = await join(folderPath, sourceRelativePath);
-
         let targetParentDirectory: string;
         let targetIndex: number;
 
@@ -844,27 +991,57 @@ export function FileTree({
 
           targetIndex = position === "above" ? context.indexInSiblings : context.indexInSiblings + 1;
 
-          const sourceContext = nodeContextByKey.get(sourceKey);
+          const firstSourceContext = nodeContextByKey.get(getNodeKey(topLevelSourceNodes[0]));
 
           if (
-            sourceContext &&
-            sourceContext.parentRelativePath === context.parentRelativePath &&
-            sourceContext.indexInSiblings < context.indexInSiblings
+            firstSourceContext &&
+            firstSourceContext.parentRelativePath === context.parentRelativePath &&
+            firstSourceContext.indexInSiblings < context.indexInSiblings
           ) {
             targetIndex -= 1;
           }
         }
 
-        await onMoveEntry({
-          kind: sourceKind,
-          sourcePath,
-          targetParentDirectory,
-          targetIndex
-        });
+        // Sequential awaits: moveTreeEntry reads fresh state via get() per
+        // call, so parallel calls would clobber each other's writes.
+        for (const sourceNode of topLevelSourceNodes) {
+          const sourcePath = await join(folderPath, sourceNode.relativePath);
+          const didMove = await onMoveEntry({
+            kind: sourceNode.kind,
+            sourcePath,
+            targetParentDirectory,
+            targetIndex
+          });
+
+          if (didMove) {
+            targetIndex += 1;
+          }
+        }
+
+        setSelectedKeys(new Set());
       })();
     },
-    [dragSourceKey, folderPath, nodeContextByKey, onMoveEntry]
+    [dragSourceKeys, flatNodes, folderPath, nodeContextByKey, onMoveEntry]
   );
+
+  const handleRowContextMenu = (node: FileTreeNode, x: number, y: number) => {
+    const key = getNodeKey(node);
+
+    if (selectedKeys.has(key) && selectedKeys.size > 1) {
+      setContextMenu({ kind: "multiple", keys: [...selectedKeys], x, y });
+      return;
+    }
+
+    setSelectedKeys(new Set([key]));
+    setActiveKey(key);
+    setRangeFocusKey(null);
+
+    if (node.kind === "folder") {
+      setContextMenu({ kind: "folder", relativePath: node.relativePath, x, y });
+    } else {
+      setContextMenu({ kind: "file", filePath: node.filePath, x, y });
+    }
+  };
 
   return (
     <>
@@ -881,21 +1058,17 @@ export function FileTree({
             depth={0}
             expandedFolderPaths={expandedFolderPaths}
             selectedFilePath={selectedFilePath}
+            selectedKeys={selectedKeys}
             dirtyFilePaths={dirtyFilePaths}
             activeKey={activeKey}
             renamingTarget={renamingTarget}
             renameDraft={renameDraft}
             renameInputRef={renameInputRef}
             sortMode={sortMode}
-            dragSourceKey={dragSourceKey}
+            dragSourceKeys={dragSourceKeys}
             dropIndicator={dropIndicator}
-            onToggleFolder={toggleFolder}
-            onSelectFilePath={onSelectFilePath}
-            onFileContextMenu={(filePath, x, y) => setContextMenu({ kind: "file", filePath, x, y })}
-            onFolderContextMenu={(relativePath, x, y) =>
-              setContextMenu({ kind: "folder", relativePath, x, y })
-            }
-            onActivateNode={handleActivateNode}
+            onRowClick={handleRowClick}
+            onRowContextMenu={handleRowContextMenu}
             onRenameDraftChange={setRenameDraft}
             onCommitRename={() => void commitRename()}
             onCancelRename={cancelRename}
@@ -916,77 +1089,137 @@ export function FileTree({
               style={{ top: contextMenu.y, left: contextMenu.x }}
               onClick={(event) => event.stopPropagation()}
             >
-              <button
-                type="button"
-                role="menuitem"
-                className="file-tree-context-menu__item"
-                onClick={() => {
-                  const targetDirectoryPromise =
-                    contextMenu.kind === "folder"
-                      ? join(folderPath, contextMenu.relativePath)
-                      : dirname(contextMenu.filePath);
+              {contextMenu.kind === "multiple" ? (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="file-tree-context-menu__item"
+                    onClick={() => {
+                      const entries = getTopLevelSelection(contextMenu.keys, flatNodes).map(
+                        (node): BatchEntry => ({
+                          kind: node.kind,
+                          path: node.kind === "file" ? node.filePath : node.relativePath
+                        })
+                      );
 
-                  void targetDirectoryPromise.then(onCreateFileRequest);
-                  setContextMenu(null);
-                }}
-              >
-                <FilePlus aria-hidden="true" />
-                {t("sidebar.newFile")}
-              </button>
+                      void Promise.all(
+                        entries.map(async (entry) => ({
+                          kind: entry.kind,
+                          path:
+                            entry.kind === "folder" ? await join(folderPath, entry.path) : entry.path
+                        }))
+                      ).then(onExportMultipleRequest);
 
-              <button
-                type="button"
-                role="menuitem"
-                className="file-tree-context-menu__item"
-                onClick={() => {
-                  if (contextMenu.kind === "folder") {
-                    startFolderRename(contextMenu.relativePath);
-                  } else {
-                    startFileRename(getRelativeDisplayPath(folderPath, contextMenu.filePath));
-                  }
+                      setContextMenu(null);
+                    }}
+                  >
+                    <Download aria-hidden="true" />
+                    {t("fileTree.export")}
+                  </button>
 
-                  setContextMenu(null);
-                }}
-              >
-                <Pencil aria-hidden="true" />
-                {t("fileTree.rename")}
-              </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="file-tree-context-menu__item file-tree-context-menu__item--danger"
+                    onClick={() => {
+                      const entries = getTopLevelSelection(contextMenu.keys, flatNodes).map(
+                        (node): BatchEntry => ({
+                          kind: node.kind,
+                          path: node.kind === "file" ? node.filePath : node.relativePath
+                        })
+                      );
 
-              <button
-                type="button"
-                role="menuitem"
-                className="file-tree-context-menu__item"
-                onClick={() => {
-                  if (contextMenu.kind === "folder") {
-                    void join(folderPath, contextMenu.relativePath).then(onExportFolderRequest);
-                  } else {
-                    onExportFileRequest(contextMenu.filePath);
-                  }
+                      void Promise.all(
+                        entries.map(async (entry) => ({
+                          kind: entry.kind,
+                          path:
+                            entry.kind === "folder" ? await join(folderPath, entry.path) : entry.path
+                        }))
+                      ).then(onDeleteMultipleRequest);
 
-                  setContextMenu(null);
-                }}
-              >
-                <Download aria-hidden="true" />
-                {t("fileTree.export")}
-              </button>
+                      setContextMenu(null);
+                    }}
+                  >
+                    <Trash2 aria-hidden="true" />
+                    {t("fileTree.delete")}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="file-tree-context-menu__item"
+                    onClick={() => {
+                      const targetDirectoryPromise =
+                        contextMenu.kind === "folder"
+                          ? join(folderPath, contextMenu.relativePath)
+                          : dirname(contextMenu.filePath);
 
-              <button
-                type="button"
-                role="menuitem"
-                className="file-tree-context-menu__item file-tree-context-menu__item--danger"
-                onClick={() => {
-                  if (contextMenu.kind === "folder") {
-                    void join(folderPath, contextMenu.relativePath).then(onDeleteFolderRequest);
-                  } else {
-                    onDeleteFileRequest(contextMenu.filePath);
-                  }
+                      void targetDirectoryPromise.then(onCreateFileRequest);
+                      setContextMenu(null);
+                    }}
+                  >
+                    <FilePlus aria-hidden="true" />
+                    {t("sidebar.newFile")}
+                  </button>
 
-                  setContextMenu(null);
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-                {t("fileTree.delete")}
-              </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="file-tree-context-menu__item"
+                    onClick={() => {
+                      if (contextMenu.kind === "folder") {
+                        startFolderRename(contextMenu.relativePath);
+                      } else {
+                        startFileRename(getRelativeDisplayPath(folderPath, contextMenu.filePath));
+                      }
+
+                      setContextMenu(null);
+                    }}
+                  >
+                    <Pencil aria-hidden="true" />
+                    {t("fileTree.rename")}
+                  </button>
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="file-tree-context-menu__item"
+                    onClick={() => {
+                      if (contextMenu.kind === "folder") {
+                        void join(folderPath, contextMenu.relativePath).then(onExportFolderRequest);
+                      } else {
+                        onExportFileRequest(contextMenu.filePath);
+                      }
+
+                      setContextMenu(null);
+                    }}
+                  >
+                    <Download aria-hidden="true" />
+                    {t("fileTree.export")}
+                  </button>
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="file-tree-context-menu__item file-tree-context-menu__item--danger"
+                    onClick={() => {
+                      if (contextMenu.kind === "folder") {
+                        void join(folderPath, contextMenu.relativePath).then(onDeleteFolderRequest);
+                      } else {
+                        onDeleteFileRequest(contextMenu.filePath);
+                      }
+
+                      setContextMenu(null);
+                    }}
+                  >
+                    <Trash2 aria-hidden="true" />
+                    {t("fileTree.delete")}
+                  </button>
+                </>
+              )}
             </div>,
             document.body
           )

@@ -80,7 +80,9 @@ function App() {
   const [titleDraft, setTitleDraft] = useState("");
   const [renameSessionId, setRenameSessionId] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<
-    { kind: "file" | "folder"; path: string } | null
+    | { kind: "file" | "folder"; path: string }
+    | { kind: "multiple"; paths: Array<{ kind: "file" | "folder"; path: string }> }
+    | null
   >(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportTarget, setExportTarget] = useState<ExportDialogTarget | null>(null);
@@ -171,9 +173,11 @@ function App() {
     selectedFilePath !== null && !filePaths.includes(selectedFilePath);
 
   const deleteTargetLabel =
-    deleteTarget && folderPath
+    deleteTarget && deleteTarget.kind !== "multiple" && folderPath
       ? getRelativeDisplayPath(folderPath, deleteTarget.path)
-      : (deleteTarget?.path ?? null);
+      : deleteTarget && deleteTarget.kind !== "multiple"
+        ? deleteTarget.path
+        : null;
 
   const pendingTargetLabel = pendingNavigation
     ? pendingNavigation.type === "file"
@@ -271,6 +275,19 @@ function App() {
     setDeleteTarget({ kind: "folder", path: folderPath });
   };
 
+  const requestDeleteMultiple = (paths: Array<{ kind: "file" | "folder"; path: string }>) => {
+    if (paths.length === 0) {
+      return;
+    }
+
+    if (paths.length === 1) {
+      setDeleteTarget(paths[0]);
+      return;
+    }
+
+    setDeleteTarget({ kind: "multiple", paths });
+  };
+
   const requestExportFile = (filePath: string) => {
     setExportTarget({
       kind: "file",
@@ -284,6 +301,30 @@ function App() {
       kind: "folder",
       sourcePath: exportFolderPath,
       defaultName: getDefaultExportBaseName(exportFolderPath)
+    });
+  };
+
+  const requestExportMultiple = (entries: Array<{ kind: "file" | "folder"; path: string }>) => {
+    if (entries.length === 0) {
+      return;
+    }
+
+    if (entries.length === 1) {
+      const [entry] = entries;
+
+      if (entry.kind === "file") {
+        requestExportFile(entry.path);
+      } else {
+        requestExportFolder(entry.path);
+      }
+
+      return;
+    }
+
+    setExportTarget({
+      kind: "multiple",
+      entries,
+      defaultName: t("exportDialog.defaultMultipleName")
     });
   };
 
@@ -332,6 +373,19 @@ function App() {
     }
 
     setIsDeleting(true);
+
+    if (deleteTarget.kind === "multiple") {
+      // Sequential: each store call reads fresh state via get(), so parallel
+      // calls would clobber each other's writes.
+      for (const entry of deleteTarget.paths) {
+        await (entry.kind === "file" ? deleteFilePath(entry.path) : deleteFolderPath(entry.path));
+      }
+
+      setIsDeleting(false);
+      setDeleteTarget(null);
+      return;
+    }
+
     const didDelete =
       deleteTarget.kind === "file"
         ? await deleteFilePath(deleteTarget.path)
@@ -609,8 +663,10 @@ function App() {
             onSelectFilePath={selectFilePathSafely}
             onDeleteFileRequest={requestDeleteFile}
             onDeleteFolderRequest={requestDeleteFolder}
+            onDeleteMultipleRequest={requestDeleteMultiple}
             onExportFileRequest={requestExportFile}
             onExportFolderRequest={requestExportFolder}
+            onExportMultipleRequest={requestExportMultiple}
             onRenameFolder={renameFolderPath}
             onRenameFile={renameFilePath}
             onMoveEntry={moveTreeEntry}
@@ -792,8 +848,9 @@ function App() {
 
       <DeleteFileDialog
         open={deleteTarget !== null}
-        kind={deleteTarget?.kind ?? "file"}
+        kind={deleteTarget && deleteTarget.kind !== "multiple" ? deleteTarget.kind : "file"}
         fileLabel={deleteTargetLabel}
+        count={deleteTarget?.kind === "multiple" ? deleteTarget.paths.length : undefined}
         isDeleting={isDeleting}
         onConfirm={() => void confirmDeleteTarget()}
         onCancel={cancelDeleteTarget}

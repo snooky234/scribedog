@@ -1,7 +1,7 @@
 import { join } from "@tauri-apps/api/path";
 import { exists, mkdir, writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
 
-import { allowMarkdownFolderAccess, listMarkdownFiles } from "@/lib/fileSystem";
+import { allowMarkdownFolderAccess, listMarkdownFiles, type MarkdownFileRecord } from "@/lib/fileSystem";
 import { collectImageSrcs, loadExportImages } from "./imageAssets";
 import { parseMarkdownToBlocks } from "./markdownModel";
 
@@ -172,26 +172,20 @@ export type FolderExportInput = {
   onProgress?: (progress: ExportProgress) => void;
 };
 
-// Exports every note under the folder, preserving the subfolder structure.
-// An existing target folder is merged into (per the issue: never replaced);
-// per-file conflicts go through the resolver, honoring "apply to all".
-export async function exportFolderNotes(input: FolderExportInput): Promise<ExportOutcome> {
-  const {
-    sourceFolderPath,
-    format,
-    targetDirectory,
-    folderName,
-    readMarkdown,
-    onConflict,
-    onProgress
-  } = input;
+type ExportRecordsInput = {
+  records: MarkdownFileRecord[];
+  format: ExportFormat;
+  exportRootPath: string;
+  readMarkdown: MarkdownReader;
+  onConflict: ConflictResolver;
+  onProgress?: (progress: ExportProgress) => void;
+};
 
-  await allowMarkdownFolderAccess(targetDirectory);
-
-  const records = await listMarkdownFiles(sourceFolderPath);
-  const exportRootPath = await join(targetDirectory, sanitizeExportName(folderName));
-
-  await mkdir(exportRootPath, { recursive: true });
+// Shared write/conflict/progress core for exporting a resolved list of notes
+// (each with a relativePath under exportRootPath) — used by both the
+// single-folder export and the multi-selection export.
+async function writeExportRecords(input: ExportRecordsInput): Promise<ExportOutcome> {
+  const { records, format, exportRootPath, readMarkdown, onConflict, onProgress } = input;
 
   let exportedCount = 0;
   let skippedCount = 0;
@@ -254,10 +248,102 @@ export async function exportFolderNotes(input: FolderExportInput): Promise<Expor
   }
 
   onProgress?.({ completed: records.length, total: records.length, currentFileName: "" });
+
+  return { exportedCount, skippedCount, cancelled: false };
+}
+
+// Exports every note under the folder, preserving the subfolder structure.
+// An existing target folder is merged into (per the issue: never replaced);
+// per-file conflicts go through the resolver, honoring "apply to all".
+export async function exportFolderNotes(input: FolderExportInput): Promise<ExportOutcome> {
+  const {
+    sourceFolderPath,
+    format,
+    targetDirectory,
+    folderName,
+    readMarkdown,
+    onConflict,
+    onProgress
+  } = input;
+
+  await allowMarkdownFolderAccess(targetDirectory);
+
+  const records = await listMarkdownFiles(sourceFolderPath);
+  const exportRootPath = await join(targetDirectory, sanitizeExportName(folderName));
+
+  await mkdir(exportRootPath, { recursive: true });
+
+  const outcome = await writeExportRecords({
+    records,
+    format,
+    exportRootPath,
+    readMarkdown,
+    onConflict,
+    onProgress
+  });
+
   setLastExportDirectory(targetDirectory);
   setLastExportFormat(format);
 
-  return { exportedCount, skippedCount, cancelled: false };
+  return outcome;
+}
+
+export type MultipleExportEntry = { kind: "file" | "folder"; path: string };
+
+export type MultipleExportInput = {
+  entries: MultipleExportEntry[];
+  format: ExportFormat;
+  targetDirectory: string;
+  folderName: string;
+  readMarkdown: MarkdownReader;
+  onConflict: ConflictResolver;
+  onProgress?: (progress: ExportProgress) => void;
+};
+
+// Exports an arbitrary multi-selection (files and/or folders) into a single
+// destination folder: each selected file becomes one record, each selected
+// folder is resolved recursively via listMarkdownFiles and its own name is
+// prefixed onto the relativePath so its subfolder structure is preserved.
+export async function exportMultipleNotes(input: MultipleExportInput): Promise<ExportOutcome> {
+  const { entries, format, targetDirectory, folderName, readMarkdown, onConflict, onProgress } = input;
+
+  await allowMarkdownFolderAccess(targetDirectory);
+
+  const recordLists = await Promise.all(
+    entries.map(async (entry): Promise<MarkdownFileRecord[]> => {
+      if (entry.kind === "file") {
+        const fileName = entry.path.replace(/\\/g, "/").split("/").pop() ?? entry.path;
+        return [{ filePath: entry.path, relativePath: fileName, mtimeMs: 0 }];
+      }
+
+      const folderBaseName = entry.path.replace(/\\/g, "/").replace(/\/+$/, "").split("/").pop() ?? entry.path;
+      const nestedRecords = await listMarkdownFiles(entry.path);
+
+      return nestedRecords.map((record) => ({
+        ...record,
+        relativePath: `${sanitizeExportName(folderBaseName)}/${record.relativePath}`
+      }));
+    })
+  );
+
+  const records = recordLists.flat();
+  const exportRootPath = await join(targetDirectory, sanitizeExportName(folderName));
+
+  await mkdir(exportRootPath, { recursive: true });
+
+  const outcome = await writeExportRecords({
+    records,
+    format,
+    exportRootPath,
+    readMarkdown,
+    onConflict,
+    onProgress
+  });
+
+  setLastExportDirectory(targetDirectory);
+  setLastExportFormat(format);
+
+  return outcome;
 }
 
 export async function countExportableNotes(sourceFolderPath: string): Promise<number> {

@@ -25,6 +25,7 @@
   --surface-strong-rgb: 255, 255, 255;
   --surface-hover-rgb: 241, 245, 249;
   --surface-active-rgb: 226, 232, 240;
+  --selection-rgb: 37, 99, 235;
   --backdrop-rgb: 100, 116, 139;
   --body-bg-start: #f8fafc;
   --body-bg-end: #f2f4f7;
@@ -83,6 +84,7 @@
   --surface-strong-rgb: 18, 18, 20;
   --surface-hover-rgb: 34, 34, 36;
   --surface-active-rgb: 42, 42, 44;
+  --selection-rgb: 96, 165, 250;
   --backdrop-rgb: 6, 8, 11;
   --body-bg-start: #111214;
   --body-bg-end: #090a0c;
@@ -432,6 +434,20 @@ body.is-resizing-sidebar {
 
 .file-tree__row--active {
   background: rgba(var(--surface-active-rgb),0.96);
+}
+
+.file-tree__row--selected {
+  background: rgba(var(--selection-rgb), 0.22);
+  outline: 1px solid rgba(var(--selection-rgb), 0.55);
+  outline-offset: -1px;
+}
+
+.file-tree__row--selected:hover {
+  background: rgba(var(--selection-rgb), 0.3);
+}
+
+.file-tree__row--selected.file-tree__row--active {
+  background: rgba(var(--selection-rgb), 0.32);
 }
 
 .file-tree__row svg {
