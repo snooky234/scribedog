@@ -81,6 +81,23 @@
     "doneSummary": "Export finished: {{exportedCount}} exported, {{skippedCount}} skipped.",
     "errorMessage": "Export failed: {{message}}"
   },
+  "importDialog": {
+    "eyebrow": "Import",
+    "title": "Import files",
+    "chooseFilesTitle": "Choose files to import",
+    "filterName": "Supported files",
+    "importing": "Importing …",
+    "cancelling": "Cancelling …",
+    "progress": "Importing {{completed}} of {{total}} …",
+    "doneSummary": "Import finished: {{doneCount}} imported, {{errorCount}} failed.",
+    "doneSummaryCancelled": "Import cancelled: {{doneCount}} imported, {{errorCount}} failed, {{cancelledCount}} skipped.",
+    "errorLegacyDoc": "The legacy .doc format is not supported. Save the file as .docx and import it again.",
+    "errorUnsupported": "File type is not supported.",
+    "errorConvert": "Conversion failed: {{message}}",
+    "errorWrite": "File could not be written: {{message}}",
+    "errorOcrNoModel": "No AI model is configured. Load a vision-capable model in the AI settings to import images.",
+    "errorOcrProvider": "The image could not be transcribed — the configured model may not support images. ({{message}})"
+  },
   "settingsDialog": {
     "title": "Settings",
     "tabsAriaLabel": "Settings categories",
@@ -160,6 +177,7 @@
     "openFolder": "Open folder",
     "newFile": "New file",
     "newFolder": "New folder",
+    "importFiles": "Import files",
     "deleteFile": "Delete file",
     "deleteSelectedFile": "Delete selected file",
     "settings": "Settings",

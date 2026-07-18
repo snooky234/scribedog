@@ -81,6 +81,23 @@
     "doneSummary": "Exportación finalizada: {{exportedCount}} exportados, {{skippedCount}} omitidos.",
     "errorMessage": "Error al exportar: {{message}}"
   },
+  "importDialog": {
+    "eyebrow": "Importar",
+    "title": "Importar archivos",
+    "chooseFilesTitle": "Elegir archivos para importar",
+    "filterName": "Archivos compatibles",
+    "importing": "Importando …",
+    "cancelling": "Cancelando …",
+    "progress": "Importando {{completed}} de {{total}} …",
+    "doneSummary": "Importación finalizada: {{doneCount}} importados, {{errorCount}} con errores.",
+    "doneSummaryCancelled": "Importación cancelada: {{doneCount}} importados, {{errorCount}} con errores, {{cancelledCount}} omitidos.",
+    "errorLegacyDoc": "El formato antiguo .doc no es compatible. Guarda el archivo como .docx e impórtalo de nuevo.",
+    "errorUnsupported": "Tipo de archivo no compatible.",
+    "errorConvert": "Error de conversión: {{message}}",
+    "errorWrite": "No se pudo escribir el archivo: {{message}}",
+    "errorOcrNoModel": "No hay ningún modelo de IA configurado. Carga un modelo con capacidad de visión en los ajustes de IA para importar imágenes.",
+    "errorOcrProvider": "No se pudo transcribir la imagen — puede que el modelo configurado no admita imágenes. ({{message}})"
+  },
   "settingsDialog": {
     "title": "Configuración",
     "tabsAriaLabel": "Categorías de configuración",
@@ -160,6 +177,7 @@
     "openFolder": "Abrir carpeta",
     "newFile": "Nuevo archivo",
     "newFolder": "Nueva carpeta",
+    "importFiles": "Importar archivos",
     "deleteFile": "Eliminar archivo",
     "deleteSelectedFile": "Eliminar archivo seleccionado",
     "settings": "Configuración",

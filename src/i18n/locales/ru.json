@@ -81,6 +81,23 @@
     "doneSummary": "Экспорт завершён: экспортировано {{exportedCount}}, пропущено {{skippedCount}}.",
     "errorMessage": "Ошибка экспорта: {{message}}"
   },
+  "importDialog": {
+    "eyebrow": "Импорт",
+    "title": "Импортировать файлы",
+    "chooseFilesTitle": "Выберите файлы для импорта",
+    "filterName": "Поддерживаемые файлы",
+    "importing": "Импорт …",
+    "cancelling": "Отмена …",
+    "progress": "Импорт {{completed}} из {{total}} …",
+    "doneSummary": "Импорт завершён: импортировано {{doneCount}}, с ошибками {{errorCount}}.",
+    "doneSummaryCancelled": "Импорт отменён: импортировано {{doneCount}}, с ошибками {{errorCount}}, пропущено {{cancelledCount}}.",
+    "errorLegacyDoc": "Устаревший формат .doc не поддерживается. Сохраните файл как .docx и импортируйте снова.",
+    "errorUnsupported": "Тип файла не поддерживается.",
+    "errorConvert": "Ошибка преобразования: {{message}}",
+    "errorWrite": "Не удалось записать файл: {{message}}",
+    "errorOcrNoModel": "Модель ИИ не настроена. Загрузите модель с поддержкой изображений в настройках ИИ, чтобы импортировать изображения.",
+    "errorOcrProvider": "Не удалось распознать изображение — настроенная модель, возможно, не поддерживает изображения. ({{message}})"
+  },
   "settingsDialog": {
     "title": "Настройки",
     "tabsAriaLabel": "Категории настроек",
@@ -160,6 +177,7 @@
     "openFolder": "Открыть папку",
     "newFile": "Новый файл",
     "newFolder": "Новая папка",
+    "importFiles": "Импортировать файлы",
     "deleteFile": "Удалить файл",
     "deleteSelectedFile": "Удалить выбранный файл",
     "settings": "Настройки",

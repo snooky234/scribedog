@@ -81,6 +81,23 @@
     "doneSummary": "Експорт завершено: експортовано {{exportedCount}}, пропущено {{skippedCount}}.",
     "errorMessage": "Помилка експорту: {{message}}"
   },
+  "importDialog": {
+    "eyebrow": "Імпорт",
+    "title": "Імпортувати файли",
+    "chooseFilesTitle": "Виберіть файли для імпорту",
+    "filterName": "Підтримувані файли",
+    "importing": "Імпортування …",
+    "cancelling": "Скасування …",
+    "progress": "Імпортування {{completed}} з {{total}} …",
+    "doneSummary": "Імпорт завершено: імпортовано {{doneCount}}, з помилками {{errorCount}}.",
+    "doneSummaryCancelled": "Імпорт скасовано: імпортовано {{doneCount}}, з помилками {{errorCount}}, пропущено {{cancelledCount}}.",
+    "errorLegacyDoc": "Застарілий формат .doc не підтримується. Збережіть файл як .docx і імпортуйте знову.",
+    "errorUnsupported": "Тип файлу не підтримується.",
+    "errorConvert": "Помилка перетворення: {{message}}",
+    "errorWrite": "Не вдалося записати файл: {{message}}",
+    "errorOcrNoModel": "Модель ШІ не налаштована. Завантажте модель із підтримкою зображень у налаштуваннях ШІ, щоб імпортувати зображення.",
+    "errorOcrProvider": "Не вдалося розпізнати зображення — налаштована модель, можливо, не підтримує зображення. ({{message}})"
+  },
   "settingsDialog": {
     "title": "Налаштування",
     "tabsAriaLabel": "Категорії налаштувань",
@@ -160,6 +177,7 @@
     "openFolder": "Відкрити папку",
     "newFile": "Новий файл",
     "newFolder": "Нова папка",
+    "importFiles": "Імпортувати файли",
     "deleteFile": "Видалити файл",
     "deleteSelectedFile": "Видалити вибраний файл",
     "settings": "Налаштування",

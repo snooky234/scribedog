@@ -81,6 +81,23 @@
     "doneSummary": "Export terminé : {{exportedCount}} exporté(s), {{skippedCount}} ignoré(s).",
     "errorMessage": "Échec de l'export : {{message}}"
   },
+  "importDialog": {
+    "eyebrow": "Import",
+    "title": "Importer des fichiers",
+    "chooseFilesTitle": "Choisir les fichiers à importer",
+    "filterName": "Fichiers pris en charge",
+    "importing": "Importation …",
+    "cancelling": "Annulation …",
+    "progress": "Importation de {{completed}} sur {{total}} …",
+    "doneSummary": "Import terminé : {{doneCount}} importés, {{errorCount}} échoués.",
+    "doneSummaryCancelled": "Import annulé : {{doneCount}} importés, {{errorCount}} échoués, {{cancelledCount}} ignorés.",
+    "errorLegacyDoc": "L'ancien format .doc n'est pas pris en charge. Enregistrez le fichier au format .docx et réessayez.",
+    "errorUnsupported": "Type de fichier non pris en charge.",
+    "errorConvert": "Échec de la conversion : {{message}}",
+    "errorWrite": "Le fichier n'a pas pu être écrit : {{message}}",
+    "errorOcrNoModel": "Aucun modèle d'IA n'est configuré. Chargez un modèle avec prise en charge des images dans les réglages IA pour importer des images.",
+    "errorOcrProvider": "L'image n'a pas pu être transcrite — le modèle configuré ne prend peut-être pas en charge les images. ({{message}})"
+  },
   "settingsDialog": {
     "title": "Paramètres",
     "tabsAriaLabel": "Catégories de paramètres",
@@ -160,6 +177,7 @@
     "openFolder": "Ouvrir un dossier",
     "newFile": "Nouveau fichier",
     "newFolder": "Nouveau dossier",
+    "importFiles": "Importer des fichiers",
     "deleteFile": "Supprimer le fichier",
     "deleteSelectedFile": "Supprimer le fichier sélectionné",
     "settings": "Paramètres",

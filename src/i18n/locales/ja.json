@@ -81,6 +81,23 @@
     "doneSummary": "エクスポート完了: {{exportedCount}} 件エクスポート、{{skippedCount}} 件スキップ。",
     "errorMessage": "エクスポートに失敗しました: {{message}}"
   },
+  "importDialog": {
+    "eyebrow": "インポート",
+    "title": "ファイルをインポート",
+    "chooseFilesTitle": "インポートするファイルを選択",
+    "filterName": "対応ファイル",
+    "importing": "インポート中 …",
+    "cancelling": "キャンセル中 …",
+    "progress": "{{total}} 件中 {{completed}} 件をインポート中 …",
+    "doneSummary": "インポート完了: {{doneCount}} 件成功、{{errorCount}} 件失敗。",
+    "doneSummaryCancelled": "インポートを中止しました: {{doneCount}} 件成功、{{errorCount}} 件失敗、{{cancelledCount}} 件スキップ。",
+    "errorLegacyDoc": "旧形式の .doc はサポートされていません。ファイルを .docx として保存してから再度インポートしてください。",
+    "errorUnsupported": "サポートされていないファイル形式です。",
+    "errorConvert": "変換に失敗しました: {{message}}",
+    "errorWrite": "ファイルを書き込めませんでした: {{message}}",
+    "errorOcrNoModel": "AI モデルが設定されていません。画像をインポートするには、AI 設定で画像対応モデルを読み込んでください。",
+    "errorOcrProvider": "画像を文字起こしできませんでした — 設定されたモデルが画像に対応していない可能性があります。({{message}})"
+  },
   "settingsDialog": {
     "title": "設定",
     "tabsAriaLabel": "設定カテゴリ",
@@ -160,6 +177,7 @@
     "openFolder": "フォルダーを開く",
     "newFile": "新規ファイル",
     "newFolder": "新規フォルダー",
+    "importFiles": "ファイルをインポート",
     "deleteFile": "ファイルを削除",
     "deleteSelectedFile": "選択したファイルを削除",
     "settings": "設定",

@@ -112,6 +112,51 @@ function stripThinkingBlocks(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 }
 
+// Common LaTeX/KaTeX symbol macros mapped to their plain Unicode character.
+// Safety net for the OCR path: despite being told not to, vision models
+// occasionally still emit LaTeX for arrows/operators, which would otherwise
+// show up as literal "\rightarrow" text in a document with no math renderer.
+const LATEX_SYMBOL_MACROS: Record<string, string> = {
+  "\\rightarrow": "→",
+  "\\to": "→",
+  "\\Rightarrow": "⇒",
+  "\\leftarrow": "←",
+  "\\Leftarrow": "⇐",
+  "\\leftrightarrow": "↔",
+  "\\Leftrightarrow": "⇔",
+  "\\uparrow": "↑",
+  "\\downarrow": "↓",
+  "\\leq": "≤",
+  "\\geq": "≥",
+  "\\neq": "≠",
+  "\\approx": "≈",
+  "\\times": "×",
+  "\\div": "÷",
+  "\\pm": "±",
+  "\\infty": "∞",
+  "\\checkmark": "✓",
+  "\\cdot": "·"
+};
+
+const LATEX_MACRO_PATTERN = new RegExp(
+  Object.keys(LATEX_SYMBOL_MACROS)
+    .map((macro) => macro.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&"))
+    .join("|"),
+  "g"
+);
+
+// Unwraps "$...$"/"$$...$$" math delimiters around a single known macro and
+// replaces the macro itself, e.g. "$\rightarrow$" -> "→". Leaves untouched
+// any math the model wrote for an actual formula this map doesn't cover.
+function replaceLatexSymbolMacros(text: string): string {
+  const withoutDelimiters = text.replace(
+    /\$\$?\s*(\\[a-zA-Z]+)\s*\$\$?/g,
+    (match, macro: string) => LATEX_SYMBOL_MACROS[macro] ?? match
+  );
+
+  return withoutDelimiters.replace(LATEX_MACRO_PATTERN, (macro) => LATEX_SYMBOL_MACROS[macro] ?? macro);
+}
+
 // Splits the raw text streamed so far into answer and thinking parts. Always
 // re-parses the full accumulated text (instead of per chunk) so a <think> tag
 // split across a chunk boundary is still handled correctly; a truncated tag
@@ -929,4 +974,122 @@ export async function checkGrammar(
   const rawResponse = await generateAiMarkdown(settings, request, signal);
 
   return parseCheckIssues(rawResponse);
+}
+
+const OCR_SYSTEM_PROMPT =
+  "You are an OCR engine. Transcribe the full content of the given image as clean Markdown. Preserve the structure of the source (headings, lists, tables, emphasis) as far as it is recognizable. Write symbols (arrows, checkmarks, math operators, etc.) as their plain Unicode character (e.g. →, ⇒, ≤, ✓) — never as LaTeX/KaTeX markup (e.g. never \\rightarrow, \\Rightarrow, \\leq, or wrap anything in $...$), since the target document has no formula renderer and would show the raw markup as literal text. Respond ONLY with the transcribed Markdown — no commentary, no code fences around the whole answer, no descriptions of the image beyond its textual content.";
+
+const OCR_USER_PROMPT = "Transcribe this image as Markdown.";
+
+// Vision request shapes differ per provider family, so the OCR path builds
+// its own messages instead of reusing the text-only request builders. There
+// is deliberately no upfront vision-capability check: if the configured model
+// cannot handle images, the provider's error surfaces per file in the import
+// dialog.
+export async function generateOcrMarkdown(
+  settings: AiSettings,
+  imageBase64: string,
+  mimeType: string,
+  signal?: AbortSignal
+): Promise<string> {
+  assertValidEndpoint(settings.provider, settings.apiUrl, settings.apiKey);
+
+  if (!settings.model.trim()) {
+    throw new Error(i18n.t("aiClient.modelRequired"));
+  }
+
+  let rawResponse: string;
+
+  // OCR always runs with thinking disabled, regardless of the user's
+  // thinking-mode setting: transcription gains nothing from reasoning and
+  // thinking-capable vision models get several times slower with it on.
+  if (settings.provider === "ollama") {
+    const payload = await postJson(
+      new URL("/api/chat", settings.apiUrl).toString(),
+      {
+        model: settings.model,
+        stream: false,
+        think: false,
+        messages: [
+          { role: "system", content: OCR_SYSTEM_PROMPT },
+          { role: "user", content: OCR_USER_PROMPT, images: [imageBase64] }
+        ],
+        options: {
+          num_ctx: settings.contextLength
+        }
+      },
+      undefined,
+      signal
+    );
+
+    rawResponse = extractResponseContent(payload, true);
+  } else if (settings.provider === "anthropic") {
+    const payload = await postJson(
+      new URL("/v1/messages", settings.apiUrl).toString(),
+      {
+        model: settings.model,
+        system: OCR_SYSTEM_PROMPT,
+        max_tokens: resolveMaxOutputTokens(settings.contextLength),
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: { type: "base64", media_type: mimeType, data: imageBase64 }
+              },
+              { type: "text", text: OCR_USER_PROMPT }
+            ]
+          }
+        ]
+      },
+      anthropicAuthHeaders(settings.apiKey),
+      signal
+    );
+
+    rawResponse = extractAnthropicContent(payload);
+  } else {
+    const requestBody: Record<string, unknown> = {
+      model: settings.model,
+      stream: false,
+      temperature: 0,
+      max_tokens: resolveMaxOutputTokens(settings.contextLength),
+      messages: [
+        { role: "system", content: OCR_SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: OCR_USER_PROMPT },
+            {
+              type: "image_url",
+              image_url: { url: `data:${mimeType};base64,${imageBase64}` }
+            }
+          ]
+        }
+      ]
+    };
+
+    if (supportsThinkingExtension(settings.provider)) {
+      requestBody.chat_template_kwargs = {
+        enable_thinking: false
+      };
+    }
+
+    const payload = await postJson(
+      new URL("/v1/chat/completions", settings.apiUrl).toString(),
+      requestBody,
+      buildOpenAiCompatibleAuthHeaders(settings),
+      signal
+    );
+
+    rawResponse = extractResponseContent(payload, false);
+  }
+
+  const cleanedResponse = replaceLatexSymbolMacros(stripThinkingBlocks(rawResponse));
+
+  if (!cleanedResponse) {
+    throw new Error(i18n.t("aiClient.noUsableText"));
+  }
+
+  return cleanedResponse;
 }

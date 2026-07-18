@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pencil, Square } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
+import { open as openImportFilesDialog } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { useTranslation } from "react-i18next";
@@ -8,6 +9,8 @@ import { useTranslation } from "react-i18next";
 import { Editor, type EditorHandle } from "@/components/Editor";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { DeleteFileDialog } from "@/components/DeleteFileDialog";
+import { ExportDialog, type ExportDialogTarget } from "@/components/ExportDialog";
+import { ImportDialog } from "@/components/ImportDialog";
 import { ShortcutsDialog } from "@/components/ShortcutsDialog";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { UpdateNotification } from "@/components/UpdateNotification";
@@ -20,8 +23,11 @@ import {
   FOLDER_FILES_CHANGED_EVENT,
   clearLastOpenedFolderPath,
   getLastOpenedFolderPath,
-  getRelativeDisplayPath
+  getRelativeDisplayPath,
+  readMarkdownFile
 } from "@/lib/fileSystem";
+import { getDefaultExportBaseName } from "@/lib/export/exporter";
+import { IMPORT_FILE_EXTENSIONS } from "@/lib/import/importer";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
@@ -77,6 +83,8 @@ function App() {
     { kind: "file" | "folder"; path: string } | null
   >(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [exportTarget, setExportTarget] = useState<ExportDialogTarget | null>(null);
+  const [importFileList, setImportFileList] = useState<string[] | null>(null);
   const [pendingFolderRename, setPendingFolderRename] = useState<PendingFolderRename | null>(
     null
   );
@@ -119,6 +127,7 @@ function App() {
   );
   const saveSelectedFile = useAppStore((state) => state.saveSelectedFile);
   const createNewFile = useAppStore((state) => state.createNewFile);
+  const registerImportedFiles = useAppStore((state) => state.registerImportedFiles);
   const createNewFolder = useAppStore((state) => state.createNewFolder);
   const emptyFolderPaths = useAppStore((state) => state.emptyFolderPaths);
   const renameSelectedFile = useAppStore((state) => state.renameSelectedFile);
@@ -260,6 +269,53 @@ function App() {
 
   const requestDeleteFolder = (folderPath: string) => {
     setDeleteTarget({ kind: "folder", path: folderPath });
+  };
+
+  const requestExportFile = (filePath: string) => {
+    setExportTarget({
+      kind: "file",
+      sourcePath: filePath,
+      defaultName: getDefaultExportBaseName(filePath)
+    });
+  };
+
+  const requestExportFolder = (exportFolderPath: string) => {
+    setExportTarget({
+      kind: "folder",
+      sourcePath: exportFolderPath,
+      defaultName: getDefaultExportBaseName(exportFolderPath)
+    });
+  };
+
+  const requestImportFiles = async () => {
+    const selected = await openImportFilesDialog({
+      multiple: true,
+      title: t("importDialog.chooseFilesTitle"),
+      filters: [
+        {
+          name: t("importDialog.filterName"),
+          extensions: [...IMPORT_FILE_EXTENSIONS]
+        }
+      ]
+    });
+
+    const selectedPaths =
+      typeof selected === "string" ? [selected] : Array.isArray(selected) ? selected : [];
+
+    if (selectedPaths.length > 0) {
+      setImportFileList(selectedPaths);
+    }
+  };
+
+  const handleImported = (createdFilePaths: string[]) => {
+    registerImportedFiles(createdFilePaths);
+  };
+
+  // Prefers unsaved in-memory content over the on-disk state, so an export
+  // always matches what the user currently sees in the editor.
+  const readMarkdownForExport = async (filePath: string): Promise<string> => {
+    const document = useAppStore.getState().fileDocuments[filePath];
+    return document ? document.content : readMarkdownFile(filePath);
   };
 
   const cancelDeleteTarget = () => {
@@ -549,9 +605,12 @@ function App() {
             onCreateFile={() => void handleCreateFile()}
             onCreateFileRequest={(targetDirectory) => void handleCreateFile(targetDirectory)}
             onCreateFolder={() => void handleCreateFolder()}
+            onImportRequest={() => void requestImportFiles()}
             onSelectFilePath={selectFilePathSafely}
             onDeleteFileRequest={requestDeleteFile}
             onDeleteFolderRequest={requestDeleteFolder}
+            onExportFileRequest={requestExportFile}
+            onExportFolderRequest={requestExportFolder}
             onRenameFolder={renameFolderPath}
             onRenameFile={renameFilePath}
             onMoveEntry={moveTreeEntry}
@@ -738,6 +797,19 @@ function App() {
         isDeleting={isDeleting}
         onConfirm={() => void confirmDeleteTarget()}
         onCancel={cancelDeleteTarget}
+      />
+
+      <ExportDialog
+        target={exportTarget}
+        readMarkdown={readMarkdownForExport}
+        onClose={() => setExportTarget(null)}
+      />
+
+      <ImportDialog
+        files={importFileList}
+        vaultRoot={folderPath}
+        onImported={handleImported}
+        onClose={() => setImportFileList(null)}
       />
 
       {availableUpdate ? (

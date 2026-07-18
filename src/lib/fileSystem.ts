@@ -147,6 +147,13 @@ export async function allowMarkdownFolderAccess(folderPath: string): Promise<voi
   await invoke("allow_folder_scope", { folderPath });
 }
 
+// The dialog plugin usually widens the fs scope for user-picked files by
+// itself; this explicit grant is the robust fallback for import sources
+// living outside the opened vault.
+export async function allowFileAccess(filePath: string): Promise<void> {
+  await invoke("allow_file_scope", { filePath });
+}
+
 export async function watchMarkdownFolder(folderPath: string): Promise<void> {
   await invoke("watch_folder", { folderPath });
 }

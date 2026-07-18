@@ -81,6 +81,23 @@
     "doneSummary": "Export abgeschlossen: {{exportedCount}} exportiert, {{skippedCount}} übersprungen.",
     "errorMessage": "Export fehlgeschlagen: {{message}}"
   },
+  "importDialog": {
+    "eyebrow": "Import",
+    "title": "Dateien importieren",
+    "chooseFilesTitle": "Dateien zum Importieren auswählen",
+    "filterName": "Unterstützte Dateien",
+    "importing": "Importiere …",
+    "cancelling": "Wird abgebrochen …",
+    "progress": "Importiere {{completed}} von {{total}} …",
+    "doneSummary": "Import abgeschlossen: {{doneCount}} importiert, {{errorCount}} fehlgeschlagen.",
+    "doneSummaryCancelled": "Import abgebrochen: {{doneCount}} importiert, {{errorCount}} fehlgeschlagen, {{cancelledCount}} übersprungen.",
+    "errorLegacyDoc": "Das alte .doc-Format wird nicht unterstützt. Bitte die Datei als .docx speichern und erneut importieren.",
+    "errorUnsupported": "Dateityp wird nicht unterstützt.",
+    "errorConvert": "Konvertierung fehlgeschlagen: {{message}}",
+    "errorWrite": "Datei konnte nicht geschrieben werden: {{message}}",
+    "errorOcrNoModel": "Kein KI-Modell konfiguriert. Bitte in den KI-Einstellungen ein Modell mit Bildunterstützung laden, um Bilder zu importieren.",
+    "errorOcrProvider": "Bild konnte nicht transkribiert werden — das konfigurierte Modell unterstützt möglicherweise keine Bilder. ({{message}})"
+  },
   "settingsDialog": {
     "title": "Einstellungen",
     "tabsAriaLabel": "Einstellungskategorien",
@@ -160,6 +177,7 @@
     "openFolder": "Ordner öffnen",
     "newFile": "Neue Datei",
     "newFolder": "Neuer Ordner",
+    "importFiles": "Dateien importieren",
     "deleteFile": "Datei löschen",
     "deleteSelectedFile": "Ausgewählte Datei löschen",
     "settings": "Einstellungen",

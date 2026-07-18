@@ -2100,6 +2100,154 @@ body.is-resizing-sidebar {
   margin-top: 1.2rem;
 }
 
+.export-dialog__panel {
+  width: min(100%, 30rem);
+}
+
+.export-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.export-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.export-dialog__field > span {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(var(--muted-rgb),0.9);
+}
+
+.export-dialog__field input,
+.export-dialog__field select {
+  width: 100%;
+  border: 1px solid rgba(var(--overlay-rgb),0.14);
+  border-radius: 0.7rem;
+  background: rgba(var(--surface-rgb),0.85);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.92rem;
+  color: inherit;
+}
+
+.export-dialog__field input:focus,
+.export-dialog__field select:focus {
+  outline: 2px solid rgba(var(--overlay-rgb),0.22);
+  outline-offset: 1px;
+}
+
+.export-dialog__destination {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.export-dialog__destination-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  border: 1px dashed rgba(var(--overlay-rgb),0.18);
+  border-radius: 0.7rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+  color: rgba(var(--text-rgb),0.78);
+}
+
+.export-dialog__apply-all {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.export-dialog__progress {
+  margin-top: 0.9rem;
+  font-size: 0.85rem;
+  color: rgba(var(--muted-rgb),0.95);
+}
+
+.export-dialog__error {
+  margin-top: 0.9rem;
+  font-size: 0.85rem;
+  color: #dc2626;
+  overflow-wrap: anywhere;
+}
+
+.import-dialog__list {
+  margin-top: 1rem;
+  max-height: 16rem;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  list-style: none;
+  padding: 0;
+}
+
+.import-dialog__item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  min-width: 0;
+}
+
+.import-dialog__icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  align-self: center;
+  color: rgba(var(--muted-rgb),0.7);
+}
+
+.import-dialog__icon--done {
+  color: #16a34a;
+}
+
+.import-dialog__icon--error {
+  color: #dc2626;
+}
+
+.import-dialog__icon--cancelled {
+  color: rgba(var(--muted-rgb),0.75);
+}
+
+.import-dialog__icon--spinner {
+  animation: import-dialog-spin 0.9s linear infinite;
+}
+
+@keyframes import-dialog-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.import-dialog__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-dialog__error {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: #dc2626;
+  overflow-wrap: anywhere;
+}
+
 .detail-panel__card--empty {
   opacity: 0.92;
 }

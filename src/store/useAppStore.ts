@@ -71,6 +71,7 @@ type AppState = {
   discardSelectedFileChanges: () => boolean;
   saveSelectedFile: () => Promise<boolean>;
   createNewFile: (targetDirectory?: string) => Promise<string | null>;
+  registerImportedFiles: (importedFilePaths: string[]) => void;
   createNewFolder: () => Promise<string | null>;
   renameSelectedFile: (newBaseName: string) => Promise<boolean>;
   renameFilePath: (filePath: string, newBaseName: string) => Promise<boolean>;
@@ -767,6 +768,38 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       return null;
     }
+  },
+  // Optimistically registers files the import wrote to the vault root: adds
+  // them to the tree and appends them to the manual sort order (mirroring
+  // createNewFile), without selecting them or touching the open editor.
+  registerImportedFiles: (importedFilePaths: string[]) => {
+    const { folderPath } = get();
+
+    if (!folderPath || importedFilePaths.length === 0) {
+      return;
+    }
+
+    let nextFilePaths = get().filePaths;
+    const existingPathKeys = new Set(nextFilePaths.map(normalizePathKey));
+    const currentManualOrder = get().manualOrder;
+    let nextManualOrder = currentManualOrder;
+
+    for (const importedFilePath of importedFilePaths) {
+      if (existingPathKeys.has(normalizePathKey(importedFilePath))) {
+        continue;
+      }
+
+      existingPathKeys.add(normalizePathKey(importedFilePath));
+      nextFilePaths = insertFilePathSorted(nextFilePaths, importedFilePath);
+      nextManualOrder = appendManualOrderEntry(nextManualOrder, "", getBasename(importedFilePath));
+    }
+
+    persistManualOrderIfChanged(folderPath, currentManualOrder, nextManualOrder);
+
+    set({
+      filePaths: nextFilePaths,
+      manualOrder: nextManualOrder
+    });
   },
   createNewFolder: async () => {
     const { folderPath, selectedFilePath, emptyFolderPaths } = get();

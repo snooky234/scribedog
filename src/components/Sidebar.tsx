@@ -6,6 +6,7 @@ import {
   FolderOpen,
   FolderPlus,
   GripVertical,
+  Import,
   Keyboard,
   Plus,
   Settings2,
@@ -47,6 +48,7 @@ type SidebarProps = {
   onCreateFile: () => void;
   onCreateFileRequest: (targetDirectory: string) => void;
   onCreateFolder: () => void;
+  onImportRequest: () => void;
   onSelectFilePath: (filePath: string) => Promise<void>;
   onDeleteFileRequest: (filePath: string) => void;
   onDeleteFolderRequest: (folderPath: string) => void;
@@ -79,6 +81,7 @@ export function Sidebar({
   onCreateFile,
   onCreateFileRequest,
   onCreateFolder,
+  onImportRequest,
   onSelectFilePath,
   onDeleteFileRequest,
   onDeleteFolderRequest,
@@ -135,6 +138,18 @@ export function Sidebar({
             title={t("sidebar.newFile")}
           >
             <Plus />
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onImportRequest}
+            disabled={isLoading || folderPath === null}
+            aria-label={t("sidebar.importFiles")}
+            title={t("sidebar.importFiles")}
+          >
+            <Import />
           </Button>
 
           <Button

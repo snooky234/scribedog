@@ -81,6 +81,23 @@
     "doneSummary": "Exportação concluída: {{exportedCount}} exportados, {{skippedCount}} pulados.",
     "errorMessage": "Falha na exportação: {{message}}"
   },
+  "importDialog": {
+    "eyebrow": "Importar",
+    "title": "Importar ficheiros",
+    "chooseFilesTitle": "Escolher ficheiros para importar",
+    "filterName": "Ficheiros suportados",
+    "importing": "A importar …",
+    "cancelling": "A cancelar …",
+    "progress": "A importar {{completed}} de {{total}} …",
+    "doneSummary": "Importação concluída: {{doneCount}} importados, {{errorCount}} com falhas.",
+    "doneSummaryCancelled": "Importação cancelada: {{doneCount}} importados, {{errorCount}} com falhas, {{cancelledCount}} ignorados.",
+    "errorLegacyDoc": "O formato antigo .doc não é suportado. Guarde o ficheiro como .docx e importe novamente.",
+    "errorUnsupported": "Tipo de ficheiro não suportado.",
+    "errorConvert": "Falha na conversão: {{message}}",
+    "errorWrite": "Não foi possível gravar o ficheiro: {{message}}",
+    "errorOcrNoModel": "Nenhum modelo de IA configurado. Carregue um modelo com capacidade de visão nas definições de IA para importar imagens.",
+    "errorOcrProvider": "Não foi possível transcrever a imagem — o modelo configurado pode não suportar imagens. ({{message}})"
+  },
   "settingsDialog": {
     "title": "Configurações",
     "tabsAriaLabel": "Categorias de configurações",
@@ -160,6 +177,7 @@
     "openFolder": "Abrir pasta",
     "newFile": "Novo arquivo",
     "newFolder": "Nova pasta",
+    "importFiles": "Importar ficheiros",
     "deleteFile": "Excluir arquivo",
     "deleteSelectedFile": "Excluir arquivo selecionado",
     "settings": "Configurações",

@@ -28,6 +28,12 @@ fn allow_folder_scope(app: AppHandle, folder_path: String) -> Result<(), String>
 }
 
 #[tauri::command]
+fn allow_file_scope(app: AppHandle, file_path: String) -> Result<(), String> {
+    let _ = app.fs_scope().allow_file(file_path);
+    Ok(())
+}
+
+#[tauri::command]
 fn watch_folder(
     app: AppHandle,
     folder_watch_state: State<'_, FolderWatchState>,
@@ -244,6 +250,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_startup_folder_path,
             allow_folder_scope,
+            allow_file_scope,
             watch_folder,
             check_spellcheck_dictionary,
             store_api_key,
