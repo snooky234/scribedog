@@ -3,6 +3,12 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.1] - 2026-07-19
+
+### Highlights
+- Add document printing with print-optimized styling
+- Add file selection and batch delete/export operations
+
 ## [0.4.0] - 2026-07-18
 
 ### Highlights
