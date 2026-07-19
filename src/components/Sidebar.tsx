@@ -53,6 +53,7 @@ type SidebarProps = {
   onDeleteFileRequest: (filePath: string) => void;
   onDeleteFolderRequest: (folderPath: string) => void;
   onDeleteMultipleRequest: (entries: BatchEntry[]) => void;
+  onDeleteToolbarRequest: () => void;
   onExportFileRequest: (filePath: string) => void;
   onExportFolderRequest: (folderPath: string) => void;
   onExportMultipleRequest: (entries: BatchEntry[]) => void;
@@ -64,6 +65,8 @@ type SidebarProps = {
   onShortcutsRequest: () => void;
   onRequestEditorFocus: () => void;
   sidebarFocusRequestId: number;
+  onFileTreeSelectionChange: (entries: BatchEntry[]) => void;
+  fileTreeSelectionCount: number;
 };
 
 export function Sidebar({
@@ -88,6 +91,7 @@ export function Sidebar({
   onDeleteFileRequest,
   onDeleteFolderRequest,
   onDeleteMultipleRequest,
+  onDeleteToolbarRequest,
   onExportFileRequest,
   onExportFolderRequest,
   onExportMultipleRequest,
@@ -98,7 +102,9 @@ export function Sidebar({
   onAiSettingsRequest,
   onShortcutsRequest,
   onRequestEditorFocus,
-  sidebarFocusRequestId
+  sidebarFocusRequestId,
+  onFileTreeSelectionChange,
+  fileTreeSelectionCount
 }: SidebarProps) {
   const { t } = useTranslation();
   const folderLabel = formatFolderLabel(folderPath);
@@ -160,8 +166,8 @@ export function Sidebar({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => selectedFilePath && onDeleteFileRequest(selectedFilePath)}
-            disabled={isLoading || selectedFilePath === null}
+            onClick={onDeleteToolbarRequest}
+            disabled={isLoading || (selectedFilePath === null && fileTreeSelectionCount === 0)}
             aria-label={t("sidebar.deleteFile")}
             title={t("sidebar.deleteSelectedFile")}
           >
@@ -295,6 +301,7 @@ export function Sidebar({
             onMoveEntry={onMoveEntry}
             onRequestEditorFocus={onRequestEditorFocus}
             focusRequestId={sidebarFocusRequestId}
+            onSelectionChange={onFileTreeSelectionChange}
           />
         ) : null}
       </ScrollArea>

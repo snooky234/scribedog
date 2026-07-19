@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open as openImportFilesDialog } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
+import { join } from "@tauri-apps/api/path";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { useTranslation } from "react-i18next";
 
@@ -17,7 +18,7 @@ import { ShortcutsDialog } from "@/components/ShortcutsDialog";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { Sidebar } from "@/components/Sidebar";
-import type { PendingFolderRename } from "@/components/FileTree";
+import type { BatchEntry, PendingFolderRename } from "@/components/FileTree";
 import { isWindowsPlatform } from "@/lib/platform";
 import { useAppVersion } from "@/hooks/useAppVersion";
 import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
@@ -99,6 +100,7 @@ function App() {
   );
   const [editorFocusRequestId, setEditorFocusRequestId] = useState(0);
   const [sidebarFocusRequestId, setSidebarFocusRequestId] = useState(0);
+  const [fileTreeSelection, setFileTreeSelection] = useState<BatchEntry[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isAiActionPending, setIsAiActionPending] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState<number>(getInitialSidebarWidth);
@@ -293,6 +295,29 @@ function App() {
     }
 
     setDeleteTarget({ kind: "multiple", paths });
+  };
+
+  // Toolbar delete button: acts on the file tree's current multi-selection
+  // (fileTreeSelection) rather than just the single file open in the editor,
+  // so it stays consistent with the context menu's batch delete.
+  const requestDeleteFromToolbar = () => {
+    if (fileTreeSelection.length === 0) {
+      if (selectedFilePath) {
+        requestDeleteFile(selectedFilePath);
+      }
+      return;
+    }
+
+    if (!folderPath) {
+      return;
+    }
+
+    void Promise.all(
+      fileTreeSelection.map(async (entry) => ({
+        kind: entry.kind,
+        path: entry.kind === "folder" ? await join(folderPath, entry.path) : entry.path
+      }))
+    ).then(requestDeleteMultiple);
   };
 
   const requestExportFile = (filePath: string) => {
@@ -717,6 +742,7 @@ function App() {
             onDeleteFileRequest={requestDeleteFile}
             onDeleteFolderRequest={requestDeleteFolder}
             onDeleteMultipleRequest={requestDeleteMultiple}
+            onDeleteToolbarRequest={requestDeleteFromToolbar}
             onExportFileRequest={requestExportFile}
             onExportFolderRequest={requestExportFolder}
             onExportMultipleRequest={requestExportMultiple}
@@ -731,6 +757,8 @@ function App() {
             onShortcutsRequest={() => setIsShortcutsOpen(true)}
             onRequestEditorFocus={() => setEditorFocusRequestId((id) => id + 1)}
             sidebarFocusRequestId={sidebarFocusRequestId}
+            onFileTreeSelectionChange={setFileTreeSelection}
+            fileTreeSelectionCount={fileTreeSelection.length}
           />
 
           <div

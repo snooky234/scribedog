@@ -15,24 +15,26 @@
 </div>
 
 ScribeDog is a native desktop editor where you write and format text as a
-polished document — no raw `#` or `*` characters in sight — and can select any
-passage and hand it to an AI model to rewrite, extend, translate, or generate
-text. You choose where that model runs: **fully local** on your own machine —
-so no byte ever leaves your device — or with a **cloud provider you trust**,
-using your own API key.
+polished document, no raw `#` or `*` characters in sight. You can select
+any passage and hand it to an AI model to rewrite, extend, translate, or
+generate text, or simply dictate by voice, entirely offline. You choose where
+that AI model runs, fully local on your own machine so that no byte ever
+leaves your device, or with a cloud provider you trust, using your own API
+key.
 
 Whatever you write — **personal notes, journals, letters, blog posts,
 documentation, essays, or fiction** — ScribeDog gives you a clean, distraction-free
 place to write it, with an AI assistant that respects one simple rule:
 **your words are yours.** No account, no subscription, no server in between.
 
-<img src="src/assets/scribedog_ai_writing.png" alt="ScribeDog screenshot" width="700">
-<img src="src/assets/scribedog_ai_edit.png" alt="ScribeDog screenshot" width="700">
+<img src="src/assets/scribedog-demo.gif" alt="ScribeDog demo" width="700">
 
 **Why ScribeDog?**
 
 - ✨ **True WYSIWYG** — headings, tables, images, and lists look like a document, not like syntax
 - 🤖 **AI built in, local by default** — rewrite or generate text with Ollama, Jan.ai, or LM Studio; cloud providers are strictly opt-in
+- 🎙️ **Voice input, 100% offline** — dictate straight into your document or into the AI prompt; speech recognition runs locally via whisper.cpp, no cloud involved
+- 🧩 **Custom assistants** — save your own system prompts ("translate to English", "make more formal", …) and switch between them right from the toolbar
 - 📥 **Import & export built in** — bring Word, PDF, and HTML files in as Markdown (even images, via AI-powered OCR) and export notes or whole folders to PDF, DOCX, ODT, or HTML
 - 🔓 **100% open source** — MIT-licensed, every release built transparently from this repository by GitHub Actions
 - 🔒 **No telemetry** — no analytics, no account; the only automatic network call is an optional, disableable update check
@@ -112,6 +114,18 @@ and the source in this repository.
 - Every AI edit is a single atomic change: one `Ctrl+Z` fully undoes it
 - **AI spelling & grammar check** — select a passage, press `Ctrl+Shift+X` (or use the toolbar button), and get a clear list of issues with suggested corrections and explanations; apply them one by one or all at once
 
+### 🎙️ Voice input — dictate, entirely offline
+- **Dictate straight into your document**: press `Ctrl+Shift+W`, speak, then press `Enter` to transcribe (or `Esc` to cancel) — the transcript is inserted at the cursor as regular editable text, undoable with a single `Ctrl+Z`
+- **Dictate your AI prompt**: `Ctrl+Shift+E` opens the AI dialog and starts recording immediately; or use the microphone button in the dialog — the transcript lands in the prompt field, editable before you send it
+- Speech recognition runs **100% locally** via [whisper.cpp](https://github.com/ggerganov/whisper.cpp) — no cloud service, no audio ever leaves your device, in all 10 interface languages and more
+- The multilingual model (~465 MB) is downloaded once on first use, with a clear progress dialog — just like setting up a local LLM
+
+### 🧩 Custom assistants — your own reusable AI prompts
+- Define named **assistants** — each with an emoji, name, description, and its own system prompt (e.g. *"Translate to English"*, *"Make more formal"*, *"Summarize technically"*)
+- Switch assistants in one click via a **toolbar dropdown** right next to the model picker; the selected assistant shapes every rewrite and insert request
+- Manage them in a dedicated **Assistants settings tab**; the built-in **Default** assistant can be customized too — and restored anytime with *Reset to default*
+- No more retyping the same instructions into the prompt for every request
+
 ### ✍️ True WYSIWYG Markdown editing
 - Powered by [TipTap](https://tiptap.dev/)/ProseMirror — headings, bold, italic, underline, strikethrough, blockquotes, inline code, links, and ordered/bulleted/task lists all render as formatted content instead of raw syntax
 - **Tables** with a visual grid picker and a context menu for adding/removing rows and columns
@@ -185,7 +199,6 @@ without compromising on the local-first, open-source principles above.
 Ideas on the list for upcoming versions (subject to change, feedback welcome!):
 
 - 🧘 **Focus mode** — dim everything except the current sentence or paragraph, typewriter scrolling, distraction-free full screen
-- ⚡ **One-click AI presets** — reusable actions like "tighten", "more vivid", "fix grammar", "translate", "formal tone" right in the context menu
 - 📚 **Context notes ("story bible")** — keep character sheets, glossaries, or project notes in a folder and have them automatically included as AI context
 - 🎯 **Writing goals & statistics** — word-count targets, reading time, daily progress
 - ✒️ **Offline style & readability analysis** — highlight filler words, passive voice, and long sentences; optional local grammar checking (e.g. LanguageTool)

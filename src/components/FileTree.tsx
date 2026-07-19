@@ -75,6 +75,7 @@ type FileTreeProps = {
   onExportMultipleRequest: (entries: BatchEntry[]) => void;
   onRequestEditorFocus?: () => void;
   focusRequestId?: number;
+  onSelectionChange?: (entries: BatchEntry[]) => void;
 };
 
 function getNodeKey(node: FileTreeNode): string {
@@ -538,7 +539,8 @@ export function FileTree({
   onDeleteMultipleRequest,
   onExportMultipleRequest,
   onRequestEditorFocus,
-  focusRequestId
+  focusRequestId,
+  onSelectionChange
 }: FileTreeProps) {
   const { t } = useTranslation();
   const [expandedFolderPaths, setExpandedFolderPaths] = useState<Set<string>>(() =>
@@ -593,6 +595,36 @@ export function FileTree({
     () => flattenVisibleNodes(treeNodes, expandedFolderPaths),
     [treeNodes, expandedFolderPaths]
   );
+
+  // Same reduction used by the multi-select context menu's export/delete
+  // actions, so the toolbar delete button and the Delete key act on exactly
+  // the same set of entries a right-click batch action would.
+  const selectionAsBatchEntries = useCallback(
+    (keys: Iterable<string>): BatchEntry[] =>
+      getTopLevelSelection(keys, flatNodes).map((node) => ({
+        kind: node.kind,
+        path: node.kind === "file" ? node.filePath : node.relativePath
+      })),
+    [flatNodes]
+  );
+
+  useEffect(() => {
+    if (!onSelectionChange) {
+      return;
+    }
+
+    if (selectedKeys.size > 1) {
+      onSelectionChange(selectionAsBatchEntries(selectedKeys));
+      return;
+    }
+
+    if (activeKey) {
+      onSelectionChange(selectionAsBatchEntries([activeKey]));
+      return;
+    }
+
+    onSelectionChange([]);
+  }, [selectedKeys, activeKey, selectionAsBatchEntries, onSelectionChange]);
 
   const registerItemRef = useCallback((key: string, element: HTMLButtonElement | null) => {
     if (element) {
@@ -894,6 +926,26 @@ export function FileTree({
     if (event.key === "Tab" && !event.shiftKey) {
       event.preventDefault();
       onRequestEditorFocus?.();
+    }
+
+    if (event.key === "Delete") {
+      const keysToDelete: string[] =
+        selectedKeys.size > 1 ? [...selectedKeys] : activeKey ? [activeKey] : [];
+
+      if (keysToDelete.length === 0) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const entries = selectionAsBatchEntries(keysToDelete);
+
+      void Promise.all(
+        entries.map(async (entry) => ({
+          kind: entry.kind,
+          path: entry.kind === "folder" ? await join(folderPath, entry.path) : entry.path
+        }))
+      ).then(onDeleteMultipleRequest);
     }
   };
 

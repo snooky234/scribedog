@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ export function DeleteFileDialog({
   onCancel
 }: DeleteFileDialogProps) {
   const { t } = useTranslation();
+  const cancelButtonRef = useRef<HTMLElement>(null);
+  const confirmButtonRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!open) {
@@ -40,6 +42,24 @@ export function DeleteFileDialog({
 
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, isDeleting, onCancel]);
+
+  // Cancel is the safer default for a destructive confirmation, so it
+  // receives focus on open; Tab/arrow keys move to Delete from there.
+  useEffect(() => {
+    if (open) {
+      cancelButtonRef.current?.focus();
+    }
+  }, [open]);
+
+  const focusOtherButton = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+      return;
+    }
+
+    event.preventDefault();
+    const target = event.currentTarget === cancelButtonRef.current ? confirmButtonRef : cancelButtonRef;
+    target.current?.focus();
+  };
 
   if (!open) {
     return null;
@@ -86,10 +106,24 @@ export function DeleteFileDialog({
         </p>
 
         <div className="unsaved-dialog__actions">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isDeleting}>
+          <Button
+            ref={cancelButtonRef}
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            onKeyDown={focusOtherButton}
+            disabled={isDeleting}
+          >
             {t("common.cancel")}
           </Button>
-          <Button type="button" variant="destructive" onClick={onConfirm} disabled={isDeleting}>
+          <Button
+            ref={confirmButtonRef}
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            onKeyDown={focusOtherButton}
+            disabled={isDeleting}
+          >
             {isDeleting ? t("common.deleting") : t("common.delete")}
           </Button>
         </div>
