@@ -1,3 +1,5 @@
+mod voice;
+
 use std::{path::PathBuf, sync::Mutex};
 
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
@@ -235,6 +237,7 @@ pub fn run() {
             folder_path: collect_startup_folder_path(),
         })
         .manage(FolderWatchState::default())
+        .manage(voice::VoiceState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init());
@@ -254,7 +257,12 @@ pub fn run() {
             watch_folder,
             check_spellcheck_dictionary,
             store_api_key,
-            get_api_key
+            get_api_key,
+            voice::voice_model_status,
+            voice::download_voice_model,
+            voice::start_voice_recording,
+            voice::stop_voice_recording,
+            voice::cancel_voice_recording
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

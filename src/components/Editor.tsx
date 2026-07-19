@@ -23,12 +23,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AiCheckDialog } from "@/components/AiCheckDialog";
 import { FindReplacePanel } from "@/components/FindReplacePanel";
 import { AiRewriteDialog } from "@/components/AiRewriteDialog";
+import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
+import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { CodeBlockView } from "@/components/CodeBlockView";
 import { ImageView } from "@/components/ImageView";
 import { Toolbar } from "@/components/Toolbar";
 import { checkGrammar, streamAiMarkdown, type AiActionMode, type AiCheckIssue } from "@/lib/aiClient";
 import { AiDiffWidget, updateAiDiffWidget } from "@/lib/aiDiffWidget";
 import { AiStreamWidget, updateAiStreamWidget } from "@/lib/aiStreamWidget";
+import { updateVoiceInsertWidget, VoiceInsertWidget } from "@/lib/voiceInsertWidget";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { getRelativeImageMarkdownPath, saveImageToFolder } from "@/lib/fileSystem";
 import { SearchHighlight, updateSearchHighlight } from "@/lib/searchHighlight";
@@ -352,6 +356,87 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const aiAbortControllerRef = useRef<AbortController | null>(null);
   const aiCheckRangeRef = useRef<{ from: number; to: number } | null>(null);
   const [isLinkModifierHeld, setIsLinkModifierHeld] = useState(false);
+  const [voiceStartRequestId, setVoiceStartRequestId] = useState(0);
+
+  // Ctrl+Shift+W dictation: the transcript is inserted at the cursor as one
+  // atomic undo step (a single insertContent transaction), per issue #7.
+  const dictation = useVoiceInput({
+    onTranscript: (text) => {
+      // Re-enable typing before inserting; the chain leaves the caret at the
+      // end of the inserted text.
+      editorRef.current?.setEditable(true, false);
+      editorRef.current?.chain().focus().insertContent(text).run();
+    },
+    onError: (message) => {
+      setAiStatus({ kind: "error", message: t("voice.error", { error: message }) });
+    }
+  });
+  const dictationRef = useRef(dictation);
+  dictationRef.current = dictation;
+  // editorProps.handleKeyDown closes over the first render — like the other
+  // shortcut handlers, dictation state has to be read through refs.
+  const aiDraftOpenRef = useRef(false);
+  aiDraftOpenRef.current = aiDraft !== null;
+  const isAiLoadingRef = useRef(false);
+  isAiLoadingRef.current = isAiLoading;
+
+  const toggleDictation = () => {
+    // While the AI dialog or a diff review is open, dictation into the
+    // document would fight with those flows — the dialog has its own mic.
+    if (aiDraftOpenRef.current || aiDiffOriginalRef.current || isAiLoadingRef.current) {
+      return;
+    }
+
+    dictationRef.current.toggle();
+  };
+
+  // While recording, Enter stops (and transcribes) and Esc aborts the
+  // dictation, no matter where the focus is.
+  useEffect(() => {
+    const handleDictationKeys = (event: KeyboardEvent) => {
+      if (dictationRef.current.status !== "recording") {
+        return;
+      }
+
+      if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+        event.preventDefault();
+        void dictationRef.current.stop();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        dictationRef.current.cancel();
+      }
+    };
+
+    window.addEventListener("keydown", handleDictationKeys);
+
+    return () => window.removeEventListener("keydown", handleDictationKeys);
+  }, []);
+
+  // No caret and no typing in the document while the microphone is open.
+  // onTranscript re-enables editing itself (before inserting); this effect
+  // covers start, cancel, and error paths. The diff-review guard matters
+  // because that flow also parks the editor in read-only mode — dictation
+  // must not silently lift it.
+  useEffect(() => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor || currentEditor.isDestroyed) {
+      return;
+    }
+
+    if (dictation.status === "recording" || dictation.status === "transcribing") {
+      currentEditor.setEditable(false, false);
+      // With the caret hidden (non-editable), this marker is what shows
+      // where the transcript will be inserted.
+      updateVoiceInsertWidget(currentEditor, { pos: currentEditor.state.selection.from });
+    } else {
+      updateVoiceInsertWidget(currentEditor, null);
+
+      if (!aiDiffOriginalRef.current) {
+        currentEditor.setEditable(true, false);
+      }
+    }
+  }, [dictation.status]);
   // Panel visibility (and the whole search state) lives in useSearchStore
   // so it survives the per-file remount of this component during
   // cross-file match navigation.
@@ -1028,6 +1113,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         breaks: true
       }),
       AiStreamWidget,
+      VoiceInsertWidget,
       AiDiffWidget,
       SearchHighlight
     ],
@@ -1206,7 +1292,20 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
         if (key === "e") {
           event.preventDefault();
+
+          // Ctrl+Shift+E opens the AI dialog and immediately starts voice
+          // input into the prompt field (issue #7).
+          if (event.shiftKey) {
+            setVoiceStartRequestId((id) => id + 1);
+          }
+
           openAiDraftFromSelection();
+          return true;
+        }
+
+        if (key === "w" && event.shiftKey) {
+          event.preventDefault();
+          toggleDictation();
           return true;
         }
 
@@ -1304,6 +1403,14 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
   return (
     <div className="editor-view">
+      {dictation.status === "recording" || dictation.status === "transcribing" ? (
+        <VoiceRecordingBanner
+          level={dictation.level}
+          isRecording={dictation.status === "recording"}
+          message={dictation.status === "recording" ? t("voice.editorRecordingHint") : t("voice.transcribing")}
+        />
+      ) : null}
+
       {aiStatus && aiStatus.kind !== "info" ? (
         <div
           className={
@@ -1355,10 +1462,17 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         selectedText={aiDraft?.selectedText ?? ""}
         selectedMarkdown={aiDraft?.selectedMarkdown ?? ""}
         isLoading={isAiLoading}
+        voiceStartRequestId={voiceStartRequestId}
         onSubmit={(prompt, includeDocument, preserveFormatting) => {
           void runAiDraft(prompt, includeDocument, preserveFormatting);
         }}
         onCancel={closeAiDraft}
+      />
+
+      <VoiceModelDownloadDialog
+        open={dictation.isModelDialogOpen}
+        onClose={dictation.closeModelDialog}
+        onDownloaded={dictation.handleModelDownloaded}
       />
 
       <AiCheckDialog

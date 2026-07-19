@@ -176,6 +176,8 @@
       "printFile": "Datei drucken",
       "findReplace": "Suchen & Ersetzen",
       "aiEditDialog": "KI-Bearbeiten-Dialog öffnen",
+      "aiVoiceDialog": "KI-Dialog mit Spracheingabe öffnen",
+      "dictation": "In den Editor diktieren (Start/Stopp)",
       "aiSubmit": "KI-Anfrage absenden (im KI-Dialog)",
       "aiCheckDialog": "Ausgewählten Text auf Rechtschreibung/Grammatik prüfen",
       "bold": "Fett",
@@ -420,5 +422,21 @@
     "installing": "Installiert …",
     "installError": "Das Update konnte nicht installiert werden.",
     "dismiss": "Schließen"
+  },
+  "voice": {
+    "micStart": "Spracheingabe starten",
+    "micStop": "Spracheingabe stoppen und transkribieren",
+    "dialogRecordingHint": "Aufnahme läuft … Zum Stoppen Enter drücken.",
+    "editorRecordingHint": "Aufnahme läuft … Zum Stoppen und Einfügen Enter drücken.",
+    "transcribing": "Transkription läuft …",
+    "error": "Spracheingabe fehlgeschlagen: {{error}}",
+    "modelDialog": {
+      "title": "Spracherkennungsmodell herunterladen",
+      "description": "Die Spracheingabe läuft vollständig lokal auf deinem Gerät (whisper.cpp). Dafür ist ein einmaliger Download des Sprachmodells (ca. {{size}} MB) von huggingface.co nötig. Audioaufnahmen verlassen dein Gerät nie.",
+      "download": "Modell herunterladen",
+      "downloading": "Wird heruntergeladen …",
+      "progress": "{{downloaded}} von {{total}} MB",
+      "failed": "Der Download ist fehlgeschlagen: {{error}}"
+    }
   }
 }

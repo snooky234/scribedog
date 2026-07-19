@@ -27,6 +27,16 @@ const SHORTCUTS: ShortcutDefinition[] = [
     descriptionKey: "shortcutsDialog.items.aiEditDialog"
   },
   {
+    id: "aiVoiceDialog",
+    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "E" }]],
+    descriptionKey: "shortcutsDialog.items.aiVoiceDialog"
+  },
+  {
+    id: "dictation",
+    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "W" }]],
+    descriptionKey: "shortcutsDialog.items.dictation"
+  },
+  {
     id: "aiSubmit",
     keys: [[{ mod: "ctrl" }, { special: "enter" }]],
     descriptionKey: "shortcutsDialog.items.aiSubmit"

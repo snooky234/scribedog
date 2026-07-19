@@ -176,6 +176,8 @@
       "printFile": "Imprimir arquivo",
       "findReplace": "Localizar e substituir",
       "aiEditDialog": "Abrir diálogo de edição com IA",
+      "aiVoiceDialog": "Abrir o diálogo de IA com entrada de voz",
+      "dictation": "Ditar no editor (iniciar/parar)",
       "aiSubmit": "Enviar solicitação de IA (no diálogo de IA)",
       "aiCheckDialog": "Verificar ortografia/gramática do texto selecionado",
       "bold": "Negrito",
@@ -420,5 +422,21 @@
     "installing": "Instalando …",
     "installError": "Não foi possível instalar a atualização.",
     "dismiss": "Dispensar"
+  },
+  "voice": {
+    "micStart": "Iniciar entrada de voz",
+    "micStop": "Parar a entrada de voz e transcrever",
+    "dialogRecordingHint": "Gravando… Pressione Enter para parar.",
+    "editorRecordingHint": "Gravando… Pressione Enter para parar e inserir o texto.",
+    "transcribing": "Transcrevendo…",
+    "error": "A entrada de voz falhou: {{error}}",
+    "modelDialog": {
+      "title": "Baixar o modelo de reconhecimento de voz",
+      "description": "A entrada de voz é executada inteiramente no seu dispositivo (whisper.cpp). É necessário um download único do modelo de voz (cerca de {{size}} MB) de huggingface.co. As gravações de áudio nunca saem do seu dispositivo.",
+      "download": "Baixar modelo",
+      "downloading": "Baixando…",
+      "progress": "{{downloaded}} de {{total}} MB",
+      "failed": "O download falhou: {{error}}"
+    }
   }
 }

@@ -176,6 +176,8 @@
       "printFile": "Imprimer le fichier",
       "findReplace": "Rechercher et remplacer",
       "aiEditDialog": "Ouvrir la boîte de dialogue d'édition IA",
+      "aiVoiceDialog": "Ouvrir le dialogue IA avec saisie vocale",
+      "dictation": "Dicter dans l'éditeur (démarrer/arrêter)",
       "aiSubmit": "Envoyer la requête IA (dans la boîte de dialogue IA)",
       "aiCheckDialog": "Vérifier l'orthographe/la grammaire du texte sélectionné",
       "bold": "Gras",
@@ -420,5 +422,21 @@
     "installing": "Installation …",
     "installError": "La mise à jour n'a pas pu être installée.",
     "dismiss": "Ignorer"
+  },
+  "voice": {
+    "micStart": "Démarrer la saisie vocale",
+    "micStop": "Arrêter la saisie vocale et transcrire",
+    "dialogRecordingHint": "Enregistrement… Appuyez sur Entrée pour arrêter.",
+    "editorRecordingHint": "Enregistrement… Appuyez sur Entrée pour arrêter et insérer le texte.",
+    "transcribing": "Transcription en cours…",
+    "error": "La saisie vocale a échoué : {{error}}",
+    "modelDialog": {
+      "title": "Télécharger le modèle de reconnaissance vocale",
+      "description": "La saisie vocale s'exécute entièrement sur votre appareil (whisper.cpp). Elle nécessite un téléchargement unique du modèle vocal (environ {{size}} Mo) depuis huggingface.co. Les enregistrements audio ne quittent jamais votre appareil.",
+      "download": "Télécharger le modèle",
+      "downloading": "Téléchargement…",
+      "progress": "{{downloaded}} sur {{total}} Mo",
+      "failed": "Le téléchargement a échoué : {{error}}"
+    }
   }
 }

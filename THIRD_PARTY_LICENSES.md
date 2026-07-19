@@ -7326,6 +7326,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | atomic-waker | 1.1.2 | Apache-2.0 OR MIT |
 | autocfg | 1.5.1 | Apache-2.0 OR MIT |
 | base64 | 0.22.1 | MIT OR Apache-2.0 |
+| bindgen | 0.71.1 | BSD-3-Clause |
 | bit-set | 0.8.0 | Apache-2.0 OR MIT |
 | bit-vec | 0.8.0 | Apache-2.0 OR MIT |
 | bitflags | 1.3.2 | MIT/Apache-2.0 |
@@ -7341,13 +7342,17 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | cargo_toml | 0.22.3 | Apache-2.0 OR MIT |
 | cargo-platform | 0.1.9 | MIT OR Apache-2.0 |
 | cc | 1.2.66 | MIT OR Apache-2.0 |
+| cexpr | 0.6.0 | Apache-2.0/MIT |
 | cfb | 0.7.3 | MIT |
 | cfg_aliases | 0.2.1 | MIT |
 | cfg-if | 1.0.4 | MIT OR Apache-2.0 |
 | chacha20 | 0.10.1 | MIT OR Apache-2.0 |
 | chrono | 0.4.45 | MIT OR Apache-2.0 |
+| clang-sys | 1.8.1 | Apache-2.0 |
+| cmake | 0.1.58 | MIT OR Apache-2.0 |
 | cookie | 0.18.1 | MIT OR Apache-2.0 |
 | cookie_store | 0.22.1 | MIT OR Apache-2.0 |
+| cpal | 0.15.3 | Apache-2.0 |
 | cpufeatures | 0.2.17 | MIT OR Apache-2.0 |
 | cpufeatures | 0.3.0 | MIT OR Apache-2.0 |
 | crc32fast | 1.5.0 | MIT OR Apache-2.0 |
@@ -7361,6 +7366,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | darling | 0.23.0 | MIT |
 | darling_core | 0.23.0 | MIT |
 | darling_macro | 0.23.0 | MIT |
+| dasp_sample | 0.11.0 | MIT OR Apache-2.0 |
 | data-url | 0.3.2 | MIT OR Apache-2.0 |
 | deranged | 0.5.8 | MIT OR Apache-2.0 |
 | derive_more | 2.1.1 | MIT |
@@ -7378,6 +7384,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | dtor-proc-macro | 0.0.6 | Apache-2.0 OR MIT |
 | dunce | 1.0.5 | CC0-1.0 OR MIT-0 OR Apache-2.0 |
 | dyn-clone | 1.0.20 | MIT OR Apache-2.0 |
+| either | 1.16.0 | MIT OR Apache-2.0 |
 | embed-resource | 3.0.11 | MIT |
 | encoding_rs | 0.8.35 | (Apache-2.0 OR MIT) AND BSD-3-Clause |
 | equivalent | 1.0.2 | Apache-2.0 OR MIT |
@@ -7389,6 +7396,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | fnv | 1.0.7 | Apache-2.0 / MIT |
 | foldhash | 0.2.0 | Zlib |
 | form_urlencoded | 1.2.2 | MIT OR Apache-2.0 |
+| fs_extra | 1.3.0 | MIT |
 | futures-channel | 0.3.32 | MIT OR Apache-2.0 |
 | futures-core | 0.3.32 | MIT OR Apache-2.0 |
 | futures-io | 0.3.32 | MIT OR Apache-2.0 |
@@ -7429,12 +7437,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | indexmap | 2.14.0 | Apache-2.0 OR MIT |
 | infer | 0.19.0 | MIT |
 | ipnet | 2.12.0 | MIT OR Apache-2.0 |
+| itertools | 0.13.0 | MIT OR Apache-2.0 |
 | itoa | 1.0.18 | MIT OR Apache-2.0 |
+| jobserver | 0.1.35 | MIT OR Apache-2.0 |
 | json-patch | 3.0.1 | MIT/Apache-2.0 |
 | jsonptr | 0.6.3 | MIT OR Apache-2.0 |
 | keyboard-types | 0.7.0 | MIT OR Apache-2.0 |
 | keyring | 3.6.3 | MIT OR Apache-2.0 |
 | libc | 0.2.186 | MIT OR Apache-2.0 |
+| libloading | 0.8.9 | ISC |
 | litemap | 0.8.2 | Unicode-3.0 |
 | litrs | 1.0.0 | MIT OR Apache-2.0 |
 | lock_api | 0.4.14 | MIT OR Apache-2.0 |
@@ -7443,11 +7454,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | markup5ever | 0.38.0 | MIT OR Apache-2.0 |
 | memchr | 2.8.2 | Unlicense OR MIT |
 | mime | 0.3.17 | MIT OR Apache-2.0 |
+| minimal-lexical | 0.2.1 | MIT/Apache-2.0 |
 | minisign-verify | 0.2.5 | MIT |
 | miniz_oxide | 0.8.9 | MIT OR Zlib OR Apache-2.0 |
 | mio | 1.2.1 | MIT |
 | muda | 0.19.3 | Apache-2.0 OR MIT |
 | new_debug_unreachable | 1.0.6 | MIT |
+| nom | 7.1.3 | MIT |
 | notify | 8.2.0 | CC0-1.0 |
 | notify-types | 2.1.0 | MIT OR Apache-2.0 |
 | num-conv | 0.2.2 | MIT OR Apache-2.0 |
@@ -7469,6 +7482,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | potential_utf | 0.1.5 | Unicode-3.0 |
 | powerfmt | 0.2.0 | MIT OR Apache-2.0 |
 | precomputed-hash | 0.1.1 | MIT |
+| prettyplease | 0.2.37 | MIT OR Apache-2.0 |
 | proc-macro2 | 1.0.106 | MIT OR Apache-2.0 |
 | psl-types | 2.0.11 | MIT/Apache-2.0 |
 | publicsuffix | 2.3.0 | MIT/Apache-2.0 |
@@ -7520,6 +7534,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | serialize-to-javascript-impl | 0.1.2 | MIT OR Apache-2.0 |
 | servo_arc | 0.4.3 | MIT OR Apache-2.0 |
 | sha2 | 0.10.9 | MIT OR Apache-2.0 |
+| shlex | 1.3.0 | MIT OR Apache-2.0 |
 | shlex | 2.0.1 | MIT OR Apache-2.0 |
 | simd-adler32 | 0.3.9 | MIT |
 | siphasher | 1.0.3 | MIT/Apache-2.0 |
@@ -7608,12 +7623,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | webview2-com | 0.38.2 | MIT |
 | webview2-com-macros | 0.8.1 | MIT |
 | webview2-com-sys | 0.38.2 | MIT |
+| whisper-rs | 0.14.4 | Unlicense |
+| whisper-rs-sys | 0.13.1 | Unlicense |
 | winapi-util | 0.1.11 | Unlicense OR MIT |
 | window-vibrancy | 0.6.0 | Apache-2.0 OR MIT |
+| windows | 0.54.0 | MIT OR Apache-2.0 |
 | windows | 0.61.3 | MIT OR Apache-2.0 |
 | windows_x86_64_msvc | 0.52.6 | MIT OR Apache-2.0 |
 | windows_x86_64_msvc | 0.53.1 | MIT OR Apache-2.0 |
 | windows-collections | 0.2.0 | MIT OR Apache-2.0 |
+| windows-core | 0.54.0 | MIT OR Apache-2.0 |
 | windows-core | 0.61.2 | MIT OR Apache-2.0 |
 | windows-future | 0.2.1 | MIT OR Apache-2.0 |
 | windows-implement | 0.60.2 | MIT OR Apache-2.0 |
@@ -7622,6 +7641,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | windows-link | 0.2.1 | MIT OR Apache-2.0 |
 | windows-numerics | 0.2.0 | MIT OR Apache-2.0 |
 | windows-registry | 0.6.1 | MIT OR Apache-2.0 |
+| windows-result | 0.1.2 | MIT OR Apache-2.0 |
 | windows-result | 0.3.4 | MIT OR Apache-2.0 |
 | windows-result | 0.4.1 | MIT OR Apache-2.0 |
 | windows-strings | 0.4.2 | MIT OR Apache-2.0 |

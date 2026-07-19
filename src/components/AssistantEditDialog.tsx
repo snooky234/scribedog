@@ -139,69 +139,71 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
         aria-labelledby="assistant-edit-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <h3 id="assistant-edit-title">
-          {assistant ? t("assistants.editTitle") : t("assistants.newTitle")}
-        </h3>
+        <div className="assistants__form-scroll">
+          <h3 id="assistant-edit-title">
+            {assistant ? t("assistants.editTitle") : t("assistants.newTitle")}
+          </h3>
 
-        <div className="assistants__form">
-          <div className="assistants__form-row">
-            <label className="ai-dialog__field assistants__emoji-field">
-              <span>{t("assistants.emoji")}</span>
-              <EmojiPicker
-                onSelect={setEmoji}
-                trigger={emoji ? <span aria-hidden="true">{emoji}</span> : undefined}
-              />
-            </label>
-            <label className="ai-dialog__field assistants__name-field">
-              <span>{t("assistants.name")}</span>
+          <div className="assistants__form">
+            <div className="assistants__form-row">
+              <label className="ai-dialog__field assistants__emoji-field">
+                <span>{t("assistants.emoji")}</span>
+                <EmojiPicker
+                  onSelect={setEmoji}
+                  trigger={emoji ? <span aria-hidden="true">{emoji}</span> : undefined}
+                />
+              </label>
+              <label className="ai-dialog__field assistants__name-field">
+                <span>{t("assistants.name")}</span>
+                <input
+                  type="text"
+                  value={name}
+                  disabled={isEditingDefault}
+                  placeholder={t("assistants.namePlaceholder")}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <label className="ai-dialog__field ai-dialog__field--full">
+              <span>{t("assistants.description")}</span>
               <input
                 type="text"
-                value={name}
-                disabled={isEditingDefault}
-                placeholder={t("assistants.namePlaceholder")}
-                onChange={(event) => setName(event.target.value)}
+                value={description}
+                placeholder={t("assistants.descriptionPlaceholder")}
+                onChange={(event) => setDescription(event.target.value)}
+              />
+            </label>
+
+            <label className="ai-dialog__field ai-dialog__field--full">
+              <span>{t("assistants.instruction")}</span>
+              <AutoGrowTextarea
+                value={instruction}
+                placeholder={t("assistants.instructionPlaceholder")}
+                onChange={setInstruction}
               />
             </label>
           </div>
+        </div>
 
-          <label className="ai-dialog__field ai-dialog__field--full">
-            <span>{t("assistants.description")}</span>
-            <input
-              type="text"
-              value={description}
-              placeholder={t("assistants.descriptionPlaceholder")}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-          </label>
-
-          <label className="ai-dialog__field ai-dialog__field--full">
-            <span>{t("assistants.instruction")}</span>
-            <AutoGrowTextarea
-              value={instruction}
-              placeholder={t("assistants.instructionPlaceholder")}
-              onChange={setInstruction}
-            />
-          </label>
-
-          <div className="assistants__form-actions">
-            {isEditingDefault ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="assistants__reset"
-                onClick={() => setInstruction(DEFAULT_ASSISTANT_INSTRUCTION)}
-              >
-                <RotateCcw />
-                {t("assistants.resetToDefault")}
-              </Button>
-            ) : null}
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t("common.cancel")}
+        <div className="assistants__form-actions">
+          {isEditingDefault ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="assistants__reset"
+              onClick={() => setInstruction(DEFAULT_ASSISTANT_INSTRUCTION)}
+            >
+              <RotateCcw />
+              {t("assistants.resetToDefault")}
             </Button>
-            <Button type="button" disabled={!canSave} onClick={save}>
-              {t("common.save")}
-            </Button>
-          </div>
+          ) : null}
+          <Button type="button" variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button type="button" disabled={!canSave} onClick={save}>
+            {t("common.save")}
+          </Button>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { Check, Pencil, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -28,6 +28,37 @@ export function AiDiffResultView({
   onContinueEditing
 }: AiDiffResultViewProps) {
   const { t } = useTranslation();
+  const acceptButtonRef = useRef<HTMLButtonElement | null>(null);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
+
+  // As soon as streaming finishes and the actions become enabled, move focus
+  // to "Accept" so Enter applies the result immediately and Tab/Shift+Tab
+  // reach the other actions without touching the mouse.
+  useEffect(() => {
+    if (!isStreaming) {
+      acceptButtonRef.current?.focus();
+    }
+  }, [isStreaming]);
+
+  const handleActionsKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+      return;
+    }
+
+    const buttons = Array.from(
+      actionsRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []
+    );
+    const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+
+    if (currentIndex === -1) {
+      return;
+    }
+
+    event.preventDefault();
+    const delta = event.key === "ArrowRight" ? 1 : -1;
+    const nextIndex = (currentIndex + delta + buttons.length) % buttons.length;
+    buttons[nextIndex]?.focus();
+  };
 
   const previewEditor = useEditor(
     {
@@ -71,7 +102,7 @@ export function AiDiffResultView({
           className="ai-diff-widget__result-content prose dark:prose-invert max-w-none"
         />
       </div>
-      <div className="ai-diff-widget__actions">
+      <div className="ai-diff-widget__actions" ref={actionsRef} onKeyDown={handleActionsKeyDown}>
         <Button type="button" size="sm" variant="outline" onClick={onContinueEditing} disabled={isStreaming}>
           <Pencil aria-hidden="true" />
           {t("aiDiffWidget.continueEditing")}
@@ -80,7 +111,14 @@ export function AiDiffResultView({
           <X aria-hidden="true" />
           {t("aiDiffWidget.discard")}
         </Button>
-        <Button type="button" size="sm" variant="default" onClick={onAccept} disabled={isStreaming}>
+        <Button
+          ref={acceptButtonRef}
+          type="button"
+          size="sm"
+          variant="default"
+          onClick={onAccept}
+          disabled={isStreaming}
+        >
           <Check aria-hidden="true" />
           {t("aiDiffWidget.accept")}
         </Button>

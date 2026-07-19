@@ -29,6 +29,10 @@ notify = "8"
 keyring = { version = "3", features = ["windows-native", "apple-native", "sync-secret-service"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Local voice input (issue #7): whisper-rs is Unlicense, cpal is Apache-2.0 —
+# both MIT-compatible permissive, per the licensing constraint in the issue.
+whisper-rs = "0.14"
+cpal = "0.15"
 
 [target.'cfg(windows)'.dependencies]
 tauri-plugin-updater = "2"

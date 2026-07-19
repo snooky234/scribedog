@@ -176,6 +176,8 @@
       "printFile": "ファイルを印刷",
       "findReplace": "検索と置換",
       "aiEditDialog": "AI 編集ダイアログを開く",
+      "aiVoiceDialog": "音声入力付きでAIダイアログを開く",
+      "dictation": "エディターに音声入力する（開始/停止）",
       "aiSubmit": "AI リクエストを送信（AI ダイアログ内）",
       "aiCheckDialog": "選択したテキストのスペル・文法をチェック",
       "bold": "太字",
@@ -420,5 +422,21 @@
     "installing": "インストール中…",
     "installError": "アップデートをインストールできませんでした。",
     "dismiss": "閉じる"
+  },
+  "voice": {
+    "micStart": "音声入力を開始",
+    "micStop": "音声入力を停止して文字起こし",
+    "dialogRecordingHint": "録音中… Enter キーで停止します。",
+    "editorRecordingHint": "録音中… Enter キーで停止してテキストを挿入します。",
+    "transcribing": "文字起こし中…",
+    "error": "音声入力に失敗しました: {{error}}",
+    "modelDialog": {
+      "title": "音声認識モデルをダウンロード",
+      "description": "音声入力はすべてお使いのデバイス上で実行されます（whisper.cpp）。初回のみ、huggingface.co から音声モデル（約 {{size}} MB）のダウンロードが必要です。音声の録音がデバイスの外に送信されることはありません。",
+      "download": "モデルをダウンロード",
+      "downloading": "ダウンロード中…",
+      "progress": "{{downloaded}} / {{total}} MB",
+      "failed": "ダウンロードに失敗しました: {{error}}"
+    }
   }
 }

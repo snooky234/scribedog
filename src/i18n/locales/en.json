@@ -176,6 +176,8 @@
       "printFile": "Print file",
       "findReplace": "Find & replace",
       "aiEditDialog": "Open AI edit dialog",
+      "aiVoiceDialog": "Open AI dialog with voice input",
+      "dictation": "Dictate into the editor (start/stop)",
       "aiSubmit": "Submit AI request (in the AI dialog)",
       "aiCheckDialog": "Check selected text for spelling/grammar",
       "bold": "Bold",
@@ -420,5 +422,21 @@
     "installing": "Installing …",
     "installError": "The update could not be installed.",
     "dismiss": "Dismiss"
+  },
+  "voice": {
+    "micStart": "Start voice input",
+    "micStop": "Stop voice input and transcribe",
+    "dialogRecordingHint": "Recording… Press Enter to stop.",
+    "editorRecordingHint": "Recording… Press Enter to stop and insert the text.",
+    "transcribing": "Transcribing…",
+    "error": "Voice input failed: {{error}}",
+    "modelDialog": {
+      "title": "Download speech recognition model",
+      "description": "Voice input runs entirely on your device (whisper.cpp). It requires a one-time download of the speech model (about {{size}} MB) from huggingface.co. Audio recordings never leave your device.",
+      "download": "Download model",
+      "downloading": "Downloading…",
+      "progress": "{{downloaded}} of {{total}} MB",
+      "failed": "The download failed: {{error}}"
+    }
   }
 }
