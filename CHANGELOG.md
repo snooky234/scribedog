@@ -3,6 +3,11 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.2] - 2026-07-20
+
+### Improvements
+- AI thinking mode is now disabled by default
+
 ## [0.5.1] - 2026-07-19
 
 Improve voice transcription performance and language handling.
