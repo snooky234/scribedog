@@ -16,10 +16,10 @@
 
 ScribeDog is a native desktop editor where you write and format text as a
 polished document, no raw `#` or `*` characters in sight. You can select
-any passage and hand it to an AI model to rewrite, extend, translate, or
-generate text, or simply dictate by voice, entirely offline. You choose where
-that AI model runs, fully local on your own machine so that no byte ever
-leaves your device, or with a cloud provider you trust, using your own API
+any passage and hand it to an AI model to **rewrite, extend, translate, or
+generate text**, or simply **dictate by voice**, entirely offline. You choose where
+that AI model runs, **fully local** on your own machine so that no byte ever
+leaves your device, or with a **cloud provider** you trust, using your own API
 key.
 
 Whatever you write — **personal notes, journals, letters, blog posts,
@@ -183,6 +183,14 @@ locally on your device).
 1. Install and run [Ollama](https://ollama.com/) (default `http://localhost:11434`), [Jan.ai](https://jan.ai/) (default `http://localhost:1337`), or [LM Studio](https://lmstudio.ai/) (default `http://localhost:1234`) and pull/load a model.
 2. In ScribeDog, open **AI settings** and choose your provider and model.
 3. Select some text, press `Ctrl+E`, enter a prompt, and let the model rewrite or insert content in place.
+
+> **A note on very small models.** Compact models (e.g. Gemma 4 E4B) can often
+> write good text, but they follow *instructions about* the text less
+> reliably. A typical example: if your prompt is written in a language other
+> than the selected passage, such a model may translate the passage instead of
+> keeping it in its original language. If you run into this, a slightly larger
+> model (e.g. Qwen 3.5 9B or Gemma 4 12B) handles these cases much more
+> reliably.
 
 ### Cloud (opt-in — bring your own API key)
 

@@ -208,8 +208,16 @@ function splitThinkingTags(text: string): { answer: string; thinking: string } {
 // restores it. Mode/formatting/thinking/language rules are appended
 // dynamically in buildSystemPrompt and are not part of the assistant prompt.
 export const DEFAULT_ASSISTANT_INSTRUCTION =
-  "You are a local text tool. Respond only with plain Markdown text — no explanations, and do not wrap the entire response in a code block. " +
-  "Use only Markdown syntax (e.g. blank lines for paragraphs, **bold**, _italic_, # headings, - for lists). Never use HTML tags like <p>, <br>, <div>, or <span>.";
+  "You are a local text tool. Respond only with plain Markdown text. " +
+  "Execute the user's instructions directly without adding your own explanations or comments.";
+
+// Markdown output rules. Always appended in buildSystemPrompt, for the default
+// assistant as well as for custom assistants — the editor can only render
+// Markdown, so users must not have to repeat these rules in their own prompts.
+const MARKDOWN_OUTPUT_INSTRUCTION =
+  "Do not wrap the entire response in a code block. " +
+  "Use only Markdown syntax (e.g. blank lines for paragraphs, **bold**, _italic_, # headings, - for lists). " +
+  "Never use HTML tags like <p>, <br>, <div>, or <span>.";
 
 const CHECK_MODE_SYSTEM_PROMPT =
   "You are a spelling and grammar checker. Analyze the given text and identify spelling and grammar mistakes only — do not suggest stylistic rewrites or wording changes beyond fixing actual errors. Respond ONLY with a single JSON array (no markdown code fences, no explanation text outside the JSON) of issue objects, each with exactly these fields: \"original\" (the exact original passage as it appears in the text, copied verbatim), \"suggestion\" (the corrected replacement text), and \"explanation\" (a short explanation of the issue, written in the same language as the checked text). List issues in the order they appear in the text. If there are no issues, respond with an empty JSON array: [].";
@@ -254,11 +262,19 @@ function buildSystemPrompt(request: AiContentRequest, thinkingMode: AiThinkingMo
         ? "Write your response in the same language as the document shown below."
         : "Write your response in the same language as the user's instruction shown below.";
 
+  // Narrow override: only an explicitly named target language counts. Models
+  // otherwise treat the language the instruction happens to be written in as
+  // an implicit request and translate the passage (e.g. a German "Kürzen
+  // bitte" on an English passage returning German).
   const languageOverride =
-    "If the user's instruction explicitly requests a specific output language, follow that instead — it overrides the language rule above.";
+    "If the user's instruction explicitly names a target language for the output " +
+    "(e.g. \"translate to French\", \"answer in English\"), follow that instead — it overrides the language rule above. " +
+    "The language the user's instruction happens to be written in is NOT such a request: " +
+    "an instruction written in German about an English passage still produces English output.";
 
   return [
     baseInstruction,
+    MARKDOWN_OUTPUT_INSTRUCTION,
     modeInstruction,
     formattingInstruction,
     thinkingInstruction,
@@ -304,10 +320,18 @@ function buildUserPrompt(request: AiContentRequest): string {
 
   contextSections.push(`Task:\n${request.prompt}`);
 
+  // The task is the last thing the model reads before generating, so a task
+  // written in another language than the marked text pulls the output into
+  // the task's language. Restating the language rule here — after the task,
+  // not just in the system prompt — is what actually holds.
   if (request.mode === "insert") {
     contextSections.push("Important: Return only the content to be inserted.");
   } else {
-    contextSections.push("Important: Return only the revised version of the marked text.");
+    contextSections.push(
+      "Important: Return only the revised version of the marked text, " +
+        "written in the same language as the marked text above. " +
+        "The task above may be written in a different language — that does not change the output language."
+    );
   }
 
   return contextSections.join("\n\n");

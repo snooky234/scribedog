@@ -487,6 +487,16 @@ fn transcribe(
     let mut state = context.create_state().map_err(|error| error.to_string())?;
 
     let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
+
+    // whisper.cpp defaults to 4 threads regardless of the machine. Scale with
+    // the host instead, but stay off the last couple of cores so dictation
+    // never starves the UI thread. Physical cores are what actually help here;
+    // halving the logical count is a good enough approximation of that.
+    let threads = std::thread::available_parallelism()
+        .map(|count| (count.get() / 2).clamp(4, 16))
+        .unwrap_or(4);
+    params.set_n_threads(threads as i32);
+
     params.set_translate(false);
     params.set_print_special(false);
     params.set_print_progress(false);

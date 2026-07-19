@@ -1,0 +1,5 @@
+[env]
+# Points whisper-rs-sys' bundled whisper.cpp build at our toolchain file, which
+# replaces the default -march=native build with runtime CPU dispatch. See
+# whisper-toolchain.cmake for the full rationale.
+CMAKE_TOOLCHAIN_FILE = { value = "whisper-toolchain.cmake", relative = true }
