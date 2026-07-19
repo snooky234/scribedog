@@ -1,6 +1,6 @@
 [package]
 name = "scribedog"
-version = "0.4.1"
+version = "0.5.0"
 description = "A local Markdown editor"
 authors = ["snooky234"]
 license = "MIT"

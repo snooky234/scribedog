@@ -3,6 +3,13 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.0] - 2026-07-19
+
+### Highlights
+- Add voice input with model download and streaming transcription
+- Add custom assistants management with templates and settings
+- Add zoom control, find/replace panel, and improved UI toggles
+
 ## [0.4.1] - 2026-07-19
 
 ### Highlights
