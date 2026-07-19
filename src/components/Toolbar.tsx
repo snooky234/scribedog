@@ -46,6 +46,7 @@ import { ZoomControl } from "@/components/ZoomControl";
 import { checkSpellcheckDictionary } from "@/lib/spellcheckDictionary";
 import { useAiModelsStore } from "@/store/useAiModelsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
+import { DEFAULT_ASSISTANT_ID, useAssistantsStore, type Assistant } from "@/store/useAssistantsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 type ToolbarProps = {
@@ -54,11 +55,19 @@ type ToolbarProps = {
   onAiRequest: () => void;
   onAiCheckRequest: () => void;
   onAiSettingsRequest: () => void;
+  onAssistantSettingsRequest: () => void;
   onPrintRequest: () => void;
   onSearchRequest: () => void;
 };
 
 const OPEN_AI_SETTINGS_VALUE = "__open-ai-settings__";
+const OPEN_ASSISTANT_SETTINGS_VALUE = "__open-assistant-settings__";
+
+export function assistantDisplayName(assistant: Assistant, defaultName: string): string {
+  const name = assistant.id === DEFAULT_ASSISTANT_ID && !assistant.name ? defaultName : assistant.name;
+
+  return assistant.emoji ? `${assistant.emoji} ${name}` : name;
+}
 
 type ToggleButtonProps = {
   pressed: boolean;
@@ -87,7 +96,46 @@ function ToggleButton({
   );
 }
 
-function AiQuickSettings({ onAiSettingsRequest }: { onAiSettingsRequest: () => void }) {
+function AssistantQuickSelect({ onAssistantSettingsRequest }: { onAssistantSettingsRequest: () => void }) {
+  const { t } = useTranslation();
+  const assistants = useAssistantsStore((state) => state.assistants);
+  const selectedAssistantId = useAssistantsStore((state) => state.selectedAssistantId);
+  const selectAssistant = useAssistantsStore((state) => state.selectAssistant);
+
+  return (
+    <select
+      className="editor-toolbar__model-select"
+      aria-label={t("toolbar.aiAssistant")}
+      title={t("toolbar.aiAssistant")}
+      value={selectedAssistantId}
+      onChange={(event) => {
+        const value = event.target.value;
+        if (value === OPEN_ASSISTANT_SETTINGS_VALUE) {
+          onAssistantSettingsRequest();
+          return;
+        }
+        selectAssistant(value);
+      }}
+    >
+      <option value={OPEN_ASSISTANT_SETTINGS_VALUE}>{t("toolbar.aiOpenAssistantSettings")}</option>
+      <optgroup label={t("toolbar.aiAssistantsGroup")}>
+        {assistants.map((assistant) => (
+          <option key={assistant.id} value={assistant.id}>
+            {assistantDisplayName(assistant, t("assistants.defaultName"))}
+          </option>
+        ))}
+      </optgroup>
+    </select>
+  );
+}
+
+function AiQuickSettings({
+  onAiSettingsRequest,
+  onAssistantSettingsRequest
+}: {
+  onAiSettingsRequest: () => void;
+  onAssistantSettingsRequest: () => void;
+}) {
   const { t } = useTranslation();
   const settings = useAiSettingsStore((state) => state.settings);
   const updateSettings = useAiSettingsStore((state) => state.updateSettings);
@@ -145,6 +193,7 @@ function AiQuickSettings({ onAiSettingsRequest }: { onAiSettingsRequest: () => v
           </optgroup>
         ) : null}
       </select>
+      <AssistantQuickSelect onAssistantSettingsRequest={onAssistantSettingsRequest} />
       <Toggle
         pressed={thinkingEnabled}
         className="editor-toolbar__thinking-toggle"
@@ -256,6 +305,7 @@ export function Toolbar({
   onAiRequest,
   onAiCheckRequest,
   onAiSettingsRequest,
+  onAssistantSettingsRequest,
   onPrintRequest,
   onSearchRequest
 }: ToolbarProps) {
@@ -314,7 +364,10 @@ export function Toolbar({
             <SpellCheck />
           </Button>
         </span>
-        <AiQuickSettings onAiSettingsRequest={onAiSettingsRequest} />
+        <AiQuickSettings
+          onAiSettingsRequest={onAiSettingsRequest}
+          onAssistantSettingsRequest={onAssistantSettingsRequest}
+        />
       </div>
 
       <div className="editor-toolbar__separator" aria-hidden="true" />

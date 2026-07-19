@@ -13,6 +13,9 @@ export type AiContentRequest = {
   documentMarkdown: string;
   includeDocument: boolean;
   preserveFormatting: boolean;
+  // System prompt core from the selected assistant (rewrite/insert only).
+  // When absent, the built-in default instruction applies.
+  assistantInstruction?: string;
 };
 
 export type AiCheckIssue = {
@@ -200,6 +203,14 @@ function splitThinkingTags(text: string): { answer: string; thinking: string } {
   return { answer, thinking };
 }
 
+// Built-in system prompt core of the edit assistant (rewrite/insert). The
+// "Default" assistant is seeded from this string, and "Reset to default"
+// restores it. Mode/formatting/thinking/language rules are appended
+// dynamically in buildSystemPrompt and are not part of the assistant prompt.
+export const DEFAULT_ASSISTANT_INSTRUCTION =
+  "You are a local text tool. Respond only with plain Markdown text — no explanations, and do not wrap the entire response in a code block. " +
+  "Use only Markdown syntax (e.g. blank lines for paragraphs, **bold**, _italic_, # headings, - for lists). Never use HTML tags like <p>, <br>, <div>, or <span>.";
+
 const CHECK_MODE_SYSTEM_PROMPT =
   "You are a spelling and grammar checker. Analyze the given text and identify spelling and grammar mistakes only — do not suggest stylistic rewrites or wording changes beyond fixing actual errors. Respond ONLY with a single JSON array (no markdown code fences, no explanation text outside the JSON) of issue objects, each with exactly these fields: \"original\" (the exact original passage as it appears in the text, copied verbatim), \"suggestion\" (the corrected replacement text), and \"explanation\" (a short explanation of the issue, written in the same language as the checked text). List issues in the order they appear in the text. If there are no issues, respond with an empty JSON array: [].";
 
@@ -211,11 +222,11 @@ function buildSystemPrompt(request: AiContentRequest, thinkingMode: AiThinkingMo
     return CHECK_MODE_SYSTEM_PROMPT + thinkingInstruction;
   }
 
+  // A custom assistant replaces the built-in base instruction; the
+  // mode/formatting/thinking/language rules below always stay appended so
+  // custom prompts can't break the plumbing (stop sequences, output shape).
   const baseInstruction =
-    "You are a local text tool. Respond only with plain Markdown text — no explanations, and do not wrap the entire response in a code block.";
-
-  const noHtmlInstruction =
-    "Use only Markdown syntax (e.g. blank lines for paragraphs, **bold**, _italic_, # headings, - for lists). Never use HTML tags like <p>, <br>, <div>, or <span>.";
+    request.assistantInstruction?.trim() || DEFAULT_ASSISTANT_INSTRUCTION;
 
   const modeInstruction =
     request.mode === "insert"
@@ -248,7 +259,6 @@ function buildSystemPrompt(request: AiContentRequest, thinkingMode: AiThinkingMo
 
   return [
     baseInstruction,
-    noHtmlInstruction,
     modeInstruction,
     formattingInstruction,
     thinkingInstruction,

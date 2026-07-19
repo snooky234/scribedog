@@ -5,6 +5,8 @@ import { resolveResource } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
 
 import { Button } from "@/components/ui/button";
+import { AssistantsSettings } from "@/components/AssistantsSettings";
+import type { Assistant } from "@/store/useAssistantsStore";
 
 import {
   fetchAvailableModels,
@@ -19,7 +21,7 @@ import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
 import { isWindowsPlatform } from "@/lib/platform";
 import { useAppVersion } from "@/hooks/useAppVersion";
 
-type SettingsTab = "general" | "ai";
+export type SettingsTab = "general" | "ai" | "assistants";
 
 type SettingsDialogProps = {
   open: boolean;
@@ -27,6 +29,7 @@ type SettingsDialogProps = {
   settings: AiSettings;
   onSave: (settings: AiSettings) => void;
   onClose: () => void;
+  onAssistantEditRequest: (assistant: Assistant | null) => void;
 };
 
 function clampContextLength(value: string) {
@@ -39,7 +42,14 @@ function clampContextLength(value: string) {
   return parsedValue;
 }
 
-export function SettingsDialog({ open, initialTab = "general", settings, onSave, onClose }: SettingsDialogProps) {
+export function SettingsDialog({
+  open,
+  initialTab = "general",
+  settings,
+  onSave,
+  onClose,
+  onAssistantEditRequest
+}: SettingsDialogProps) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const theme = useThemeStore((state) => state.theme);
@@ -180,6 +190,19 @@ export function SettingsDialog({ open, initialTab = "general", settings, onSave,
           >
             {t("settingsDialog.tabAi")}
           </button>
+          <button
+            type="button"
+            role="tab"
+            id="settings-tab-assistants"
+            aria-selected={activeTab === "assistants"}
+            aria-controls="settings-panel-assistants"
+            className={
+              activeTab === "assistants" ? "ai-dialog__tab ai-dialog__tab--active" : "ai-dialog__tab"
+            }
+            onClick={() => setActiveTab("assistants")}
+          >
+            {t("settingsDialog.tabAssistants")}
+          </button>
         </div>
 
         {activeTab === "general" ? (
@@ -243,6 +266,10 @@ export function SettingsDialog({ open, initialTab = "general", settings, onSave,
                 {t("settingsDialog.openSourceLicenses")}
               </button>
             </p>
+          </div>
+        ) : activeTab === "assistants" ? (
+          <div id="settings-panel-assistants" role="tabpanel" aria-labelledby="settings-tab-assistants">
+            <AssistantsSettings onEditRequest={onAssistantEditRequest} />
           </div>
         ) : (
           <div id="settings-panel-ai" role="tabpanel" aria-labelledby="settings-tab-ai">
@@ -385,12 +412,15 @@ export function SettingsDialog({ open, initialTab = "general", settings, onSave,
           </div>
         )}
 
+        {/* Assistants save themselves immediately via their own store, so the
+            AI-settings footer would only mislead on that tab. */}
         <div className="ai-dialog__actions">
           <Button type="button" variant="outline" onClick={onClose}>
-            {t("common.cancel")}
+            {activeTab === "assistants" ? t("common.close") : t("common.cancel")}
           </Button>
           <Button
             type="button"
+            hidden={activeTab === "assistants"}
             onClick={() => {
               onSave({
                 provider,

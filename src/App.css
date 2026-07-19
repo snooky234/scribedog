@@ -916,17 +916,20 @@ body.is-resizing-sidebar {
   color: var(--success-fg);
 }
 
-/* Inline widget at the AI insertion point (live reasoning-trace preview) */
+/* Widget at the AI insertion point (live reasoning-trace preview). Rendered
+   as a ProseMirror widget decoration, so technically inline in the DOM —
+   forced onto its own line via block display so following text doesn't
+   wrap around it. */
 .ai-stream-widget {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   gap: 0.4rem;
   max-width: 100%;
-  vertical-align: middle;
   border: 1px solid rgba(var(--overlay-rgb),0.12);
   border-radius: 0.75rem;
   background: rgba(var(--surface-rgb),0.85);
   padding: 0.45rem 0.7rem;
+  margin: 0.4rem 0 0.9rem;
   font-size: 0.8rem;
   line-height: 1.45;
   color: rgba(var(--text-rgb),0.75);
@@ -1784,6 +1787,128 @@ body.is-resizing-sidebar {
   .ai-dialog__model-field input {
     flex: 1;
     min-width: 0;
+  }
+
+  .assistants {
+    display: grid;
+    gap: 0.9rem;
+    justify-items: start;
+    margin-top: 1rem;
+  }
+
+  .assistants__list {
+    display: grid;
+    gap: 0.5rem;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .assistants__item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid rgba(var(--overlay-rgb),0.1);
+    border-radius: 0.9rem;
+    background: rgba(var(--surface-raised-rgb),0.84);
+    padding: 0.5rem 0.6rem;
+  }
+
+  .assistants__item-main {
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex: 1;
+    min-width: 0;
+    padding: 0.2rem 0.3rem;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+  }
+
+  .assistants__item-emoji {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .assistants__item-text {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .assistants__item-name {
+    font-weight: 500;
+  }
+
+  .assistants__item-description {
+    font-size: 0.85rem;
+    color: rgba(var(--text-rgb),0.56);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .assistants__item-actions {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .assistants__form {
+    display: grid;
+    gap: 0.9rem;
+    width: 100%;
+  }
+
+  .assistants__form .ai-dialog__field--full {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .assistants__form-row {
+    display: flex;
+    gap: 0.9rem;
+    align-items: stretch;
+  }
+
+  .assistants__name-field {
+    flex: 1;
+  }
+
+  /* The emoji trigger stretches to exactly the height of the adjacent name
+     input (label rows: caption + stretched control). */
+  .assistants__emoji-field,
+  .assistants__name-field {
+    grid-template-rows: auto 1fr;
+  }
+
+  .assistants__emoji-field button {
+    height: 100%;
+    min-width: 3.1rem;
+    border-radius: 0.9rem;
+    font-size: 1.25rem;
+  }
+
+  .ai-dialog__field textarea.assistants__instruction {
+    min-height: 4.5rem;
+    resize: none;
+    overflow: hidden;
+  }
+
+  .assistants__form-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 0.3rem;
+  }
+
+  .assistants__reset {
+    margin-right: auto;
   }
 
   .ai-dialog__model-refresh {

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { Smile } from "lucide-react";
@@ -59,7 +59,13 @@ const EMOJI_I18N: Record<SupportedLanguage, unknown> = {
 };
 
 type EmojiPickerProps = {
-  editor: Editor;
+  // Toolbar mode: the picked emoji is inserted into the document.
+  editor?: Editor;
+  // Form mode: the picked emoji is handed to the caller instead.
+  onSelect?: (emoji: string) => void;
+  // Optional trigger content replacing the default smiley icon (e.g. the
+  // currently selected emoji in a form).
+  trigger?: ReactNode;
 };
 
 type EmojiSelection = {
@@ -67,7 +73,7 @@ type EmojiSelection = {
   shortcodes?: string;
 };
 
-export function EmojiPicker({ editor }: EmojiPickerProps) {
+export function EmojiPicker({ editor, onSelect, trigger }: EmojiPickerProps) {
   const { t, i18n } = useTranslation();
   const language = (i18n.resolvedLanguage ?? i18n.language) as SupportedLanguage;
   const [anchor, setAnchor] = useState<{ top: number; left: number; right: number } | null>(null);
@@ -87,7 +93,11 @@ export function EmojiPicker({ editor }: EmojiPickerProps) {
     const value = emoji.native ?? emoji.shortcodes;
 
     if (value) {
-      editor.chain().focus().insertContent(value).run();
+      if (onSelect) {
+        onSelect(value);
+      } else if (editor) {
+        editor.chain().focus().insertContent(value).run();
+      }
     }
 
     close();
@@ -121,7 +131,7 @@ export function EmojiPicker({ editor }: EmojiPickerProps) {
           setAnchor({ top: rect.bottom + 6, left: rect.left, right: window.innerWidth - rect.right });
         }}
       >
-        <Smile />
+        {trigger ?? <Smile />}
       </Button>
 
       {anchor

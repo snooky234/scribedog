@@ -34,6 +34,7 @@ import { getRelativeImageMarkdownPath, saveImageToFolder } from "@/lib/fileSyste
 import { SearchHighlight, updateSearchHighlight } from "@/lib/searchHighlight";
 import { printMarkdown } from "@/lib/print";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
+import { getSelectedAssistant, useAssistantsStore } from "@/store/useAssistantsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
 
@@ -177,6 +178,7 @@ type EditorProps = {
   onAiLoadingChange?: (isLoading: boolean) => void;
   onAiPendingChange?: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
+  onAssistantSettingsRequest: () => void;
 };
 
 export type EditorHandle = {
@@ -328,7 +330,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onRequestFileOpen,
     onAiLoadingChange,
     onAiPendingChange,
-    onAiSettingsRequest
+    onAiSettingsRequest,
+    onAssistantSettingsRequest
   },
   ref
 ) {
@@ -722,7 +725,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         selectedMarkdown: draft.selectedMarkdown,
         documentMarkdown: markdown,
         includeDocument,
-        preserveFormatting
+        preserveFormatting,
+        assistantInstruction: getSelectedAssistant(useAssistantsStore.getState()).instruction
       };
 
       const streamHandlers = {
@@ -804,6 +808,16 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     } catch (error) {
       if (abortController.signal.aborted) {
         setAiStatus(null);
+
+        // Stopping mid-stream leaves the diff widget's last render stuck
+        // with isStreaming: true (actions disabled) since no further chunk
+        // will ever arrive to flip it — re-render with whatever was
+        // streamed so far so accept/discard/continue-editing unlock again.
+        const activeEditor = editorRef.current;
+
+        if (isRewrite && activeEditor && aiDiffOriginalRef.current) {
+          showAiDiff(activeEditor, streamedMarkdown, false);
+        }
       } else {
         setAiStatus({ kind: "error", message: formatAiError(error, t) });
       }
@@ -1309,6 +1323,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         onAiRequest={openAiDraftFromSelection}
         onAiCheckRequest={runAiGrammarCheck}
         onAiSettingsRequest={onAiSettingsRequest}
+        onAssistantSettingsRequest={onAssistantSettingsRequest}
         onPrintRequest={printDocument}
         onSearchRequest={openFindPanel}
       />

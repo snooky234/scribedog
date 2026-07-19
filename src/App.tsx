@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 
 import { Editor, type EditorHandle } from "@/components/Editor";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { AssistantEditDialog } from "@/components/AssistantEditDialog";
 import { DeleteFileDialog } from "@/components/DeleteFileDialog";
 import { ExportDialog, type ExportDialogTarget } from "@/components/ExportDialog";
 import { ImportDialog } from "@/components/ImportDialog";
@@ -31,6 +32,7 @@ import { getDefaultExportBaseName } from "@/lib/export/exporter";
 import { IMPORT_FILE_EXTENSIONS } from "@/lib/import/importer";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
+import type { Assistant } from "@/store/useAssistantsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { ZOOM_STEP, useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
@@ -76,7 +78,10 @@ function App() {
   >(null);
   const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
   const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<"general" | "ai">("general");
+  const [settingsInitialTab, setSettingsInitialTab] = useState<"general" | "ai" | "assistants">("general");
+  // Wrapped in an object so "create new assistant" (assistant: null) is
+  // distinguishable from "no edit in progress" (whole value null).
+  const [assistantEditTarget, setAssistantEditTarget] = useState<{ assistant: Assistant | null } | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isRenamingTitle, setIsRenamingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
@@ -856,6 +861,10 @@ function App() {
                         setSettingsInitialTab("ai");
                         setIsAiSettingsOpen(true);
                       }}
+                      onAssistantSettingsRequest={() => {
+                        setSettingsInitialTab("assistants");
+                        setIsAiSettingsOpen(true);
+                      }}
                     />
                   )}
                 </div>
@@ -891,6 +900,22 @@ function App() {
           setIsAiSettingsOpen(false);
         }}
         onClose={() => setIsAiSettingsOpen(false)}
+        onAssistantEditRequest={(assistant) => {
+          // Editing happens in its own modal; the settings dialog closes and
+          // reopens on the assistants tab once editing is done.
+          setIsAiSettingsOpen(false);
+          setAssistantEditTarget({ assistant });
+        }}
+      />
+
+      <AssistantEditDialog
+        open={assistantEditTarget !== null}
+        assistant={assistantEditTarget?.assistant ?? null}
+        onClose={() => {
+          setAssistantEditTarget(null);
+          setSettingsInitialTab("assistants");
+          setIsAiSettingsOpen(true);
+        }}
       />
 
       <ShortcutsDialog open={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
