@@ -15,6 +15,7 @@ import {
   PawPrint,
   Printer,
   Quote,
+  Search,
   SpellCheck,
   Strikethrough,
   Underline,
@@ -41,6 +42,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import { TableGridPicker } from "@/components/TableGridPicker";
 import { TableMenu } from "@/components/TableMenu";
+import { ZoomControl } from "@/components/ZoomControl";
 import { checkSpellcheckDictionary } from "@/lib/spellcheckDictionary";
 import { useAiModelsStore } from "@/store/useAiModelsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
@@ -53,6 +55,7 @@ type ToolbarProps = {
   onAiCheckRequest: () => void;
   onAiSettingsRequest: () => void;
   onPrintRequest: () => void;
+  onSearchRequest: () => void;
 };
 
 const OPEN_AI_SETTINGS_VALUE = "__open-ai-settings__";
@@ -253,7 +256,8 @@ export function Toolbar({
   onAiRequest,
   onAiCheckRequest,
   onAiSettingsRequest,
-  onPrintRequest
+  onPrintRequest,
+  onSearchRequest
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [, forceRerender] = useState(0);
@@ -482,6 +486,20 @@ export function Toolbar({
       <div className="editor-toolbar__separator" aria-hidden="true" />
 
       <div className="editor-toolbar__group">
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="outline"
+          aria-label={t("findReplace.openButton")}
+          title={t("findReplace.openButtonTitle")}
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
+          onClick={onSearchRequest}
+        >
+          <Search />
+        </Button>
+        <ZoomControl />
         <EditorOptionsMenu onPrintRequest={onPrintRequest} />
       </div>
     </div>

@@ -21,6 +21,7 @@ import { Markdown } from "tiptap-markdown";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AiCheckDialog } from "@/components/AiCheckDialog";
+import { FindReplacePanel } from "@/components/FindReplacePanel";
 import { AiRewriteDialog } from "@/components/AiRewriteDialog";
 import { CodeBlockView } from "@/components/CodeBlockView";
 import { ImageView } from "@/components/ImageView";
@@ -30,9 +31,11 @@ import { AiDiffWidget, updateAiDiffWidget } from "@/lib/aiDiffWidget";
 import { AiStreamWidget, updateAiStreamWidget } from "@/lib/aiStreamWidget";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { getRelativeImageMarkdownPath, saveImageToFolder } from "@/lib/fileSystem";
+import { SearchHighlight, updateSearchHighlight } from "@/lib/searchHighlight";
 import { printMarkdown } from "@/lib/print";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
+import { useSearchStore } from "@/store/useSearchStore";
 
 // markdown-it-task-lists also converts numbered checklist syntax ("1. [ ] ...")
 // into <ol data-type="taskList">, but the base extension only recognizes
@@ -170,6 +173,7 @@ type EditorProps = {
   filePath: string | null;
   editorFocusRequestId?: number;
   onRequestSidebarFocus?: () => void;
+  onRequestFileOpen?: (filePath: string) => void;
   onAiLoadingChange?: (isLoading: boolean) => void;
   onAiPendingChange?: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
@@ -321,6 +325,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     filePath,
     editorFocusRequestId,
     onRequestSidebarFocus,
+    onRequestFileOpen,
     onAiLoadingChange,
     onAiPendingChange,
     onAiSettingsRequest
@@ -344,6 +349,39 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const aiAbortControllerRef = useRef<AbortController | null>(null);
   const aiCheckRangeRef = useRef<{ from: number; to: number } | null>(null);
   const [isLinkModifierHeld, setIsLinkModifierHeld] = useState(false);
+  // Panel visibility (and the whole search state) lives in useSearchStore
+  // so it survives the per-file remount of this component during
+  // cross-file match navigation.
+  const openFindPanel = () => {
+    useSearchStore.getState().openPanel();
+  };
+
+  const closeFindPanel = () => {
+    useSearchStore.getState().closePanel();
+
+    const currentEditor = editorRef.current;
+
+    if (currentEditor) {
+      updateSearchHighlight(currentEditor, null);
+      currentEditor.commands.focus();
+    }
+  };
+
+  // Ctrl+F must work regardless of where the focus currently is (editor,
+  // toolbar, sidebar), so it's registered at window level rather than in
+  // the ProseMirror keymap.
+  useEffect(() => {
+    const handleFindShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f" && !event.shiftKey && !event.altKey) {
+        event.preventDefault();
+        openFindPanel();
+      }
+    };
+
+    window.addEventListener("keydown", handleFindShortcut);
+
+    return () => window.removeEventListener("keydown", handleFindShortcut);
+  }, []);
 
   useEffect(() => {
     const handleModifierChange = (event: KeyboardEvent) => {
@@ -976,7 +1014,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         breaks: true
       }),
       AiStreamWidget,
-      AiDiffWidget
+      AiDiffWidget,
+      SearchHighlight
     ],
     content: normalizeEscapedCheckboxes(markdown),
     editable: true,
@@ -1103,7 +1142,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return true;
         }
 
-        if (key === "-") {
+        if (key === "o" && event.shiftKey) {
           event.preventDefault();
           editorRef.current?.chain().focus().toggleOrderedList().run();
           return true;
@@ -1271,18 +1310,28 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         onAiCheckRequest={runAiGrammarCheck}
         onAiSettingsRequest={onAiSettingsRequest}
         onPrintRequest={printDocument}
+        onSearchRequest={openFindPanel}
       />
 
       <EditorFileContext.Provider value={{ folderPath, filePath }}>
-        <ScrollArea className="editor-view__scroll">
-          <EditorContent
+        <div className="editor-view__body">
+          <FindReplacePanel
             editor={editor}
-            className={
-              isLinkModifierHeld ? "editor-view__content editor-view__content--link-hint" : "editor-view__content"
-            }
-            onContextMenu={handleAiContextMenu}
+            folderPath={folderPath}
+            filePath={filePath}
+            onClose={closeFindPanel}
+            onRequestFileOpen={onRequestFileOpen}
           />
-        </ScrollArea>
+          <ScrollArea className="editor-view__scroll">
+            <EditorContent
+              editor={editor}
+              className={
+                isLinkModifierHeld ? "editor-view__content editor-view__content--link-hint" : "editor-view__content"
+              }
+              onContextMenu={handleAiContextMenu}
+            />
+          </ScrollArea>
+        </div>
       </EditorFileContext.Provider>
 
       <AiRewriteDialog

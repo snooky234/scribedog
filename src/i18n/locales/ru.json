@@ -157,6 +157,7 @@
       "newFile": "Создать новый файл",
       "saveFile": "Сохранить файл",
       "printFile": "Печать файла",
+      "findReplace": "Поиск и замена",
       "aiEditDialog": "Открыть диалог редактирования ИИ",
       "aiSubmit": "Отправить запрос к ИИ (в диалоге ИИ)",
       "aiCheckDialog": "Проверить орфографию/грамматику выделенного текста",
@@ -179,6 +180,9 @@
       "paste": "Вставить",
       "undo": "Отменить",
       "redo": "Повторить",
+      "zoomIn": "Увеличить масштаб",
+      "zoomOut": "Уменьшить масштаб",
+      "zoomReset": "Сбросить масштаб",
       "shortcutsOverview": "Открыть обзор горячих клавиш",
       "closeDialog": "Закрыть диалог"
     }
@@ -237,7 +241,7 @@
     "bulletList": "Маркированный список",
     "bulletListTitle": "Маркированный список (Ctrl+.)",
     "orderedList": "Нумерованный список",
-    "orderedListTitle": "Нумерованный список (Ctrl+-)",
+    "orderedListTitle": "Нумерованный список (Ctrl+Shift+O)",
     "taskList": "Список задач",
     "taskListTitle": "Список задач (добавить/удалить флажки, Ctrl+,)",
     "blockquote": "Цитата",
@@ -260,6 +264,30 @@
     "printButton": "Печать",
     "spellcheckDictionaryMissing": "Словарь для проверки орфографии для «{{code}}» не найден. Установите словарь Hunspell (например, hunspell-{{code}}) через ваш пакетный менеджер."
   },
+  "findReplace": {
+    "panelLabel": "Поиск и замена",
+    "openButton": "Поиск и замена",
+    "openButtonTitle": "Поиск и замена (Ctrl+F)",
+    "searchPlaceholder": "Найти…",
+    "replacePlaceholder": "Заменить на…",
+    "caseSensitive": "Учитывать регистр",
+    "wholeWord": "Только слово целиком",
+    "allFiles": "Искать во всех файлах",
+    "matchCount": "{{current}} из {{total}}",
+    "noMatches": "Совпадений нет",
+    "allFilesSummary": "Совпадений: {{matches}} в других файлах: {{files}}",
+    "previousMatch": "Предыдущее совпадение",
+    "nextMatch": "Следующее совпадение",
+    "replaceButton": "Заменить…",
+    "currentFile": "Текущий файл",
+    "confirmEyebrow": "Поиск и замена",
+    "confirmTitle": "Подтвердить замены",
+    "confirmDescription": "Проверьте совпадения и снимите отметку с тех, которые не нужно заменять.",
+    "confirmGroupCount": "Выбрано {{selected}} из {{total}}",
+    "confirmAction": "Заменить ({{count}})",
+    "resultSummary": "Выполнено замен: {{matches}} в файлах: {{files}}",
+    "fileMatchBadge": "Совпадений: {{count}}"
+  },
   "emojiPicker": {
     "insertEmoji": "Вставить эмодзи",
     "selectEmoji": "Выбрать эмодзи"
@@ -267,6 +295,13 @@
   "tableGridPicker": {
     "insertTable": "Вставить таблицу",
     "chooseSize": "Выбрать размер таблицы"
+  },
+  "zoomControl": {
+    "button": "Масштаб",
+    "buttonTitle": "Масштаб (Ctrl++ / Ctrl+-)",
+    "zoomIn": "Увеличить масштаб (Ctrl++)",
+    "zoomOut": "Уменьшить масштаб (Ctrl+-)",
+    "reset": "Сбросить масштаб (Ctrl+0)"
   },
   "tableMenu": {
     "options": "Параметры таблицы",

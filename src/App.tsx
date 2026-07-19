@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pencil, Square } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open as openImportFilesDialog } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { check, type Update } from "@tauri-apps/plugin-updater";
@@ -31,6 +32,7 @@ import { IMPORT_FILE_EXTENSIONS } from "@/lib/import/importer";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
+import { ZOOM_STEP, useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 import "./App.css";
 
@@ -468,9 +470,31 @@ function App() {
         return;
       }
 
-      if (key === "o") {
+      if (key === "o" && !event.shiftKey) {
         event.preventDefault();
         void openFolderSafely();
+        return;
+      }
+
+      // Browser-style zoom: Ctrl+Plus / Ctrl+Minus / Ctrl+0. "=" covers
+      // layouts where Plus is the shifted key on "=".
+      if (key === "+" || key === "=") {
+        event.preventDefault();
+        const { zoomLevel, setZoomLevel } = useEditorSettingsStore.getState();
+        setZoomLevel(zoomLevel + ZOOM_STEP);
+        return;
+      }
+
+      if (key === "-") {
+        event.preventDefault();
+        const { zoomLevel, setZoomLevel } = useEditorSettingsStore.getState();
+        setZoomLevel(zoomLevel - ZOOM_STEP);
+        return;
+      }
+
+      if (key === "0") {
+        event.preventDefault();
+        useEditorSettingsStore.getState().setZoomLevel(0);
         return;
       }
 
@@ -504,6 +528,20 @@ function App() {
   useEffect(() => {
     void loadAiSettings();
   }, [loadAiSettings]);
+
+  const zoomLevel = useEditorSettingsStore((state) => state.zoomLevel);
+
+  useEffect(() => {
+    // Native webview zoom behaves like browser zoom: the layout reflows and
+    // viewport units adapt, unlike CSS zoom on the body (which leaves 100vh
+    // at its unscaled size and produces empty space when zooming out).
+    void getCurrentWebview()
+      .setZoom(1 + zoomLevel / 100)
+      .catch(() => {
+        // Outside the Tauri shell (plain `npm run dev`) fall back to CSS zoom.
+        document.body.style.setProperty("zoom", String(1 + zoomLevel / 100));
+      });
+  }, [zoomLevel]);
 
   useEffect(() => {
     let isActive = true;
@@ -811,6 +849,7 @@ function App() {
                       filePath={selectedFilePath}
                       editorFocusRequestId={editorFocusRequestId}
                       onRequestSidebarFocus={() => setSidebarFocusRequestId((id) => id + 1)}
+                      onRequestFileOpen={(targetFilePath) => void selectFilePathSafely(targetFilePath)}
                       onAiLoadingChange={setIsAiLoading}
                       onAiPendingChange={setIsAiActionPending}
                       onAiSettingsRequest={() => {

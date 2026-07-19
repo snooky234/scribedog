@@ -27,6 +27,7 @@ import {
 } from "@/lib/fileTree";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import type { MoveTreeEntryInput } from "@/store/useAppStore";
+import { useSearchStore } from "@/store/useSearchStore";
 
 const INDENT_BASE_REM = 0.5;
 const INDENT_STEP_REM = 0.9;
@@ -259,6 +260,11 @@ function TreeNodeRow({
   onRowDragEnd
 }: TreeNodeRowProps) {
   const { t, i18n } = useTranslation();
+  // Badge for the currently active project-wide search: number of matches
+  // in this file (0 hides the badge and the row highlight).
+  const searchMatchCount = useSearchStore((state) =>
+    node.kind === "file" ? state.fileMatchCounts[node.filePath] ?? 0 : 0
+  );
   const paddingLeft = `${INDENT_BASE_REM + depth * INDENT_STEP_REM}rem`;
   const key = getNodeKey(node);
   // Roving tabindex: only the active row is reachable via Tab, all others are
@@ -465,6 +471,7 @@ function TreeNodeRow({
           aria-selected={isSelected || isMultiSelected}
           className={cn(
             "file-tree__row file-tree__row--file",
+            searchMatchCount > 0 && "file-tree__row--search-match",
             isSelected && "file-tree__row--active",
             isMultiSelected && "file-tree__row--selected",
             isDragSource && "file-tree__row--drag-source",
@@ -485,6 +492,15 @@ function TreeNodeRow({
           <span className="file-tree__chevron" aria-hidden="true" />
           <FileText aria-hidden="true" />
           <span className="file-tree__name">{node.name}</span>
+          {searchMatchCount > 0 ? (
+            <span
+              className="file-tree__search-badge"
+              title={t("findReplace.fileMatchBadge", { count: searchMatchCount })}
+              aria-label={t("findReplace.fileMatchBadge", { count: searchMatchCount })}
+            >
+              {searchMatchCount}
+            </span>
+          ) : null}
           {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
           {isDirty ? (
             <span

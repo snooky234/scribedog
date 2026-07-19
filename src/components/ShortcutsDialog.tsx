@@ -20,6 +20,7 @@ const SHORTCUTS: ShortcutDefinition[] = [
   { id: "newFile", keys: [[{ mod: "ctrl" }, { literal: "N" }]], descriptionKey: "shortcutsDialog.items.newFile" },
   { id: "saveFile", keys: [[{ mod: "ctrl" }, { literal: "S" }]], descriptionKey: "shortcutsDialog.items.saveFile" },
   { id: "printFile", keys: [[{ mod: "ctrl" }, { literal: "P" }]], descriptionKey: "shortcutsDialog.items.printFile" },
+  { id: "findReplace", keys: [[{ mod: "ctrl" }, { literal: "F" }]], descriptionKey: "shortcutsDialog.items.findReplace" },
   {
     id: "aiEditDialog",
     keys: [[{ mod: "ctrl" }, { literal: "E" }], [{ special: "rightClick" }]],
@@ -42,7 +43,7 @@ const SHORTCUTS: ShortcutDefinition[] = [
   { id: "bulletList", keys: [[{ mod: "ctrl" }, { literal: "." }]], descriptionKey: "shortcutsDialog.items.bulletList" },
   {
     id: "orderedList",
-    keys: [[{ mod: "ctrl" }, { literal: "-" }]],
+    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "O" }]],
     descriptionKey: "shortcutsDialog.items.orderedList"
   },
   { id: "checkbox", keys: [[{ mod: "ctrl" }, { literal: "," }]], descriptionKey: "shortcutsDialog.items.checkbox" },
@@ -65,6 +66,9 @@ const SHORTCUTS: ShortcutDefinition[] = [
   { id: "paste", keys: [[{ mod: "ctrl" }, { literal: "V" }]], descriptionKey: "shortcutsDialog.items.paste" },
   { id: "undo", keys: [[{ mod: "ctrl" }, { literal: "Z" }]], descriptionKey: "shortcutsDialog.items.undo" },
   { id: "redo", keys: [[{ mod: "ctrl" }, { literal: "Y" }]], descriptionKey: "shortcutsDialog.items.redo" },
+  { id: "zoomIn", keys: [[{ mod: "ctrl" }, { literal: "+" }]], descriptionKey: "shortcutsDialog.items.zoomIn" },
+  { id: "zoomOut", keys: [[{ mod: "ctrl" }, { literal: "-" }]], descriptionKey: "shortcutsDialog.items.zoomOut" },
+  { id: "zoomReset", keys: [[{ mod: "ctrl" }, { literal: "0" }]], descriptionKey: "shortcutsDialog.items.zoomReset" },
   {
     id: "shortcutsOverview",
     keys: [[{ mod: "ctrl" }, { literal: "#" }]],

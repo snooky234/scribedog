@@ -155,6 +155,7 @@
       "newFile": "新規ファイルを作成",
       "saveFile": "ファイルを保存",
       "printFile": "ファイルを印刷",
+      "findReplace": "検索と置換",
       "aiEditDialog": "AI 編集ダイアログを開く",
       "aiSubmit": "AI リクエストを送信（AI ダイアログ内）",
       "aiCheckDialog": "選択したテキストのスペル・文法をチェック",
@@ -177,6 +178,9 @@
       "paste": "貼り付け",
       "undo": "元に戻す",
       "redo": "やり直し",
+      "zoomIn": "拡大",
+      "zoomOut": "縮小",
+      "zoomReset": "ズームをリセット",
       "shortcutsOverview": "ショートカット一覧を開く",
       "closeDialog": "ダイアログを閉じる"
     }
@@ -235,7 +239,7 @@
     "bulletList": "箇条書きリスト",
     "bulletListTitle": "箇条書きリスト（Ctrl+.）",
     "orderedList": "番号付きリスト",
-    "orderedListTitle": "番号付きリスト（Ctrl+-）",
+    "orderedListTitle": "番号付きリスト（Ctrl+Shift+O）",
     "taskList": "タスクリスト",
     "taskListTitle": "タスクリスト（チェックボックスの追加/削除、Ctrl+,）",
     "blockquote": "引用",
@@ -258,6 +262,30 @@
     "printButton": "印刷",
     "spellcheckDictionaryMissing": "「{{code}}」用のスペルチェック辞書が見つかりません。パッケージマネージャーで Hunspell 辞書（例: hunspell-{{code}}）をインストールしてください。"
   },
+  "findReplace": {
+    "panelLabel": "検索と置換",
+    "openButton": "検索と置換",
+    "openButtonTitle": "検索と置換 (Ctrl+F)",
+    "searchPlaceholder": "検索…",
+    "replacePlaceholder": "置換後の文字列…",
+    "caseSensitive": "大文字と小文字を区別",
+    "wholeWord": "単語単位で検索",
+    "allFiles": "すべてのファイルを検索",
+    "matchCount": "{{total}} 件中 {{current}} 件目",
+    "noMatches": "一致なし",
+    "allFilesSummary": "他 {{files}} ファイルに {{matches}} 件の一致",
+    "previousMatch": "前の一致",
+    "nextMatch": "次の一致",
+    "replaceButton": "置換…",
+    "currentFile": "現在のファイル",
+    "confirmEyebrow": "検索と置換",
+    "confirmTitle": "置換の確認",
+    "confirmDescription": "一致箇所を確認し、置換しないものはチェックを外してください。",
+    "confirmGroupCount": "{{total}} 件中 {{selected}} 件を選択",
+    "confirmAction": "置換 ({{count}})",
+    "resultSummary": "{{files}} 個のファイルで {{matches}} 件を置換しました",
+    "fileMatchBadge": "検索一致: {{count}}"
+  },
   "emojiPicker": {
     "insertEmoji": "絵文字を挿入",
     "selectEmoji": "絵文字を選択"
@@ -265,6 +293,13 @@
   "tableGridPicker": {
     "insertTable": "表を挿入",
     "chooseSize": "表のサイズを選択"
+  },
+  "zoomControl": {
+    "button": "ズーム",
+    "buttonTitle": "ズーム（Ctrl++ / Ctrl+-）",
+    "zoomIn": "拡大（Ctrl++）",
+    "zoomOut": "縮小（Ctrl+-）",
+    "reset": "ズームをリセット（Ctrl+0）"
   },
   "tableMenu": {
     "options": "表のオプション",

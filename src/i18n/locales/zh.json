@@ -155,6 +155,7 @@
       "newFile": "新建文件",
       "saveFile": "保存文件",
       "printFile": "打印文件",
+      "findReplace": "查找和替换",
       "aiEditDialog": "打开 AI 编辑对话框",
       "aiSubmit": "提交 AI 请求（在 AI 对话框中）",
       "aiCheckDialog": "检查所选文本的拼写/语法",
@@ -177,6 +178,9 @@
       "paste": "粘贴",
       "undo": "撤销",
       "redo": "重做",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "zoomReset": "重置缩放",
       "shortcutsOverview": "打开快捷键概览",
       "closeDialog": "关闭对话框"
     }
@@ -235,7 +239,7 @@
     "bulletList": "项目符号列表",
     "bulletListTitle": "项目符号列表（Ctrl+.）",
     "orderedList": "编号列表",
-    "orderedListTitle": "编号列表（Ctrl+-）",
+    "orderedListTitle": "编号列表（Ctrl+Shift+O）",
     "taskList": "任务列表",
     "taskListTitle": "任务列表（添加/移除复选框，Ctrl+,）",
     "blockquote": "引用",
@@ -258,6 +262,30 @@
     "printButton": "打印",
     "spellcheckDictionaryMissing": "未找到“{{code}}”的拼写检查词典。请通过你的包管理器安装 Hunspell 词典（例如 hunspell-{{code}}）。"
   },
+  "findReplace": {
+    "panelLabel": "查找和替换",
+    "openButton": "查找和替换",
+    "openButtonTitle": "查找和替换 (Ctrl+F)",
+    "searchPlaceholder": "查找…",
+    "replacePlaceholder": "替换为…",
+    "caseSensitive": "区分大小写",
+    "wholeWord": "全字匹配",
+    "allFiles": "在所有文件中搜索",
+    "matchCount": "第 {{current}} 项，共 {{total}} 项",
+    "noMatches": "无匹配项",
+    "allFilesSummary": "在其他 {{files}} 个文件中有 {{matches}} 处匹配",
+    "previousMatch": "上一个匹配项",
+    "nextMatch": "下一个匹配项",
+    "replaceButton": "替换…",
+    "currentFile": "当前文件",
+    "confirmEyebrow": "查找和替换",
+    "confirmTitle": "确认替换",
+    "confirmDescription": "请检查匹配项，并取消勾选不需要替换的内容。",
+    "confirmGroupCount": "已选择 {{selected}} / {{total}} 项",
+    "confirmAction": "替换（{{count}}）",
+    "resultSummary": "已在 {{files}} 个文件中完成 {{matches}} 处替换",
+    "fileMatchBadge": "匹配项：{{count}}"
+  },
   "emojiPicker": {
     "insertEmoji": "插入表情符号",
     "selectEmoji": "选择表情符号"
@@ -265,6 +293,13 @@
   "tableGridPicker": {
     "insertTable": "插入表格",
     "chooseSize": "选择表格大小"
+  },
+  "zoomControl": {
+    "button": "缩放",
+    "buttonTitle": "缩放（Ctrl++ / Ctrl+-）",
+    "zoomIn": "放大（Ctrl++）",
+    "zoomOut": "缩小（Ctrl+-）",
+    "reset": "重置缩放（Ctrl+0）"
   },
   "tableMenu": {
     "options": "表格选项",

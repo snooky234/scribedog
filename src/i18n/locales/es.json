@@ -155,6 +155,7 @@
       "newFile": "Crear nuevo archivo",
       "saveFile": "Guardar archivo",
       "printFile": "Imprimir archivo",
+      "findReplace": "Buscar y reemplazar",
       "aiEditDialog": "Abrir el cuadro de diálogo de edición con IA",
       "aiSubmit": "Enviar solicitud de IA (en el cuadro de diálogo de IA)",
       "aiCheckDialog": "Revisar el texto seleccionado en busca de errores ortográficos/gramaticales",
@@ -177,6 +178,9 @@
       "paste": "Pegar",
       "undo": "Deshacer",
       "redo": "Rehacer",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "zoomReset": "Restablecer el zoom",
       "shortcutsOverview": "Abrir el resumen de atajos",
       "closeDialog": "Cerrar cuadro de diálogo"
     }
@@ -235,7 +239,7 @@
     "bulletList": "Lista con viñetas",
     "bulletListTitle": "Lista con viñetas (Ctrl+.)",
     "orderedList": "Lista numerada",
-    "orderedListTitle": "Lista numerada (Ctrl+-)",
+    "orderedListTitle": "Lista numerada (Ctrl+Shift+O)",
     "taskList": "Lista de tareas",
     "taskListTitle": "Lista de tareas (agregar/quitar casillas de verificación, Ctrl+,)",
     "blockquote": "Cita",
@@ -258,6 +262,30 @@
     "printButton": "Imprimir",
     "spellcheckDictionaryMissing": "No se encontró ningún diccionario ortográfico para «{{code}}». Instala un diccionario Hunspell (p. ej. hunspell-{{code}}) mediante tu gestor de paquetes."
   },
+  "findReplace": {
+    "panelLabel": "Buscar y reemplazar",
+    "openButton": "Buscar y reemplazar",
+    "openButtonTitle": "Buscar y reemplazar (Ctrl+F)",
+    "searchPlaceholder": "Buscar…",
+    "replacePlaceholder": "Reemplazar por…",
+    "caseSensitive": "Distinguir mayúsculas y minúsculas",
+    "wholeWord": "Solo palabras completas",
+    "allFiles": "Buscar en todos los archivos",
+    "matchCount": "{{current}} de {{total}}",
+    "noMatches": "Sin coincidencias",
+    "allFilesSummary": "{{matches}} coincidencias en {{files}} archivos más",
+    "previousMatch": "Coincidencia anterior",
+    "nextMatch": "Siguiente coincidencia",
+    "replaceButton": "Reemplazar…",
+    "currentFile": "Archivo actual",
+    "confirmEyebrow": "Buscar y reemplazar",
+    "confirmTitle": "Confirmar reemplazos",
+    "confirmDescription": "Revisa las coincidencias y desmarca lo que no deba reemplazarse.",
+    "confirmGroupCount": "{{selected}} de {{total}} seleccionadas",
+    "confirmAction": "Reemplazar ({{count}})",
+    "resultSummary": "Se realizaron {{matches}} reemplazos en {{files}} archivo(s)",
+    "fileMatchBadge": "Coincidencias: {{count}}"
+  },
   "emojiPicker": {
     "insertEmoji": "Insertar emoji",
     "selectEmoji": "Elegir emoji"
@@ -265,6 +293,13 @@
   "tableGridPicker": {
     "insertTable": "Insertar tabla",
     "chooseSize": "Elegir tamaño de la tabla"
+  },
+  "zoomControl": {
+    "button": "Zoom",
+    "buttonTitle": "Zoom (Ctrl++ / Ctrl+-)",
+    "zoomIn": "Acercar (Ctrl++)",
+    "zoomOut": "Alejar (Ctrl+-)",
+    "reset": "Restablecer el zoom (Ctrl+0)"
   },
   "tableMenu": {
     "options": "Opciones de la tabla",

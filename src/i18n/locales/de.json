@@ -155,6 +155,7 @@
       "newFile": "Neue Datei anlegen",
       "saveFile": "Datei speichern",
       "printFile": "Datei drucken",
+      "findReplace": "Suchen & Ersetzen",
       "aiEditDialog": "KI-Bearbeiten-Dialog öffnen",
       "aiSubmit": "KI-Anfrage absenden (im KI-Dialog)",
       "aiCheckDialog": "Ausgewählten Text auf Rechtschreibung/Grammatik prüfen",
@@ -177,6 +178,9 @@
       "paste": "Einfügen",
       "undo": "Rückgängig",
       "redo": "Wiederholen",
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern",
+      "zoomReset": "Zoom zurücksetzen",
       "shortcutsOverview": "Tastenkürzel-Übersicht öffnen",
       "closeDialog": "Dialog schließen"
     }
@@ -235,7 +239,7 @@
     "bulletList": "Aufzählungsliste",
     "bulletListTitle": "Aufzählungsliste (Strg+.)",
     "orderedList": "Nummerierte Liste",
-    "orderedListTitle": "Nummerierte Liste (Strg+-)",
+    "orderedListTitle": "Nummerierte Liste (Strg+Umschalt+O)",
     "taskList": "Checkliste",
     "taskListTitle": "Checkliste (Checkboxen hinzufügen/entfernen, Strg+,)",
     "blockquote": "Zitat",
@@ -258,6 +262,30 @@
     "printButton": "Drucken",
     "spellcheckDictionaryMissing": "Kein Rechtschreib-Wörterbuch für „{{code}}\" gefunden. Installiere z. B. ein Hunspell-Wörterbuch (etwa hunspell-{{code}}) über deinen Paketmanager."
   },
+  "findReplace": {
+    "panelLabel": "Suchen & Ersetzen",
+    "openButton": "Suchen & Ersetzen",
+    "openButtonTitle": "Suchen & Ersetzen (Strg+F)",
+    "searchPlaceholder": "Suchen …",
+    "replacePlaceholder": "Ersetzen durch …",
+    "caseSensitive": "Groß-/Kleinschreibung beachten",
+    "wholeWord": "Nur ganze Wörter",
+    "allFiles": "In allen Dateien suchen",
+    "matchCount": "{{current}} von {{total}}",
+    "noMatches": "Keine Treffer",
+    "allFilesSummary": "{{matches}} Treffer in {{files}} weiteren Dateien",
+    "previousMatch": "Vorheriger Treffer",
+    "nextMatch": "Nächster Treffer",
+    "replaceButton": "Ersetzen …",
+    "currentFile": "Aktuelle Datei",
+    "confirmEyebrow": "Suchen & Ersetzen",
+    "confirmTitle": "Ersetzungen bestätigen",
+    "confirmDescription": "Prüfe die Treffer und wähle ab, was nicht ersetzt werden soll.",
+    "confirmGroupCount": "{{selected}} von {{total}} ausgewählt",
+    "confirmAction": "Ersetzen ({{count}})",
+    "resultSummary": "{{matches}} Ersetzungen in {{files}} Datei(en) vorgenommen",
+    "fileMatchBadge": "Suchtreffer: {{count}}"
+  },
   "emojiPicker": {
     "insertEmoji": "Emoji einfügen",
     "selectEmoji": "Emoji auswählen"
@@ -265,6 +293,13 @@
   "tableGridPicker": {
     "insertTable": "Tabelle einfügen",
     "chooseSize": "Tabellengröße wählen"
+  },
+  "zoomControl": {
+    "button": "Zoom",
+    "buttonTitle": "Zoom (Strg++ / Strg+-)",
+    "zoomIn": "Vergrößern (Strg++)",
+    "zoomOut": "Verkleinern (Strg+-)",
+    "reset": "Zoom zurücksetzen (Strg+0)"
   },
   "tableMenu": {
     "options": "Tabellenoptionen",

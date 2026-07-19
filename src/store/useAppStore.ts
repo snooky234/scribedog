@@ -78,6 +78,7 @@ type AppState = {
   renameFolderPath: (folderPath: string, newBaseName: string) => Promise<boolean>;
   deleteFilePath: (filePath: string) => Promise<boolean>;
   deleteFolderPath: (folderPath: string) => Promise<boolean>;
+  replaceFileContent: (filePath: string, newContent: string) => Promise<boolean>;
   setSortMode: (mode: SortMode) => Promise<void>;
   reorderWithinFolder: (parentDirectory: string, orderedBasenames: string[]) => Promise<boolean>;
   moveTreeEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
@@ -1108,6 +1109,62 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (error) {
       set({
         fileError: toErrorMessage(error, i18n.t("store.folderDeleteError"))
+      });
+
+      return false;
+    }
+  },
+  // Used by project-wide find & replace for files other than the selected
+  // one. Files with unsaved in-memory edits get the replacement applied to
+  // that in-memory content and stay dirty (nothing is silently saved);
+  // everything else is written straight to disk.
+  replaceFileContent: async (filePath: string, newContent: string) => {
+    const { fileDocuments } = get();
+    const existingDocument = fileDocuments[filePath];
+
+    try {
+      if (existingDocument && isDocumentDirty(existingDocument)) {
+        set({
+          fileDocuments: {
+            ...get().fileDocuments,
+            [filePath]: {
+              content: newContent,
+              baseContent: existingDocument.baseContent
+            }
+          }
+        });
+      } else {
+        await writeMarkdownFile(filePath, newContent);
+
+        if (existingDocument) {
+          set({
+            fileDocuments: {
+              ...get().fileDocuments,
+              [filePath]: {
+                content: newContent,
+                baseContent: newContent
+              }
+            }
+          });
+        }
+      }
+
+      const currentState = get();
+
+      if (currentState.selectedFilePath === filePath) {
+        const updatedDocument = currentState.fileDocuments[filePath];
+
+        set({
+          selectedFileContent: updatedDocument?.content ?? newContent,
+          selectedFileBaseContent: updatedDocument?.baseContent ?? newContent,
+          isDirty: updatedDocument ? isDocumentDirty(updatedDocument) : false
+        });
+      }
+
+      return true;
+    } catch (error) {
+      set({
+        fileError: toErrorMessage(error, i18n.t("store.fileSaveError"))
       });
 
       return false;

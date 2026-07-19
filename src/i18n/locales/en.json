@@ -155,6 +155,7 @@
       "newFile": "Create new file",
       "saveFile": "Save file",
       "printFile": "Print file",
+      "findReplace": "Find & replace",
       "aiEditDialog": "Open AI edit dialog",
       "aiSubmit": "Submit AI request (in the AI dialog)",
       "aiCheckDialog": "Check selected text for spelling/grammar",
@@ -177,6 +178,9 @@
       "paste": "Paste",
       "undo": "Undo",
       "redo": "Redo",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Reset zoom",
       "shortcutsOverview": "Open shortcuts overview",
       "closeDialog": "Close dialog"
     }
@@ -235,7 +239,7 @@
     "bulletList": "Bullet list",
     "bulletListTitle": "Bullet list (Ctrl+.)",
     "orderedList": "Numbered list",
-    "orderedListTitle": "Numbered list (Ctrl+-)",
+    "orderedListTitle": "Numbered list (Ctrl+Shift+O)",
     "taskList": "Task list",
     "taskListTitle": "Task list (add/remove checkboxes, Ctrl+,)",
     "blockquote": "Blockquote",
@@ -258,6 +262,30 @@
     "printButton": "Print",
     "spellcheckDictionaryMissing": "No spell-check dictionary found for \"{{code}}\". Install a Hunspell dictionary (e.g. hunspell-{{code}}) via your package manager."
   },
+  "findReplace": {
+    "panelLabel": "Find & replace",
+    "openButton": "Find & replace",
+    "openButtonTitle": "Find & replace (Ctrl+F)",
+    "searchPlaceholder": "Find…",
+    "replacePlaceholder": "Replace with…",
+    "caseSensitive": "Match case",
+    "wholeWord": "Whole word only",
+    "allFiles": "Search in all files",
+    "matchCount": "{{current}} of {{total}}",
+    "noMatches": "No matches",
+    "allFilesSummary": "{{matches}} matches in {{files}} other files",
+    "previousMatch": "Previous match",
+    "nextMatch": "Next match",
+    "replaceButton": "Replace…",
+    "currentFile": "Current file",
+    "confirmEyebrow": "Find & replace",
+    "confirmTitle": "Confirm replacements",
+    "confirmDescription": "Review the matches and deselect anything that should not be replaced.",
+    "confirmGroupCount": "{{selected}} of {{total}} selected",
+    "confirmAction": "Replace ({{count}})",
+    "resultSummary": "Made {{matches}} replacements in {{files}} file(s)",
+    "fileMatchBadge": "Search matches: {{count}}"
+  },
   "emojiPicker": {
     "insertEmoji": "Insert emoji",
     "selectEmoji": "Choose emoji"
@@ -265,6 +293,13 @@
   "tableGridPicker": {
     "insertTable": "Insert table",
     "chooseSize": "Choose table size"
+  },
+  "zoomControl": {
+    "button": "Zoom",
+    "buttonTitle": "Zoom (Ctrl++ / Ctrl+-)",
+    "zoomIn": "Zoom in (Ctrl++)",
+    "zoomOut": "Zoom out (Ctrl+-)",
+    "reset": "Reset zoom (Ctrl+0)"
   },
   "tableMenu": {
     "options": "Table options",

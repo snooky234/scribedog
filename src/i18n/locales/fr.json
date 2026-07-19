@@ -155,6 +155,7 @@
       "newFile": "Créer un nouveau fichier",
       "saveFile": "Enregistrer le fichier",
       "printFile": "Imprimer le fichier",
+      "findReplace": "Rechercher et remplacer",
       "aiEditDialog": "Ouvrir la boîte de dialogue d'édition IA",
       "aiSubmit": "Envoyer la requête IA (dans la boîte de dialogue IA)",
       "aiCheckDialog": "Vérifier l'orthographe/la grammaire du texte sélectionné",
@@ -177,6 +178,9 @@
       "paste": "Coller",
       "undo": "Annuler",
       "redo": "Rétablir",
+      "zoomIn": "Zoom avant",
+      "zoomOut": "Zoom arrière",
+      "zoomReset": "Réinitialiser le zoom",
       "shortcutsOverview": "Ouvrir l'aperçu des raccourcis",
       "closeDialog": "Fermer la boîte de dialogue"
     }
@@ -235,7 +239,7 @@
     "bulletList": "Liste à puces",
     "bulletListTitle": "Liste à puces (Ctrl+.)",
     "orderedList": "Liste numérotée",
-    "orderedListTitle": "Liste numérotée (Ctrl+-)",
+    "orderedListTitle": "Liste numérotée (Ctrl+Shift+O)",
     "taskList": "Liste de tâches",
     "taskListTitle": "Liste de tâches (ajouter/retirer des cases à cocher, Ctrl+,)",
     "blockquote": "Citation",
@@ -258,6 +262,30 @@
     "printButton": "Imprimer",
     "spellcheckDictionaryMissing": "Aucun dictionnaire orthographique trouvé pour « {{code}} ». Installez un dictionnaire Hunspell (par ex. hunspell-{{code}}) via votre gestionnaire de paquets."
   },
+  "findReplace": {
+    "panelLabel": "Rechercher et remplacer",
+    "openButton": "Rechercher et remplacer",
+    "openButtonTitle": "Rechercher et remplacer (Ctrl+F)",
+    "searchPlaceholder": "Rechercher…",
+    "replacePlaceholder": "Remplacer par…",
+    "caseSensitive": "Respecter la casse",
+    "wholeWord": "Mots entiers uniquement",
+    "allFiles": "Rechercher dans tous les fichiers",
+    "matchCount": "{{current}} sur {{total}}",
+    "noMatches": "Aucune occurrence",
+    "allFilesSummary": "{{matches}} occurrences dans {{files}} autres fichiers",
+    "previousMatch": "Occurrence précédente",
+    "nextMatch": "Occurrence suivante",
+    "replaceButton": "Remplacer…",
+    "currentFile": "Fichier actuel",
+    "confirmEyebrow": "Rechercher et remplacer",
+    "confirmTitle": "Confirmer les remplacements",
+    "confirmDescription": "Vérifiez les occurrences et décochez celles qui ne doivent pas être remplacées.",
+    "confirmGroupCount": "{{selected}} sur {{total}} sélectionnées",
+    "confirmAction": "Remplacer ({{count}})",
+    "resultSummary": "{{matches}} remplacements effectués dans {{files}} fichier(s)",
+    "fileMatchBadge": "Occurrences : {{count}}"
+  },
   "emojiPicker": {
     "insertEmoji": "Insérer un emoji",
     "selectEmoji": "Choisir un emoji"
@@ -265,6 +293,13 @@
   "tableGridPicker": {
     "insertTable": "Insérer un tableau",
     "chooseSize": "Choisir la taille du tableau"
+  },
+  "zoomControl": {
+    "button": "Zoom",
+    "buttonTitle": "Zoom (Ctrl++ / Ctrl+-)",
+    "zoomIn": "Zoom avant (Ctrl++)",
+    "zoomOut": "Zoom arrière (Ctrl+-)",
+    "reset": "Réinitialiser le zoom (Ctrl+0)"
   },
   "tableMenu": {
     "options": "Options du tableau",

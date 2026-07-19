@@ -157,6 +157,7 @@
       "newFile": "Створити новий файл",
       "saveFile": "Зберегти файл",
       "printFile": "Друк файлу",
+      "findReplace": "Пошук і заміна",
       "aiEditDialog": "Відкрити діалог редагування ШІ",
       "aiSubmit": "Надіслати запит до ШІ (у діалозі ШІ)",
       "aiCheckDialog": "Перевірити орфографію/граматику виділеного тексту",
@@ -179,6 +180,9 @@
       "paste": "Вставити",
       "undo": "Скасувати",
       "redo": "Повторити",
+      "zoomIn": "Збільшити масштаб",
+      "zoomOut": "Зменшити масштаб",
+      "zoomReset": "Скинути масштаб",
       "shortcutsOverview": "Відкрити огляд скорочень",
       "closeDialog": "Закрити діалог"
     }
@@ -237,7 +241,7 @@
     "bulletList": "Маркований список",
     "bulletListTitle": "Маркований список (Ctrl+.)",
     "orderedList": "Нумерований список",
-    "orderedListTitle": "Нумерований список (Ctrl+-)",
+    "orderedListTitle": "Нумерований список (Ctrl+Shift+O)",
     "taskList": "Список завдань",
     "taskListTitle": "Список завдань (додати/видалити прапорці, Ctrl+,)",
     "blockquote": "Цитата",
@@ -260,6 +264,30 @@
     "printButton": "Друк",
     "spellcheckDictionaryMissing": "Словник для перевірки орфографії для «{{code}}» не знайдено. Встановіть словник Hunspell (наприклад, hunspell-{{code}}) через ваш пакетний менеджер."
   },
+  "findReplace": {
+    "panelLabel": "Пошук і заміна",
+    "openButton": "Пошук і заміна",
+    "openButtonTitle": "Пошук і заміна (Ctrl+F)",
+    "searchPlaceholder": "Знайти…",
+    "replacePlaceholder": "Замінити на…",
+    "caseSensitive": "Враховувати регістр",
+    "wholeWord": "Лише ціле слово",
+    "allFiles": "Шукати в усіх файлах",
+    "matchCount": "{{current}} з {{total}}",
+    "noMatches": "Збігів немає",
+    "allFilesSummary": "Збігів: {{matches}} в інших файлах: {{files}}",
+    "previousMatch": "Попередній збіг",
+    "nextMatch": "Наступний збіг",
+    "replaceButton": "Замінити…",
+    "currentFile": "Поточний файл",
+    "confirmEyebrow": "Пошук і заміна",
+    "confirmTitle": "Підтвердити заміни",
+    "confirmDescription": "Перегляньте збіги та зніміть позначку з тих, які не потрібно замінювати.",
+    "confirmGroupCount": "Вибрано {{selected}} з {{total}}",
+    "confirmAction": "Замінити ({{count}})",
+    "resultSummary": "Виконано замін: {{matches}} у файлах: {{files}}",
+    "fileMatchBadge": "Збігів: {{count}}"
+  },
   "emojiPicker": {
     "insertEmoji": "Вставити емодзі",
     "selectEmoji": "Вибрати емодзі"
@@ -267,6 +295,13 @@
   "tableGridPicker": {
     "insertTable": "Вставити таблицю",
     "chooseSize": "Виберіть розмір таблиці"
+  },
+  "zoomControl": {
+    "button": "Масштаб",
+    "buttonTitle": "Масштаб (Ctrl++ / Ctrl+-)",
+    "zoomIn": "Збільшити масштаб (Ctrl++)",
+    "zoomOut": "Зменшити масштаб (Ctrl+-)",
+    "reset": "Скинути масштаб (Ctrl+0)"
   },
   "tableMenu": {
     "options": "Параметри таблиці",

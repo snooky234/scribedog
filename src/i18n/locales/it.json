@@ -155,6 +155,7 @@
       "newFile": "Crea nuovo file",
       "saveFile": "Salva file",
       "printFile": "Stampa file",
+      "findReplace": "Trova e sostituisci",
       "aiEditDialog": "Apri finestra di modifica IA",
       "aiSubmit": "Invia richiesta IA (nella finestra IA)",
       "aiCheckDialog": "Controlla ortografia/grammatica del testo selezionato",
@@ -177,6 +178,9 @@
       "paste": "Incolla",
       "undo": "Annulla",
       "redo": "Ripeti",
+      "zoomIn": "Aumenta lo zoom",
+      "zoomOut": "Riduci lo zoom",
+      "zoomReset": "Reimposta lo zoom",
       "shortcutsOverview": "Apri panoramica scorciatoie",
       "closeDialog": "Chiudi finestra"
     }
@@ -235,7 +239,7 @@
     "bulletList": "Elenco puntato",
     "bulletListTitle": "Elenco puntato (Ctrl+.)",
     "orderedList": "Elenco numerato",
-    "orderedListTitle": "Elenco numerato (Ctrl+-)",
+    "orderedListTitle": "Elenco numerato (Ctrl+Shift+O)",
     "taskList": "Elenco attività",
     "taskListTitle": "Elenco attività (aggiungi/rimuovi caselle di controllo, Ctrl+,)",
     "blockquote": "Citazione",
@@ -258,6 +262,30 @@
     "printButton": "Stampa",
     "spellcheckDictionaryMissing": "Nessun dizionario ortografico trovato per \"{{code}}\". Installa un dizionario Hunspell (ad es. hunspell-{{code}}) tramite il gestore pacchetti."
   },
+  "findReplace": {
+    "panelLabel": "Trova e sostituisci",
+    "openButton": "Trova e sostituisci",
+    "openButtonTitle": "Trova e sostituisci (Ctrl+F)",
+    "searchPlaceholder": "Trova…",
+    "replacePlaceholder": "Sostituisci con…",
+    "caseSensitive": "Distingui maiuscole/minuscole",
+    "wholeWord": "Solo parole intere",
+    "allFiles": "Cerca in tutti i file",
+    "matchCount": "{{current}} di {{total}}",
+    "noMatches": "Nessuna corrispondenza",
+    "allFilesSummary": "{{matches}} corrispondenze in {{files}} altri file",
+    "previousMatch": "Corrispondenza precedente",
+    "nextMatch": "Corrispondenza successiva",
+    "replaceButton": "Sostituisci…",
+    "currentFile": "File corrente",
+    "confirmEyebrow": "Trova e sostituisci",
+    "confirmTitle": "Conferma le sostituzioni",
+    "confirmDescription": "Controlla le corrispondenze e deseleziona ciò che non deve essere sostituito.",
+    "confirmGroupCount": "{{selected}} di {{total}} selezionate",
+    "confirmAction": "Sostituisci ({{count}})",
+    "resultSummary": "Eseguite {{matches}} sostituzioni in {{files}} file",
+    "fileMatchBadge": "Corrispondenze: {{count}}"
+  },
   "emojiPicker": {
     "insertEmoji": "Inserisci emoji",
     "selectEmoji": "Scegli emoji"
@@ -265,6 +293,13 @@
   "tableGridPicker": {
     "insertTable": "Inserisci tabella",
     "chooseSize": "Scegli dimensione tabella"
+  },
+  "zoomControl": {
+    "button": "Zoom",
+    "buttonTitle": "Zoom (Ctrl++ / Ctrl+-)",
+    "zoomIn": "Aumenta lo zoom (Ctrl++)",
+    "zoomOut": "Riduci lo zoom (Ctrl+-)",
+    "reset": "Reimposta lo zoom (Ctrl+0)"
   },
   "tableMenu": {
     "options": "Opzioni tabella",
