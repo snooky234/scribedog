@@ -3,6 +3,10 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.1] - 2026-07-19
+
+Improve voice transcription performance and language handling.
+
 ## [0.5.0] - 2026-07-19
 
 ### Highlights
