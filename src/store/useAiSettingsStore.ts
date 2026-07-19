@@ -31,7 +31,7 @@ const defaultAiSettings: AiSettings = {
   apiKey: "",
   model: "",
   contextLength: 4096,
-  thinkingMode: "default"
+  thinkingMode: "off"
 };
 
 function normalizeSettings(rawSettings: Partial<AiSettings> | null): AiSettings {
@@ -52,7 +52,7 @@ function normalizeSettings(rawSettings: Partial<AiSettings> | null): AiSettings 
       typeof rawSettings?.contextLength === "number" && Number.isFinite(rawSettings.contextLength)
         ? rawSettings.contextLength
         : defaultAiSettings.contextLength,
-    thinkingMode: rawSettings?.thinkingMode === "off" ? "off" : "default"
+    thinkingMode: rawSettings?.thinkingMode === "default" ? "default" : defaultAiSettings.thinkingMode
   };
 }
 

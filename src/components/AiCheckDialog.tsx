@@ -47,7 +47,6 @@ export function AiCheckDialog({ open, issues, resolvedCount, onApply, onApplyAll
         aria-labelledby="ai-check-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="ai-dialog__eyebrow">{t("aiCheckDialog.eyebrow")}</p>
         <h3 id="ai-check-title" className="ai-dialog__title">
           <SpellCheck className="ai-dialog__title-icon" aria-hidden="true" />
           {t("aiCheckDialog.title")}

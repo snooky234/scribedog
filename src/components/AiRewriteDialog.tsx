@@ -198,7 +198,6 @@ export function AiRewriteDialog({
         aria-labelledby="ai-rewrite-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="ai-dialog__eyebrow">{t("aiRewriteDialog.eyebrow")}</p>
         <h3 id="ai-rewrite-title" className="ai-dialog__title">
           <PawPrint className="ai-dialog__title-icon" aria-hidden="true" />
           {title}
