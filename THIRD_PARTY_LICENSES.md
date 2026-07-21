@@ -305,7 +305,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 </details>
 
-### @fontsource-variable/geist@5.2.9
+### @fontsource-variable/geist@5.3.0
 
 - License: OFL-1.1
 - Repository: https://github.com/fontsource/font-files
@@ -808,7 +808,7 @@ SOFTWARE.
 - License: Apache-2.0 OR MIT
 - Repository: https://github.com/tauri-apps/tauri
 
-### @tauri-apps/plugin-dialog@2.7.1
+### @tauri-apps/plugin-dialog@2.7.2
 
 - License: MIT OR Apache-2.0
 - Repository: https://github.com/tauri-apps/plugins-workspace
@@ -1000,7 +1000,7 @@ Creator: Person: Daniel Thompson-Yvetot
 
 </details>
 
-### @tiptap/core@3.27.1
+### @tiptap/core@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1033,7 +1033,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-blockquote@3.27.1
+### @tiptap/extension-blockquote@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1066,7 +1066,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-bold@3.27.1
+### @tiptap/extension-bold@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1099,7 +1099,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-bubble-menu@3.27.1
+### @tiptap/extension-bubble-menu@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1132,7 +1132,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-bullet-list@3.27.1
+### @tiptap/extension-bullet-list@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1165,7 +1165,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-code-block@3.27.1
+### @tiptap/extension-code-block@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1198,7 +1198,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-code@3.27.1
+### @tiptap/extension-code@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1231,7 +1231,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-document@3.27.1
+### @tiptap/extension-document@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1264,7 +1264,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-dropcursor@3.27.1
+### @tiptap/extension-dropcursor@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1297,7 +1297,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-floating-menu@3.27.1
+### @tiptap/extension-floating-menu@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1330,7 +1330,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-gapcursor@3.27.1
+### @tiptap/extension-gapcursor@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1363,7 +1363,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-hard-break@3.27.1
+### @tiptap/extension-hard-break@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1396,7 +1396,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-heading@3.27.1
+### @tiptap/extension-heading@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1429,7 +1429,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-horizontal-rule@3.27.1
+### @tiptap/extension-horizontal-rule@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1462,7 +1462,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-image@3.27.1
+### @tiptap/extension-image@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1495,7 +1495,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-italic@3.27.1
+### @tiptap/extension-italic@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1528,7 +1528,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-link@3.27.1
+### @tiptap/extension-link@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1561,7 +1561,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-list-item@3.27.1
+### @tiptap/extension-list-item@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1594,7 +1594,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-list-keymap@3.27.1
+### @tiptap/extension-list-keymap@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1627,7 +1627,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-list@3.27.1
+### @tiptap/extension-list@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1660,7 +1660,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-ordered-list@3.27.1
+### @tiptap/extension-ordered-list@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1693,7 +1693,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-paragraph@3.27.1
+### @tiptap/extension-paragraph@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1726,7 +1726,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-strike@3.27.1
+### @tiptap/extension-strike@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1759,7 +1759,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-table@3.27.1
+### @tiptap/extension-table@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1792,7 +1792,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-task-item@3.27.1
+### @tiptap/extension-task-item@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1825,7 +1825,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-task-list@3.27.1
+### @tiptap/extension-task-list@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1858,7 +1858,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-text@3.27.1
+### @tiptap/extension-text@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1891,7 +1891,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extension-underline@3.27.1
+### @tiptap/extension-underline@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1924,7 +1924,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/extensions@3.27.1
+### @tiptap/extensions@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1957,7 +1957,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/pm@3.27.1
+### @tiptap/pm@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -1990,7 +1990,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/react@3.27.1
+### @tiptap/react@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -2023,7 +2023,7 @@ SOFTWARE.
 
 </details>
 
-### @tiptap/starter-kit@3.27.1
+### @tiptap/starter-kit@3.28.0
 
 - License: MIT
 - Repository: https://github.com/ueberdosis/tiptap
@@ -4626,7 +4626,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 </details>
 
-### lucide-react@1.23.0
+### lucide-react@1.25.0
 
 - License: ISC
 - Repository: https://github.com/lucide-icons/lucide
@@ -5935,7 +5935,7 @@ SOFTWARE.
 
 </details>
 
-### react-i18next@17.0.9
+### react-i18next@17.0.10
 
 - License: MIT
 - Repository: https://github.com/i18next/react-i18next
@@ -6458,7 +6458,7 @@ SOFTWARE.
 
 </details>
 
-### tailwindcss@4.3.2
+### tailwindcss@4.3.3
 
 - License: MIT
 - Repository: https://github.com/tailwindlabs/tailwindcss
@@ -7519,11 +7519,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | scopeguard | 1.2.0 | MIT OR Apache-2.0 |
 | selectors | 0.36.1 | MPL-2.0 |
 | semver | 1.0.28 | MIT OR Apache-2.0 |
-| serde | 1.0.228 | MIT OR Apache-2.0 |
-| serde_core | 1.0.228 | MIT OR Apache-2.0 |
-| serde_derive | 1.0.228 | MIT OR Apache-2.0 |
+| serde | 1.0.229 | MIT OR Apache-2.0 |
+| serde_core | 1.0.229 | MIT OR Apache-2.0 |
+| serde_derive | 1.0.229 | MIT OR Apache-2.0 |
 | serde_derive_internals | 0.29.1 | MIT OR Apache-2.0 |
-| serde_json | 1.0.150 | MIT OR Apache-2.0 |
+| serde_json | 1.0.151 | MIT OR Apache-2.0 |
 | serde_repr | 0.1.20 | MIT OR Apache-2.0 |
 | serde_spanned | 1.1.1 | MIT OR Apache-2.0 |
 | serde_urlencoded | 0.7.1 | MIT/Apache-2.0 |
@@ -7548,6 +7548,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | strsim | 0.11.1 | MIT |
 | subtle | 2.6.1 | BSD-3-Clause |
 | syn | 2.0.118 | MIT OR Apache-2.0 |
+| syn | 3.0.2 | MIT OR Apache-2.0 |
 | sync_wrapper | 1.0.2 | Apache-2.0 |
 | synstructure | 0.13.2 | MIT |
 | tao | 0.35.3 | Apache-2.0 |
@@ -7556,7 +7557,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | tauri-codegen | 2.6.3 | Apache-2.0 OR MIT |
 | tauri-macros | 2.6.3 | Apache-2.0 OR MIT |
 | tauri-plugin | 2.6.3 | Apache-2.0 OR MIT |
-| tauri-plugin-dialog | 2.7.1 | Apache-2.0 OR MIT |
+| tauri-plugin-dialog | 2.7.2 | Apache-2.0 OR MIT |
 | tauri-plugin-fs | 2.5.1 | Apache-2.0 OR MIT |
 | tauri-plugin-http | 2.5.9 | Apache-2.0 OR MIT |
 | tauri-plugin-opener | 2.5.4 | Apache-2.0 OR MIT |

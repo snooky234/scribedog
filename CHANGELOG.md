@@ -3,6 +3,12 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.3] - 2026-07-22
+
+### Bug Fixes
+- Voice transcription is roughly 4x faster — whisper.cpp was being built
+  without optimizations in release binaries
+
 ## [0.5.2] - 2026-07-20
 
 ### Improvements
