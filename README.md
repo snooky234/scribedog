@@ -180,8 +180,34 @@ locally on your device).
 
 ### Local (recommended — nothing leaves your device)
 
-1. Install and run [Ollama](https://ollama.com/) (default `http://localhost:11434`), [Jan.ai](https://jan.ai/) (default `http://localhost:1337`), or [LM Studio](https://lmstudio.ai/) (default `http://localhost:1234`) and pull/load a model.
-2. In ScribeDog, open **AI settings** and choose your provider and model.
+**New to local AI? Here's the whole idea in a minute.**
+
+ScribeDog doesn't ship an AI model of its own — it talks to one running on
+your computer. That model is served by a small helper app, a **model runner**,
+which downloads models for you and exposes them at a local address like
+`http://localhost:11434`. ScribeDog simply sends your text there and streams
+the answer back. Nothing goes to the internet, no account, no API key, no
+usage costs.
+
+You need exactly **one** of these three — they do the same job, so pick
+whichever appeals to you:
+
+| Runner | Best for | Default address |
+|---|---|---|
+| [**Ollama**](https://ollama.com/) | The simplest, most popular option; models are pulled with one command or one click | `http://localhost:11434` |
+| [**Jan.ai**](https://jan.ai/) | A friendly desktop app with a built-in model browser and chat UI | `http://localhost:1337` |
+| [**LM Studio**](https://lmstudio.ai/) | Most control — see and tune parameters, quantizations, and VRAM usage | `http://localhost:1234` |
+
+**Setting one up is genuinely easy** — download the installer from the site
+above, run it, then pick a model from the built-in list (start with something
+like *Gemma 3/4* or *Qwen 3*; a ~4–8 GB model is a good first choice). The
+runner downloads it once and keeps running quietly in the background. That's
+it — no configuration files, no command line required.
+
+Then, in ScribeDog:
+
+1. Make sure your runner is running and a model is downloaded.
+2. Open **AI settings**, choose your provider — the matching default address is filled in for you — and select your model.
 3. Select some text, press `Ctrl+E`, enter a prompt, and let the model rewrite or insert content in place.
 
 > **A note on very small models.** Compact models (e.g. Gemma 4 E4B) can often
