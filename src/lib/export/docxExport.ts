@@ -19,7 +19,7 @@ import {
 } from "docx";
 
 import type { ExportBlock, InlineRun, TableCell as ModelTableCell } from "./markdownModel";
-import type { ExportImageMap } from "./imageAssets";
+import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 
 const ORDERED_LIST_REFERENCE = "scribedog-ordered";
 // Match the sans-serif look of the editor / HTML export. Arial is the safest
@@ -64,14 +64,14 @@ function runsToDocxChildren(
       const asset = images.get(run.src);
 
       if (asset) {
-        const scale = Math.min(1, MAX_IMAGE_WIDTH_PX / asset.width);
+        const size = computeExportImageSize(asset, run.width, MAX_IMAGE_WIDTH_PX);
         children.push(
           new ImageRun({
             type: "png",
             data: asset.pngBytes,
             transformation: {
-              width: Math.round(asset.width * scale),
-              height: Math.round(asset.height * scale)
+              width: Math.round(size.width),
+              height: Math.round(size.height)
             }
           })
         );

@@ -1,7 +1,7 @@
 import { strToU8, zipSync, type Zippable } from "fflate";
 
 import type { ExportBlock, InlineRun } from "./markdownModel";
-import type { ExportImageMap } from "./imageAssets";
+import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 
 // Hand-written OpenDocument Text writer: an .odt is a zip whose first entry
 // must be an uncompressed "mimetype", plus manifest, styles and content XML.
@@ -162,13 +162,13 @@ function runsToOdtXml(runs: InlineRun[], state: OdtWriterState): string {
       const asset = state.images.get(run.src);
 
       if (picturePath && asset) {
-        const scale = Math.min(1, PAGE_CONTENT_WIDTH_PX / asset.width);
+        const size = computeExportImageSize(asset, run.width, PAGE_CONTENT_WIDTH_PX);
         // draw:style-name + draw:name matter: without a graphic style Word's
         // ODT import treats the frame as page-anchored and floats it to the
         // top of the page instead of keeping it at its position in the text.
         state.frameIndex += 1;
         xml +=
-          `<draw:frame draw:style-name="G_inline" draw:name="Image${state.frameIndex}" text:anchor-type="as-char" draw:z-index="0" svg:width="${pxToCm(asset.width * scale)}" svg:height="${pxToCm(asset.height * scale)}">` +
+          `<draw:frame draw:style-name="G_inline" draw:name="Image${state.frameIndex}" text:anchor-type="as-char" draw:z-index="0" svg:width="${pxToCm(size.width)}" svg:height="${pxToCm(size.height)}">` +
           `<draw:image xlink:href="${escapeXml(picturePath)}" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/>` +
           `</draw:frame>`;
       } else if (run.alt) {

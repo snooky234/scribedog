@@ -1,7 +1,7 @@
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 
 import type { ExportBlock, InlineRun } from "./markdownModel";
-import type { ExportImageMap } from "./imageAssets";
+import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 import { splitEmojiSegments } from "./emojiSegments";
 
 type PdfMakeModule = typeof import("pdfmake/build/pdfmake");
@@ -95,11 +95,12 @@ function runsToPdfText(runs: InlineRun[], images: ExportImageMap): Content[] {
       const asset = images.get(run.src);
 
       if (asset) {
-        // Cap at the printable width; pdfmake keeps the aspect ratio via fit.
-        const scale = Math.min(1, PAGE_CONTENT_WIDTH / asset.width);
+        // Honors the editor display width, capped at the printable width;
+        // pdfmake keeps the aspect ratio from the width alone.
+        const { width } = computeExportImageSize(asset, run.width, PAGE_CONTENT_WIDTH);
         parts.push({
           image: asset.pngDataUrl,
-          width: asset.width * scale
+          width
         });
       } else if (run.alt) {
         parts.push({ text: run.alt, italics: true, color: MUTED_COLOR });
@@ -149,8 +150,8 @@ function runsToBlockContent(runs: InlineRun[], images: ExportImageMap, style?: s
     if (run.kind === "image" && images.has(run.src)) {
       flushText();
       const asset = images.get(run.src)!;
-      const scale = Math.min(1, PAGE_CONTENT_WIDTH / asset.width);
-      result.push({ image: asset.pngDataUrl, width: asset.width * scale, margin: [0, 2, 0, 2] });
+      const { width } = computeExportImageSize(asset, run.width, PAGE_CONTENT_WIDTH);
+      result.push({ image: asset.pngDataUrl, width, margin: [0, 2, 0, 2] });
     } else {
       textBuffer.push(run);
     }
