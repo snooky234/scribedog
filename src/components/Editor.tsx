@@ -35,6 +35,7 @@ import { AiDiffWidget, updateAiDiffWidget } from "@/lib/aiDiffWidget";
 import { AiStreamWidget, updateAiStreamWidget } from "@/lib/aiStreamWidget";
 import { updateVoiceInsertWidget, VoiceInsertWidget } from "@/lib/voiceInsertWidget";
 import { EditorFileContext } from "@/lib/editorFileContext";
+import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { getRelativeImageMarkdownPath, saveImageToFolder } from "@/lib/fileSystem";
 import { SearchHighlight, updateSearchHighlight } from "@/lib/searchHighlight";
 import { printMarkdown } from "@/lib/print";
@@ -156,24 +157,6 @@ const Underline = BaseUnderline.extend({
     };
   }
 });
-
-// AI-generated or otherwise re-serialized markdown occasionally escapes
-// brackets as "\[ \]" instead of "[ ]". markdown-it-task-lists only recognizes
-// the unescaped form and otherwise renders the brackets as plain text instead
-// of a checkbox. The second step handles lines starting with "[ ]"/"\[ \]" and
-// no list marker at all (e.g. stray duplicate lines) — without a list marker
-// markdown-it-task-lists never recognizes a checkbox, so one is added here.
-function normalizeEscapedCheckboxes(markdown: string): string {
-  const withUnescapedListItems = markdown.replace(
-    /^(\s*(?:[-*+]|\d+[.)])\s+)\\\[([ xX]?)\\\]/gm,
-    (_match, prefix: string, mark: string) => `${prefix}[${mark || " "}]`
-  );
-
-  return withUnescapedListItems.replace(
-    /^(\s*)\\?\[([ xX]?)\\?\](?=\s)/gm,
-    (_match, indent: string, mark: string) => `${indent}- [${mark || " "}]`
-  );
-}
 
 type EditorProps = {
   markdown: string;

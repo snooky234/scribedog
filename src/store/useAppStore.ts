@@ -148,11 +148,11 @@ async function refreshCleanDocumentsFromDisk(
   return nextDocuments;
 }
 
-function normalizePathKey(path: string): string {
+export function normalizePathKey(path: string): string {
   return path.replace(/\\/g, "/").toLowerCase();
 }
 
-function insertFilePathSorted(filePaths: string[], newPath: string): string[] {
+export function insertFilePathSorted(filePaths: string[], newPath: string): string[] {
   return [...filePaths, newPath].sort((left, right) =>
     left.localeCompare(right, undefined, {
       numeric: true,
@@ -183,15 +183,15 @@ async function remapPathUnderRenamedFolder(
   return relativePath ? join(newFolderPath, relativePath) : newFolderPath;
 }
 
-function isPathInsideFolder(path: string, folderPath: string): boolean {
+export function isPathInsideFolder(path: string, folderPath: string): boolean {
   return normalizePathKey(path).startsWith(`${normalizePathKey(folderPath)}/`);
 }
 
-function getBasename(path: string): string {
+export function getBasename(path: string): string {
   return path.replace(/\\/g, "/").split("/").pop() ?? path;
 }
 
-function buildFileMtimeMap(markdownFiles: MarkdownFileRecord[]): Record<string, number> {
+export function buildFileMtimeMap(markdownFiles: MarkdownFileRecord[]): Record<string, number> {
   const map: Record<string, number> = {};
 
   for (const record of markdownFiles) {
@@ -269,7 +269,7 @@ function persistManualOrderIfChanged(
   }
 }
 
-function appendManualOrderEntry(
+export function appendManualOrderEntry(
   manualOrder: ManualOrderMap,
   parentRelativePath: string,
   basename: string
@@ -283,7 +283,7 @@ function appendManualOrderEntry(
   return { ...manualOrder, [parentRelativePath]: [...entry, basename] };
 }
 
-function removeManualOrderEntry(
+export function removeManualOrderEntry(
   manualOrder: ManualOrderMap,
   parentRelativePath: string,
   basename: string
@@ -297,7 +297,7 @@ function removeManualOrderEntry(
   return { ...manualOrder, [parentRelativePath]: entry.filter((name) => name !== basename) };
 }
 
-function renameManualOrderEntry(
+export function renameManualOrderEntry(
   manualOrder: ManualOrderMap,
   parentRelativePath: string,
   oldBasename: string,
@@ -315,7 +315,7 @@ function renameManualOrderEntry(
   };
 }
 
-function rekeyManualOrderFolderPrefix(
+export function rekeyManualOrderFolderPrefix(
   manualOrder: ManualOrderMap,
   oldRelativePath: string,
   newRelativePath: string
@@ -338,7 +338,7 @@ function rekeyManualOrderFolderPrefix(
   return didChange ? next : manualOrder;
 }
 
-function removeManualOrderFolderPrefix(
+export function removeManualOrderFolderPrefix(
   manualOrder: ManualOrderMap,
   relativePath: string
 ): ManualOrderMap {

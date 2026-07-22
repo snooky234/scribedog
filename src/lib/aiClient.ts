@@ -59,7 +59,7 @@ export function isCloudProvider(provider: AiProvider): boolean {
   return CLOUD_PROVIDERS.has(provider);
 }
 
-function isLocalApiUrl(apiUrl: string): boolean {
+export function isLocalApiUrl(apiUrl: string): boolean {
   try {
     const url = new URL(apiUrl);
 
@@ -75,7 +75,7 @@ function isLocalApiUrl(apiUrl: string): boolean {
   }
 }
 
-function isHttpsUrl(apiUrl: string): boolean {
+export function isHttpsUrl(apiUrl: string): boolean {
   try {
     return new URL(apiUrl).protocol === "https:";
   } catch {
@@ -85,7 +85,7 @@ function isHttpsUrl(apiUrl: string): boolean {
 
 // Cloud providers require HTTPS + an API key; local providers must stay on
 // localhost/127.0.0.1 (see README privacy notice).
-function assertValidEndpoint(provider: AiProvider, apiUrl: string, apiKey: string): void {
+export function assertValidEndpoint(provider: AiProvider, apiUrl: string, apiKey: string): void {
   if (isCloudProvider(provider)) {
     if (!isHttpsUrl(apiUrl)) {
       throw new Error(i18n.t("aiClient.urlMustBeHttps"));
@@ -111,7 +111,7 @@ function anthropicAuthHeaders(apiKey: string): Record<string, string> {
   return { "x-api-key": apiKey.trim(), "anthropic-version": "2023-06-01" };
 }
 
-function stripThinkingBlocks(text: string): string {
+export function stripThinkingBlocks(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 }
 
@@ -151,7 +151,7 @@ const LATEX_MACRO_PATTERN = new RegExp(
 // Unwraps "$...$"/"$$...$$" math delimiters around a single known macro and
 // replaces the macro itself, e.g. "$\rightarrow$" -> "→". Leaves untouched
 // any math the model wrote for an actual formula this map doesn't cover.
-function replaceLatexSymbolMacros(text: string): string {
+export function replaceLatexSymbolMacros(text: string): string {
   const withoutDelimiters = text.replace(
     /\$\$?\s*(\\[a-zA-Z]+)\s*\$\$?/g,
     (match, macro: string) => LATEX_SYMBOL_MACROS[macro] ?? match
@@ -164,7 +164,7 @@ function replaceLatexSymbolMacros(text: string): string {
 // re-parses the full accumulated text (instead of per chunk) so a <think> tag
 // split across a chunk boundary is still handled correctly; a truncated tag
 // start (e.g. "<thi") is held back until the next chunk completes it.
-function splitThinkingTags(text: string): { answer: string; thinking: string } {
+export function splitThinkingTags(text: string): { answer: string; thinking: string } {
   let answer = "";
   let thinking = "";
   let rest = text;
@@ -299,7 +299,7 @@ const PROMPT_STOP_SEQUENCES = [
 // max_tokens/num_predict must not equal the full context length, or a large
 // context (e.g. 32000) gives the model near-unlimited room to keep
 // hallucinating past the actual answer.
-function resolveMaxOutputTokens(contextLength: number): number {
+export function resolveMaxOutputTokens(contextLength: number): number {
   return Math.max(256, Math.min(contextLength, 4096));
 }
 
@@ -337,7 +337,7 @@ function buildUserPrompt(request: AiContentRequest): string {
   return contextSections.join("\n\n");
 }
 
-function extractResponseContent(payload: unknown, isOllamaShape: boolean): string {
+export function extractResponseContent(payload: unknown, isOllamaShape: boolean): string {
   if (typeof payload !== "object" || payload === null) {
     throw new Error(i18n.t("aiClient.invalidResponse"));
   }
@@ -359,7 +359,7 @@ function extractResponseContent(payload: unknown, isOllamaShape: boolean): strin
   return typedPayload.choices?.[0]?.message?.content ?? "";
 }
 
-function extractAnthropicContent(payload: unknown): string {
+export function extractAnthropicContent(payload: unknown): string {
   if (typeof payload !== "object" || payload === null) {
     throw new Error(i18n.t("aiClient.invalidResponse"));
   }
@@ -956,14 +956,14 @@ export async function generateAiMarkdown(
 
 // Strips a leading/trailing ```json ... ``` (or plain ``` ... ```) fence some
 // models wrap JSON output in despite the system prompt asking for raw JSON.
-function stripJsonCodeFence(text: string): string {
+export function stripJsonCodeFence(text: string): string {
   const trimmed = text.trim();
   const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
 
   return fenceMatch ? fenceMatch[1].trim() : trimmed;
 }
 
-function parseCheckIssues(rawResponse: string): AiCheckIssue[] {
+export function parseCheckIssues(rawResponse: string): AiCheckIssue[] {
   let parsed: unknown;
 
   try {

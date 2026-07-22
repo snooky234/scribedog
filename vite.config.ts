@@ -1,4 +1,7 @@
-import { defineConfig } from "vite";
+// "vitest/config" re-exports vite's defineConfig and additionally accepts the
+// `test` block below, so the dev/build config and the test config share one
+// source of truth (notably the "@" alias).
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath, URL } from "node:url";
@@ -13,6 +16,12 @@ export default defineConfig(async () => ({
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
+  },
+
+  // Only pure logic is covered (no component rendering), so no jsdom is needed.
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts"],
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
