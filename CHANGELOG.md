@@ -3,6 +3,18 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.4] - 2026-07-23
+
+### Highlights
+- Add code language picker for syntax highlighting
+
+### Bug Fixes
+- Write grammar-check explanations in the app UI language
+- Honor the image display width in PDF, DOCX and ODT export
+- Stop moving a file from deleting its images
+- Never rewrite image paths that point outside the vault
+- Persist rewritten image paths when moving an opened file
+
 ## [0.5.3] - 2026-07-22
 
 ### Bug Fixes
