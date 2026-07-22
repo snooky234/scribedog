@@ -1,23 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
-import Image from "@tiptap/extension-image";
-import { Link } from "@tiptap/extension-link";
-import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
-import TaskItem from "@tiptap/extension-task-item";
-import BaseTaskList from "@tiptap/extension-task-list";
-import BaseUnderline from "@tiptap/extension-underline";
-import { Fragment, type Node as ProseMirrorNode } from "@tiptap/pm/model";
-import { TextSelection } from "@tiptap/pm/state";
-import type { EditorView } from "@tiptap/pm/view";
-import { EditorContent, ReactNodeViewRenderer, type Editor as TipTapEditor, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import type MarkdownIt from "markdown-it";
-import insPlugin from "markdown-it-ins";
-import { Markdown } from "tiptap-markdown";
+import { EditorContent, type Editor as TipTapEditor, useEditor } from "@tiptap/react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AiCheckDialog } from "@/components/AiCheckDialog";
@@ -26,137 +11,25 @@ import { AiRewriteDialog } from "@/components/AiRewriteDialog";
 import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
-import { CodeBlockView } from "@/components/CodeBlockView";
-import { ImageView } from "@/components/ImageView";
 import { Toolbar } from "@/components/Toolbar";
 import { checkGrammar, streamAiMarkdown, type AiActionMode, type AiCheckIssue } from "@/lib/aiClient";
-import { codeBlockLowlight } from "@/lib/codeLanguages";
-import { AiDiffWidget, updateAiDiffWidget } from "@/lib/aiDiffWidget";
-import { AiStreamWidget, updateAiStreamWidget } from "@/lib/aiStreamWidget";
-import { updateVoiceInsertWidget, VoiceInsertWidget } from "@/lib/voiceInsertWidget";
+import { updateAiDiffWidget } from "@/lib/aiDiffWidget";
+import { updateAiStreamWidget } from "@/lib/aiStreamWidget";
+import { updateVoiceInsertWidget } from "@/lib/voiceInsertWidget";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
+import { buildEditorExtensions } from "@/lib/editor/extensions";
+import { extractErrorMessage, formatAiError } from "@/lib/editor/errorMessages";
+import { getImageFilesFromClipboard, getImageFilesFromDataTransfer } from "@/lib/editor/imageTransfer";
+import { moveListItem } from "@/lib/editor/listCommands";
+import { getEditorMarkdown, getSelectionMarkdown } from "@/lib/editor/markdownStorage";
 import { getRelativeImageMarkdownPath, saveImageToFolder } from "@/lib/fileSystem";
-import { SearchHighlight, updateSearchHighlight } from "@/lib/searchHighlight";
+import { updateSearchHighlight } from "@/lib/searchHighlight";
 import { printMarkdown } from "@/lib/print";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { getSelectedAssistant, useAssistantsStore } from "@/store/useAssistantsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
-
-// markdown-it-task-lists also converts numbered checklist syntax ("1. [ ] ...")
-// into <ol data-type="taskList">, but the base extension only recognizes
-// <ul data-type="taskList"> when parsing. Without this extension the "[ ]"
-// brackets render as plain text instead of a clickable checkbox.
-const TaskList = BaseTaskList.extend({
-  parseHTML() {
-    return [
-      { tag: 'ul[data-type="taskList"]', priority: 51 },
-      { tag: 'ol[data-type="taskList"]', priority: 51 }
-    ];
-  }
-});
-
-// Highlighting is applied as ProseMirror decorations, so the document stays
-// plain text — markdown serialization, undo history and the exporters (which
-// read the code block's text content) are unaffected.
-const CodeBlock = CodeBlockLowlight.extend({
-  addNodeView() {
-    return ReactNodeViewRenderer(CodeBlockView);
-  }
-}).configure({ lowlight: codeBlockLowlight });
-
-// Images are referenced in markdown relative to the file (e.g. "images/foto.png"
-// or "../images/foto.png"), but the browser can't load that path directly — the
-// NodeView resolves it at runtime via the filesystem into a blob URL, without
-// changing the stored markdown path.
-// CommonMark has no image-width syntax. To keep a width changed via drag across
-// save/reload, it's encoded in the title part of the standard image syntax
-// (e.g. `![alt](src "width=300")`). The "title" attribute isn't used anywhere
-// else in the app, so this trick is lossless and stays valid CommonMark.
-const IMAGE_WIDTH_TITLE_PATTERN = /^width=(\d+)$/;
-
-type MarkdownSerializerState = {
-  esc: (str: string) => string;
-  write: (content: string) => void;
-  closeBlock: (node: ProseMirrorNode) => void;
-};
-
-const EditorImage = Image.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      width: {
-        default: null,
-        parseHTML: (element) => {
-          const attrWidth = element.getAttribute("width");
-
-          if (attrWidth) {
-            return Number.parseInt(attrWidth, 10);
-          }
-
-          const match = element.getAttribute("title")?.match(IMAGE_WIDTH_TITLE_PATTERN);
-          return match ? Number.parseInt(match[1], 10) : null;
-        },
-        renderHTML: (attributes) => (attributes.width ? { width: attributes.width } : {})
-      },
-      title: {
-        ...(this.parent?.() as { title?: object } | undefined)?.title,
-        parseHTML: (element) => {
-          const title = element.getAttribute("title");
-          return title && IMAGE_WIDTH_TITLE_PATTERN.test(title) ? null : title;
-        }
-      }
-    };
-  },
-  addNodeView() {
-    return ReactNodeViewRenderer(ImageView);
-  },
-  addStorage() {
-    return {
-      markdown: {
-        serialize(state: MarkdownSerializerState, node: ProseMirrorNode) {
-          const alt = (node.attrs.alt as string | null) ?? "";
-          const src = (node.attrs.src as string | null) ?? "";
-          const width = node.attrs.width as number | null;
-          const title = width ? `width=${width}` : (node.attrs.title as string | null);
-
-          state.write(
-            `![${state.esc(alt)}](${src.replace(/[()]/g, "\\$&")}${
-              title ? ` "${title.replace(/"/g, '\\"')}"` : ""
-            })`
-          );
-          // Without this, the serializer never marks the block as closed, so
-          // a following block (e.g. a heading) gets written directly onto
-          // the same line with no separating newline — see closeBlock/
-          // flushClose in prosemirror-markdown's to_markdown.ts.
-          state.closeBlock(node);
-        },
-        parse: {}
-      }
-    };
-  }
-});
-
-// CommonMark has no underline syntax. We serialize it as "++text++" (the
-// markdown-it-ins plugin's syntax for <ins>) and remap the resulting tag to
-// <u> when parsing, so it maps back to this mark.
-const Underline = BaseUnderline.extend({
-  addStorage() {
-    return {
-      markdown: {
-        serialize: { open: "++", close: "++", expelEnclosingWhitespace: true },
-        parse: {
-          setup(markdownit: MarkdownIt) {
-            markdownit.use(insPlugin);
-            markdownit.renderer.rules.ins_open = () => "<u>";
-            markdownit.renderer.rules.ins_close = () => "</u>";
-          }
-        }
-      }
-    };
-  }
-});
 
 type EditorProps = {
   markdown: string;
@@ -195,120 +68,6 @@ type StreamDraft = {
   to: number;
   content: string;
 };
-
-function extractErrorMessage(error: unknown, t: TFunction): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  if (typeof error === "string") {
-    return error;
-  }
-
-  if (error && typeof error === "object" && "message" in error && typeof (error as { message?: unknown }).message === "string") {
-    return (error as { message: string }).message;
-  }
-
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return t("editor.aiResponseError");
-  }
-}
-
-function formatAiError(error: unknown, t: TFunction): string {
-  console.error("AI request failed:", error);
-
-  const rawMessage = extractErrorMessage(error, t) || t("editor.aiResponseError");
-
-  if (
-    /modell|model/i.test(rawMessage) ||
-    /kein verwertbarer text|no usable text/i.test(rawMessage) ||
-    /invalid/i.test(rawMessage)
-  ) {
-    return `${rawMessage} ${t("editor.aiTipModel")}`;
-  }
-
-  if (
-    /lokalen http-endpunkt|local http endpoint/i.test(rawMessage) ||
-    /network|fetch|verbind|connection/i.test(rawMessage)
-  ) {
-    return `${rawMessage} ${t("editor.aiTipConnection")}`;
-  }
-
-  return `${rawMessage} ${t("editor.aiTipGeneric")}`;
-}
-
-function getImageFilesFromDataTransfer(dataTransfer: DataTransfer | null): File[] {
-  if (!dataTransfer) {
-    return [];
-  }
-
-  return Array.from(dataTransfer.files).filter((file) => file.type.startsWith("image/"));
-}
-
-// Moves the list item (bullet, numbered, or task) the cursor is currently in
-// one position up or down. ProseMirror has no built-in command for this, so
-// the affected range is manually replaced with the two sibling nodes swapped.
-// The cursor position is shifted by exactly the size of the node it passed,
-// so the selection stays inside the moved item.
-function moveListItem(view: EditorView, direction: "up" | "down"): boolean {
-  const { state } = view;
-  const { $from, from, to } = state.selection;
-
-  let listItemDepth = -1;
-  for (let depth = $from.depth; depth > 0; depth--) {
-    const nodeTypeName = $from.node(depth).type.name;
-    if (nodeTypeName === "listItem" || nodeTypeName === "taskItem") {
-      listItemDepth = depth;
-      break;
-    }
-  }
-
-  if (listItemDepth === -1) {
-    return false;
-  }
-
-  const parentDepth = listItemDepth - 1;
-  const parent = $from.node(parentDepth);
-  const index = $from.index(parentDepth);
-  const targetIndex = direction === "up" ? index - 1 : index + 1;
-
-  if (targetIndex < 0 || targetIndex >= parent.childCount) {
-    return false;
-  }
-
-  const currentItem = parent.child(index);
-  const siblingItem = parent.child(targetIndex);
-  const itemStart = $from.before(listItemDepth);
-
-  const rangeStart = direction === "up" ? itemStart - siblingItem.nodeSize : itemStart;
-  const rangeEnd =
-    direction === "up"
-      ? itemStart + currentItem.nodeSize
-      : itemStart + currentItem.nodeSize + siblingItem.nodeSize;
-  const replacement =
-    direction === "up" ? Fragment.from([currentItem, siblingItem]) : Fragment.from([siblingItem, currentItem]);
-  const offset = direction === "up" ? -siblingItem.nodeSize : siblingItem.nodeSize;
-
-  const tr = state.tr.replaceWith(rangeStart, rangeEnd, replacement);
-  tr.setSelection(TextSelection.create(tr.doc, from + offset, to + offset));
-  tr.scrollIntoView();
-
-  view.dispatch(tr);
-  return true;
-}
-
-function getImageFilesFromClipboard(clipboardData: DataTransfer | null): File[] {
-  if (!clipboardData) {
-    return [];
-  }
-
-  return Array.from(clipboardData.items)
-    .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
-    .map((item) => item.getAsFile())
-    .filter((file): file is File => file !== null);
-}
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   {
@@ -574,23 +333,6 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           message: t("editor.imageInsertFailed", { fileName: file.name, error: extractErrorMessage(error, t) })
         });
       }
-    }
-  };
-
-  const getSelectionMarkdown = (editor: TipTapEditor, from: number, to: number): string => {
-    const markdownStorage = editor.storage as {
-      markdown?: { serializer?: { serialize: (content: unknown) => string } };
-    };
-    const serializer = markdownStorage.markdown?.serializer;
-
-    if (!serializer) {
-      return "";
-    }
-
-    try {
-      return serializer.serialize(editor.state.doc.slice(from, to).content).trim();
-    } catch {
-      return "";
     }
   };
 
@@ -1053,10 +795,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       return;
     }
 
-    const markdownStorage = currentEditor.storage as {
-      markdown?: { getMarkdown: () => string };
-    };
-    const currentMarkdown = markdownStorage.markdown?.getMarkdown() ?? markdown;
+    const currentMarkdown = getEditorMarkdown(currentEditor, markdown);
 
     printMarkdown(currentMarkdown, filePath).catch((error: unknown) => {
       console.error("Print failed:", error);
@@ -1079,31 +818,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   }, [isAiLoading, isAiDiffOpen, aiCheckIssues, onAiPendingChange]);
 
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ codeBlock: false }),
-      CodeBlock,
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      EditorImage,
-      Underline,
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      Link.configure({
-        autolink: false,
-        linkOnPaste: false,
-        openOnClick: false
-      }),
-      Markdown.configure({
-        html: false,
-        breaks: true
-      }),
-      AiStreamWidget,
-      VoiceInsertWidget,
-      AiDiffWidget,
-      SearchHighlight
-    ],
+    extensions: buildEditorExtensions(),
     content: normalizeEscapedCheckboxes(markdown),
     editable: true,
     onCreate: ({ editor }) => {
@@ -1111,11 +826,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       lastSyncedMarkdownRef.current = markdown;
     },
     onUpdate: ({ editor }) => {
-      const markdownStorage = editor.storage as {
-        markdown?: { getMarkdown: () => string };
-      };
-
-      const nextMarkdown = markdownStorage.markdown?.getMarkdown() ?? markdown;
+      const nextMarkdown = getEditorMarkdown(editor, markdown);
       lastSyncedMarkdownRef.current = nextMarkdown;
 
       onMarkdownChange(nextMarkdown);
@@ -1370,10 +1081,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       return;
     }
 
-    const currentMarkdownStorage = currentEditor.storage as {
-      markdown?: { getMarkdown: () => string };
-    };
-    const currentMarkdown = currentMarkdownStorage.markdown?.getMarkdown() ?? "";
+    const currentMarkdown = getEditorMarkdown(currentEditor, "");
 
     if (markdown === lastSyncedMarkdownRef.current || markdown === currentMarkdown) {
       lastSyncedMarkdownRef.current = markdown;
