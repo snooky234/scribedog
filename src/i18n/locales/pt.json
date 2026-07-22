@@ -340,7 +340,9 @@
     "loading": "Carregando imagem …"
   },
   "codeBlock": {
-    "copy": "Copiar código"
+    "copy": "Copiar código",
+    "language": "Linguagem",
+    "plain": "Texto simples"
   },
   "aiRewriteDialog": {
     "eyebrow": "Revisão local com IA",

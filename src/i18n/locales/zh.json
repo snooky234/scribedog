@@ -340,7 +340,9 @@
     "loading": "图片加载中……"
   },
   "codeBlock": {
-    "copy": "复制代码"
+    "copy": "复制代码",
+    "language": "语言",
+    "plain": "纯文本"
   },
   "aiRewriteDialog": {
     "eyebrow": "本地 AI 修订",

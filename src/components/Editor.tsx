@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 
 import { openUrl } from "@tauri-apps/plugin-opener";
-import BaseCodeBlock from "@tiptap/extension-code-block";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import Image from "@tiptap/extension-image";
 import { Link } from "@tiptap/extension-link";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
@@ -30,6 +30,7 @@ import { CodeBlockView } from "@/components/CodeBlockView";
 import { ImageView } from "@/components/ImageView";
 import { Toolbar } from "@/components/Toolbar";
 import { checkGrammar, streamAiMarkdown, type AiActionMode, type AiCheckIssue } from "@/lib/aiClient";
+import { codeBlockLowlight } from "@/lib/codeLanguages";
 import { AiDiffWidget, updateAiDiffWidget } from "@/lib/aiDiffWidget";
 import { AiStreamWidget, updateAiStreamWidget } from "@/lib/aiStreamWidget";
 import { updateVoiceInsertWidget, VoiceInsertWidget } from "@/lib/voiceInsertWidget";
@@ -55,11 +56,14 @@ const TaskList = BaseTaskList.extend({
   }
 });
 
-const CodeBlock = BaseCodeBlock.extend({
+// Highlighting is applied as ProseMirror decorations, so the document stays
+// plain text — markdown serialization, undo history and the exporters (which
+// read the code block's text content) are unaffected.
+const CodeBlock = CodeBlockLowlight.extend({
   addNodeView() {
     return ReactNodeViewRenderer(CodeBlockView);
   }
-});
+}).configure({ lowlight: codeBlockLowlight });
 
 // Images are referenced in markdown relative to the file (e.g. "images/foto.png"
 // or "../images/foto.png"), but the browser can't load that path directly — the
