@@ -177,6 +177,17 @@ export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
               content: correctedContent,
               baseContent: correctedBaseContent
             };
+
+            // The rewritten paths have to reach disk, not just this map:
+            // correcting only in memory leaves the document clean, so nothing
+            // would ever save it — and the folder watcher's refresh reloads
+            // clean documents from disk, discarding the correction again.
+            // Only baseContent is written; content may hold unsaved edits,
+            // which stay unsaved (both sides were rewritten, so a dirty
+            // document stays dirty).
+            if (correctedBaseContent !== preMoveContentByPath.get(path)) {
+              await writeMarkdownFile(mappedPath, correctedBaseContent).catch(() => undefined);
+            }
           } else {
             rewrittenDocuments[mappedPath] = document;
           }
