@@ -17,8 +17,29 @@ export const SUPPORTED_LANGUAGES = ["de", "en", "fr", "es", "zh", "ja", "pt", "r
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 const DEFAULT_LANGUAGE: SupportedLanguage = "de";
 
+// English endonyms of the UI languages, used to tell an AI model which
+// language to answer in (English names are the most reliably understood).
+const LANGUAGE_ENGLISH_NAME: Record<SupportedLanguage, string> = {
+  de: "German",
+  en: "English",
+  fr: "French",
+  es: "Spanish",
+  zh: "Chinese",
+  ja: "Japanese",
+  pt: "Portuguese",
+  ru: "Russian",
+  it: "Italian",
+  uk: "Ukrainian"
+};
+
 function isSupportedLanguage(value: string | null): value is SupportedLanguage {
   return value !== null && (SUPPORTED_LANGUAGES as readonly string[]).includes(value);
+}
+
+/** English name of the currently active UI language (e.g. "German"). */
+export function getCurrentLanguageEnglishName(): string {
+  const base = (i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LANGUAGE).split("-")[0];
+  return LANGUAGE_ENGLISH_NAME[isSupportedLanguage(base) ? base : DEFAULT_LANGUAGE];
 }
 
 export function getStoredLanguage(): SupportedLanguage {

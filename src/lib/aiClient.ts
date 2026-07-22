@@ -1,6 +1,6 @@
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
-import i18n from "@/i18n";
+import i18n, { getCurrentLanguageEnglishName } from "@/i18n";
 import { type AiProvider, type AiSettings, type AiThinkingMode } from "@/store/useAiSettingsStore";
 
 export type AiActionMode = "insert" | "rewrite" | "check";
@@ -219,15 +219,24 @@ const MARKDOWN_OUTPUT_INSTRUCTION =
   "Use only Markdown syntax (e.g. blank lines for paragraphs, **bold**, _italic_, # headings, - for lists). " +
   "Never use HTML tags like <p>, <br>, <div>, or <span>.";
 
-const CHECK_MODE_SYSTEM_PROMPT =
-  "You are a spelling and grammar checker. Analyze the given text and identify spelling and grammar mistakes only — do not suggest stylistic rewrites or wording changes beyond fixing actual errors. Respond ONLY with a single JSON array (no markdown code fences, no explanation text outside the JSON) of issue objects, each with exactly these fields: \"original\" (the exact original passage as it appears in the text, copied verbatim), \"suggestion\" (the corrected replacement text), and \"explanation\" (a short explanation of the issue, written in the same language as the checked text). List issues in the order they appear in the text. If there are no issues, respond with an empty JSON array: [].";
+// The explanation is UI feedback, not content, so it follows the app's UI
+// language rather than the language of the checked text — passed in as an
+// English language name (e.g. "German") since that is what models honor most
+// reliably. "original"/"suggestion" stay in the text's own language.
+function buildCheckModeSystemPrompt(explanationLanguage: string): string {
+  return (
+    "You are a spelling and grammar checker. Analyze the given text and identify spelling and grammar mistakes only — do not suggest stylistic rewrites or wording changes beyond fixing actual errors. Respond ONLY with a single JSON array (no markdown code fences, no explanation text outside the JSON) of issue objects, each with exactly these fields: \"original\" (the exact original passage as it appears in the text, copied verbatim), \"suggestion\" (the corrected replacement text), and \"explanation\" (a short explanation of the issue). " +
+    `Always write the \"explanation\" field in ${explanationLanguage}, regardless of the language of the checked text. ` +
+    "List issues in the order they appear in the text. If there are no issues, respond with an empty JSON array: []."
+  );
+}
 
 function buildSystemPrompt(request: AiContentRequest, thinkingMode: AiThinkingMode): string {
   if (request.mode === "check") {
     const thinkingInstruction =
       thinkingMode === "off" ? " Do not output any reasoning, notes, or intermediate steps." : "";
 
-    return CHECK_MODE_SYSTEM_PROMPT + thinkingInstruction;
+    return buildCheckModeSystemPrompt(getCurrentLanguageEnglishName()) + thinkingInstruction;
   }
 
   // A custom assistant replaces the built-in base instruction; the
