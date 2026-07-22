@@ -1,9 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // POSIX stand-ins for the Tauri path APIs, which would otherwise need the
-// native shell.
+// native shell. join() must resolve "." and ".." exactly like the real one
+// ("joins ... then normalizes the resulting path") — the whole image rewrite
+// depends on that, so a naive concatenating mock would hide the bugs it is
+// supposed to catch.
 vi.mock("@tauri-apps/api/path", () => ({
-  join: async (...segments: string[]) => segments.filter(Boolean).join("/"),
+  join: async (...segments: string[]) => {
+    const isAbsolute = segments[0]?.startsWith("/");
+    const parts: string[] = [];
+
+    for (const segment of segments.join("/").split("/")) {
+      if (!segment || segment === ".") {
+        continue;
+      }
+
+      if (segment === ".." && parts.length > 0 && parts[parts.length - 1] !== "..") {
+        parts.pop();
+        continue;
+      }
+
+      parts.push(segment);
+    }
+
+    return (isAbsolute ? "/" : "") + parts.join("/");
+  },
   dirname: async (path: string) => path.slice(0, path.lastIndexOf("/")) || "/"
 }));
 
@@ -34,13 +55,16 @@ const MOVED_NOTE = "/vault/sub/note.md";
 const MARKDOWN = "# Title\n\n![eye](images/image-3.png)\n";
 const REWRITTEN = "# Title\n\n![eye](../images/image-3.png)\n";
 
-function primeStore(document: { content: string; baseContent: string } | null) {
+function primeStore(
+  document: { content: string; baseContent: string } | null,
+  notePath = NOTE
+) {
   useAppStore.setState({
     folderPath: VAULT,
-    filePaths: [NOTE],
-    emptyFolderPaths: ["/vault/sub"],
-    fileDocuments: document ? { [NOTE]: document } : {},
-    selectedFilePath: document ? NOTE : null,
+    filePaths: [notePath],
+    emptyFolderPaths: ["/vault/sub", "/vault/sub/deep", "/vault/other"],
+    fileDocuments: document ? { [notePath]: document } : {},
+    selectedFilePath: document ? notePath : null,
     selectedFileContent: document?.content ?? null,
     selectedFileBaseContent: document?.baseContent ?? null,
     manualOrder: {},
@@ -49,13 +73,17 @@ function primeStore(document: { content: string; baseContent: string } | null) {
   });
 }
 
-async function moveNoteIntoSub() {
+async function moveNote(sourcePath: string, targetParentDirectory: string) {
   return useAppStore.getState().moveTreeEntry({
     kind: "file",
-    sourcePath: NOTE,
-    targetParentDirectory: "/vault/sub",
+    sourcePath,
+    targetParentDirectory,
     targetIndex: 0
   });
+}
+
+async function moveNoteIntoSub() {
+  return moveNote(NOTE, "/vault/sub");
 }
 
 describe("moveTreeEntry image path rewriting", () => {
@@ -101,6 +129,53 @@ describe("moveTreeEntry image path rewriting", () => {
     expect(moved.baseContent).toBe(REWRITTEN);
     expect(moved.content).toBe(REWRITTEN + "\nunsaved edit\n");
     expect(moved.content).not.toBe(moved.baseContent);
+  });
+
+  // The reverse direction: "../images/x.png" is only correct while the file
+  // sits one level down. Moved back to the vault root it has to lose the
+  // "../" again, otherwise it points outside the vault and cannot be read.
+  it("rewrites the path back when a file moves out of a subfolder to the root", async () => {
+    primeStore({ content: REWRITTEN, baseContent: REWRITTEN }, MOVED_NOTE);
+
+    expect(await moveNote(MOVED_NOTE, VAULT)).toBe(true);
+
+    expect(useAppStore.getState().fileDocuments[NOTE]).toEqual({
+      content: MARKDOWN,
+      baseContent: MARKDOWN
+    });
+    expect(writeMarkdownFile).toHaveBeenCalledWith(NOTE, MARKDOWN);
+  });
+
+  it("adds one \"../\" per level when a file moves into a nested folder", async () => {
+    primeStore({ content: MARKDOWN, baseContent: MARKDOWN });
+
+    expect(await moveNote(NOTE, "/vault/sub/deep")).toBe(true);
+
+    expect(useAppStore.getState().fileDocuments["/vault/sub/deep/note.md"].baseContent).toBe(
+      "# Title\n\n![eye](../../images/image-3.png)\n"
+    );
+  });
+
+  it("leaves the path untouched when moving between folders at the same depth", async () => {
+    primeStore({ content: REWRITTEN, baseContent: REWRITTEN }, MOVED_NOTE);
+
+    expect(await moveNote(MOVED_NOTE, "/vault/other")).toBe(true);
+
+    expect(useAppStore.getState().fileDocuments["/vault/other/note.md"].baseContent).toBe(REWRITTEN);
+    expect(writeMarkdownFile).not.toHaveBeenCalled();
+  });
+
+  // A reference already pointing outside the vault (damage from a move made
+  // before the rewrite reached disk) must not be "corrected" further -
+  // prepending another "../" would push it even further out.
+  it("leaves a reference that already points outside the vault untouched", async () => {
+    const broken = "# Title\n\n![eye](../images/image-1.png)\n";
+    primeStore({ content: broken, baseContent: broken });
+
+    expect(await moveNoteIntoSub()).toBe(true);
+
+    expect(useAppStore.getState().fileDocuments[MOVED_NOTE].baseContent).toBe(broken);
+    expect(writeMarkdownFile).not.toHaveBeenCalled();
   });
 
   it("does not write anything when the file has no relative image references", async () => {

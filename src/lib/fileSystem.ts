@@ -70,6 +70,17 @@ function normalizeDisplayPath(path: string): string {
   return path.replace(/\\/g, "/").replace(/\/+$/, "");
 }
 
+/**
+ * Whether an already-resolved absolute path still lies inside the vault.
+ * Case-insensitive, because Windows paths are.
+ */
+export function isPathInsideVault(rootPath: string, filePath: string): boolean {
+  const normalizedRootPath = normalizeDisplayPath(rootPath).toLowerCase();
+  const normalizedFilePath = normalizeDisplayPath(filePath).toLowerCase();
+
+  return normalizedFilePath.startsWith(`${normalizedRootPath}/`);
+}
+
 export function getRelativeDisplayPath(rootPath: string, filePath: string): string {
   const normalizedRootPath = normalizeDisplayPath(rootPath);
   const normalizedFilePath = normalizeDisplayPath(filePath);
@@ -392,6 +403,15 @@ export async function rewriteRelativeImagePaths(
 
     try {
       const absolutePath = await join(oldFileDirPath, rawSrc);
+
+      // A reference that already resolves outside the vault is broken (an
+      // image that was never there, or damage from an earlier move). Rewriting
+      // it would only prepend more "../" and make it worse, so it is left
+      // exactly as it is and stays visibly broken instead.
+      if (!isPathInsideVault(folderPath, absolutePath)) {
+        continue;
+      }
+
       const rootRelativePath = getRelativeDisplayPath(folderPath, absolutePath);
       const newRelativeSrc = await getRelativeImageMarkdownPath(folderPath, newFilePath, rootRelativePath);
 
