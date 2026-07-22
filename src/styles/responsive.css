@@ -1,0 +1,26 @@
+/* Narrow window layout. Imported after base.css and sidebar.css so these
+   rules win over the ones they override. */
+
+@media (max-width: 920px) {
+  .workspace {
+    padding: 1rem;
+  }
+
+  .workspace-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .workspace-resizer {
+    display: none;
+  }
+
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sidebar-panel__folder {
+    max-width: none;
+  }
+}

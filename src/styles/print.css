@@ -1,0 +1,108 @@
+/* Print output: only .print-root (filled by src/lib/print.ts) is printed,
+   always in a light color scheme. Typography mirrors the HTML export. */
+
+/* Print: only the rendered note content (.print-root, filled by
+   src/lib/print.ts) is printed — the app UI is hidden entirely and the
+   document is forced to a light color scheme regardless of the app theme.
+   Typography mirrors the HTML export's DOCUMENT_CSS (htmlExport.ts). */
+.print-root {
+  display: none;
+}
+
+@media print {
+  html.scribedog-printing {
+    color-scheme: light !important;
+  }
+
+  html.scribedog-printing body {
+    background: #ffffff !important;
+    overflow: visible !important;
+    /* The UI zoom level must not scale the printed document. */
+    zoom: 1 !important;
+  }
+
+  html.scribedog-printing #root {
+    display: none !important;
+  }
+
+  html.scribedog-printing .print-root {
+    display: block;
+    color: #1f2328;
+    background: #ffffff;
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 12pt;
+    line-height: 1.65;
+  }
+
+  .print-root h1,
+  .print-root h2,
+  .print-root h3,
+  .print-root h4,
+  .print-root h5,
+  .print-root h6 {
+    line-height: 1.25;
+    margin: 1.6em 0 0.6em;
+    break-after: avoid;
+  }
+  .print-root h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
+  .print-root h2 { font-size: 1.5em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
+  .print-root h3 { font-size: 1.25em; }
+  .print-root p { margin: 0.75em 0; }
+  .print-root a { color: #0969da; }
+  .print-root img { max-width: 100%; height: auto; }
+  .print-root code {
+    font-family: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.9em;
+    background: #f0f2f5;
+    border-radius: 4px;
+    padding: 0.15em 0.35em;
+  }
+  .print-root pre {
+    background: #f6f8fa;
+    border: 1px solid #d1d9e0;
+    border-radius: 6px;
+    padding: 0.9em 1.1em;
+    /* No scrollbars on paper: wrap long lines instead of clipping them. */
+    overflow: visible;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .print-root pre code { background: none; padding: 0; font-size: 0.875em; }
+  .print-root blockquote {
+    margin: 0.75em 0;
+    padding: 0.1em 1em;
+    border-left: 0.25em solid #d1d9e0;
+    color: #59636e;
+  }
+  .print-root table { border-collapse: collapse; margin: 1em 0; }
+  .print-root th,
+  .print-root td { border: 1px solid #d1d9e0; padding: 0.4em 0.8em; }
+  .print-root th { background: #f6f8fa; }
+  .print-root hr { border: none; border-top: 1px solid #d1d9e0; margin: 2em 0; }
+  .print-root ul,
+  .print-root ol { padding-left: 1.6em; margin: 0.75em 0; }
+  .print-root ul { list-style: disc; }
+  .print-root ol { list-style: decimal; }
+  .print-root ul.task-list { list-style: none; padding-left: 1.2em; }
+  /* Disabled native checkboxes print far too faint — draw a high-contrast
+     box (with an SVG check mark) instead. */
+  .print-root ul.task-list input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 0.95em;
+    height: 0.95em;
+    margin: 0 0.45em 0 0;
+    vertical-align: -0.12em;
+    border: 1.5px solid #1f2328;
+    border-radius: 3px;
+    background: #ffffff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .print-root ul.task-list input[type="checkbox"]:checked {
+    background-color: #1f2328;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+  }
+}

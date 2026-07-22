@@ -1,0 +1,40 @@
+/* Editor frame and its status banner. The --voice and --dialog modifiers
+   of .editor-view__feedback live in voice.css, which therefore has to stay
+   imported after this file. */
+
+.editor-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-view__feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid rgba(var(--overlay-rgb),0.1);
+  border-radius: 0.95rem;
+  background: rgba(var(--surface-rgb),0.74);
+  padding: 0.75rem 0.9rem;
+  color: rgba(var(--text-rgb),0.92);
+}
+
+.editor-view__feedback-message {
+  min-width: 0;
+}
+
+.editor-view__feedback--error {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(var(--error-bg-rgb),0.82);
+  color: var(--error-fg);
+}
+
+.editor-view__feedback--success {
+  border-color: rgba(74, 222, 128, 0.28);
+  background: rgba(var(--success-bg-rgb),0.82);
+  color: var(--success-fg);
+}

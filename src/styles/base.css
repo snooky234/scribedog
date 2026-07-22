@@ -1,0 +1,134 @@
+/* Document base, app shell and the sidebar/detail split, including the
+   surface shared by both panels. */
+
+html,
+body,
+#root {
+  margin: 0;
+  min-width: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(var(--overlay-rgb),0.06), transparent 40%),
+    linear-gradient(180deg, var(--body-bg-start) 0%, var(--body-bg-end) 100%);
+}
+
+.app-shell {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.workspace {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.workspace::before {
+  content: "";
+  position: absolute;
+  inset: -10% auto auto -10%;
+  width: 28rem;
+  height: 28rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(var(--overlay-rgb),0.08), transparent 70%);
+  pointer-events: none;
+  filter: blur(12px);
+}
+
+.sidebar-panel__eyebrow,
+.detail-panel__eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  color: rgba(var(--muted-rgb),0.9);
+}
+
+.detail-panel h2,
+.sidebar-panel h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 1.4vw + 1rem, 2rem);
+  line-height: 1.1;
+}
+
+.detail-panel p,
+.sidebar-panel p {
+  margin: 0;
+  color: rgba(var(--text-rgb),0.72);
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: var(--sidebar-width, 320px) 1.25rem minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.workspace-resizer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.workspace-resizer__grip {
+  width: 3px;
+  height: 100%;
+  border-radius: 9999px;
+  background: rgba(var(--overlay-rgb),0.01);
+  transition: background-color 0.15s ease, width 0.15s ease;
+}
+
+.workspace-resizer:hover .workspace-resizer__grip,
+.workspace-resizer:focus-visible .workspace-resizer__grip,
+.workspace-resizer--active .workspace-resizer__grip {
+  width: 4px;
+  background: rgba(var(--muted-rgb),0.65);
+}
+
+.workspace-resizer:focus-visible {
+  outline: none;
+}
+
+body.is-resizing-sidebar {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.sidebar-panel,
+.detail-panel__card {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgba(var(--overlay-rgb),0.08);
+  border-radius: 1.5rem;
+}
+
+.sidebar-panel::before,
+.detail-panel__card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgb(var(--surface-strong-rgb));
+}
+
+.dark .sidebar-panel::before,
+.dark .detail-panel__card::before {
+  background: rgba(var(--surface-strong-rgb),0.82);
+  backdrop-filter: blur(18px);
+  clip-path: inset(0 round 1.5rem);
+}

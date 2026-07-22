@@ -1,0 +1,144 @@
+/* Design tokens: the light palette on :root, the dark palette on .dark.
+   Everything else in src/styles/ reads these via var(). */
+
+:root {
+  color-scheme: light;
+  font-family: "Geist Variable", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background: #f8fafc;
+  color: rgb(15, 23, 42);
+  font-synthesis: weight style;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --overlay-rgb: 15, 23, 42;
+  --text-rgb: 15, 23, 42;
+  --muted-rgb: 100, 116, 139;
+  --surface-rgb: 255, 255, 255;
+  --surface-raised-rgb: 248, 250, 252;
+  --surface-strong-rgb: 255, 255, 255;
+  --surface-hover-rgb: 241, 245, 249;
+  --surface-active-rgb: 226, 232, 240;
+  --selection-rgb: 51, 65, 85;
+  --backdrop-rgb: 100, 116, 139;
+  --body-bg-start: #f8fafc;
+  --body-bg-end: #f2f4f7;
+  --amber-fg: #92400e;
+  --blue-fg: #1d4ed8;
+  --error-fg: #b91c1c;
+  --success-fg: #166534;
+  --error-bg-rgb: 254, 226, 226;
+  --success-bg-rgb: 220, 252, 231;
+  --warning-bg-rgb: 255, 251, 235;
+
+  /* Code block tokens. The prose styles give code blocks a dark background in
+     both themes, so the palette below is shared; .dark only nudges it. */
+  --code-comment: #94a3b8;
+  --code-keyword: #c4b5fd;
+  --code-string: #86efac;
+  --code-number: #fdba74;
+  --code-function: #93c5fd;
+  --code-type: #67e8f9;
+  --code-variable: #f0abfc;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  color-scheme: dark;
+  background: #111214;
+  color: rgb(226, 232, 240);
+
+  --overlay-rgb: 255, 255, 255;
+  --text-rgb: 226, 232, 240;
+  --muted-rgb: 148, 163, 184;
+  --surface-rgb: 24, 24, 26;
+  --surface-raised-rgb: 28, 28, 30;
+  --surface-strong-rgb: 18, 18, 20;
+  --surface-hover-rgb: 34, 34, 36;
+  --surface-active-rgb: 42, 42, 44;
+  --selection-rgb: 203, 213, 225;
+  --backdrop-rgb: 6, 8, 11;
+  --body-bg-start: #111214;
+  --body-bg-end: #090a0c;
+  --amber-fg: #fde68a;
+  --blue-fg: #bfdbfe;
+  --error-fg: #fecaca;
+  --success-fg: #bbf7d0;
+  --error-bg-rgb: 44, 18, 18;
+  --success-bg-rgb: 18, 34, 24;
+  --warning-bg-rgb: 69, 49, 7;
+
+  /* Slightly dimmed against the darker code background of prose-invert. */
+  --code-comment: #7c8798;
+  --code-keyword: #b3a2f7;
+  --code-string: #7ddba4;
+  --code-number: #f0ad76;
+  --code-function: #85b8f5;
+  --code-type: #63d5e6;
+  --code-variable: #e39cf0;
+
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}

@@ -1,0 +1,119 @@
+/* Voice input (issue #7): dictation banner, mic button, insertion marker
+   and the model download dialog. */
+
+/* Voice input (issue #7): dictation banner, mic button, model download. */
+.editor-view__feedback--voice {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(var(--surface-rgb),0.9);
+  /* Outward glow follows the measured speech level (inline box-shadow,
+     updated ~every 80 ms) — the transition smooths between level samples. */
+  transition: box-shadow 90ms linear;
+}
+
+/* Same banner inside the AI dialog, above the prompt field. */
+.editor-view__feedback--dialog {
+  margin: 0.9rem 0 0.4rem;
+}
+
+.editor-view__feedback--voice .editor-view__feedback-message::before {
+  content: "";
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.5rem;
+  border-radius: 9999px;
+  background: rgb(239, 68, 68);
+  animation: voice-recording-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-mic-button {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  margin-left: 0.35rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(var(--overlay-rgb),0.16);
+  border-radius: 9999px;
+  background: rgba(var(--surface-rgb),0.74);
+  color: rgba(var(--text-rgb),0.8);
+  cursor: pointer;
+}
+
+.voice-mic-button:hover:not(:disabled) {
+  border-color: rgba(var(--overlay-rgb),0.3);
+}
+
+.voice-mic-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.voice-mic-button__icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.voice-mic-button__icon--spinning {
+  animation: voice-spin 0.9s linear infinite;
+}
+
+.voice-status {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(var(--text-rgb),0.64);
+}
+
+.voice-status--error {
+  color: var(--error-fg);
+}
+
+/* Insertion marker while dictating: the editor is non-editable (no caret),
+   so this shows where the transcript will land. */
+.voice-insert-widget {
+  display: inline;
+  margin: 0 0.1rem;
+  color: rgb(239, 68, 68);
+  font-weight: 600;
+  animation: voice-recording-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-download {
+  margin: 0.4rem 0 1rem;
+}
+
+.voice-download__bar {
+  height: 0.5rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(var(--overlay-rgb),0.12);
+}
+
+.voice-download__bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: rgb(168, 85, 247);
+  transition: width 0.3s ease;
+}
+
+.voice-download__label {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(var(--text-rgb),0.64);
+}
+
+.ai-dialog__error {
+  margin: 0.4rem 0 0.8rem;
+  font-size: 0.9rem;
+  color: var(--error-fg);
+}
+
+@keyframes voice-recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@keyframes voice-spin {
+  to { transform: rotate(360deg); }
+}

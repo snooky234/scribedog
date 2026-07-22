@@ -1,0 +1,140 @@
+/* The two inline ProseMirror widgets of the AI flow: the streaming
+   reasoning preview and the before/after diff review. */
+
+/* Widget at the AI insertion point (live reasoning-trace preview). Rendered
+   as a ProseMirror widget decoration, so technically inline in the DOM —
+   forced onto its own line via block display so following text doesn't
+   wrap around it. */
+.ai-stream-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 100%;
+  border: 1px solid rgba(var(--overlay-rgb),0.12);
+  border-radius: 0.75rem;
+  background: rgba(var(--surface-rgb),0.85);
+  padding: 0.45rem 0.7rem;
+  margin: 0.4rem 0 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgba(var(--text-rgb),0.75);
+  user-select: none;
+}
+
+.ai-stream-widget__label {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--text-rgb),0.45) 0%,
+    rgba(var(--text-rgb),0.95) 50%,
+    rgba(var(--text-rgb),0.45) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: editor-feedback-shimmer 1.8s linear infinite;
+  font-weight: 500;
+}
+
+.ai-stream-widget__header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ai-stream-widget__pulse {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgba(var(--text-rgb),0.8);
+  animation: ai-stream-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ai-stream-pulse {
+  0%,
+  100% {
+    transform: scale(0.8);
+    box-shadow: 0 0 0 0 rgba(var(--text-rgb),0.25);
+  }
+  50% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0.35rem rgba(var(--text-rgb),0);
+  }
+}
+
+.ai-stream-widget__body {
+  display: block;
+  max-height: 9rem;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-style: italic;
+  color: rgba(var(--text-rgb),0.6);
+}
+
+/* Inline diff shown after an AI rewrite finishes: the original selection
+   stays in place (tinted red), the AI result and its actions render as a
+   widget right after it (tinted green). */
+.ai-diff-widget__original {
+  background: rgba(var(--error-bg-rgb),0.55);
+  border-radius: 0.2rem;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.ai-diff-widget {
+  display: block;
+  margin: 0.4rem 0 0.9rem;
+  user-select: none;
+}
+
+.ai-diff-widget__result {
+  border: 1px solid rgba(var(--success-bg-rgb),0.75);
+  border-radius: 0.75rem;
+  background: rgba(var(--success-bg-rgb),0.5);
+  padding: 0.7rem 0.9rem;
+  user-select: text;
+}
+
+.ai-diff-widget__result-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--success-fg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.ai-diff-widget__result-label--streaming {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--success-bg-rgb),0.6) 0%,
+    var(--success-fg) 50%,
+    rgba(var(--success-bg-rgb),0.6) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: editor-feedback-shimmer 1.8s linear infinite;
+}
+
+.ai-diff-widget__result-content {
+  color: rgba(var(--text-rgb),0.92);
+}
+
+.ai-diff-widget__result-content :first-child {
+  margin-top: 0;
+}
+
+.ai-diff-widget__result-content :last-child {
+  margin-bottom: 0;
+}
+
+.ai-diff-widget__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}

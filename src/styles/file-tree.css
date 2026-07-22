@@ -1,0 +1,212 @@
+/* File tree rows: indentation, drag & drop indicators, inline rename and
+   the context menu. */
+
+.file-tree,
+.file-tree__group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.file-tree {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.1rem;
+}
+
+.file-tree__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: 0.35rem 0.5rem;
+  color: inherit;
+  text-align: left;
+  transition: background 160ms ease;
+}
+
+.file-tree__row:hover {
+  background: rgba(var(--surface-hover-rgb),0.92);
+}
+
+.file-tree__row--active {
+  background: rgba(var(--surface-active-rgb),0.96);
+}
+
+.file-tree__row--selected {
+  background: rgba(var(--selection-rgb), 0.22);
+  outline: 1px solid rgba(var(--selection-rgb), 0.55);
+  outline-offset: -1px;
+}
+
+.file-tree__row--selected:hover {
+  background: rgba(var(--selection-rgb), 0.3);
+}
+
+.file-tree__row--selected.file-tree__row--active {
+  background: rgba(var(--selection-rgb), 0.32);
+}
+
+.file-tree__row svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.file-tree__row--folder svg {
+  color: rgba(var(--text-rgb), 0.55);
+}
+
+.file-tree__chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1rem;
+}
+
+.file-tree__chevron svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.file-tree__name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.file-tree__mtime {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: rgba(var(--muted-rgb), 0.2);
+  white-space: nowrap;
+}
+
+.file-tree__row--renaming {
+  cursor: default;
+}
+
+.file-tree__row--drag-source {
+  opacity: 0.5;
+}
+
+.file-tree__row--drop-above::before,
+.file-tree__row--drop-below::after {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--blue-fg);
+}
+
+.file-tree__row--drop-above::before {
+  top: 0;
+}
+
+.file-tree__row--drop-below::after {
+  bottom: 0;
+}
+
+.file-tree__row--drop-into {
+  background: rgba(var(--surface-active-rgb), 0.96);
+  outline: 2px solid var(--blue-fg);
+  outline-offset: -2px;
+}
+
+.file-tree__rename-input {
+  min-width: 0;
+  flex: 1;
+  border: none;
+  border-bottom: 1px solid rgba(var(--overlay-rgb),0.25);
+  border-radius: 0;
+  background: rgba(var(--overlay-rgb),0.04);
+  padding: 0 0.1rem;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  outline: none;
+}
+
+.file-tree__rename-input:focus {
+  border-bottom-color: rgba(147, 197, 253, 0.7);
+}
+
+.file-tree__rename-input::selection {
+  background: rgba(59, 130, 246, 0.45);
+}
+
+.file-tree__rename-suffix {
+  flex-shrink: 0;
+  color: rgba(var(--text-rgb),0.55);
+  white-space: nowrap;
+}
+
+.file-tree-context-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 10rem;
+  border: 1px solid rgba(var(--overlay-rgb),0.1);
+  border-radius: 0.75rem;
+  background: rgba(var(--surface-rgb),0.98);
+  padding: 0.3rem;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+}
+
+.dark .file-tree-context-menu {
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+.file-tree-context-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: 0.45rem 0.6rem;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.file-tree-context-menu__item svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.file-tree-context-menu__item:hover,
+.file-tree-context-menu__item:focus-visible {
+  background: rgba(var(--overlay-rgb),0.08);
+}
+
+.file-tree-context-menu__item--danger {
+  color: var(--error-fg);
+}
+
+.file-tree-context-menu__item--danger:hover,
+.file-tree-context-menu__item--danger:focus-visible {
+  background: rgba(248, 113, 113, 0.16);
+}
+
+.sidebar-panel__item-dirty {
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  background: #fde68a;
+  box-shadow: 0 0 0 4px rgba(253, 230, 138, 0.12);
+}
