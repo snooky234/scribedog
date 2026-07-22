@@ -156,6 +156,14 @@ and the source in this repository.
 - Live sync via a native filesystem watcher — changes made outside the app are picked up automatically
 - Safe switching: leaving an unsaved file (or a pending, undecided AI suggestion) prompts you to save, discard, or cancel, with a clear dirty indicator
 
+### 📱 Mobile access & sync
+ScribeDog stores everything as plain `.md` files in a normal folder — so making your notes available on the go is just a matter of putting that folder into a sync service **you** choose. There's no ScribeDog account or server involved.
+
+- **Privacy-first (recommended):** a self-hosted **[Nextcloud](https://nextcloud.com/)** (or another private cloud) keeps your files on infrastructure you control. On mobile, open and edit them with **Nextcloud Notes** or any Markdown editor that syncs with your provider.
+- **Any other cloud works too:** point OneDrive, iCloud Drive, Dropbox, etc. at your vault folder, then edit on mobile with a compatible Markdown app (e.g. **Obsidian**, **Markor** on Android, **iA Writer**).
+
+> **Note — sync the whole folder, not just `.md`:** ScribeDog keeps embedded images in an `images/` subfolder and links them **relatively**. Some mobile Markdown apps don't resolve these relative paths, so **inline images may not display on mobile** even though the text syncs fine. Also make sure your sync client includes subfolders (`images/`) and the hidden `.scribedog` folder, and avoid editing the same file on two devices at once to prevent sync conflicts.
+
 ### 🎨 Comfortable to use
 - Light and dark theme
 - Interface available in **10 languages** — English, German, Spanish, French, Italian, Portuguese, Russian, Ukrainian, Japanese, and Chinese
