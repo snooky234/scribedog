@@ -13,6 +13,7 @@ import {
 import { getChildBasenamesByParent, isDescendantRelativePath } from "@/lib/fileTree";
 import { writeManualOrder, writeSortMode, type SortMode } from "@/lib/vaultMeta";
 
+import { isDocumentDirty } from "./documents";
 import { toErrorMessage } from "./errors";
 import {
   getBasename,
@@ -236,11 +237,26 @@ export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
 
       void writeManualOrder(folderPath, withoutSource).catch(() => undefined);
 
+      // The editor renders selectedFileContent, not fileDocuments. Without
+      // mirroring the moved document into these fields, an open file keeps
+      // showing its pre-move markdown — with the image paths that the move
+      // just corrected — and writes that stale text back on the next edit.
+      const nextSelectedDocument = nextSelectedFilePath
+        ? nextDocuments[nextSelectedFilePath]
+        : undefined;
+
       set({
         filePaths: nextFilePaths,
         emptyFolderPaths: nextEmptyFolderPaths,
         fileDocuments: nextDocuments,
         selectedFilePath: nextSelectedFilePath,
+        selectedFileContent: nextSelectedDocument
+          ? nextSelectedDocument.content
+          : state.selectedFileContent,
+        selectedFileBaseContent: nextSelectedDocument
+          ? nextSelectedDocument.baseContent
+          : state.selectedFileBaseContent,
+        isDirty: nextSelectedDocument ? isDocumentDirty(nextSelectedDocument) : state.isDirty,
         manualOrder: withoutSource,
         fileError: null
       });

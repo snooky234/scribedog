@@ -178,6 +178,46 @@ describe("moveTreeEntry image path rewriting", () => {
     expect(writeMarkdownFile).not.toHaveBeenCalled();
   });
 
+  // The editor renders selectedFileContent, not fileDocuments — so correcting
+  // only the map leaves the open document showing the old path. This is the
+  // real-world case: insert an image into a note inside a folder (unsaved, so
+  // baseContent has no image reference yet), then drag the note to the root.
+  it("mirrors the corrected content into the selected-file fields", async () => {
+    const savedState = "# Title\n";
+    const withImage = "# Title\n\n![eye](../images/image-3.png)\n";
+    primeStore({ content: withImage, baseContent: savedState }, MOVED_NOTE);
+
+    expect(await moveNote(MOVED_NOTE, VAULT)).toBe(true);
+
+    const state = useAppStore.getState();
+    expect(state.selectedFilePath).toBe(NOTE);
+    expect(state.selectedFileContent).toBe("# Title\n\n![eye](images/image-3.png)\n");
+    expect(state.selectedFileBaseContent).toBe(savedState);
+    expect(state.isDirty).toBe(true);
+  });
+
+  it("keeps the selected-file fields untouched when another file is moved", async () => {
+    useAppStore.setState({
+      folderPath: VAULT,
+      filePaths: [NOTE, "/vault/other-note.md"],
+      emptyFolderPaths: ["/vault/sub"],
+      fileDocuments: { [NOTE]: { content: MARKDOWN, baseContent: MARKDOWN } },
+      selectedFilePath: NOTE,
+      selectedFileContent: MARKDOWN,
+      selectedFileBaseContent: MARKDOWN,
+      manualOrder: {},
+      isDirty: false,
+      fileError: null
+    });
+
+    expect(await moveNote("/vault/other-note.md", "/vault/sub")).toBe(true);
+
+    const state = useAppStore.getState();
+    expect(state.selectedFilePath).toBe(NOTE);
+    expect(state.selectedFileContent).toBe(MARKDOWN);
+    expect(state.isDirty).toBe(false);
+  });
+
   it("does not write anything when the file has no relative image references", async () => {
     primeStore({ content: "# Plain\n", baseContent: "# Plain\n" });
 

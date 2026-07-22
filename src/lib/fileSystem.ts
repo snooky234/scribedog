@@ -348,12 +348,23 @@ function extractImageReferences(markdown: string): string[] {
   return Array.from(markdown.matchAll(IMAGE_MARKDOWN_PATTERN), (match) => match[1]);
 }
 
+type ResolvedImageRefs = {
+  /** Root-relative paths of all references that resolve inside the vault. */
+  paths: Set<string>;
+  /**
+   * At least one relative reference could not be resolved to a location
+   * inside the vault — the document's image paths are in a broken state.
+   */
+  hasBrokenReference: boolean;
+};
+
 async function resolveImageRootRelativePaths(
   markdown: string,
   fileDirPath: string,
   folderPath: string
-): Promise<Set<string>> {
-  const rootRelativePaths = new Set<string>();
+): Promise<ResolvedImageRefs> {
+  const paths = new Set<string>();
+  let hasBrokenReference = false;
 
   for (const rawSrc of extractImageReferences(markdown)) {
     if (ABSOLUTE_URL_PATTERN.test(rawSrc)) {
@@ -362,13 +373,18 @@ async function resolveImageRootRelativePaths(
 
     try {
       const absolutePath = await join(fileDirPath, rawSrc);
-      rootRelativePaths.add(getRelativeDisplayPath(folderPath, absolutePath));
+
+      if (isPathInsideVault(folderPath, absolutePath)) {
+        paths.add(getRelativeDisplayPath(folderPath, absolutePath));
+      } else {
+        hasBrokenReference = true;
+      }
     } catch {
-      // Invalid path — ignore.
+      hasBrokenReference = true;
     }
   }
 
-  return rootRelativePaths;
+  return { paths, hasBrokenReference };
 }
 
 /**
@@ -456,13 +472,23 @@ export async function cleanupOrphanedImages(
   const previousRefs = await resolveImageRootRelativePaths(previousMarkdown, fileDirPath, folderPath);
   const nextRefs = await resolveImageRootRelativePaths(nextMarkdown, fileDirPath, folderPath);
 
-  const removedRefs = [...previousRefs].filter((path) => !nextRefs.has(path));
+  // Deleting an image cannot be undone, so never act on a document whose image
+  // paths are in a broken state. A reference resolving outside the vault (e.g.
+  // "../images/x.png" in a file that has meanwhile moved to the root) cannot be
+  // matched against previousRefs and would look exactly like "the image was
+  // removed from this note" — leading to the image file being deleted. Leaving
+  // an unused image behind is the harmless failure of the two.
+  if (nextRefs.hasBrokenReference) {
+    return;
+  }
+
+  const removedRefs = [...previousRefs.paths].filter((path) => !nextRefs.paths.has(path));
 
   if (removedRefs.length === 0) {
     return;
   }
 
-  const stillReferenced = new Set(nextRefs);
+  const stillReferenced = new Set(nextRefs.paths);
   const markdownFiles = await listMarkdownFiles(folderPath);
   const normalizedCurrentFilePath = normalizeDisplayPath(filePath);
 
@@ -474,7 +500,7 @@ export async function cleanupOrphanedImages(
           const otherMarkdown = await readMarkdownFile(record.filePath);
           const otherDirPath = await dirname(record.filePath);
           const otherRefs = await resolveImageRootRelativePaths(otherMarkdown, otherDirPath, folderPath);
-          otherRefs.forEach((ref) => stillReferenced.add(ref));
+          otherRefs.paths.forEach((ref) => stillReferenced.add(ref));
         } catch {
           // File unreadable — ignore for the cleanup check.
         }
