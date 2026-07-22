@@ -2,16 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   appendManualOrderEntry,
-  buildFileMtimeMap,
-  getBasename,
-  insertFilePathSorted,
-  isPathInsideFolder,
-  normalizePathKey,
   rekeyManualOrderFolderPrefix,
   removeManualOrderEntry,
   removeManualOrderFolderPrefix,
   renameManualOrderEntry
-} from "./useAppStore";
+} from "./manualOrder";
+import { buildFileMtimeMap } from "./folderState";
+import {
+  getBasename,
+  insertFilePathSorted,
+  isPathInsideFolder,
+  normalizePathKey
+} from "./pathUtils";
 
 describe("normalizePathKey", () => {
   it("normalizes separators and casing", () => {
