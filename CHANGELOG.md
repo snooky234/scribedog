@@ -3,6 +3,11 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.6.0] - 2026-07-23
+
+### Highlights
+- Add zen mode for distraction-free writing
+
 ## [0.5.4] - 2026-07-23
 
 ### Highlights
