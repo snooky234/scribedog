@@ -114,6 +114,13 @@ and the source in this repository.
 - Every AI edit is a single atomic change: one `Ctrl+Z` fully undoes it
 - **AI spelling & grammar check** — select a passage, press `Ctrl+Shift+X` (or use the toolbar button), and get a clear list of issues with suggested corrections and explanations; apply them one by one or all at once
 
+### 🧘 Zen mode — distraction-free, full-screen writing
+- Press `Ctrl+Shift+Z` (or the toolbar button) to strip away the sidebar, toolbar, and document header and go full screen, leaving just your text, centered in a comfortable column
+- **Drag the column edges** (or use the arrow keys once focused) to resize the text width to your taste — the setting is remembered
+- A small dot in the top-right corner shows unsaved changes; a single button in the top-left takes you back to the normal view
+
+  <img src="src/assets/scribe-dog-zenmode.png" alt="ScribeDog Zen mode" width="700">
+
 ### 🎙️ Voice input — dictate, entirely offline
 - **Dictate straight into your document**: press `Ctrl+Shift+W`, speak, then press `Enter` to transcribe (or `Esc` to cancel) — the transcript is inserted at the cursor as regular editable text, undoable with a single `Ctrl+Z`
 - **Dictate your AI prompt**: `Ctrl+Shift+E` opens the AI dialog and starts recording immediately; or use the microphone button in the dialog — the transcript lands in the prompt field, editable before you send it
@@ -240,7 +247,6 @@ ScribeDog aims to become the **private writing studio** for everyone who writes 
 without compromising on the local-first, open-source principles above.
 Ideas on the list for upcoming versions (subject to change, feedback welcome!):
 
-- 🧘 **Focus mode** — dim everything except the current sentence or paragraph, typewriter scrolling, distraction-free full screen
 - 📚 **Context notes ("story bible")** — keep character sheets, glossaries, or project notes in a folder and have them automatically included as AI context
 - 🎯 **Writing goals & statistics** — word-count targets, reading time, daily progress
 - ✒️ **Offline style & readability analysis** — highlight filler words, passive voice, and long sentences; optional local grammar checking (e.g. LanguageTool)
