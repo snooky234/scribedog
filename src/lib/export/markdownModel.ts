@@ -2,6 +2,8 @@ import MarkdownIt from "markdown-it";
 import type Token from "markdown-it/lib/token.mjs";
 import insPlugin from "markdown-it-ins";
 
+import { calloutMarkdownItPlugin } from "@/lib/editor/extensions/callout";
+
 // Shared intermediate representation for the PDF/DOCX/ODT exporters: markdown
 // is parsed exactly once into these blocks; each output format only has to
 // translate the structure instead of re-interpreting markdown-it tokens.
@@ -46,6 +48,9 @@ export type ExportBlock =
 export function createExportMarkdownIt(): MarkdownIt {
   const markdownIt = new MarkdownIt({ html: false, linkify: false, breaks: false });
   markdownIt.use(insPlugin);
+  // Strips the `[!VARIANT]` admonition marker so callouts export as clean
+  // blockquotes instead of showing the raw marker text.
+  markdownIt.use(calloutMarkdownItPlugin);
   return markdownIt;
 }
 

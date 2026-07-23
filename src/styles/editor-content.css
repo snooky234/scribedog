@@ -43,6 +43,35 @@
   font-weight: 600;
 }
 
+.editor-view__surface h4 {
+  font-size: 1rem;
+  line-height: 1.25;
+  margin-top: 1.1em;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.editor-view__surface h5 {
+  font-size: 0.9rem;
+  line-height: 1.3;
+  margin-top: 1em;
+  margin-bottom: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.editor-view__surface h6 {
+  font-size: 0.82rem;
+  line-height: 1.3;
+  margin-top: 1em;
+  margin-bottom: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(var(--text-rgb), 0.7);
+}
+
 .editor-view__surface ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0;
@@ -342,4 +371,78 @@
 .editor-view__surface em,
 .editor-view__surface i {
   font-style: italic;
+}
+
+/* Hint banners (callouts): a colored box with a left accent bar and a leading
+   icon per variant. Only the variant + content is stored; the icon is drawn
+   from CSS so nothing language-specific ends up in the document. */
+.editor-view__surface .callout {
+  position: relative;
+  margin: 1.1em 0;
+  border: 1px solid var(--callout-border);
+  border-left-width: 4px;
+  border-radius: 0.6rem;
+  background: var(--callout-bg);
+  padding: 0.75rem 0.9rem 0.75rem 3.2rem;
+  line-height: 1.5;
+}
+
+.editor-view__surface .callout::before {
+  position: absolute;
+  top: 50%;
+  left: 0.85rem;
+  transform: translateY(-50%);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+/* Keep paragraph spacing inside a callout tight instead of inheriting the
+   surface's large block margins. */
+.editor-view__surface .callout > * {
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+.editor-view__surface .callout > :first-child {
+  margin-top: 0;
+}
+
+.editor-view__surface .callout > :last-child {
+  margin-bottom: 0;
+}
+
+.editor-view__surface .callout--success {
+  --callout-border: rgba(34, 197, 94, 0.5);
+  --callout-bg: rgba(34, 197, 94, 0.12);
+}
+
+.editor-view__surface .callout--success::before {
+  content: "✅";
+}
+
+.editor-view__surface .callout--info {
+  --callout-border: rgba(59, 130, 246, 0.5);
+  --callout-bg: rgba(59, 130, 246, 0.12);
+}
+
+.editor-view__surface .callout--info::before {
+  content: "ℹ️";
+}
+
+.editor-view__surface .callout--warning {
+  --callout-border: rgba(234, 179, 8, 0.55);
+  --callout-bg: rgba(234, 179, 8, 0.14);
+}
+
+.editor-view__surface .callout--warning::before {
+  content: "⚠️";
+}
+
+.editor-view__surface .callout--danger {
+  --callout-border: rgba(239, 68, 68, 0.5);
+  --callout-bg: rgba(239, 68, 68, 0.12);
+}
+
+.editor-view__surface .callout--danger::before {
+  content: "⛔";
 }

@@ -1,76 +1,34 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pencil, Square } from "lucide-react";
-import { listen } from "@tauri-apps/api/event";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open as openImportFilesDialog } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
-import { join } from "@tauri-apps/api/path";
-import { check, type Update } from "@tauri-apps/plugin-updater";
 import { useTranslation } from "react-i18next";
 
-import { Editor, type EditorHandle } from "@/components/Editor";
-import { SettingsDialog } from "@/components/SettingsDialog";
-import { AssistantEditDialog } from "@/components/AssistantEditDialog";
-import { DeleteFileDialog } from "@/components/DeleteFileDialog";
-import { ExportDialog, type ExportDialogTarget } from "@/components/ExportDialog";
-import { ImportDialog } from "@/components/ImportDialog";
-import { ShortcutsDialog } from "@/components/ShortcutsDialog";
-import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
-import { UpdateNotification } from "@/components/UpdateNotification";
+import type { EditorHandle } from "@/components/Editor";
 import { Sidebar } from "@/components/Sidebar";
+import { AppDialogs } from "@/components/app/AppDialogs";
+import { DocumentPanel } from "@/components/app/DocumentPanel";
 import type { BatchEntry, PendingFolderRename } from "@/components/FileTree";
-import { isWindowsPlatform } from "@/lib/platform";
 import { useAppVersion } from "@/hooks/useAppVersion";
-import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
+import { useDeleteTarget } from "@/hooks/useDeleteTarget";
+import { useExportTarget } from "@/hooks/useExportTarget";
+import { useFolderWatcher } from "@/hooks/useFolderWatcher";
+import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import {
-  FOLDER_FILES_CHANGED_EVENT,
-  clearLastOpenedFolderPath,
-  getLastOpenedFolderPath,
-  getRelativeDisplayPath,
-  readMarkdownFile
-} from "@/lib/fileSystem";
-import { getDefaultExportBaseName } from "@/lib/export/exporter";
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  useSidebarWidth
+} from "@/hooks/useSidebarWidth";
+import { useStartupFolder } from "@/hooks/useStartupFolder";
+import { useTitleRename } from "@/hooks/useTitleRename";
+import { useUpdateCheck } from "@/hooks/useUpdateCheck";
+import { useWebviewZoom } from "@/hooks/useWebviewZoom";
+import { getRelativeDisplayPath } from "@/lib/fileSystem";
 import { IMPORT_FILE_EXTENSIONS } from "@/lib/import/importer";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
 import type { Assistant } from "@/store/useAssistantsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
-import { ZOOM_STEP, useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 import "./App.css";
-
-const SIDEBAR_WIDTH_STORAGE_KEY = "scribedog-sidebar-width";
-const MIN_SIDEBAR_WIDTH = 220;
-const MAX_SIDEBAR_WIDTH = 560;
-const DEFAULT_SIDEBAR_WIDTH = 320;
-const SIDEBAR_KEYBOARD_STEP = 16;
-
-function clampSidebarWidth(width: number): number {
-  return Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, width));
-}
-
-function getInitialSidebarWidth(): number {
-  try {
-    const stored = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
-    const parsed = stored ? Number(stored) : NaN;
-
-    if (!Number.isNaN(parsed)) {
-      return clampSidebarWidth(parsed);
-    }
-  } catch {
-    // localStorage may be unavailable in some environments.
-  }
-
-  return DEFAULT_SIDEBAR_WIDTH;
-}
-
-function persistSidebarWidth(width: number): void {
-  try {
-    window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(width));
-  } catch {
-    // localStorage may be unavailable in some environments.
-  }
-}
 
 function App() {
   const { t } = useTranslation();
@@ -84,16 +42,6 @@ function App() {
   // distinguishable from "no edit in progress" (whole value null).
   const [assistantEditTarget, setAssistantEditTarget] = useState<{ assistant: Assistant | null } | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const [isRenamingTitle, setIsRenamingTitle] = useState(false);
-  const [titleDraft, setTitleDraft] = useState("");
-  const [renameSessionId, setRenameSessionId] = useState(0);
-  const [deleteTarget, setDeleteTarget] = useState<
-    | { kind: "file" | "folder"; path: string }
-    | { kind: "multiple"; paths: Array<{ kind: "file" | "folder"; path: string }> }
-    | null
-  >(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [exportTarget, setExportTarget] = useState<ExportDialogTarget | null>(null);
   const [importFileList, setImportFileList] = useState<string[] | null>(null);
   const [pendingFolderRename, setPendingFolderRename] = useState<PendingFolderRename | null>(
     null
@@ -103,14 +51,7 @@ function App() {
   const [fileTreeSelection, setFileTreeSelection] = useState<BatchEntry[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isAiActionPending, setIsAiActionPending] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState<number>(getInitialSidebarWidth);
-  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
-  const [availableUpdate, setAvailableUpdate] = useState<Update | null>(null);
-  const checkForUpdatesEnabled = useUpdateSettingsStore((state) => state.checkForUpdatesEnabled);
   const appVersion = useAppVersion();
-  const skipRenameCommitRef = useRef(false);
-  const renameTargetPathRef = useRef<string | null>(null);
-  const titleInputRef = useRef<HTMLInputElement | null>(null);
   const editorHandleRef = useRef<EditorHandle | null>(null);
   const folderRenameRequestIdRef = useRef(0);
 
@@ -181,6 +122,49 @@ function App() {
   const isSelectedFileMissing =
     selectedFilePath !== null && !filePaths.includes(selectedFilePath);
 
+  const { sidebarWidth, isResizingSidebar, handleResizeStart, handleResizeKeyDown } =
+    useSidebarWidth();
+
+  useWebviewZoom();
+
+  const { availableUpdate, dismissUpdate } = useUpdateCheck();
+
+  const {
+    isRenamingTitle,
+    titleDraft,
+    setTitleDraft,
+    titleInputRef,
+    startTitleRename,
+    commitTitleRename,
+    cancelTitleRename
+  } = useTitleRename({ selectedFilePath, selectedFileBaseName, renameSelectedFile });
+
+  const {
+    deleteTarget,
+    isDeleting,
+    requestDeleteFile,
+    requestDeleteFolder,
+    requestDeleteMultiple,
+    requestDeleteFromToolbar,
+    cancelDeleteTarget,
+    confirmDeleteTarget
+  } = useDeleteTarget({
+    folderPath,
+    selectedFilePath,
+    fileTreeSelection,
+    deleteFilePath,
+    deleteFolderPath
+  });
+
+  const {
+    exportTarget,
+    requestExportFile,
+    requestExportFolder,
+    requestExportMultiple,
+    readMarkdownForExport,
+    closeExport
+  } = useExportTarget();
+
   const deleteTargetLabel =
     deleteTarget && deleteTarget.kind !== "multiple" && folderPath
       ? getRelativeDisplayPath(folderPath, deleteTarget.path)
@@ -220,14 +204,6 @@ function App() {
     await selectFilePath(filePath);
   };
 
-  const startTitleRename = (initialDraft: string, targetFilePath: string | null) => {
-    skipRenameCommitRef.current = false;
-    renameTargetPathRef.current = targetFilePath;
-    setTitleDraft(initialDraft);
-    setIsRenamingTitle(true);
-    setRenameSessionId((id) => id + 1);
-  };
-
   const handleCreateFile = async (targetDirectory?: string) => {
     const newFilePath = await createNewFile(targetDirectory);
 
@@ -247,117 +223,6 @@ function App() {
         requestId: folderRenameRequestIdRef.current
       });
     }
-  };
-
-  const commitTitleRename = async () => {
-    if (skipRenameCommitRef.current) {
-      return;
-    }
-
-    skipRenameCommitRef.current = true;
-
-    if (titleDraft.trim() === selectedFileBaseName || titleDraft.trim() === "") {
-      setIsRenamingTitle(false);
-      return;
-    }
-
-    const didRename = await renameSelectedFile(titleDraft);
-
-    if (didRename) {
-      setIsRenamingTitle(false);
-    } else {
-      skipRenameCommitRef.current = false;
-      titleInputRef.current?.focus();
-    }
-  };
-
-  const cancelTitleRename = () => {
-    skipRenameCommitRef.current = true;
-    setIsRenamingTitle(false);
-  };
-
-  const requestDeleteFile = (filePath: string) => {
-    setDeleteTarget({ kind: "file", path: filePath });
-  };
-
-  const requestDeleteFolder = (folderPath: string) => {
-    setDeleteTarget({ kind: "folder", path: folderPath });
-  };
-
-  const requestDeleteMultiple = (paths: Array<{ kind: "file" | "folder"; path: string }>) => {
-    if (paths.length === 0) {
-      return;
-    }
-
-    if (paths.length === 1) {
-      setDeleteTarget(paths[0]);
-      return;
-    }
-
-    setDeleteTarget({ kind: "multiple", paths });
-  };
-
-  // Toolbar delete button: acts on the file tree's current multi-selection
-  // (fileTreeSelection) rather than just the single file open in the editor,
-  // so it stays consistent with the context menu's batch delete.
-  const requestDeleteFromToolbar = () => {
-    if (fileTreeSelection.length === 0) {
-      if (selectedFilePath) {
-        requestDeleteFile(selectedFilePath);
-      }
-      return;
-    }
-
-    if (!folderPath) {
-      return;
-    }
-
-    void Promise.all(
-      fileTreeSelection.map(async (entry) => ({
-        kind: entry.kind,
-        path: entry.kind === "folder" ? await join(folderPath, entry.path) : entry.path
-      }))
-    ).then(requestDeleteMultiple);
-  };
-
-  const requestExportFile = (filePath: string) => {
-    setExportTarget({
-      kind: "file",
-      sourcePath: filePath,
-      defaultName: getDefaultExportBaseName(filePath)
-    });
-  };
-
-  const requestExportFolder = (exportFolderPath: string) => {
-    setExportTarget({
-      kind: "folder",
-      sourcePath: exportFolderPath,
-      defaultName: getDefaultExportBaseName(exportFolderPath)
-    });
-  };
-
-  const requestExportMultiple = (entries: Array<{ kind: "file" | "folder"; path: string }>) => {
-    if (entries.length === 0) {
-      return;
-    }
-
-    if (entries.length === 1) {
-      const [entry] = entries;
-
-      if (entry.kind === "file") {
-        requestExportFile(entry.path);
-      } else {
-        requestExportFolder(entry.path);
-      }
-
-      return;
-    }
-
-    setExportTarget({
-      kind: "multiple",
-      entries,
-      defaultName: t("exportDialog.defaultMultipleName")
-    });
   };
 
   const requestImportFiles = async () => {
@@ -383,74 +248,6 @@ function App() {
   const handleImported = (createdFilePaths: string[]) => {
     registerImportedFiles(createdFilePaths);
   };
-
-  // Prefers unsaved in-memory content over the on-disk state, so an export
-  // always matches what the user currently sees in the editor.
-  const readMarkdownForExport = async (filePath: string): Promise<string> => {
-    const document = useAppStore.getState().fileDocuments[filePath];
-    return document ? document.content : readMarkdownFile(filePath);
-  };
-
-  const cancelDeleteTarget = () => {
-    if (isDeleting) {
-      return;
-    }
-
-    setDeleteTarget(null);
-  };
-
-  const confirmDeleteTarget = async () => {
-    if (!deleteTarget) {
-      return;
-    }
-
-    setIsDeleting(true);
-
-    if (deleteTarget.kind === "multiple") {
-      // Sequential: each store call reads fresh state via get(), so parallel
-      // calls would clobber each other's writes.
-      for (const entry of deleteTarget.paths) {
-        await (entry.kind === "file" ? deleteFilePath(entry.path) : deleteFolderPath(entry.path));
-      }
-
-      setIsDeleting(false);
-      setDeleteTarget(null);
-      return;
-    }
-
-    const didDelete =
-      deleteTarget.kind === "file"
-        ? await deleteFilePath(deleteTarget.path)
-        : await deleteFolderPath(deleteTarget.path);
-    setIsDeleting(false);
-
-    if (didDelete) {
-      setDeleteTarget(null);
-    }
-  };
-
-  useEffect(() => {
-    if (selectedFilePath !== renameTargetPathRef.current) {
-      setIsRenamingTitle(false);
-      skipRenameCommitRef.current = false;
-    }
-  }, [selectedFilePath]);
-
-  useEffect(() => {
-    setIsAiLoading(false);
-    setIsAiActionPending(false);
-  }, [selectedFilePath]);
-
-  useEffect(() => {
-    if (isRenamingTitle) {
-      titleInputRef.current?.focus();
-      titleInputRef.current?.select();
-    }
-    // renameSessionId ensures focus/selection are reset even when a new
-    // rename starts while isRenamingTitle was already true from the previous
-    // session (e.g. quickly creating another file before the old blur committed).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRenamingTitle, renameSessionId]);
 
   const closeUnsavedDialog = () => {
     setPendingNavigation(null);
@@ -483,234 +280,24 @@ function App() {
   };
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) {
-        return;
-      }
-
-      const key = event.key.toLowerCase();
-
-      if (key === "s") {
-        event.preventDefault();
-
-        if (selectedFilePath) {
-          void saveSelectedFile();
-        }
-
-        return;
-      }
-
-      if (key === "o" && !event.shiftKey) {
-        event.preventDefault();
-        void openFolderSafely();
-        return;
-      }
-
-      // Browser-style zoom: Ctrl+Plus / Ctrl+Minus / Ctrl+0. "=" covers
-      // layouts where Plus is the shifted key on "=".
-      if (key === "+" || key === "=") {
-        event.preventDefault();
-        const { zoomLevel, setZoomLevel } = useEditorSettingsStore.getState();
-        setZoomLevel(zoomLevel + ZOOM_STEP);
-        return;
-      }
-
-      if (key === "-") {
-        event.preventDefault();
-        const { zoomLevel, setZoomLevel } = useEditorSettingsStore.getState();
-        setZoomLevel(zoomLevel - ZOOM_STEP);
-        return;
-      }
-
-      if (key === "0") {
-        event.preventDefault();
-        useEditorSettingsStore.getState().setZoomLevel(0);
-        return;
-      }
-
-      if (key === "n") {
-        event.preventDefault();
-        void handleCreateFile();
-        return;
-      }
-
-      if (key === "p") {
-        event.preventDefault();
-
-        if (selectedFilePath) {
-          editorHandleRef.current?.printDocument();
-        }
-
-        return;
-      }
-
-      if (key === "#" || event.code === "Backslash") {
-        event.preventDefault();
-        setIsShortcutsOpen(true);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [saveSelectedFile, selectedFilePath, openFolderSafely, handleCreateFile]);
+    setIsAiLoading(false);
+    setIsAiActionPending(false);
+  }, [selectedFilePath]);
 
   useEffect(() => {
     void loadAiSettings();
   }, [loadAiSettings]);
 
-  const zoomLevel = useEditorSettingsStore((state) => state.zoomLevel);
-
-  useEffect(() => {
-    // Native webview zoom behaves like browser zoom: the layout reflows and
-    // viewport units adapt, unlike CSS zoom on the body (which leaves 100vh
-    // at its unscaled size and produces empty space when zooming out).
-    void getCurrentWebview()
-      .setZoom(1 + zoomLevel / 100)
-      .catch(() => {
-        // Outside the Tauri shell (plain `npm run dev`) fall back to CSS zoom.
-        document.body.style.setProperty("zoom", String(1 + zoomLevel / 100));
-      });
-  }, [zoomLevel]);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const loadStartupFolder = async () => {
-      const startupFolderPath = await invoke<string | null>("get_startup_folder_path");
-      const targetFolderPath = startupFolderPath ?? getLastOpenedFolderPath();
-
-      if (!isActive || !targetFolderPath) {
-        return;
-      }
-
-      const didOpenFolder = await openFolderAtPath(targetFolderPath);
-
-      if (!didOpenFolder && !startupFolderPath) {
-        clearLastOpenedFolderPath();
-      }
-    };
-
-    void loadStartupFolder();
-
-    return () => {
-      isActive = false;
-    };
-  }, [openFolderAtPath]);
-
-  useEffect(() => {
-    if (!checkForUpdatesEnabled || !isWindowsPlatform()) {
-      return;
-    }
-
-    let isActive = true;
-
-    const checkForUpdates = async () => {
-      try {
-        const update = await check();
-
-        if (isActive && update) {
-          setAvailableUpdate(update);
-        }
-      } catch {
-        // Update-Check darf den App-Start nicht blockieren.
-      }
-    };
-
-    void checkForUpdates();
-
-    return () => {
-      isActive = false;
-    };
-  }, [checkForUpdatesEnabled]);
-
-  useEffect(() => {
-    let isMounted = true;
-    let debounceHandle: number | undefined;
-    let unlisten: (() => void) | null = null;
-
-    const registerListener = async () => {
-      const cleanup = await listen<string>(FOLDER_FILES_CHANGED_EVENT, (event) => {
-        const currentFolderPath = useAppStore.getState().folderPath;
-
-        if (!currentFolderPath || event.payload !== currentFolderPath) {
-          return;
-        }
-
-        if (debounceHandle !== undefined) {
-          window.clearTimeout(debounceHandle);
-        }
-
-        debounceHandle = window.setTimeout(() => {
-          if (isMounted) {
-            void refreshFolderFiles();
-          }
-        }, 150);
-      });
-
-      unlisten = cleanup;
-    };
-
-    void registerListener();
-
-    return () => {
-      isMounted = false;
-
-      if (debounceHandle !== undefined) {
-        window.clearTimeout(debounceHandle);
-      }
-
-      unlisten?.();
-    };
-  }, [refreshFolderFiles]);
-
-  const handleSidebarResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) {
-      return;
-    }
-
-    event.preventDefault();
-    const startX = event.clientX;
-    const startWidth = sidebarWidth;
-    setIsResizingSidebar(true);
-    document.body.classList.add("is-resizing-sidebar");
-
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      setSidebarWidth(clampSidebarWidth(startWidth + (moveEvent.clientX - startX)));
-    };
-
-    const stopResizing = () => {
-      setIsResizingSidebar(false);
-      document.body.classList.remove("is-resizing-sidebar");
-      setSidebarWidth((currentWidth) => {
-        persistSidebarWidth(currentWidth);
-        return currentWidth;
-      });
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", stopResizing);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", stopResizing);
-  };
-
-  const handleSidebarResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      setSidebarWidth((currentWidth) => {
-        const nextWidth = clampSidebarWidth(currentWidth - SIDEBAR_KEYBOARD_STEP);
-        persistSidebarWidth(nextWidth);
-        return nextWidth;
-      });
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      setSidebarWidth((currentWidth) => {
-        const nextWidth = clampSidebarWidth(currentWidth + SIDEBAR_KEYBOARD_STEP);
-        persistSidebarWidth(nextWidth);
-        return nextWidth;
-      });
-    }
-  };
+  useStartupFolder(openFolderAtPath);
+  useFolderWatcher(refreshFolderFiles);
+  useGlobalShortcuts({
+    selectedFilePath,
+    saveSelectedFile,
+    openFolderSafely,
+    createFile: handleCreateFile,
+    showShortcuts: () => setIsShortcutsOpen(true),
+    editorHandleRef
+  });
 
   return (
     <main className="app-shell" aria-label={t("app.shellLabel")}>
@@ -770,213 +357,98 @@ function App() {
             aria-orientation="vertical"
             aria-label={t("app.sidebarResizeLabel")}
             aria-valuenow={sidebarWidth}
-            aria-valuemin={MIN_SIDEBAR_WIDTH}
-            aria-valuemax={MAX_SIDEBAR_WIDTH}
+            aria-valuemin={SIDEBAR_MIN_WIDTH}
+            aria-valuemax={SIDEBAR_MAX_WIDTH}
             tabIndex={0}
-            onPointerDown={handleSidebarResizeStart}
-            onKeyDown={handleSidebarResizeKeyDown}
+            onPointerDown={handleResizeStart}
+            onKeyDown={handleResizeKeyDown}
           >
             <span className="workspace-resizer__grip" aria-hidden="true" />
           </div>
 
-          <section className="detail-panel" aria-label={t("app.documentAreaLabel")}>
-            {selectedFilePath ? (
-              <div className="detail-panel__card detail-panel__card--document">
-                <div className="detail-panel__header">
-                  <div className="detail-panel__title">
-                    {isRenamingTitle ? (
-                      <h2 className="detail-panel__title-edit">
-                        {selectedFileDirectoryLabel ? (
-                          <span className="detail-panel__title-prefix">
-                            {selectedFileDirectoryLabel}
-                          </span>
-                        ) : null}
-                        <input
-                          ref={titleInputRef}
-                          className="detail-panel__title-input"
-                          value={titleDraft}
-                          onChange={(event) => setTitleDraft(event.target.value)}
-                          onBlur={() => void commitTitleRename()}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              event.preventDefault();
-                              void commitTitleRename();
-                            } else if (event.key === "Escape") {
-                              event.preventDefault();
-                              cancelTitleRename();
-                            }
-                          }}
-                          aria-label={t("app.fileNameLabel")}
-                          spellCheck={false}
-                        />
-                        <span className="detail-panel__title-suffix">.md</span>
-                      </h2>
-                    ) : (
-                      <>
-                        <h2>{selectedFileLabel}</h2>
-                        <button
-                          type="button"
-                          className="detail-panel__title-edit-button"
-                          onClick={() =>
-                            startTitleRename(selectedFileBaseName, selectedFilePath)
-                          }
-                          aria-label={t("app.renameFile")}
-                          title={t("app.renameFile")}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                  <div className="detail-panel__status-group">
-                    {isAiLoading ? (
-                      <div className="detail-panel__ai-chip" aria-live="polite">
-                        <span className="detail-panel__ai-chip-message">{t("app.aiRequestRunning")}</span>
-                        <button
-                          type="button"
-                          className="detail-panel__ai-chip-cancel"
-                          onClick={() => editorHandleRef.current?.cancelAiRequest()}
-                          aria-label={t("app.aiRequestCancel")}
-                          title={t("app.aiRequestCancel")}
-                        >
-                          <Square size={10} fill="currentColor" strokeWidth={0} />
-                        </button>
-                      </div>
-                    ) : null}
-                    <div
-                      className={cn(
-                        "detail-panel__status",
-                        isSaving && "detail-panel__status--saving",
-                        isDirty && "detail-panel__status--dirty",
-                        isSelectedFileMissing && "detail-panel__status--warning"
-                      )}
-                      aria-live="polite"
-                    >
-                      {isSaving
-                        ? t("app.statusSaving")
-                        : isSelectedFileMissing
-                          ? t("app.statusFileRemoved")
-                          : isDirty
-                            ? t("app.statusUnsaved")
-                            : t("app.statusSaved")}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="detail-panel__body">
-                  {fileError || saveError ? (
-                    <div className="detail-panel__message detail-panel__message--error">
-                      {fileError ?? saveError}
-                    </div>
-                  ) : isFileLoading || selectedFileContent === null ? (
-                    <div className="detail-panel__message">
-                      {t("app.fileLoading")}
-                    </div>
-                  ) : (
-                    <Editor
-                      key={selectedFilePath}
-                      ref={editorHandleRef}
-                      markdown={selectedFileContent}
-                      onMarkdownChange={updateSelectedFileContent}
-                      folderPath={folderPath}
-                      filePath={selectedFilePath}
-                      editorFocusRequestId={editorFocusRequestId}
-                      onRequestSidebarFocus={() => setSidebarFocusRequestId((id) => id + 1)}
-                      onRequestFileOpen={(targetFilePath) => void selectFilePathSafely(targetFilePath)}
-                      onAiLoadingChange={setIsAiLoading}
-                      onAiPendingChange={setIsAiActionPending}
-                      onAiSettingsRequest={() => {
-                        setSettingsInitialTab("ai");
-                        setIsAiSettingsOpen(true);
-                      }}
-                      onAssistantSettingsRequest={() => {
-                        setSettingsInitialTab("assistants");
-                        setIsAiSettingsOpen(true);
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="detail-panel__card detail-panel__card--empty">
-                <p className="detail-panel__eyebrow">{t("app.emptyEyebrow")}</p>
-                <h2>{t("app.emptyTitle")}</h2>
-                {appVersion ? <p className="detail-panel__version">{t("app.version", { version: appVersion })}</p> : null}
-              </div>
-            )}
-          </section>
+          <DocumentPanel
+            selectedFilePath={selectedFilePath}
+            selectedFileLabel={selectedFileLabel}
+            selectedFileDirectoryLabel={selectedFileDirectoryLabel}
+            folderPath={folderPath}
+            selectedFileContent={selectedFileContent}
+            appVersion={appVersion}
+            isRenamingTitle={isRenamingTitle}
+            titleDraft={titleDraft}
+            titleInputRef={titleInputRef}
+            onTitleDraftChange={setTitleDraft}
+            onCommitTitleRename={() => void commitTitleRename()}
+            onCancelTitleRename={cancelTitleRename}
+            onStartTitleRename={() => startTitleRename(selectedFileBaseName, selectedFilePath)}
+            isAiLoading={isAiLoading}
+            isSaving={isSaving}
+            isDirty={isDirty}
+            isSelectedFileMissing={isSelectedFileMissing}
+            isFileLoading={isFileLoading}
+            fileError={fileError}
+            saveError={saveError}
+            editorHandleRef={editorHandleRef}
+            editorFocusRequestId={editorFocusRequestId}
+            onMarkdownChange={updateSelectedFileContent}
+            onRequestSidebarFocus={() => setSidebarFocusRequestId((id) => id + 1)}
+            onRequestFileOpen={(targetFilePath) => void selectFilePathSafely(targetFilePath)}
+            onAiLoadingChange={setIsAiLoading}
+            onAiPendingChange={setIsAiActionPending}
+            onAiSettingsRequest={() => {
+              setSettingsInitialTab("ai");
+              setIsAiSettingsOpen(true);
+            }}
+            onAssistantSettingsRequest={() => {
+              setSettingsInitialTab("assistants");
+              setIsAiSettingsOpen(true);
+            }}
+          />
         </section>
       </div>
 
-      <UnsavedChangesDialog
-        open={isUnsavedDialogOpen}
-        targetLabel={pendingTargetLabel}
-        currentFileLabel={selectedFileLabel}
+      <AppDialogs
+        isUnsavedDialogOpen={isUnsavedDialogOpen}
+        pendingTargetLabel={pendingTargetLabel}
+        selectedFileLabel={selectedFileLabel}
         isSaving={isSaving}
-        hasPendingAiAction={isAiActionPending}
-        onSave={() => void continuePendingNavigation("save")}
-        onDiscard={() => void continuePendingNavigation("discard")}
-        onCancel={closeUnsavedDialog}
-      />
-
-      <SettingsDialog
-        open={isAiSettingsOpen}
-        initialTab={settingsInitialTab}
-        settings={aiSettings}
-        onSave={(nextSettings) => {
-          updateAiSettings(nextSettings);
-          setIsAiSettingsOpen(false);
-        }}
-        onClose={() => setIsAiSettingsOpen(false)}
+        isAiActionPending={isAiActionPending}
+        onSaveNavigation={() => void continuePendingNavigation("save")}
+        onDiscardNavigation={() => void continuePendingNavigation("discard")}
+        onCloseUnsavedDialog={closeUnsavedDialog}
+        isAiSettingsOpen={isAiSettingsOpen}
+        settingsInitialTab={settingsInitialTab}
+        aiSettings={aiSettings}
+        onSaveSettings={updateAiSettings}
+        onCloseSettings={() => setIsAiSettingsOpen(false)}
         onAssistantEditRequest={(assistant) => {
           // Editing happens in its own modal; the settings dialog closes and
           // reopens on the assistants tab once editing is done.
           setIsAiSettingsOpen(false);
           setAssistantEditTarget({ assistant });
         }}
-      />
-
-      <AssistantEditDialog
-        open={assistantEditTarget !== null}
-        assistant={assistantEditTarget?.assistant ?? null}
-        onClose={() => {
+        assistantEditTarget={assistantEditTarget}
+        onCloseAssistantEdit={() => {
           setAssistantEditTarget(null);
           setSettingsInitialTab("assistants");
           setIsAiSettingsOpen(true);
         }}
-      />
-
-      <ShortcutsDialog open={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
-
-      <DeleteFileDialog
-        open={deleteTarget !== null}
-        kind={deleteTarget && deleteTarget.kind !== "multiple" ? deleteTarget.kind : "file"}
-        fileLabel={deleteTargetLabel}
-        count={deleteTarget?.kind === "multiple" ? deleteTarget.paths.length : undefined}
+        isShortcutsOpen={isShortcutsOpen}
+        onCloseShortcuts={() => setIsShortcutsOpen(false)}
+        deleteTarget={deleteTarget}
+        deleteTargetLabel={deleteTargetLabel}
         isDeleting={isDeleting}
-        onConfirm={() => void confirmDeleteTarget()}
-        onCancel={cancelDeleteTarget}
-      />
-
-      <ExportDialog
-        target={exportTarget}
-        readMarkdown={readMarkdownForExport}
-        onClose={() => setExportTarget(null)}
-      />
-
-      <ImportDialog
-        files={importFileList}
-        vaultRoot={folderPath}
+        onConfirmDelete={() => void confirmDeleteTarget()}
+        onCancelDelete={cancelDeleteTarget}
+        exportTarget={exportTarget}
+        readMarkdownForExport={readMarkdownForExport}
+        onCloseExport={closeExport}
+        importFileList={importFileList}
+        folderPath={folderPath}
         onImported={handleImported}
-        onClose={() => setImportFileList(null)}
+        onCloseImport={() => setImportFileList(null)}
+        availableUpdate={availableUpdate}
+        onDismissUpdate={dismissUpdate}
       />
-
-      {availableUpdate ? (
-        <UpdateNotification
-          update={availableUpdate}
-          onDismiss={() => setAvailableUpdate(null)}
-        />
-      ) : null}
     </main>
   );
 }

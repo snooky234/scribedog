@@ -277,6 +277,26 @@ export function FileTree({
       onRequestEditorFocus?.();
     }
 
+    if (event.key === "F2") {
+      if (!activeKey) {
+        return;
+      }
+
+      const activeNode = flatNodes.find((node) => getNodeKey(node) === activeKey);
+
+      if (!activeNode) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (activeNode.kind === "folder") {
+        startFolderRename(activeNode.relativePath);
+      } else {
+        startFileRename(activeNode.relativePath);
+      }
+    }
+
     if (event.key === "Delete") {
       const keysToDelete: string[] =
         selectedKeys.size > 1 ? [...selectedKeys] : activeKey ? [activeKey] : [];

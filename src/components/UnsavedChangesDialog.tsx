@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,9 @@ export function UnsavedChangesDialog({
   onCancel
 }: UnsavedChangesDialogProps) {
   const { t } = useTranslation();
+  const cancelButtonRef = useRef<HTMLElement>(null);
+  const discardButtonRef = useRef<HTMLElement>(null);
+  const saveButtonRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!open) {
@@ -42,6 +45,35 @@ export function UnsavedChangesDialog({
 
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, isSaving, onCancel]);
+
+  // Save is the default action here, so it receives focus on open;
+  // Tab/arrow keys move to the other buttons from there. `focusVisible`
+  // forces the focus ring to show — a plain programmatic focus() would
+  // not trigger :focus-visible, leaving the default button unhighlighted.
+  useEffect(() => {
+    if (open) {
+      // `focusVisible` is a valid runtime option in Chromium/WebView2 but is
+      // not yet in the TS FocusOptions type, hence the cast.
+      saveButtonRef.current?.focus({ focusVisible: true } as FocusOptions);
+    }
+  }, [open]);
+
+  const focusAdjacentButton = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+      return;
+    }
+
+    event.preventDefault();
+    const order = [cancelButtonRef, discardButtonRef, saveButtonRef];
+    const currentIndex = order.findIndex((ref) => ref.current === event.currentTarget);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const delta = event.key === "ArrowRight" ? 1 : -1;
+    const nextIndex = (currentIndex + delta + order.length) % order.length;
+    order[nextIndex].current?.focus();
+  };
 
   if (!open) {
     return null;
@@ -90,13 +122,33 @@ export function UnsavedChangesDialog({
         </div>
 
         <div className="unsaved-dialog__actions">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
+          <Button
+            ref={cancelButtonRef}
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            onKeyDown={focusAdjacentButton}
+            disabled={isSaving}
+          >
             {t("common.cancel")}
           </Button>
-          <Button type="button" variant="secondary" onClick={onDiscard} disabled={isSaving}>
+          <Button
+            ref={discardButtonRef}
+            type="button"
+            variant="secondary"
+            onClick={onDiscard}
+            onKeyDown={focusAdjacentButton}
+            disabled={isSaving}
+          >
             {t("common.discard")}
           </Button>
-          <Button type="button" onClick={onSave} disabled={isSaving}>
+          <Button
+            ref={saveButtonRef}
+            type="button"
+            onClick={onSave}
+            onKeyDown={focusAdjacentButton}
+            disabled={isSaving}
+          >
             {isSaving ? t("common.saving") : t("common.save")}
           </Button>
         </div>

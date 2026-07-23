@@ -1,6 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { open } from "@tauri-apps/plugin-dialog";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { EditorContent, type Editor as TipTapEditor, useEditor } from "@tiptap/react";
 
@@ -20,7 +22,13 @@ import { extractErrorMessage } from "@/lib/editor/errorMessages";
 import { getImageFilesFromClipboard, getImageFilesFromDataTransfer } from "@/lib/editor/imageTransfer";
 import { moveListItem } from "@/lib/editor/listCommands";
 import { getEditorMarkdown } from "@/lib/editor/markdownStorage";
-import { getRelativeImageMarkdownPath, saveImageToFolder } from "@/lib/fileSystem";
+import {
+  allowFileAccess,
+  getLastOpenedFolderPath,
+  getRelativeImageMarkdownPath,
+  guessImageMimeType,
+  saveImageToFolder
+} from "@/lib/fileSystem";
 import { updateSearchHighlight } from "@/lib/searchHighlight";
 import { printMarkdown } from "@/lib/print";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
@@ -158,10 +166,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       .run();
   };
 
-  const insertImageFiles = async (files: File[], insertPos: number) => {
+  type ImagePayload = { fileName: string; mimeType: string; data: Uint8Array };
+
+  const insertImagePayloads = async (payloads: ImagePayload[], insertPos: number) => {
     const currentEditor = editorRef.current;
 
-    if (!currentEditor || files.length === 0) {
+    if (!currentEditor || payloads.length === 0) {
       return;
     }
 
@@ -175,12 +185,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
     let pos = insertPos;
 
-    for (const file of files) {
+    for (const { fileName, mimeType, data } of payloads) {
       try {
-        const data = new Uint8Array(await file.arrayBuffer());
-        const rootRelativePath = await saveImageToFolder(folderPath, file.name, file.type, data);
+        const rootRelativePath = await saveImageToFolder(folderPath, fileName, mimeType, data);
         const markdownPath = await getRelativeImageMarkdownPath(folderPath, filePath, rootRelativePath);
-        const altText = file.name.replace(/\.[^.]+$/, "");
+        const altText = fileName.replace(/\.[^.]+$/, "");
 
         const sizeBefore = currentEditor.state.doc.content.size;
         currentEditor
@@ -194,10 +203,92 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       } catch (error) {
         ai.setAiStatus({
           kind: "error",
-          message: t("editor.imageInsertFailed", { fileName: file.name, error: extractErrorMessage(error, t) })
+          message: t("editor.imageInsertFailed", { fileName, error: extractErrorMessage(error, t) })
         });
       }
     }
+  };
+
+  const insertImageFiles = async (files: File[], insertPos: number) => {
+    const payloads = await Promise.all(
+      files.map(async (file) => ({
+        fileName: file.name,
+        mimeType: file.type,
+        data: new Uint8Array(await file.arrayBuffer())
+      }))
+    );
+
+    await insertImagePayloads(payloads, insertPos);
+  };
+
+  // Toolbar image button: pick one or more image files via the native file
+  // dialog, opened at the currently open vault (falling back to the last
+  // opened folder), then insert them like a paste/drop.
+  const handleImageInsertRequest = async () => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor) {
+      return;
+    }
+
+    if (!folderPath || !filePath) {
+      ai.setAiStatus({
+        kind: "error",
+        message: t("editor.imageRequiresFile")
+      });
+      return;
+    }
+
+    let selection: string | string[] | null;
+
+    try {
+      selection = await open({
+        multiple: true,
+        directory: false,
+        defaultPath: folderPath ?? getLastOpenedFolderPath() ?? undefined,
+        title: t("editor.imageDialogTitle"),
+        filters: [
+          {
+            name: t("editor.imageDialogFilter"),
+            extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"]
+          }
+        ]
+      });
+    } catch (error) {
+      ai.setAiStatus({
+        kind: "error",
+        message: extractErrorMessage(error, t)
+      });
+      return;
+    }
+
+    const paths = Array.isArray(selection) ? selection : selection ? [selection] : [];
+
+    if (paths.length === 0) {
+      return;
+    }
+
+    const payloads: ImagePayload[] = [];
+
+    for (const path of paths) {
+      try {
+        await allowFileAccess(path);
+        const data = await readFile(path);
+        const fileName = path.replace(/\\/g, "/").split("/").pop() ?? "image";
+
+        payloads.push({ fileName, mimeType: guessImageMimeType(path), data });
+      } catch (error) {
+        ai.setAiStatus({
+          kind: "error",
+          message: t("editor.imageInsertFailed", {
+            fileName: path.replace(/\\/g, "/").split("/").pop() ?? path,
+            error: extractErrorMessage(error, t)
+          })
+        });
+      }
+    }
+
+    await insertImagePayloads(payloads, currentEditor.state.selection.from);
   };
 
   const printDocument = () => {
@@ -282,6 +373,19 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       },
       handleKeyDown: (view, event) => {
         if (event.key === "Tab" && event.shiftKey && !event.ctrlKey && !event.metaKey) {
+          // Inside a list, Shift+Tab decreases the indent (handled by the
+          // list extensions' keymap); only outside a list does it move focus
+          // to the sidebar.
+          const currentEditor = editorRef.current;
+          const inList =
+            currentEditor?.isActive("bulletList") ||
+            currentEditor?.isActive("orderedList") ||
+            currentEditor?.isActive("taskList");
+
+          if (inList) {
+            return false;
+          }
+
           event.preventDefault();
           onRequestSidebarFocus?.();
           return true;
@@ -351,21 +455,10 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return true;
         }
 
-        if (key === "1") {
+        if (key >= "1" && key <= "6" && !event.shiftKey && !event.altKey) {
           event.preventDefault();
-          editorRef.current?.chain().focus().toggleHeading({ level: 1 }).run();
-          return true;
-        }
-
-        if (key === "2") {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleHeading({ level: 2 }).run();
-          return true;
-        }
-
-        if (key === "3") {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleHeading({ level: 3 }).run();
+          const level = Number(key) as 1 | 2 | 3 | 4 | 5 | 6;
+          editorRef.current?.chain().focus().toggleHeading({ level }).run();
           return true;
         }
 
@@ -406,7 +499,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return true;
         }
 
-        if (key === "x" && event.shiftKey) {
+        if (key === "x" && event.shiftKey && !event.altKey) {
           if (!view.state.selection.empty) {
             event.preventDefault();
             ai.runAiGrammarCheck();
@@ -500,6 +593,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       <Toolbar
         editor={editor}
         onLinkRequest={handleLinkRequest}
+        onImageInsertRequest={handleImageInsertRequest}
         onAiRequest={ai.openAiDraftFromSelection}
         onAiCheckRequest={ai.runAiGrammarCheck}
         onAiSettingsRequest={onAiSettingsRequest}

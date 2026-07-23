@@ -18,6 +18,7 @@ type ShortcutDefinition = {
 const SHORTCUTS: ShortcutDefinition[] = [
   { id: "openFolder", keys: [[{ mod: "ctrl" }, { literal: "O" }]], descriptionKey: "shortcutsDialog.items.openFolder" },
   { id: "newFile", keys: [[{ mod: "ctrl" }, { literal: "N" }]], descriptionKey: "shortcutsDialog.items.newFile" },
+  { id: "renameEntry", keys: [[{ literal: "F2" }]], descriptionKey: "shortcutsDialog.items.renameEntry" },
   { id: "saveFile", keys: [[{ mod: "ctrl" }, { literal: "S" }]], descriptionKey: "shortcutsDialog.items.saveFile" },
   { id: "printFile", keys: [[{ mod: "ctrl" }, { literal: "P" }]], descriptionKey: "shortcutsDialog.items.printFile" },
   { id: "findReplace", keys: [[{ mod: "ctrl" }, { literal: "F" }]], descriptionKey: "shortcutsDialog.items.findReplace" },
@@ -46,6 +47,11 @@ const SHORTCUTS: ShortcutDefinition[] = [
     keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "X" }]],
     descriptionKey: "shortcutsDialog.items.aiCheckDialog"
   },
+  {
+    id: "toggleSpellcheck",
+    keys: [[{ mod: "ctrl" }, { mod: "alt" }, { mod: "shift" }, { literal: "X" }]],
+    descriptionKey: "shortcutsDialog.items.toggleSpellcheck"
+  },
   { id: "bold", keys: [[{ mod: "ctrl" }, { literal: "B" }]], descriptionKey: "shortcutsDialog.items.bold" },
   { id: "italic", keys: [[{ mod: "ctrl" }, { literal: "I" }]], descriptionKey: "shortcutsDialog.items.italic" },
   { id: "underline", keys: [[{ mod: "ctrl" }, { literal: "U" }]], descriptionKey: "shortcutsDialog.items.underline" },
@@ -61,6 +67,19 @@ const SHORTCUTS: ShortcutDefinition[] = [
   { id: "heading1", keys: [[{ mod: "ctrl" }, { literal: "1" }]], descriptionKey: "shortcutsDialog.items.heading1" },
   { id: "heading2", keys: [[{ mod: "ctrl" }, { literal: "2" }]], descriptionKey: "shortcutsDialog.items.heading2" },
   { id: "heading3", keys: [[{ mod: "ctrl" }, { literal: "3" }]], descriptionKey: "shortcutsDialog.items.heading3" },
+  { id: "heading4", keys: [[{ mod: "ctrl" }, { literal: "4" }]], descriptionKey: "shortcutsDialog.items.heading4" },
+  { id: "heading5", keys: [[{ mod: "ctrl" }, { literal: "5" }]], descriptionKey: "shortcutsDialog.items.heading5" },
+  { id: "heading6", keys: [[{ mod: "ctrl" }, { literal: "6" }]], descriptionKey: "shortcutsDialog.items.heading6" },
+  {
+    id: "indentIncrease",
+    keys: [[{ literal: "Tab" }]],
+    descriptionKey: "shortcutsDialog.items.indentIncrease"
+  },
+  {
+    id: "indentDecrease",
+    keys: [[{ mod: "shift" }, { literal: "Tab" }]],
+    descriptionKey: "shortcutsDialog.items.indentDecrease"
+  },
   { id: "blockquote", keys: [[{ mod: "ctrl" }, { literal: "Q" }]], descriptionKey: "shortcutsDialog.items.blockquote" },
   { id: "inlineCode", keys: [[{ mod: "ctrl" }, { literal: "G" }]], descriptionKey: "shortcutsDialog.items.inlineCode" },
   { id: "codeBlock", keys: [[{ mod: "ctrl" }, { literal: "K" }]], descriptionKey: "shortcutsDialog.items.codeBlock" },

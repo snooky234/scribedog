@@ -10,6 +10,7 @@ import { AiStreamWidget } from "@/lib/aiStreamWidget";
 import { SearchHighlight } from "@/lib/searchHighlight";
 import { VoiceInsertWidget } from "@/lib/voiceInsertWidget";
 
+import { Callout } from "./callout";
 import { CodeBlock } from "./codeBlock";
 import { EditorImage } from "./image";
 import { TaskList } from "./taskList";
@@ -22,6 +23,7 @@ export function buildEditorExtensions(): Extensions {
   return [
     StarterKit.configure({ codeBlock: false }),
     CodeBlock,
+    Callout,
     TaskList,
     TaskItem.configure({ nested: true }),
     EditorImage,
