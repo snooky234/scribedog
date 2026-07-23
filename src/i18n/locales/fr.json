@@ -176,6 +176,7 @@
       "saveFile": "Enregistrer le fichier",
       "printFile": "Imprimer le fichier",
       "findReplace": "Rechercher et remplacer",
+      "zenMode": "Basculer le mode Zen (écriture sans distraction)",
       "aiEditDialog": "Ouvrir la boîte de dialogue d'édition IA",
       "aiVoiceDialog": "Ouvrir le dialogue IA avec saisie vocale",
       "dictation": "Dicter dans l'éditeur (démarrer/arrêter)",
@@ -188,6 +189,7 @@
       "insertLink": "Insérer/modifier un lien",
       "bulletList": "Insérer une liste à puces (sélection ou position du curseur)",
       "checkbox": "Insérer une case à cocher (sélection ou position du curseur)",
+      "checkboxToggle": "Cocher/décocher la case",
       "orderedList": "Insérer une liste numérotée (sélection ou position du curseur)",
       "strikethrough": "Barré",
       "heading1": "Titre 1",
@@ -250,6 +252,8 @@
     "aiCheckButtonTitle": "Vérifier l'orthographe/la grammaire (Ctrl+Maj+X)",
     "aiCheckButtonTitleDisabled": "Sélectionnez d'abord du texte pour vérifier l'orthographe/la grammaire",
     "aiCheckButtonLabel": "Vérifier",
+    "zenModeButton": "Mode Zen",
+    "zenModeButtonTitle": "Mode Zen (Ctrl+Maj+Z)",
     "bold": "Gras",
     "boldTitle": "Gras (Ctrl+B)",
     "italic": "Italique",
@@ -463,5 +467,10 @@
       "progress": "{{downloaded}} sur {{total}} Mo",
       "failed": "Le téléchargement a échoué : {{error}}"
     }
+  },
+  "zenMode": {
+    "exitLabel": "Quitter le mode Zen",
+    "exitTooltip": "Quitter le mode Zen (Ctrl+Maj+Z)",
+    "resizeLabel": "Ajuster la largeur du texte"
   }
 }

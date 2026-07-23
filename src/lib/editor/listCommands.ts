@@ -53,3 +53,31 @@ export function moveListItem(view: EditorView, direction: "up" | "down"): boolea
   view.dispatch(tr);
   return true;
 }
+
+// Toggles the checked state of the task item the cursor is currently in.
+// TipTap's task-item extension only flips this attribute via a click on the
+// rendered checkbox, so this walks up to the enclosing taskItem node and
+// flips its "checked" attribute directly for keyboard-driven use.
+export function toggleTaskItemChecked(view: EditorView): boolean {
+  const { state } = view;
+  const { $from } = state.selection;
+
+  let taskItemDepth = -1;
+  for (let depth = $from.depth; depth > 0; depth--) {
+    if ($from.node(depth).type.name === "taskItem") {
+      taskItemDepth = depth;
+      break;
+    }
+  }
+
+  if (taskItemDepth === -1) {
+    return false;
+  }
+
+  const pos = $from.before(taskItemDepth);
+  const node = $from.node(taskItemDepth);
+
+  const tr = state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, checked: !node.attrs.checked });
+  view.dispatch(tr);
+  return true;
+}

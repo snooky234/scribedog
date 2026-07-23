@@ -178,6 +178,7 @@
       "saveFile": "Сохранить файл",
       "printFile": "Печать файла",
       "findReplace": "Поиск и замена",
+      "zenMode": "Переключить режим Zen (письмо без отвлечений)",
       "aiEditDialog": "Открыть диалог редактирования ИИ",
       "aiVoiceDialog": "Открыть диалог ИИ с голосовым вводом",
       "dictation": "Диктовать в редактор (старт/стоп)",
@@ -190,6 +191,7 @@
       "insertLink": "Вставить/изменить ссылку",
       "bulletList": "Вставить маркированный список (выделение или позиция курсора)",
       "checkbox": "Вставить флажок (выделение или позиция курсора)",
+      "checkboxToggle": "Отметить/снять отметку с флажка",
       "orderedList": "Вставить нумерованный список (выделение или позиция курсора)",
       "strikethrough": "Зачёркнутый",
       "heading1": "Заголовок 1",
@@ -252,6 +254,8 @@
     "aiCheckButtonTitle": "Проверить орфографию/грамматику (Ctrl+Shift+X)",
     "aiCheckButtonTitleDisabled": "Сначала выделите текст, чтобы проверить орфографию/грамматику",
     "aiCheckButtonLabel": "Проверить",
+    "zenModeButton": "Режим Zen",
+    "zenModeButtonTitle": "Режим Zen (Ctrl+Shift+Z)",
     "bold": "Жирный",
     "boldTitle": "Жирный (Ctrl+B)",
     "italic": "Курсив",
@@ -465,5 +469,10 @@
       "progress": "{{downloaded}} из {{total}} МБ",
       "failed": "Загрузка не удалась: {{error}}"
     }
+  },
+  "zenMode": {
+    "exitLabel": "Выйти из режима Zen",
+    "exitTooltip": "Выйти из режима Zen (Ctrl+Shift+Z)",
+    "resizeLabel": "Настроить ширину текста"
   }
 }

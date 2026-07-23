@@ -23,6 +23,11 @@ const SHORTCUTS: ShortcutDefinition[] = [
   { id: "printFile", keys: [[{ mod: "ctrl" }, { literal: "P" }]], descriptionKey: "shortcutsDialog.items.printFile" },
   { id: "findReplace", keys: [[{ mod: "ctrl" }, { literal: "F" }]], descriptionKey: "shortcutsDialog.items.findReplace" },
   {
+    id: "zenMode",
+    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "Z" }]],
+    descriptionKey: "shortcutsDialog.items.zenMode"
+  },
+  {
     id: "aiEditDialog",
     keys: [[{ mod: "ctrl" }, { literal: "E" }], [{ special: "rightClick" }]],
     descriptionKey: "shortcutsDialog.items.aiEditDialog"
@@ -63,6 +68,11 @@ const SHORTCUTS: ShortcutDefinition[] = [
     descriptionKey: "shortcutsDialog.items.orderedList"
   },
   { id: "checkbox", keys: [[{ mod: "ctrl" }, { literal: "," }]], descriptionKey: "shortcutsDialog.items.checkbox" },
+  {
+    id: "checkboxToggle",
+    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "," }]],
+    descriptionKey: "shortcutsDialog.items.checkboxToggle"
+  },
   { id: "strikethrough", keys: [[{ mod: "ctrl" }, { literal: "D" }]], descriptionKey: "shortcutsDialog.items.strikethrough" },
   { id: "heading1", keys: [[{ mod: "ctrl" }, { literal: "1" }]], descriptionKey: "shortcutsDialog.items.heading1" },
   { id: "heading2", keys: [[{ mod: "ctrl" }, { literal: "2" }]], descriptionKey: "shortcutsDialog.items.heading2" },

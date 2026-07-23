@@ -6,6 +6,7 @@ import type { EditorHandle } from "@/components/Editor";
 import { Sidebar } from "@/components/Sidebar";
 import { AppDialogs } from "@/components/app/AppDialogs";
 import { DocumentPanel } from "@/components/app/DocumentPanel";
+import { ZenMode } from "@/components/app/ZenMode";
 import type { BatchEntry, PendingFolderRename } from "@/components/FileTree";
 import { useAppVersion } from "@/hooks/useAppVersion";
 import { useDeleteTarget } from "@/hooks/useDeleteTarget";
@@ -21,12 +22,14 @@ import { useStartupFolder } from "@/hooks/useStartupFolder";
 import { useTitleRename } from "@/hooks/useTitleRename";
 import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import { useWebviewZoom } from "@/hooks/useWebviewZoom";
+import { useZenMode } from "@/hooks/useZenMode";
 import { getRelativeDisplayPath } from "@/lib/fileSystem";
 import { IMPORT_FILE_EXTENSIONS } from "@/lib/import/importer";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
 import type { Assistant } from "@/store/useAssistantsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
+import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 import "./App.css";
 
@@ -124,6 +127,11 @@ function App() {
 
   const { sidebarWidth, isResizingSidebar, handleResizeStart, handleResizeKeyDown } =
     useSidebarWidth();
+
+  const zenWidth = useEditorSettingsStore((state) => state.zenWidth);
+  const { isZenMode, enterZenMode, exitZenMode } = useZenMode({
+    canEnter: () => selectedFilePath !== null
+  });
 
   useWebviewZoom();
 
@@ -300,10 +308,14 @@ function App() {
   });
 
   return (
-    <main className="app-shell" aria-label={t("app.shellLabel")}>
+    <main
+      className={cn("app-shell", isZenMode && "app-shell--zen")}
+      aria-label={t("app.shellLabel")}
+      style={{ "--zen-width": `${zenWidth}px` } as React.CSSProperties}
+    >
       <div className="workspace">
         <section
-          className="workspace-grid"
+          className={cn("workspace-grid", isZenMode && "workspace-grid--zen")}
           aria-label={t("app.workspaceLabel")}
           style={{ "--sidebar-width": `${sidebarWidth}px` } as React.CSSProperties}
         >
@@ -402,9 +414,12 @@ function App() {
               setSettingsInitialTab("assistants");
               setIsAiSettingsOpen(true);
             }}
+            onZenModeRequest={enterZenMode}
           />
         </section>
       </div>
+
+      {isZenMode ? <ZenMode onExit={exitZenMode} isDirty={isDirty} /> : null}
 
       <AppDialogs
         isUnsavedDialogOpen={isUnsavedDialogOpen}

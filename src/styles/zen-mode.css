@@ -1,0 +1,153 @@
+/* Zen mode: distraction-free full-screen writing with an adjustable, centred
+   text column (issue #33). The column width comes from --zen-width, set on
+   .app-shell from useEditorSettingsStore. */
+
+.workspace-grid--zen {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Strip everything but the text: sidebar, its resizer, the toolbar and the
+   document header (title + save/AI status). */
+.workspace-grid--zen .sidebar-panel,
+.workspace-grid--zen .workspace-resizer,
+.workspace-grid--zen .editor-toolbar,
+.workspace-grid--zen .detail-panel__header {
+  display: none;
+}
+
+/* Drop the panel's card chrome so the page reads as a bare document. */
+.workspace-grid--zen .detail-panel__card {
+  border-color: transparent;
+}
+
+.workspace-grid--zen .detail-panel__card::before {
+  background: transparent;
+}
+
+.dark .workspace-grid--zen .detail-panel__card::before {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* Centre the editing surface into a comfortable column instead of stretching
+   it across the full window. Only Zen mode is affected. Extra inline padding
+   (beyond editor-content.css's default) gives the text breathing room from
+   the column edge, where the resize handles sit. */
+.workspace-grid--zen .editor-view__surface {
+  max-width: var(--zen-width, 760px);
+  margin-inline: auto;
+  padding-inline: 4rem;
+  background: transparent;
+}
+
+/* Persistent exit control, always visible in the top-left corner. */
+.zen-exit {
+  position: fixed;
+  top: 0.9rem;
+  left: 0.9rem;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid rgba(var(--overlay-rgb), 0.12);
+  border-radius: 0.7rem;
+  background: rgba(var(--surface-strong-rgb), 0.9);
+  color: rgba(var(--text-rgb), 0.75);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.zen-exit:hover {
+  color: rgba(var(--text-rgb), 0.98);
+  background: rgba(var(--surface-active-rgb), 0.95);
+  border-color: rgba(var(--overlay-rgb), 0.22);
+}
+
+/* Darken the scrollbar (the OS/WebView default dark-mode thumb reads too
+   light against the near-black Zen background) and inset it so its centre
+   lines up with the dirty dot above (.zen-dirty: right 1.15rem, 0.7rem wide
+   -> centre 1.5rem from the edge). */
+.workspace-grid--zen .editor-view__scroll {
+  scrollbar-color: rgba(var(--muted-rgb), 0.1) transparent;
+  margin-right: 1.175rem;
+}
+
+.workspace-grid--zen .editor-view__scroll::-webkit-scrollbar {
+  width: 0.65rem;
+}
+
+.workspace-grid--zen .editor-view__scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.workspace-grid--zen .editor-view__scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background-color: rgba(var(--muted-rgb), 0.1);
+}
+
+.workspace-grid--zen .editor-view__scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--muted-rgb), 0.2);
+}
+
+/* Unsaved-changes indicator, mirroring the sidebar's dirty dot
+   (.sidebar-panel__item-dirty) but positioned in the top-right corner. */
+.zen-dirty {
+  position: fixed;
+  top: 1.15rem;
+  right: 1.15rem;
+  z-index: 60;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 9999px;
+  background: #fde68a;
+  box-shadow: 0 0 0 4px rgba(253, 230, 138, 0.12);
+}
+
+/* Draggable edges of the text column, positioned on the viewport centre so
+   they line up with the centred surface (both use --zen-width). */
+.zen-resizer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.zen-resizer--left {
+  left: calc(50% - var(--zen-width, 760px) / 2 - 7px);
+}
+
+.zen-resizer--right {
+  left: calc(50% + var(--zen-width, 760px) / 2 - 7px);
+}
+
+.zen-resizer__grip {
+  width: 2px;
+  height: 100%;
+  border-radius: 9999px;
+  background: rgba(var(--muted-rgb), 0.01);
+  transition: background-color 0.15s ease, width 0.15s ease;
+}
+
+.zen-resizer:hover .zen-resizer__grip,
+.zen-resizer:focus-visible .zen-resizer__grip,
+body.is-resizing-zen .zen-resizer__grip {
+  width: 3px;
+  background: rgba(var(--muted-rgb), 0.55);
+}
+
+.zen-resizer:focus-visible {
+  outline: none;
+}
+
+body.is-resizing-zen {
+  cursor: col-resize;
+  user-select: none;
+}

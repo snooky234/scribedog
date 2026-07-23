@@ -176,6 +176,7 @@
       "saveFile": "Datei speichern",
       "printFile": "Datei drucken",
       "findReplace": "Suchen & Ersetzen",
+      "zenMode": "Zen-Modus umschalten (ablenkungsfreies Schreiben)",
       "aiEditDialog": "KI-Bearbeiten-Dialog öffnen",
       "aiVoiceDialog": "KI-Dialog mit Spracheingabe öffnen",
       "dictation": "In den Editor diktieren (Start/Stopp)",
@@ -188,6 +189,7 @@
       "insertLink": "Link einfügen/bearbeiten",
       "bulletList": "Aufzählung einfügen (Markierung oder Cursorposition)",
       "checkbox": "Checkbox einfügen (Markierung oder Cursorposition)",
+      "checkboxToggle": "Checkbox anhaken/abhaken",
       "orderedList": "Nummerierte Liste einfügen (Markierung oder Cursorposition)",
       "strikethrough": "Durchgestrichen",
       "heading1": "Überschrift 1",
@@ -250,6 +252,8 @@
     "aiCheckButtonTitle": "Rechtschreibung/Grammatik prüfen (Strg+Umschalt+X)",
     "aiCheckButtonTitleDisabled": "Zuerst Text markieren, um Rechtschreibung/Grammatik zu prüfen",
     "aiCheckButtonLabel": "Prüfen",
+    "zenModeButton": "Zen-Modus",
+    "zenModeButtonTitle": "Zen-Modus (Strg+Umschalt+Z)",
     "bold": "Fett",
     "boldTitle": "Fett (Strg+B)",
     "italic": "Kursiv",
@@ -463,5 +467,10 @@
       "progress": "{{downloaded}} von {{total}} MB",
       "failed": "Der Download ist fehlgeschlagen: {{error}}"
     }
+  },
+  "zenMode": {
+    "exitLabel": "Zen-Modus verlassen",
+    "exitTooltip": "Zen-Modus verlassen (Strg+Umschalt+Z)",
+    "resizeLabel": "Textbreite anpassen"
   }
 }

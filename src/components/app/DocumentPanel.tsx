@@ -38,6 +38,7 @@ type DocumentPanelProps = {
   onAiPendingChange: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
   onAssistantSettingsRequest: () => void;
+  onZenModeRequest: () => void;
 };
 
 export function DocumentPanel({
@@ -69,7 +70,8 @@ export function DocumentPanel({
   onAiLoadingChange,
   onAiPendingChange,
   onAiSettingsRequest,
-  onAssistantSettingsRequest
+  onAssistantSettingsRequest,
+  onZenModeRequest
 }: DocumentPanelProps) {
   const { t } = useTranslation();
 
@@ -180,6 +182,7 @@ export function DocumentPanel({
                 onAiPendingChange={onAiPendingChange}
                 onAiSettingsRequest={onAiSettingsRequest}
                 onAssistantSettingsRequest={onAssistantSettingsRequest}
+                onZenModeRequest={onZenModeRequest}
               />
             )}
           </div>

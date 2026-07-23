@@ -20,7 +20,7 @@ import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { buildEditorExtensions } from "@/lib/editor/extensions";
 import { extractErrorMessage } from "@/lib/editor/errorMessages";
 import { getImageFilesFromClipboard, getImageFilesFromDataTransfer } from "@/lib/editor/imageTransfer";
-import { moveListItem } from "@/lib/editor/listCommands";
+import { moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
 import { getEditorMarkdown } from "@/lib/editor/markdownStorage";
 import {
   allowFileAccess,
@@ -46,6 +46,7 @@ type EditorProps = {
   onAiPendingChange?: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
   onAssistantSettingsRequest: () => void;
+  onZenModeRequest: () => void;
 };
 
 export type EditorHandle = {
@@ -65,7 +66,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onAiLoadingChange,
     onAiPendingChange,
     onAiSettingsRequest,
-    onAssistantSettingsRequest
+    onAssistantSettingsRequest,
+    onZenModeRequest
   },
   ref
 ) {
@@ -449,9 +451,18 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return true;
         }
 
-        if (key === ",") {
+        if (event.code === "Comma") {
+          // Shift changes what event.key reports for this key (e.g. "<" on
+          // US layout), so the physical key code is checked instead to keep
+          // both the plain and Shift variant working across layouts.
           event.preventDefault();
-          editorRef.current?.chain().focus().toggleTaskList().run();
+
+          if (event.shiftKey) {
+            toggleTaskItemChecked(view);
+          } else {
+            editorRef.current?.chain().focus().toggleTaskList().run();
+          }
+
           return true;
         }
 
@@ -600,6 +611,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         onAssistantSettingsRequest={onAssistantSettingsRequest}
         onPrintRequest={printDocument}
         onSearchRequest={openFindPanel}
+        onZenModeRequest={onZenModeRequest}
       />
 
       <EditorFileContext.Provider value={{ folderPath, filePath }}>

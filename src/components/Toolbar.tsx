@@ -8,6 +8,7 @@ import {
   CheckSquare,
   CircleCheck,
   EllipsisVertical,
+  Focus,
   Heading,
   Heading1,
   Heading2,
@@ -75,6 +76,7 @@ type ToolbarProps = {
   onAssistantSettingsRequest: () => void;
   onPrintRequest: () => void;
   onSearchRequest: () => void;
+  onZenModeRequest: () => void;
 };
 
 const OPEN_AI_SETTINGS_VALUE = "__open-ai-settings__";
@@ -472,7 +474,8 @@ export function Toolbar({
   onAiSettingsRequest,
   onAssistantSettingsRequest,
   onPrintRequest,
-  onSearchRequest
+  onSearchRequest,
+  onZenModeRequest
 }: ToolbarProps) {
   const { t } = useTranslation();
   const [, forceRerender] = useState(0);
@@ -744,6 +747,19 @@ export function Toolbar({
           <Search />
         </Button>
         <ZoomControl />
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="outline"
+          aria-label={t("toolbar.zenModeButton")}
+          title={t("toolbar.zenModeButtonTitle")}
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
+          onClick={onZenModeRequest}
+        >
+          <Focus />
+        </Button>
         <EditorOptionsMenu onPrintRequest={onPrintRequest} />
       </div>
     </div>

@@ -176,6 +176,7 @@
       "saveFile": "Save file",
       "printFile": "Print file",
       "findReplace": "Find & replace",
+      "zenMode": "Toggle Zen mode (distraction-free writing)",
       "aiEditDialog": "Open AI edit dialog",
       "aiVoiceDialog": "Open AI dialog with voice input",
       "dictation": "Dictate into the editor (start/stop)",
@@ -188,6 +189,7 @@
       "insertLink": "Insert/edit link",
       "bulletList": "Insert bullet list (selection or cursor position)",
       "checkbox": "Insert checkbox (selection or cursor position)",
+      "checkboxToggle": "Toggle checkbox (mark task as done)",
       "orderedList": "Insert numbered list (selection or cursor position)",
       "strikethrough": "Strikethrough",
       "heading1": "Heading 1",
@@ -250,6 +252,8 @@
     "aiCheckButtonTitle": "Check spelling/grammar (Ctrl+Shift+X)",
     "aiCheckButtonTitleDisabled": "Select text first to check spelling/grammar",
     "aiCheckButtonLabel": "Check",
+    "zenModeButton": "Zen mode",
+    "zenModeButtonTitle": "Zen mode (Ctrl+Shift+Z)",
     "bold": "Bold",
     "boldTitle": "Bold (Ctrl+B)",
     "italic": "Italic",
@@ -463,5 +467,10 @@
       "progress": "{{downloaded}} of {{total}} MB",
       "failed": "The download failed: {{error}}"
     }
+  },
+  "zenMode": {
+    "exitLabel": "Exit Zen mode",
+    "exitTooltip": "Exit Zen mode (Ctrl+Shift+Z)",
+    "resizeLabel": "Adjust text width"
   }
 }

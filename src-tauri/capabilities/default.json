@@ -6,6 +6,8 @@
   "permissions": [
     "core:default",
     "core:webview:allow-set-webview-zoom",
+    "core:window:allow-is-fullscreen",
+    "core:window:allow-set-fullscreen",
     "dialog:allow-open",
     "opener:default",
     {

@@ -178,6 +178,7 @@
       "saveFile": "Зберегти файл",
       "printFile": "Друк файлу",
       "findReplace": "Пошук і заміна",
+      "zenMode": "Перемкнути режим Zen (письмо без відволікань)",
       "aiEditDialog": "Відкрити діалог редагування ШІ",
       "aiVoiceDialog": "Відкрити діалог ШІ з голосовим введенням",
       "dictation": "Диктувати в редактор (старт/стоп)",
@@ -190,6 +191,7 @@
       "insertLink": "Вставити/редагувати посилання",
       "bulletList": "Вставити маркований список (виділення або позиція курсора)",
       "checkbox": "Вставити прапорець (виділення або позиція курсора)",
+      "checkboxToggle": "Позначити/зняти позначку з прапорця",
       "orderedList": "Вставити нумерований список (виділення або позиція курсора)",
       "strikethrough": "Закреслений",
       "heading1": "Заголовок 1",
@@ -252,6 +254,8 @@
     "aiCheckButtonTitle": "Перевірити орфографію/граматику (Ctrl+Shift+X)",
     "aiCheckButtonTitleDisabled": "Спочатку виділіть текст, щоб перевірити орфографію/граматику",
     "aiCheckButtonLabel": "Перевірити",
+    "zenModeButton": "Режим Zen",
+    "zenModeButtonTitle": "Режим Zen (Ctrl+Shift+Z)",
     "bold": "Жирний",
     "boldTitle": "Жирний (Ctrl+B)",
     "italic": "Курсив",
@@ -465,5 +469,10 @@
       "progress": "{{downloaded}} з {{total}} МБ",
       "failed": "Завантаження не вдалося: {{error}}"
     }
+  },
+  "zenMode": {
+    "exitLabel": "Вийти з режиму Zen",
+    "exitTooltip": "Вийти з режиму Zen (Ctrl+Shift+Z)",
+    "resizeLabel": "Налаштувати ширину тексту"
   }
 }

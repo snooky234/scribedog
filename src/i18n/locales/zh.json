@@ -176,6 +176,7 @@
       "saveFile": "保存文件",
       "printFile": "打印文件",
       "findReplace": "查找和替换",
+      "zenMode": "切换禅模式（专注写作）",
       "aiEditDialog": "打开 AI 编辑对话框",
       "aiVoiceDialog": "打开带语音输入的 AI 对话框",
       "dictation": "向编辑器口述（开始/停止）",
@@ -188,6 +189,7 @@
       "insertLink": "插入/编辑链接",
       "bulletList": "插入项目符号列表（选中内容或光标位置）",
       "checkbox": "插入复选框（选中内容或光标位置）",
+      "checkboxToggle": "切换复选框的勾选状态",
       "orderedList": "插入编号列表（选中内容或光标位置）",
       "strikethrough": "删除线",
       "heading1": "标题 1",
@@ -250,6 +252,8 @@
     "aiCheckButtonTitle": "检查拼写/语法（Ctrl+Shift+X）",
     "aiCheckButtonTitleDisabled": "请先选择文本以检查拼写/语法",
     "aiCheckButtonLabel": "检查",
+    "zenModeButton": "禅模式",
+    "zenModeButtonTitle": "禅模式 (Ctrl+Shift+Z)",
     "bold": "粗体",
     "boldTitle": "粗体（Ctrl+B）",
     "italic": "斜体",
@@ -463,5 +467,10 @@
       "progress": "{{downloaded}} / {{total}} MB",
       "failed": "下载失败：{{error}}"
     }
+  },
+  "zenMode": {
+    "exitLabel": "退出禅模式",
+    "exitTooltip": "退出禅模式 (Ctrl+Shift+Z)",
+    "resizeLabel": "调整文本宽度"
   }
 }

@@ -176,6 +176,7 @@
       "saveFile": "ファイルを保存",
       "printFile": "ファイルを印刷",
       "findReplace": "検索と置換",
+      "zenMode": "Zen モードの切り替え（集中して書く）",
       "aiEditDialog": "AI 編集ダイアログを開く",
       "aiVoiceDialog": "音声入力付きでAIダイアログを開く",
       "dictation": "エディターに音声入力する（開始/停止）",
@@ -188,6 +189,7 @@
       "insertLink": "リンクを挿入/編集",
       "bulletList": "箇条書きリストを挿入（選択範囲またはカーソル位置）",
       "checkbox": "チェックボックスを挿入（選択範囲またはカーソル位置）",
+      "checkboxToggle": "チェックボックスのオン/オフを切り替え",
       "orderedList": "番号付きリストを挿入（選択範囲またはカーソル位置）",
       "strikethrough": "取り消し線",
       "heading1": "見出し 1",
@@ -250,6 +252,8 @@
     "aiCheckButtonTitle": "スペル・文法をチェック（Ctrl+Shift+X）",
     "aiCheckButtonTitleDisabled": "スペル・文法をチェックするには、先にテキストを選択してください",
     "aiCheckButtonLabel": "チェック",
+    "zenModeButton": "Zen モード",
+    "zenModeButtonTitle": "Zen モード (Ctrl+Shift+Z)",
     "bold": "太字",
     "boldTitle": "太字（Ctrl+B）",
     "italic": "斜体",
@@ -463,5 +467,10 @@
       "progress": "{{downloaded}} / {{total}} MB",
       "failed": "ダウンロードに失敗しました: {{error}}"
     }
+  },
+  "zenMode": {
+    "exitLabel": "Zen モードを終了",
+    "exitTooltip": "Zen モードを終了 (Ctrl+Shift+Z)",
+    "resizeLabel": "テキストの幅を調整"
   }
 }

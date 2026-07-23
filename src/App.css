@@ -23,6 +23,7 @@
 @import "./styles/responsive.css";
 @import "./styles/print.css";
 @import "./styles/find.css";
+@import "./styles/zen-mode.css";
 
 @theme inline {
   --font-heading: var(--font-sans);
