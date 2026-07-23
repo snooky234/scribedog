@@ -36,7 +36,7 @@ serde_json = "1"
 # upstream whisper.cpp ships with, while MSVC only implements OpenMP 2.0 (2002)
 # and linking it adds a vcomp140.dll runtime dependency. What actually decides
 # transcription speed here is whisper-toolchain.cmake — see the comment there.
-whisper-rs = "0.14"
+whisper-rs = "0.16"
 cpal = "0.15"
 
 [target.'cfg(windows)'.dependencies]
