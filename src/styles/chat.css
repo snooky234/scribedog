@@ -1,0 +1,650 @@
+/* Right-hand AI chat side panel (Copilot-style). Lives as the fourth column of
+   .workspace-grid when open; see .workspace-grid--chat-open in base.css. */
+
+.chat-column {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* In Zen mode the grid collapses to a single column, which would stack the
+   chat below the editor as a full-width horizontal bar. Restore a vertical
+   side column: the centred editor keeps the remaining space, the chat sits on
+   the right. Higher specificity (two classes) beats the single-class zen and
+   chat-open rules regardless of import order. */
+.workspace-grid--zen.workspace-grid--chat-open {
+  grid-template-columns: minmax(0, 1fr) var(--chat-width, 380px);
+  gap: 1rem;
+}
+
+.chat-panel,
+.chat-overview {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  border: 1px solid rgba(var(--overlay-rgb), 0.1);
+  border-radius: 1rem;
+  background: rgba(var(--surface-rgb), 0.9);
+  overflow: hidden;
+}
+
+.chat-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(var(--overlay-rgb), 0.1);
+}
+
+.chat-panel__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-panel__header-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: rgba(var(--text-rgb), 0.7);
+  cursor: pointer;
+}
+
+.chat-panel__header-button:hover {
+  background: rgba(var(--overlay-rgb), 0.08);
+  color: rgba(var(--text-rgb), 0.95);
+}
+
+/* --- Messages ---------------------------------------------------------- */
+
+.chat-panel__messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 0.85rem;
+}
+
+.chat-panel__empty {
+  margin: auto;
+  text-align: center;
+  color: rgba(var(--text-rgb), 0.55);
+  font-size: 0.85rem;
+}
+
+/* --- Recent sessions inside an empty chat ------------------------------- */
+
+.chat-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chat-recent__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.15rem;
+}
+
+.chat-recent__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(var(--text-rgb), 0.5);
+}
+
+.chat-recent__more {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: rgb(168, 85, 247);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.chat-recent__more:hover {
+  text-decoration: underline;
+}
+
+.chat-recent__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.chat-recent__item {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0.35rem 0.45rem;
+  cursor: pointer;
+}
+
+.chat-recent__item:hover {
+  background: rgba(var(--overlay-rgb), 0.07);
+}
+
+.chat-recent__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.83rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-recent__meta {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: rgba(var(--text-rgb), 0.45);
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-width: 92%;
+}
+
+.chat-message--user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.chat-message--assistant {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.chat-message__bubble {
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* The passage a user turn was asked about, quoted above the bubble. */
+.chat-message__selection {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.5rem;
+  background: rgba(var(--overlay-rgb), 0.05);
+  color: rgba(var(--text-rgb), 0.6);
+  font-size: 0.74rem;
+  font-style: italic;
+}
+
+.chat-message__selection span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-message--user .chat-message__bubble {
+  background: linear-gradient(120deg, rgba(168, 85, 247, 0.9), rgba(147, 51, 234, 0.9));
+  color: rgba(245, 240, 255, 0.98);
+  border-bottom-right-radius: 0.25rem;
+}
+
+.chat-message--assistant .chat-message__bubble {
+  background: rgba(var(--overlay-rgb), 0.07);
+  color: rgba(var(--text-rgb), 0.95);
+  border-bottom-left-radius: 0.25rem;
+}
+
+/* Rendered Markdown from the assistant: reset the pre-wrap used for plain
+   bubbles and give the block elements chat-sized spacing. */
+.chat-message__bubble--markdown {
+  white-space: normal;
+}
+
+.chat-message__bubble--markdown > :first-child {
+  margin-top: 0;
+}
+
+.chat-message__bubble--markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.chat-message__bubble--markdown p {
+  margin: 0.5rem 0;
+}
+
+.chat-message__bubble--markdown h1,
+.chat-message__bubble--markdown h2,
+.chat-message__bubble--markdown h3,
+.chat-message__bubble--markdown h4,
+.chat-message__bubble--markdown h5,
+.chat-message__bubble--markdown h6 {
+  margin: 0.75rem 0 0.35rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.chat-message__bubble--markdown h1 { font-size: 1.15rem; }
+.chat-message__bubble--markdown h2 { font-size: 1.05rem; }
+.chat-message__bubble--markdown h3 { font-size: 0.98rem; }
+.chat-message__bubble--markdown h4,
+.chat-message__bubble--markdown h5,
+.chat-message__bubble--markdown h6 { font-size: 0.9rem; }
+
+.chat-message__bubble--markdown ul,
+.chat-message__bubble--markdown ol {
+  margin: 0.5rem 0;
+  padding-left: 1.35rem;
+}
+
+.chat-message__bubble--markdown li {
+  margin: 0.2rem 0;
+}
+
+.chat-message__bubble--markdown li > p {
+  margin: 0;
+}
+
+.chat-message__bubble--markdown a {
+  color: rgb(168, 85, 247);
+  text-decoration: underline;
+}
+
+.chat-message__bubble--markdown strong {
+  font-weight: 600;
+}
+
+.chat-message__bubble--markdown code {
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.35rem;
+  background: rgba(var(--overlay-rgb), 0.12);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82em;
+}
+
+.chat-message__bubble--markdown pre {
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.6rem;
+  background: rgba(var(--overlay-rgb), 0.12);
+  overflow-x: auto;
+}
+
+.chat-message__bubble--markdown pre code {
+  padding: 0;
+  background: transparent;
+  font-size: 0.82em;
+}
+
+.chat-message__bubble--markdown blockquote {
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(var(--overlay-rgb), 0.25);
+  color: rgba(var(--text-rgb), 0.75);
+}
+
+.chat-message__bubble--markdown table {
+  margin: 0.5rem 0;
+  border-collapse: collapse;
+}
+
+.chat-message__bubble--markdown th,
+.chat-message__bubble--markdown td {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid rgba(var(--overlay-rgb), 0.18);
+}
+
+.chat-message__bubble--markdown hr {
+  margin: 0.75rem 0;
+  border: none;
+  border-top: 1px solid rgba(var(--overlay-rgb), 0.18);
+}
+
+.chat-message__thinking {
+  padding: 0.4rem 0.6rem;
+  border-left: 2px solid rgba(168, 85, 247, 0.4);
+  color: rgba(var(--text-rgb), 0.5);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-message__cursor {
+  display: inline-flex;
+  align-items: center;
+  color: rgba(var(--text-rgb), 0.4);
+}
+
+.chat-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+}
+
+.chat-thinking-dots span {
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: currentColor;
+  animation: chat-thinking-bounce 1.1s ease-in-out infinite;
+}
+
+.chat-thinking-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.chat-thinking-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes chat-thinking-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-0.15rem);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-thinking-dots span {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+.chat-message__insert {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: none;
+  background: transparent;
+  padding: 0.1rem 0.15rem;
+  color: rgb(168, 85, 247);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.chat-message__insert:hover {
+  text-decoration: underline;
+}
+
+/* --- Agent tool status (read/edit actions the agent took) --------------- */
+
+.chat-tool-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.6rem;
+  background: rgba(var(--overlay-rgb), 0.06);
+  color: rgba(var(--text-rgb), 0.65);
+  font-size: 0.76rem;
+  /* 100%, not a smaller percentage: inside an assistant message the parent is
+     itself shrink-to-fit, so anything below 100% resolves against a width the
+     chip's own content just produced and truncates a label that fits. */
+  max-width: 100%;
+}
+
+.chat-tool-status svg {
+  flex-shrink: 0;
+}
+
+/* Always a single line: a badge that sometimes wraps to two lines and
+   sometimes doesn't for the exact same label reads as broken. Truncating
+   with an ellipsis only kicks in if the 92% max-width above is genuinely
+   too narrow — the labels are short enough that this is rare in practice. */
+.chat-tool-status span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The same chip on the user side (a turn triggered by a chat action button):
+   it belongs with the user's messages, so it follows their alignment instead
+   of the agent's. */
+.chat-message--user .chat-tool-status {
+  align-self: flex-end;
+}
+
+.chat-tool-status--error {
+  background: rgba(220, 38, 38, 0.1);
+  color: rgb(220, 38, 38);
+}
+
+.chat-panel__error {
+  align-self: stretch;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  background: rgba(220, 38, 38, 0.12);
+  color: rgb(220, 38, 38);
+  font-size: 0.82rem;
+}
+
+/* --- Footer / composer ------------------------------------------------- */
+
+.chat-panel__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem 0.75rem;
+  border-top: 1px solid rgba(var(--overlay-rgb), 0.1);
+}
+
+.chat-panel__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(var(--text-rgb), 0.55);
+}
+
+/* The selected passage riding along with the next message. One line, ellipsized:
+   the chip announces the context, it isn't a second view of the document. */
+.chat-panel__selection {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.35rem 0.3rem 0.5rem;
+  border-radius: 0.6rem;
+  border: 1px dashed rgba(var(--overlay-rgb), 0.18);
+  background: rgba(var(--overlay-rgb), 0.05);
+  color: rgba(var(--text-rgb), 0.7);
+  font-size: 0.76rem;
+}
+
+.chat-panel__selection-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-style: italic;
+}
+
+.chat-panel__selection-drop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 0.35rem;
+  color: rgba(var(--text-rgb), 0.55);
+}
+
+.chat-panel__selection-drop:hover {
+  background: rgba(var(--overlay-rgb), 0.1);
+  color: rgba(var(--text-rgb), 0.85);
+}
+
+.chat-panel__input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.chat-panel__input {
+  flex: 1;
+  min-height: 2.5rem;
+  max-height: 12rem;
+  resize: vertical;
+  border: 1px solid rgba(var(--overlay-rgb), 0.14);
+  border-radius: 0.6rem;
+  background: rgba(var(--surface-rgb), 0.95);
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  padding: 0.5rem 0.6rem;
+}
+
+.chat-panel__input:focus-visible {
+  outline: 2px solid rgba(168, 85, 247, 0.6);
+  outline-offset: 1px;
+}
+
+.chat-panel__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chat-panel__assistant-select {
+  flex: 1;
+  min-width: 0;
+  height: 1.9rem;
+  border: 1px solid rgba(var(--overlay-rgb), 0.12);
+  border-radius: 0.5rem;
+  background: rgba(var(--surface-rgb), 0.9);
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0 0.5rem;
+}
+
+.chat-panel__assistant-select:focus-visible {
+  outline: 2px solid rgba(168, 85, 247, 0.6);
+  outline-offset: 1px;
+}
+
+/* --- Session overview -------------------------------------------------- */
+
+.chat-overview__actions {
+  padding: 0.75rem 0.75rem 0;
+}
+
+.chat-overview__new {
+  width: 100%;
+}
+
+.chat-overview__empty {
+  margin: auto;
+  padding: 1rem;
+  text-align: center;
+  color: rgba(var(--text-rgb), 0.55);
+  font-size: 0.85rem;
+}
+
+.chat-overview__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chat-overview__item {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+  border-radius: 0.6rem;
+}
+
+.chat-overview__item:hover {
+  background: rgba(var(--overlay-rgb), 0.06);
+}
+
+.chat-overview__open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0.5rem 0.55rem;
+  cursor: pointer;
+}
+
+.chat-overview__title {
+  font-size: 0.86rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-overview__meta {
+  font-size: 0.72rem;
+  color: rgba(var(--text-rgb), 0.5);
+}
+
+.chat-overview__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: rgba(var(--text-rgb), 0.55);
+  cursor: pointer;
+}
+
+.chat-overview__delete:hover {
+  background: rgba(220, 38, 38, 0.12);
+  color: rgb(220, 38, 38);
+}

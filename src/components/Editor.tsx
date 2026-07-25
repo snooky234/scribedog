@@ -15,13 +15,23 @@ import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { Toolbar } from "@/components/Toolbar";
 import { useAiEditorActions } from "@/components/editor/useAiEditorActions";
 import { useEditorDictation } from "@/components/editor/useEditorDictation";
+import {
+  acceptAllAiSuggestions,
+  addAiSuggestion,
+  clearAiSuggestions,
+  getAiSuggestions
+} from "@/lib/aiSuggestionWidget";
+import type { ImageWidthChange, ProposalOutcome } from "@/lib/chat/agentTools";
+import { normalizeImageSrc } from "@/lib/chat/imageAttachments";
 import { EditorFileContext } from "@/lib/editorFileContext";
-import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { buildEditorExtensions } from "@/lib/editor/extensions";
+import { duplicatedImageSources } from "@/lib/editor/documentImages";
 import { extractErrorMessage } from "@/lib/editor/errorMessages";
+import { resolveInsertAnchor } from "@/lib/editor/insertAnchor";
 import { getImageFilesFromClipboard, getImageFilesFromDataTransfer } from "@/lib/editor/imageTransfer";
 import { moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
 import { getEditorMarkdown } from "@/lib/editor/markdownStorage";
+import { findTextRange } from "@/lib/editor/textSearch";
 import {
   allowFileAccess,
   getLastOpenedFolderPath,
@@ -31,12 +41,14 @@ import {
 } from "@/lib/fileSystem";
 import { updateSearchHighlight } from "@/lib/searchHighlight";
 import { printMarkdown } from "@/lib/print";
+import { useChatStore } from "@/store/useChatStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
 
 type EditorProps = {
   markdown: string;
   onMarkdownChange: (markdown: string) => void;
+  onCanonicalMarkdown?: (filePath: string, markdown: string) => void;
   folderPath: string | null;
   filePath: string | null;
   editorFocusRequestId?: number;
@@ -45,19 +57,40 @@ type EditorProps = {
   onAiLoadingChange?: (isLoading: boolean) => void;
   onAiPendingChange?: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
-  onAssistantSettingsRequest: () => void;
   onZenModeRequest: () => void;
 };
 
 export type EditorHandle = {
   cancelAiRequest: () => void;
   printDocument: () => void;
+  getMarkdown: () => string;
+  getSelectionText: () => string;
+  listImageSources: () => string[];
+  listPendingProposals: () => string[];
+  acceptPendingProposals: () => number;
+  discardPendingProposals: () => number;
+  proposeSelectionReplacement: (markdown: string) => ProposalOutcome;
+  proposeInsertion: (markdown: string, anchorText?: string) => ProposalOutcome;
+  proposePassageReplacement: (oldText: string, newText: string) => ProposalOutcome;
+  setImageWidth: (
+    src: string,
+    request: { width?: number; scale?: number }
+  ) => ImageWidthChange | null;
 };
+
+// The selected passage as plain text — the same form the chat agent's
+// get_selection tool answers with.
+function selectionText(editor: TipTapEditor): string {
+  const { from, to } = editor.state.selection;
+
+  return editor.state.doc.textBetween(from, to, "\n");
+}
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   {
     markdown,
     onMarkdownChange,
+    onCanonicalMarkdown,
     folderPath,
     filePath,
     editorFocusRequestId,
@@ -66,7 +99,6 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onAiLoadingChange,
     onAiPendingChange,
     onAiSettingsRequest,
-    onAssistantSettingsRequest,
     onZenModeRequest
   },
   ref
@@ -307,11 +339,325 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     });
   };
 
-  useImperativeHandle(ref, () => ({ cancelAiRequest: ai.cancelAiRequest, printDocument }), [ai]);
+  // The tools below back the chat agent's document read/edit tool calls (see
+  // src/lib/chat/agentTools.ts) — a lookup indirection is needed because the
+  // store that drives the agent loop cannot reach into the editor component
+  // directly.
+  //
+  // The three editing tools never touch the document themselves: they open a
+  // red/green proposal the user accepts or discards (aiSuggestionWidget.ts),
+  // exactly like the "rewrite with AI" review. Several proposals from one
+  // agent turn can be open at the same time.
+  const getMarkdown = () => {
+    const currentEditor = editorRef.current;
+    return currentEditor ? getEditorMarkdown(currentEditor, markdown) : "";
+  };
 
+  const getSelectionText = () => {
+    const currentEditor = editorRef.current;
+
+    return currentEditor ? selectionText(currentEditor) : "";
+  };
+
+  const syncChatSelection = (currentEditor: TipTapEditor) => {
+    useChatStore.getState().setEditorSelection(selectionText(currentEditor));
+  };
+
+  // Read straight off the doc rather than by parsing the serialized markdown:
+  // the node attribute is the src the editor itself resolves against, so the
+  // agent's get_image can never be handed a path the document doesn't have.
+  const listImageSources = () => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor) {
+      return [];
+    }
+
+    const sources: string[] = [];
+
+    currentEditor.state.doc.descendants((node) => {
+      if (node.type.name !== "image") {
+        return;
+      }
+
+      const src = (node.attrs.src as string | null) ?? "";
+
+      if (src && !sources.includes(src)) {
+        sources.push(src);
+      }
+    });
+
+    return sources;
+  };
+
+  // Bounds for a width the chat agent sets. The lower one matches the drag
+  // handles' MIN_IMAGE_WIDTH (see ImageView); the upper one only exists so a
+  // model that misreads "a bit bigger" as pixels cannot push the image far off
+  // the page.
+  const MIN_AI_IMAGE_WIDTH = 48;
+  const MAX_AI_IMAGE_WIDTH = 4000;
+
+  // Resizing is the one agent tool that edits the document straight away
+  // instead of proposing (see EditorToolBridge in lib/chat/agentTools.ts):
+  // the width is a node attribute, so it lands as its own undo step and the
+  // user sees the result in the document immediately.
+  const setImageWidth = (
+    src: string,
+    request: { width?: number; scale?: number }
+  ): ImageWidthChange | null => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor) {
+      return null;
+    }
+
+    const target = normalizeImageSrc(src);
+    let position = -1;
+    let attrs: Record<string, unknown> | null = null;
+
+    currentEditor.state.doc.descendants((node, pos) => {
+      if (position !== -1) {
+        return false;
+      }
+
+      if (node.type.name === "image" && normalizeImageSrc((node.attrs.src as string | null) ?? "") === target) {
+        position = pos;
+        attrs = node.attrs;
+        return false;
+      }
+
+      return true;
+    });
+
+    if (position === -1 || attrs === null) {
+      return null;
+    }
+
+    const currentAttrs = attrs as Record<string, unknown>;
+
+    // Without an explicit width the markdown says nothing about the image's
+    // size, so a relative request ("a bit bigger") has no number to work
+    // from — the rendered image does. Measuring the NodeView's <img> is what
+    // makes the first scale request on an untouched image work at all.
+    const renderedDom = currentEditor.view.nodeDOM(position);
+    const renderedImage =
+      renderedDom instanceof HTMLElement
+        ? renderedDom instanceof HTMLImageElement
+          ? renderedDom
+          : renderedDom.querySelector("img")
+        : null;
+    const measuredWidth = renderedImage ? Math.round(renderedImage.getBoundingClientRect().width) : null;
+    const previousWidth = (currentAttrs.width as number | null) ?? (measuredWidth || null);
+
+    let nextWidth: number | null;
+
+    if (request.width === 0) {
+      // Explicit "back to the original size": drop the attribute entirely so
+      // the markdown loses its width= title again.
+      nextWidth = null;
+    } else if (typeof request.width === "number" && request.width > 0) {
+      nextWidth = request.width;
+    } else if (request.scale && previousWidth) {
+      nextWidth = Math.round(previousWidth * request.scale);
+    } else {
+      return null;
+    }
+
+    if (nextWidth !== null) {
+      nextWidth = Math.min(MAX_AI_IMAGE_WIDTH, Math.max(MIN_AI_IMAGE_WIDTH, nextWidth));
+    }
+
+    currentEditor.view.dispatch(
+      currentEditor.state.tr.setNodeMarkup(position, undefined, { ...currentAttrs, width: nextWidth })
+    );
+
+    return { src: target, width: nextWidth, previousWidth };
+  };
+
+  const createSuggestionId = () =>
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `suggestion-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  // Same text, whitespace aside — a model re-proposing a change it believes
+  // got lost writes it out again, not byte for byte.
+  const isSameProposal = (a: string, b: string) =>
+    a.replace(/\s+/g, " ").trim() === b.replace(/\s+/g, " ").trim();
+
+  const listPendingProposals = (): string[] => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor) {
+      return [];
+    }
+
+    return getAiSuggestions(currentEditor).map((suggestion) => {
+      const preview = suggestion.replacement.replace(/\s+/g, " ").trim();
+
+      return preview.length > 70 ? `${preview.slice(0, 70)}…` : preview;
+    });
+  };
+
+  // Both back the chat's accept_proposals/discard_proposals tools: saying
+  // "apply that" in the chat has to do the same thing as clicking every
+  // widget's button. They return how many proposals they acted on so the tool
+  // result can name a number instead of claiming something happened.
+  const acceptPendingProposals = (): number => {
+    const currentEditor = editorRef.current;
+
+    return currentEditor ? acceptAllAiSuggestions(currentEditor) : 0;
+  };
+
+  // Wipes the open proposals without applying any of them. The document is not
+  // touched, so this is not an undo step — nothing had been inserted yet.
+  const discardPendingProposals = (): number => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor) {
+      return 0;
+    }
+
+    const count = getAiSuggestions(currentEditor).length;
+    clearAiSuggestions(currentEditor);
+
+    return count;
+  };
+
+  const proposeSelectionReplacement = (markdownText: string): ProposalOutcome => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor) {
+      return "failed";
+    }
+
+    const { from, to, empty } = currentEditor.state.selection;
+
+    if (empty) {
+      return "failed";
+    }
+
+    if (duplicatedImageSources(currentEditor.state.doc, markdownText, from, to).length > 0) {
+      return "image-duplicate";
+    }
+
+    addAiSuggestion(currentEditor, { id: createSuggestionId(), from, to, replacement: markdownText });
+    return "proposed";
+  };
+
+  const proposeInsertion = (markdownText: string, anchorText?: string): ProposalOutcome => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor || !markdownText.trim()) {
+      return "failed";
+    }
+
+    const doc = currentEditor.state.doc;
+    // Without an anchor the insertion lands at the caret, which is wherever
+    // the user last clicked in the document — see insertAnchor.ts for why a
+    // named anchor is the better answer whenever the model has one.
+    const anchor = anchorText?.trim() ? resolveInsertAnchor(doc, anchorText) : null;
+
+    if (anchorText?.trim() && anchor === null) {
+      return "anchor-not-found";
+    }
+
+    // An insertion only ever adds, so *any* image it carries that the document
+    // already shows would end up in there twice.
+    if (duplicatedImageSources(doc, markdownText, 0, 0).length > 0) {
+      return "image-duplicate";
+    }
+
+    if (getAiSuggestions(currentEditor).some((open) => isSameProposal(open.replacement, markdownText))) {
+      return "duplicate";
+    }
+
+    // An empty range: nothing gets tinted red, the proposal is purely the new
+    // text at that position.
+    const from = anchor ?? currentEditor.state.selection.from;
+
+    addAiSuggestion(currentEditor, { id: createSuggestionId(), from, to: from, replacement: markdownText });
+    return "proposed";
+  };
+
+  const proposePassageReplacement = (oldText: string, newText: string): ProposalOutcome => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor || !oldText) {
+      return "failed";
+    }
+
+    const doc = currentEditor.state.doc;
+    const open = getAiSuggestions(currentEditor);
+
+    // A passage can occur several times, and one agent turn can propose a
+    // change for each occurrence — so skip past matches that already carry a
+    // proposal instead of stacking them all on the first hit. An occurrence
+    // whose open proposal says the same thing is not a further occurrence
+    // though: that is the model proposing its own change a second time.
+    let searchFrom = 0;
+    let found = findTextRange(doc, searchFrom, doc.content.size, oldText);
+
+    while (found) {
+      const overlapping = open.filter(
+        (suggestion) => suggestion.from < found!.to && found!.from < suggestion.to
+      );
+
+      if (overlapping.length === 0) {
+        break;
+      }
+
+      if (overlapping.some((suggestion) => isSameProposal(suggestion.replacement, newText))) {
+        return "duplicate";
+      }
+
+      searchFrom = found.to;
+      found = searchFrom < doc.content.size ? findTextRange(doc, searchFrom, doc.content.size, oldText) : null;
+    }
+
+    if (!found) {
+      return "not-found";
+    }
+
+    if (duplicatedImageSources(doc, newText, found.from, found.to).length > 0) {
+      return "image-duplicate";
+    }
+
+    addAiSuggestion(currentEditor, {
+      id: createSuggestionId(),
+      from: found.from,
+      to: found.to,
+      replacement: newText
+    });
+    return "proposed";
+  };
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      cancelAiRequest: ai.cancelAiRequest,
+      printDocument,
+      getMarkdown,
+      getSelectionText,
+      listImageSources,
+      listPendingProposals,
+      acceptPendingProposals,
+      discardPendingProposals,
+      proposeSelectionReplacement,
+      proposeInsertion,
+      proposePassageReplacement,
+      setImageWidth
+    }),
+    [ai, markdown]
+  );
+
+  // The file's markdown goes into the editor verbatim: normalizing it here
+  // (e.g. unescaping "\[ \]" into a real checkbox) rewrites the document
+  // against what's on disk, and the file shows up as unsaved the moment it is
+  // opened. AI output is normalized where it enters the document instead —
+  // see useAiEditorActions and lib/chat/agentTools.
   const editor = useEditor({
     extensions: buildEditorExtensions(),
-    content: normalizeEscapedCheckboxes(markdown),
+    content: markdown,
     editable: true,
     onCreate: ({ editor }) => {
       editorRef.current = editor;
@@ -322,6 +668,16 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       lastSyncedMarkdownRef.current = nextMarkdown;
 
       onMarkdownChange(nextMarkdown);
+
+      // An edit can change what the selection covers without the selection
+      // itself moving, so the mirror is refreshed from here too.
+      syncChatSelection(editor);
+    },
+    // The chat composer shows the selected passage and sends it as context with
+    // the next message (see src/store/useChatStore.ts), which needs the live
+    // selection rather than a lookup at send time.
+    onSelectionUpdate: ({ editor }) => {
+      syncChatSelection(editor);
     },
     editorProps: {
       handleDrop: (view, event, _slice, moved) => {
@@ -556,6 +912,22 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     editorRef.current?.commands.focus("start");
   }, [editorFocusRequestId]);
 
+  // Pending chat proposals are anchored to positions in *this* document —
+  // switching files (or having the content replaced from outside) would leave
+  // them pointing at unrelated text, so they're dropped up front.
+  useEffect(() => {
+    const currentEditor = editorRef.current;
+
+    if (currentEditor && !currentEditor.isDestroyed) {
+      clearAiSuggestions(currentEditor);
+    }
+  }, [filePath]);
+
+  // Kept in a ref so the sync effect below doesn't re-run for a new callback
+  // identity — it may only react to actual content changes.
+  const onCanonicalMarkdownRef = useRef(onCanonicalMarkdown);
+  onCanonicalMarkdownRef.current = onCanonicalMarkdown;
+
   useEffect(() => {
     const currentEditor = editorRef.current;
 
@@ -563,16 +935,27 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       return;
     }
 
-    const currentMarkdown = getEditorMarkdown(currentEditor, "");
+    let canonicalMarkdown = getEditorMarkdown(currentEditor, "");
 
-    if (markdown === lastSyncedMarkdownRef.current || markdown === currentMarkdown) {
-      lastSyncedMarkdownRef.current = markdown;
-      return;
+    if (markdown !== lastSyncedMarkdownRef.current && markdown !== canonicalMarkdown) {
+      currentEditor.commands.setContent(markdown, { emitUpdate: false });
+      canonicalMarkdown = getEditorMarkdown(currentEditor, markdown);
     }
 
-    currentEditor.commands.setContent(normalizeEscapedCheckboxes(markdown), { emitUpdate: false });
     lastSyncedMarkdownRef.current = markdown;
-  }, [markdown, editor]);
+
+    // The same document can be written in several equivalent ways, and the
+    // editor always serializes the canonical one — so markdown that is valid
+    // but formatted differently (loose lists, "*" bullets, "1)" numbering)
+    // comes back changed on the very first serialization, with no edit
+    // involved. Reporting that form back as the baseline is what keeps a
+    // freshly opened file from showing up as unsaved; nothing is written to
+    // disk here.
+    if (filePath && canonicalMarkdown !== markdown) {
+      lastSyncedMarkdownRef.current = canonicalMarkdown;
+      onCanonicalMarkdownRef.current?.(filePath, canonicalMarkdown);
+    }
+  }, [markdown, editor, filePath]);
 
   if (!editor) {
     return null;
@@ -608,7 +991,6 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         onAiRequest={ai.openAiDraftFromSelection}
         onAiCheckRequest={ai.runAiGrammarCheck}
         onAiSettingsRequest={onAiSettingsRequest}
-        onAssistantSettingsRequest={onAssistantSettingsRequest}
         onPrintRequest={printDocument}
         onSearchRequest={openFindPanel}
         onZenModeRequest={onZenModeRequest}

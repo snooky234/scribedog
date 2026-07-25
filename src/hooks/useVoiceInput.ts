@@ -17,6 +17,12 @@ type UseVoiceInputOptions = {
   onError: (message: string) => void;
 };
 
+// The recorder itself is a single global on the Rust side, so only one target
+// (editor, AI dialog, chat composer) may hold it at a time. Ctrl+Shift+W works
+// in several places at once, so without this claim a second start would tear
+// down the first target's recording.
+let recorderOwner: symbol | null = null;
+
 function extractMessage(error: unknown): string {
   if (typeof error === "string") {
     return error;
@@ -42,6 +48,14 @@ export function useVoiceInput({ onTranscript, onError }: UseVoiceInputOptions) {
   const [level, setLevel] = useState(0);
   const statusRef = useRef(status);
   statusRef.current = status;
+  // Identity of this target when claiming the shared recorder.
+  const ownerRef = useRef<symbol>(Symbol("voice-input"));
+
+  const releaseRecorder = useCallback(() => {
+    if (recorderOwner === ownerRef.current) {
+      recorderOwner = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (status !== "recording") {
@@ -73,6 +87,12 @@ export function useVoiceInput({ onTranscript, onError }: UseVoiceInputOptions) {
   }, [status]);
 
   const begin = useCallback(async () => {
+    // Another target is already recording — it keeps the microphone.
+    if (recorderOwner !== null && recorderOwner !== ownerRef.current) {
+      return;
+    }
+
+    recorderOwner = ownerRef.current;
     setStatus("starting");
 
     try {
@@ -80,6 +100,7 @@ export function useVoiceInput({ onTranscript, onError }: UseVoiceInputOptions) {
 
       if (!modelStatus.downloaded) {
         setStatus("idle");
+        // The download dialog keeps the claim: it starts recording on finish.
         setIsModelDialogOpen(true);
         return;
       }
@@ -87,10 +108,11 @@ export function useVoiceInput({ onTranscript, onError }: UseVoiceInputOptions) {
       await startVoiceRecording();
       setStatus("recording");
     } catch (error) {
+      releaseRecorder();
       setStatus("idle");
       onError(extractMessage(error));
     }
-  }, [onError]);
+  }, [onError, releaseRecorder]);
 
   const stop = useCallback(async () => {
     if (statusRef.current !== "recording") {
@@ -101,25 +123,28 @@ export function useVoiceInput({ onTranscript, onError }: UseVoiceInputOptions) {
 
     try {
       const transcript = await stopVoiceRecording(whisperLanguageFromLocale(i18n.language));
+      releaseRecorder();
       setStatus("idle");
 
       if (transcript) {
         onTranscript(transcript);
       }
     } catch (error) {
+      releaseRecorder();
       setStatus("idle");
       onError(extractMessage(error));
     }
-  }, [i18n.language, onTranscript, onError]);
+  }, [i18n.language, onTranscript, onError, releaseRecorder]);
 
   const cancel = useCallback(() => {
     if (statusRef.current === "recording") {
       void cancelVoiceRecording();
     }
 
+    releaseRecorder();
     setStatus("idle");
     setIsModelDialogOpen(false);
-  }, []);
+  }, [releaseRecorder]);
 
   const toggle = useCallback(() => {
     if (statusRef.current === "recording") {
@@ -129,7 +154,10 @@ export function useVoiceInput({ onTranscript, onError }: UseVoiceInputOptions) {
     }
   }, [begin, stop]);
 
-  const closeModelDialog = useCallback(() => setIsModelDialogOpen(false), []);
+  const closeModelDialog = useCallback(() => {
+    releaseRecorder();
+    setIsModelDialogOpen(false);
+  }, [releaseRecorder]);
 
   const handleModelDownloaded = useCallback(() => {
     setIsModelDialogOpen(false);
@@ -139,9 +167,15 @@ export function useVoiceInput({ onTranscript, onError }: UseVoiceInputOptions) {
   // A recording must not outlive its target (dialog closed, file switched,
   // component unmounted) — discard it instead of leaving the mic open.
   useEffect(() => {
+    const owner = ownerRef.current;
+
     return () => {
       if (statusRef.current === "recording") {
         void cancelVoiceRecording();
+      }
+
+      if (recorderOwner === owner) {
+        recorderOwner = null;
       }
     };
   }, []);

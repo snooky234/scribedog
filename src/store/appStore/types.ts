@@ -55,6 +55,7 @@ export type FolderSlice = {
 export type FileSlice = {
   selectFilePath: (filePath: string) => Promise<boolean>;
   updateSelectedFileContent: (markdown: string) => void;
+  adoptCanonicalFileContent: (filePath: string, markdown: string) => void;
   discardSelectedFileChanges: () => boolean;
   saveSelectedFile: () => Promise<boolean>;
   createNewFile: (targetDirectory?: string) => Promise<string | null>;

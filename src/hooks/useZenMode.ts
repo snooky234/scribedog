@@ -69,15 +69,15 @@ export function useZenMode({ canEnter }: UseZenModeOptions): UseZenModeResult {
     })();
   }, []);
 
-  // Ctrl+Shift+Z toggles Zen mode. Registered in the capture phase so it wins
-  // over the editor's redo binding (Ctrl+Shift+Z) and repurposes that combo.
+  // Ctrl+Shift+Y toggles Zen mode. Registered in the capture phase so it wins
+  // over any editor binding on the same combo.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
         (event.ctrlKey || event.metaKey) &&
         event.shiftKey &&
         !event.altKey &&
-        (event.key.toLowerCase() === "z" || event.code === "KeyZ")
+        (event.key.toLowerCase() === "y" || event.code === "KeyY")
       ) {
         event.preventDefault();
         event.stopPropagation();

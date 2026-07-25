@@ -13,9 +13,6 @@ export type AiContentRequest = {
   documentMarkdown: string;
   includeDocument: boolean;
   preserveFormatting: boolean;
-  // System prompt core from the selected assistant (rewrite/insert only).
-  // When absent, the built-in default instruction applies.
-  assistantInstruction?: string;
 };
 
 export type AiCheckIssue = {
@@ -203,13 +200,23 @@ export function splitThinkingTags(text: string): { answer: string; thinking: str
   return { answer, thinking };
 }
 
-// Built-in system prompt core of the edit assistant (rewrite/insert). The
-// "Default" assistant is seeded from this string, and "Reset to default"
-// restores it. Mode/formatting/thinking/language rules are appended
-// dynamically in buildSystemPrompt and are not part of the assistant prompt.
-export const DEFAULT_ASSISTANT_INSTRUCTION =
+// Built-in system prompt core of the "Rewrite with AI" feature (rewrite/insert).
+// This is internal and fixed — it is no longer tied to the user-selected
+// assistant. Mode/formatting/thinking/language rules are appended dynamically
+// in buildSystemPrompt.
+export const DEFAULT_REWRITE_INSTRUCTION =
   "You are a local text tool. Respond only with plain Markdown text. " +
   "Execute the user's instructions directly without adding your own explanations or comments.";
+
+// Default system prompt core of a chat assistant (the right-hand chat panel).
+// The "Default" assistant is seeded from this string, and "Reset to default"
+// restores it. Custom assistants replace it. The Markdown output rule is
+// appended in buildChatSystemPrompt so users need not repeat it.
+export const DEFAULT_CHAT_ASSISTANT_INSTRUCTION =
+  "You are a helpful writing assistant. You help the user revise and improve their text, " +
+  "discuss specific passages with them, answer their questions, and give concrete, actionable tips. " +
+  "Be concise and conversational. When the user shares a document or a passage, refer to it directly. " +
+  "Respond in the same language the user writes in.";
 
 // Markdown output rules. Always appended in buildSystemPrompt, for the default
 // assistant as well as for custom assistants — the editor can only render
@@ -239,11 +246,10 @@ function buildSystemPrompt(request: AiContentRequest, thinkingMode: AiThinkingMo
     return buildCheckModeSystemPrompt(getCurrentLanguageEnglishName()) + thinkingInstruction;
   }
 
-  // A custom assistant replaces the built-in base instruction; the
-  // mode/formatting/thinking/language rules below always stay appended so
-  // custom prompts can't break the plumbing (stop sequences, output shape).
-  const baseInstruction =
-    request.assistantInstruction?.trim() || DEFAULT_ASSISTANT_INSTRUCTION;
+  // Rewrite/insert always uses the fixed internal instruction; the
+  // mode/formatting/thinking/language rules below stay appended so the
+  // plumbing (stop sequences, output shape) can't break.
+  const baseInstruction = DEFAULT_REWRITE_INSTRUCTION;
 
   const modeInstruction =
     request.mode === "insert"
@@ -381,6 +387,43 @@ export function extractAnthropicContent(payload: unknown): string {
     .join("");
 }
 
+// A non-2xx response usually carries the actual reason in its JSON body (e.g.
+// Ollama rejects `tools` on a model whose template doesn't support them with
+// {"error": "<model> does not support tools"}; OpenAI-shaped APIs nest it as
+// {"error": {"message": "..."}}). Falling back to the bare status code loses
+// exactly the detail a user needs to understand *why* a request failed.
+async function extractResponseErrorMessage(response: Response): Promise<string> {
+  try {
+    const payload: unknown = await response.json();
+
+    if (typeof payload === "object" && payload !== null) {
+      const errorField = (payload as { error?: unknown }).error;
+
+      if (typeof errorField === "string" && errorField.trim()) {
+        return errorField.trim();
+      }
+
+      if (typeof errorField === "object" && errorField !== null) {
+        const message = (errorField as { message?: unknown }).message;
+
+        if (typeof message === "string" && message.trim()) {
+          return message.trim();
+        }
+      }
+
+      const message = (payload as { message?: unknown }).message;
+
+      if (typeof message === "string" && message.trim()) {
+        return message.trim();
+      }
+    }
+  } catch {
+    // Body wasn't JSON (or was empty) — fall through to the status message.
+  }
+
+  return i18n.t("aiClient.endpointStatus", { status: response.status });
+}
+
 async function postJson(url: string, body: unknown, extraHeaders?: Record<string, string>, signal?: AbortSignal) {
   const response = await tauriFetch(url, {
     method: "POST",
@@ -393,7 +436,7 @@ async function postJson(url: string, body: unknown, extraHeaders?: Record<string
   });
 
   if (!response.ok) {
-    throw new Error(i18n.t("aiClient.endpointStatus", { status: response.status }));
+    throw new Error(await extractResponseErrorMessage(response));
   }
 
   return response.json();
@@ -410,7 +453,7 @@ async function getJson(url: string, signal?: AbortSignal, extraHeaders?: Record<
   });
 
   if (!response.ok) {
-    throw new Error(i18n.t("aiClient.endpointStatus", { status: response.status }));
+    throw new Error(await extractResponseErrorMessage(response));
   }
 
   return response.json();
@@ -820,27 +863,20 @@ async function requestAnthropic(
 // Anthropic's Messages API streams named SSE events (content_block_delta,
 // message_stop, …) instead of the plain "data: {...}" lines used by
 // OpenAI-compatible endpoints, so it needs its own leaner parser instead of
-// the shared streamJsonLines().
-async function streamAnthropicMarkdown(
-  settings: AiSettings,
-  request: AiContentRequest,
+// the shared streamJsonLines(). Shared by the rewrite (markdown) and chat
+// paths — only the request body differs between them.
+async function consumeAnthropicStream(
+  url: string,
+  body: Record<string, unknown>,
+  apiKey: string,
   handlers: AiStreamHandlers,
   signal?: AbortSignal
 ): Promise<string> {
-  const body = {
-    model: settings.model,
-    system: buildSystemPrompt(request, settings.thinkingMode),
-    max_tokens: resolveMaxOutputTokens(settings.contextLength),
-    stop_sequences: PROMPT_STOP_SEQUENCES,
-    stream: true,
-    messages: [{ role: "user", content: buildUserPrompt(request) }]
-  };
-
-  const response = await tauriFetch(new URL("/v1/messages", settings.apiUrl).toString(), {
+  const response = await tauriFetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...anthropicAuthHeaders(settings.apiKey)
+      ...anthropicAuthHeaders(apiKey)
     },
     body: JSON.stringify(body),
     signal
@@ -913,6 +949,30 @@ async function streamAnthropicMarkdown(
   return stripThinkingBlocks(fullContent);
 }
 
+async function streamAnthropicMarkdown(
+  settings: AiSettings,
+  request: AiContentRequest,
+  handlers: AiStreamHandlers,
+  signal?: AbortSignal
+): Promise<string> {
+  const body = {
+    model: settings.model,
+    system: buildSystemPrompt(request, settings.thinkingMode),
+    max_tokens: resolveMaxOutputTokens(settings.contextLength),
+    stop_sequences: PROMPT_STOP_SEQUENCES,
+    stream: true,
+    messages: [{ role: "user", content: buildUserPrompt(request) }]
+  };
+
+  return consumeAnthropicStream(
+    new URL("/v1/messages", settings.apiUrl).toString(),
+    body,
+    settings.apiKey,
+    handlers,
+    signal
+  );
+}
+
 export async function streamAiMarkdown(
   settings: AiSettings,
   request: AiContentRequest,
@@ -961,6 +1021,662 @@ export async function generateAiMarkdown(
   }
 
   return cleanedResponse;
+}
+
+// --- Chat (right-hand assistant panel) -------------------------------------
+//
+// A conversational, multi-turn counterpart to the single-shot rewrite/insert
+// path above. It reuses the same provider transports (streamJsonLines, the
+// Anthropic SSE reader), security guards (assertValidEndpoint) and
+// <think>-stripping, but sends a full user/assistant message history instead
+// of one built-up user prompt, and is driven by the user-selected assistant's
+// instruction rather than the fixed rewrite instruction.
+
+export type AiChatRole = "user" | "assistant" | "tool";
+
+export type ToolCall = { id: string; name: string; arguments: Record<string, unknown> };
+
+// One image handed to a vision model, already downscaled and base64-encoded.
+// Resolved from imagePaths per request and never persisted — see
+// src/lib/chat/imageAttachments.ts for why the split exists.
+export type AiChatImage = { path: string; base64: string; mimeType: string };
+
+// Marks a user turn a chat action button generated instead of the user typing
+// it. The wire payload is unaffected — the flag only tells the transcript to
+// show what was clicked rather than the generated instruction, which quotes a
+// whole assistant answer back at the model.
+export type ChatUserAction = "applyToDocument";
+
+// A tagged union rather than a flat {role, content} shape: the agent loop
+// needs to carry tool_calls on assistant turns and tool_call_id/toolName on
+// tool-result turns, which have no meaning on a plain user/assistant message.
+export type AiChatMessage =
+  | {
+      role: "user";
+      content: string;
+      // Set when a button, not the user, wrote this turn's content (persisted).
+      action?: ChatUserAction;
+      // The passage the user had selected in the editor when they sent this
+      // turn (persisted). Kept beside the content rather than inside it: the
+      // transcript shows it as a quote, and it is folded into the content of
+      // the newest such turn only per request — see
+      // src/lib/chat/selectionContext.ts.
+      selection?: string;
+      // Document-relative paths of images attached to this turn (persisted).
+      imagePaths?: string[];
+      // The same images with their payload, filled in per request by
+      // attachImageData. Absent in the stored history.
+      images?: AiChatImage[];
+    }
+  | { role: "assistant"; content: string; toolCalls?: ToolCall[] }
+  | { role: "tool"; toolCallId: string; toolName: string; content: string };
+
+export type AiChatRequest = {
+  // Conversation history already trimmed to the context budget by the caller
+  // (see selectMessagesForModel). Ends with the latest user turn.
+  messages: AiChatMessage[];
+  // System prompt core from the selected assistant. Falls back to the built-in
+  // chat default when empty.
+  assistantInstruction: string;
+  // Optional current document/selection markdown, injected into the system
+  // prompt so the assistant can talk about "this passage". Not used in the
+  // agent (tool-calling) path — the agent reads the document via its tools.
+  documentContext?: string;
+};
+
+// One spec per agent tool, translated below into each provider family's wire
+// format (OpenAI-compatible "function" tools vs. Anthropic's input_schema).
+const AGENT_TOOL_SPECS = [
+  {
+    name: "get_document",
+    description: "Read the full current document as Markdown. Call this before editing so you know the exact wording.",
+    parameters: { type: "object", properties: {}, required: [] }
+  },
+  {
+    name: "get_selection",
+    description: "Return the text the user currently has selected, or an empty result if nothing is selected.",
+    parameters: { type: "object", properties: {}, required: [] }
+  },
+  {
+    name: "get_image",
+    description:
+      "Look at an image that is embedded in the document. You cannot see images from get_document alone — it only gives you the markdown, where an image appears as ![alt](path). Call this with that path to actually see the picture; it is then attached to the conversation as an image you can describe. Use it whenever the user asks what an image shows.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description:
+            "The image path exactly as it appears in the document's markdown, e.g. images/photo.png."
+        }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "set_image_width",
+    description:
+      "Change the display size of an image embedded in the document. This is the ONLY way to resize an image: an image is not text, so replace_passage can never find its ![alt](path) markdown. Pass width for an absolute size in pixels, or scale for a relative change (1.25 = 25 percent larger, 0.5 = half). width: 0 restores the image's original size. Unlike the editing tools this applies immediately — do not tell the user to accept anything.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description: "The image path exactly as it appears in the document's markdown, e.g. images/photo.png."
+        },
+        width: { type: "integer", description: "New display width in pixels, or 0 for the original size." },
+        scale: { type: "number", description: "Factor to resize by instead of an absolute width, e.g. 1.25." }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "accept_proposals",
+    description:
+      "Apply every change that is currently waiting for the user's review, exactly as if the user had clicked accept on each one. Call this when the user's message approves the proposals — \"yes\", \"apply that\", \"sounds good\", \"take it\" and anything else that clearly means the same. Never call it on your own initiative.",
+    parameters: { type: "object", properties: {}, required: [] }
+  },
+  {
+    name: "discard_proposals",
+    description:
+      "Throw away every change that is currently waiting for the user's review, leaving the document untouched. Call this when the user rejects the proposals, and also when the user asks for a different version of that same change — discard the old proposals first, then propose the new version. Never call it to unblock yourself for an unrelated request: proposals the user has not settled are theirs to keep.",
+    parameters: { type: "object", properties: {}, required: [] }
+  },
+  {
+    name: "replace_selection",
+    description:
+      "Propose replacing the user's current selection with new Markdown text. The change is shown to the user for review, not applied directly.",
+    parameters: {
+      type: "object",
+      properties: { new_text: { type: "string", description: "The Markdown to put in place of the selection." } },
+      required: ["new_text"]
+    }
+  },
+  {
+    name: "insert_at_cursor",
+    description:
+      "Propose inserting new Markdown text into the document. Only use this when there is genuinely nothing to change, i.e. the text is new content rather than a revision of an existing passage. ALWAYS pass after_text when the user says where the text belongs — without it the text lands at the user's cursor, which is almost never the place they meant. Write only the new text: never repeat a heading, paragraph or image that is already in the document, it would then appear twice. The change is shown to the user for review, not applied directly.",
+    parameters: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "The Markdown to insert. New content only." },
+        after_text: {
+          type: "string",
+          description:
+            "Where the new text goes: a few distinctive words from the single line it should follow, copied from get_document. To put the text below an image, pass that image's path (e.g. images/photo.png). Omit only when the user gave no position at all."
+        }
+      },
+      required: ["text"]
+    }
+  },
+  {
+    name: "replace_passage",
+    description:
+      "Propose replacing a passage of the document with new Markdown. This is the main editing tool: use it once per passage that needs changing, and call it several times when the request affects several places. old_text is the wording to locate, copied from get_document — keep it short and distinctive (one line or sentence is usually enough); formatting differences are tolerated, so list bullets, table pipes and ** markers do not have to match exactly. To append to a list or table, pass its last row as old_text and that same row plus the new rows as new_text. The change is shown to the user for review, not applied directly.",
+    parameters: {
+      type: "object",
+      properties: {
+        old_text: { type: "string", description: "A short, distinctive passage of the document to locate." },
+        new_text: { type: "string", description: "The Markdown that replaces it." }
+      },
+      required: ["old_text", "new_text"]
+    }
+  }
+] as const;
+
+const AGENT_TOOLS_OPENAI = AGENT_TOOL_SPECS.map((spec) => ({
+  type: "function",
+  function: { name: spec.name, description: spec.description, parameters: spec.parameters }
+}));
+
+const AGENT_TOOLS_ANTHROPIC = AGENT_TOOL_SPECS.map((spec) => ({
+  name: spec.name,
+  description: spec.description,
+  input_schema: spec.parameters
+}));
+
+// Ollama's tool_calls arguments already arrive as an object; OpenAI-compatible
+// endpoints send them as a JSON string. Passing either through this one
+// function covers both without the callers needing to know which.
+function safeParseJson(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object") {
+    return value as Record<string, unknown>;
+  }
+
+  if (typeof value !== "string") {
+    return {};
+  }
+
+  try {
+    return JSON.parse(value) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+const AGENT_INSTRUCTION =
+  "You work on the user's document by calling tools.\n" +
+  "0. An open review comes before everything else. When the turn says changes you proposed earlier are " +
+  "still waiting for the user's review, settle them first: the message approves them (\"yes\", \"apply " +
+  "that\", \"sounds good\") — call accept_proposals. It rejects them (\"no\", \"drop that\", \"forget " +
+  "it\") — call discard_proposals. It asks for a different version of that same change (\"shorter\", " +
+  "\"a bit less\", \"without the last one\") — call discard_proposals first, then propose the new " +
+  "version; the old proposals must never stay open beside the new ones. It is about something else " +
+  "entirely — propose nothing, discard nothing, and reply that the earlier proposals are still open and " +
+  "you need the user to accept or discard them first. Only the user's own message settles a review: " +
+  "never call discard_proposals just to get the editing tools working again.\n" +
+  "1. ALWAYS start every request by calling get_document (and get_selection when the user refers " +
+  "to \"this\", \"here\" or the selection), even for questions — never answer about the text, and " +
+  "never propose a change, without having read the current wording first. One exception: when the " +
+  "user's message already carries their selected passage as context, that passage IS the current " +
+  "wording — a question aimed only at it can be answered straight away, and you read the document " +
+  "only when you genuinely need the surrounding context.\n" +
+  "2. Decide what the user actually wants for THIS text. Requests like \"shorten\", \"add examples\", " +
+  "\"make it friendlier\" mean revising the existing passages, not writing a separate new block.\n" +
+  "3. Propose the changes with replace_passage (or replace_selection when the user is working on a " +
+  "selection). Work passage by passage: change only what the request affects, keep the rest of the " +
+  "wording, and call the tool once per affected passage — several proposals in one turn are normal " +
+  "and expected when the request touches several places. Only use insert_at_cursor for genuinely " +
+  "new content that doesn't revise anything.\n" +
+  "4. The tools do NOT change the document: each call shows the user a red/green proposal that they " +
+  "accept or discard. So do not ask for permission first, and do not repeat the revised text in " +
+  "your reply — propose it with a tool and then confirm in one short sentence what you proposed.\n" +
+  "5. A proposal stays out of the document until the user accepts it, so a get_document after your " +
+  "own proposal shows the OLD text — that is correct and never means the call failed. Never call a " +
+  "tool a second time for a change you already proposed: a second proposal means the text ends up in " +
+  "the document twice.\n" +
+  "6. Say where new text goes: with insert_at_cursor pass after_text (a few distinctive words of the " +
+  "line it should follow, or an image path for \"below the image\"). And write ONLY the new text — " +
+  "copying the surrounding heading, paragraph or ![alt](path) along with it duplicates them.\n" +
+  "7. When the request is about an image in the document, call get_image with the path from the " +
+  "![alt](path) markdown. Never claim you cannot see images and never describe an image from its " +
+  "file name or alt text — call get_image first and describe what you actually see.\n" +
+  "8. To make an image bigger or smaller, call set_image_width with that same path — never try to " +
+  "edit an image's markdown with replace_passage, it cannot work. \"A bit bigger\" is scale 1.25, " +
+  "\"much bigger\" scale 1.75, and the same factors below 1 for smaller. One call is enough: the new " +
+  "size is applied immediately, so confirm it in one sentence instead of proposing anything.\n" +
+  "If the user only asks a question, answer it normally after reading the document.";
+
+function buildChatSystemPrompt(
+  request: AiChatRequest,
+  thinkingMode: AiThinkingMode,
+  toolsEnabled = false
+): string {
+  const baseInstruction = request.assistantInstruction.trim() || DEFAULT_CHAT_ASSISTANT_INSTRUCTION;
+
+  const thinkingInstruction =
+    thinkingMode === "off" ? "Do not output any reasoning, notes, or intermediate steps." : "";
+
+  // In the agent (tool-calling) path the document is deliberately not
+  // embedded upfront — the agent reads it itself via get_document/
+  // get_selection, which saves context and avoids stale duplicates.
+  const documentSection =
+    !toolsEnabled && request.documentContext?.trim()
+      ? "The user is currently working on the following document. Use it as context when the " +
+        `conversation refers to it:\n\n${request.documentContext.trim()}`
+      : "";
+
+  const agentSection = toolsEnabled ? AGENT_INSTRUCTION : "";
+
+  return [baseInstruction, MARKDOWN_OUTPUT_INSTRUCTION, agentSection, thinkingInstruction, documentSection]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function chatMessages(request: AiChatRequest, systemContent: string) {
+  return [{ role: "system", content: systemContent }, ...request.messages];
+}
+
+// --- Agent tool-calling wire mapping ----------------------------------------
+//
+// Translates the tagged AiChatMessage union into each provider family's wire
+// format. Deliberately non-streaming (see generateAiChatStep) — tool_calls
+// arguments arrive fragmented across many SSE chunks when streamed, which is
+// the single biggest source of tool-parsing bugs across providers, so the
+// agent loop avoids streaming entirely.
+
+// Images ride along on user turns, and the two OpenAI-ish families disagree on
+// how: Ollama takes a flat `images: [base64]` alongside the text, while
+// OpenAI-compatible endpoints (OpenAI, Mistral, Jan, LM Studio) take a content
+// array of text/image_url parts with a data: URL. Same split as the OCR path.
+function toOpenAiCompatUserMessage(
+  message: Extract<AiChatMessage, { role: "user" }>,
+  isOllamaShape: boolean
+): Record<string, unknown> {
+  if (!message.images?.length) {
+    return { role: "user", content: message.content };
+  }
+
+  if (isOllamaShape) {
+    return {
+      role: "user",
+      content: message.content,
+      images: message.images.map((image) => image.base64)
+    };
+  }
+
+  return {
+    role: "user",
+    content: [
+      { type: "text", text: message.content },
+      ...message.images.map((image) => ({
+        type: "image_url",
+        image_url: { url: `data:${image.mimeType};base64,${image.base64}` }
+      }))
+    ]
+  };
+}
+
+// Bridges a user turn that would otherwise follow tool results directly.
+// Mistral validates the role order strictly and rejects that sequence with
+// "Unexpected role 'user' after role 'tool'" — it wants an assistant turn in
+// between — while OpenAI, Jan and LM Studio accept it either way. The image
+// turn the agent loop appends after get_image is exactly this case, so the
+// bridge goes in for every OpenAI-compatible provider rather than for Mistral
+// alone: one wire shape that all of them accept beats a per-provider special
+// case (same reasoning as the merge in toAnthropicMessages).
+const TOOL_TO_USER_BRIDGE = "Let me take a look.";
+
+// Exported for aiChatWire.test.ts: the three provider families disagree on
+// where images and tool results go, which is exactly the part worth pinning
+// down in tests rather than only against a live endpoint.
+export function toOpenAiCompatMessages(
+  request: AiChatRequest,
+  thinkingMode: AiThinkingMode,
+  isOllamaShape: boolean
+) {
+  const out: Record<string, unknown>[] = [
+    { role: "system", content: buildChatSystemPrompt(request, thinkingMode, true) }
+  ];
+
+  for (const message of request.messages) {
+    if (message.role === "user") {
+      if (out[out.length - 1]?.role === "tool") {
+        out.push({ role: "assistant", content: TOOL_TO_USER_BRIDGE });
+      }
+
+      out.push(toOpenAiCompatUserMessage(message, isOllamaShape));
+    } else if (message.role === "assistant") {
+      const wireMessage: Record<string, unknown> = { role: "assistant", content: message.content || "" };
+
+      if (message.toolCalls?.length) {
+        wireMessage.tool_calls = message.toolCalls.map((toolCall) => ({
+          id: toolCall.id,
+          type: "function",
+          function: { name: toolCall.name, arguments: JSON.stringify(toolCall.arguments) }
+        }));
+      }
+
+      out.push(wireMessage);
+    } else {
+      out.push({ role: "tool", tool_call_id: message.toolCallId, content: message.content });
+    }
+  }
+
+  return out;
+}
+
+// Anthropic keeps the system prompt separate from the message list and
+// requires tool results to come back as tool_result blocks inside a *user*
+// turn — several results after one assistant turn must be merged into a
+// single user message, not sent as several.
+export function toAnthropicMessages(request: AiChatRequest) {
+  const out: Record<string, unknown>[] = [];
+
+  for (const message of request.messages) {
+    if (message.role === "tool") {
+      const block = { type: "tool_result", tool_use_id: message.toolCallId, content: message.content };
+      const last = out[out.length - 1];
+
+      if (last && last.role === "user" && Array.isArray(last.content)) {
+        (last.content as unknown[]).push(block);
+      } else {
+        out.push({ role: "user", content: [block] });
+      }
+    } else if (message.role === "assistant") {
+      const content: unknown[] = [];
+
+      if (message.content) {
+        content.push({ type: "text", text: message.content });
+      }
+
+      for (const toolCall of message.toolCalls ?? []) {
+        content.push({ type: "tool_use", id: toolCall.id, name: toolCall.name, input: toolCall.arguments });
+      }
+
+      out.push({ role: "assistant", content: content.length ? content : message.content });
+    } else if (message.images?.length) {
+      const blocks: unknown[] = [
+        ...message.images.map((image) => ({
+          type: "image",
+          source: { type: "base64", media_type: image.mimeType, data: image.base64 }
+        })),
+        { type: "text", text: message.content }
+      ];
+      const last = out[out.length - 1];
+
+      // An image turn follows the tool results that produced it, and Anthropic
+      // rejects two consecutive user turns — so merge into the open user turn
+      // holding those tool_result blocks instead of pushing a second one.
+      if (last && last.role === "user" && Array.isArray(last.content)) {
+        (last.content as unknown[]).push(...blocks);
+      } else {
+        out.push({ role: "user", content: blocks });
+      }
+    } else {
+      out.push({ role: "user", content: message.content });
+    }
+  }
+
+  return out;
+}
+
+export type AiChatStep = { text: string; toolCalls: ToolCall[] };
+
+// Non-streaming per-turn agent step: sends the tool specs, executes at most
+// one round trip, and returns either tool calls to run or final text. See the
+// module comment above toOpenAiCompatMessages for why this stays non-streaming.
+export async function generateAiChatStep(
+  settings: AiSettings,
+  request: AiChatRequest,
+  signal?: AbortSignal
+): Promise<AiChatStep> {
+  assertValidEndpoint(settings.provider, settings.apiUrl, settings.apiKey);
+
+  if (!settings.model.trim()) {
+    throw new Error(i18n.t("aiClient.modelRequired"));
+  }
+
+  if (settings.provider === "anthropic") {
+    const body = {
+      model: settings.model,
+      system: buildChatSystemPrompt(request, settings.thinkingMode, true),
+      max_tokens: resolveMaxOutputTokens(settings.contextLength),
+      tools: AGENT_TOOLS_ANTHROPIC,
+      messages: toAnthropicMessages(request)
+    };
+
+    const payload = (await postJson(
+      new URL("/v1/messages", settings.apiUrl).toString(),
+      body,
+      anthropicAuthHeaders(settings.apiKey),
+      signal
+    )) as { content?: Array<Record<string, unknown>> };
+
+    const blocks = payload.content ?? [];
+    const toolCalls = blocks
+      .filter((block) => block.type === "tool_use")
+      .map((block) => ({
+        id: String(block.id),
+        name: String(block.name),
+        arguments: safeParseJson(block.input)
+      }));
+    const text = stripThinkingBlocks(
+      blocks
+        .filter((block) => block.type === "text")
+        .map((block) => String(block.text ?? ""))
+        .join("")
+    );
+
+    return { text, toolCalls };
+  }
+
+  if (settings.provider === "ollama") {
+    const body: Record<string, unknown> = {
+      model: settings.model,
+      stream: false,
+      messages: toOpenAiCompatMessages(request, settings.thinkingMode, true),
+      tools: AGENT_TOOLS_OPENAI,
+      options: { num_ctx: settings.contextLength, num_predict: resolveMaxOutputTokens(settings.contextLength) }
+    };
+
+    if (settings.thinkingMode === "off") {
+      body.think = false;
+    }
+
+    const payload = (await postJson(new URL("/api/chat", settings.apiUrl).toString(), body, undefined, signal)) as {
+      message?: {
+        content?: string;
+        tool_calls?: Array<{ id?: string; function: { name: string; arguments: unknown } }>;
+      };
+    };
+
+    const message = payload.message;
+    const toolCalls = (message?.tool_calls ?? []).map((toolCall, index) => ({
+      id: toolCall.id ?? `call_${Date.now()}_${index}`,
+      name: toolCall.function.name,
+      // Ollama already hands back an object here; safeParseJson passes it through unchanged.
+      arguments: safeParseJson(toolCall.function.arguments)
+    }));
+
+    return { text: stripThinkingBlocks(message?.content ?? ""), toolCalls };
+  }
+
+  // OpenAI-compatible (OpenAI, Mistral, Jan, LM Studio)
+  const body: Record<string, unknown> = {
+    model: settings.model,
+    messages: toOpenAiCompatMessages(request, settings.thinkingMode, false),
+    tools: AGENT_TOOLS_OPENAI,
+    tool_choice: "auto",
+    temperature: 0.2,
+    max_tokens: resolveMaxOutputTokens(settings.contextLength),
+    stream: false
+  };
+
+  if (supportsThinkingExtension(settings.provider) && settings.thinkingMode === "off") {
+    body.chat_template_kwargs = { enable_thinking: false };
+  }
+
+  const payload = (await postJson(
+    new URL("/v1/chat/completions", settings.apiUrl).toString(),
+    body,
+    buildOpenAiCompatibleAuthHeaders(settings),
+    signal
+  )) as {
+    choices?: Array<{
+      message?: { content?: string; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> };
+    }>;
+  };
+
+  const message = payload.choices?.[0]?.message;
+  const toolCalls = (message?.tool_calls ?? []).map((toolCall) => ({
+    id: toolCall.id,
+    name: toolCall.function.name,
+    arguments: safeParseJson(toolCall.function.arguments)
+  }));
+
+  return { text: stripThinkingBlocks(message?.content ?? ""), toolCalls };
+}
+
+async function streamOllamaChat(
+  settings: AiSettings,
+  request: AiChatRequest,
+  handlers: AiStreamHandlers,
+  signal?: AbortSignal
+): Promise<string> {
+  const body: Record<string, unknown> = {
+    model: settings.model,
+    stream: true,
+    messages: chatMessages(request, buildChatSystemPrompt(request, settings.thinkingMode)),
+    options: {
+      num_ctx: settings.contextLength,
+      num_predict: resolveMaxOutputTokens(settings.contextLength)
+    }
+  };
+
+  if (settings.thinkingMode === "off") {
+    body.think = false;
+  }
+
+  return streamJsonLines(
+    new URL("/api/chat", settings.apiUrl).toString(),
+    body,
+    handlers,
+    (payload) => {
+      const message = payload.message as { content?: string; thinking?: string } | undefined;
+      return {
+        content: message?.content ?? null,
+        thinking: message?.thinking ?? null
+      };
+    },
+    (payload) => {
+      const message = payload.message as { content?: string } | undefined;
+      return message?.content ?? null;
+    },
+    signal
+  );
+}
+
+async function streamOpenAiCompatibleChat(
+  settings: AiSettings,
+  request: AiChatRequest,
+  handlers: AiStreamHandlers,
+  signal?: AbortSignal
+): Promise<string> {
+  const requestBody: Record<string, unknown> = {
+    model: settings.model,
+    messages: chatMessages(request, buildChatSystemPrompt(request, settings.thinkingMode)),
+    temperature: 0.4,
+    max_tokens: resolveMaxOutputTokens(settings.contextLength),
+    stream: true
+  };
+
+  if (supportsThinkingExtension(settings.provider) && settings.thinkingMode === "off") {
+    requestBody.chat_template_kwargs = {
+      enable_thinking: false
+    };
+  }
+
+  return streamJsonLines(
+    new URL("/v1/chat/completions", settings.apiUrl).toString(),
+    requestBody,
+    handlers,
+    (payload) => {
+      const choices = payload.choices as Array<{
+        delta?: { content?: string | null; reasoning_content?: string | null; reasoning?: string | null };
+        message?: { content?: string | null };
+      }> | undefined;
+      const choice = choices?.[0];
+      return {
+        content: choice?.delta?.content ?? choice?.message?.content ?? null,
+        thinking: choice?.delta?.reasoning_content ?? choice?.delta?.reasoning ?? null
+      };
+    },
+    (payload) => {
+      const choices = payload.choices as Array<{
+        message?: { content?: string | null };
+      }> | undefined;
+      return choices?.[0]?.message?.content ?? null;
+    },
+    signal,
+    buildOpenAiCompatibleAuthHeaders(settings)
+  );
+}
+
+async function streamAnthropicChat(
+  settings: AiSettings,
+  request: AiChatRequest,
+  handlers: AiStreamHandlers,
+  signal?: AbortSignal
+): Promise<string> {
+  const body = {
+    model: settings.model,
+    system: buildChatSystemPrompt(request, settings.thinkingMode),
+    max_tokens: resolveMaxOutputTokens(settings.contextLength),
+    stream: true,
+    messages: request.messages
+  };
+
+  return consumeAnthropicStream(
+    new URL("/v1/messages", settings.apiUrl).toString(),
+    body,
+    settings.apiKey,
+    handlers,
+    signal
+  );
+}
+
+export async function streamAiChat(
+  settings: AiSettings,
+  request: AiChatRequest,
+  handlers: AiStreamHandlers,
+  signal?: AbortSignal
+): Promise<string> {
+  assertValidEndpoint(settings.provider, settings.apiUrl, settings.apiKey);
+
+  if (!settings.model.trim()) {
+    throw new Error(i18n.t("aiClient.modelRequired"));
+  }
+
+  if (settings.provider === "ollama") {
+    return streamOllamaChat(settings, request, handlers, signal);
+  }
+
+  if (settings.provider === "anthropic") {
+    return streamAnthropicChat(settings, request, handlers, signal);
+  }
+
+  return streamOpenAiCompatibleChat(settings, request, handlers, signal);
 }
 
 // Strips a leading/trailing ```json ... ``` (or plain ``` ... ```) fence some

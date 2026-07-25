@@ -32,12 +32,12 @@ type DocumentPanelProps = {
   editorHandleRef: RefObject<EditorHandle>;
   editorFocusRequestId: number;
   onMarkdownChange: (markdown: string) => void;
+  onCanonicalMarkdown: (filePath: string, markdown: string) => void;
   onRequestSidebarFocus: () => void;
   onRequestFileOpen: (targetFilePath: string) => void;
   onAiLoadingChange: (isLoading: boolean) => void;
   onAiPendingChange: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
-  onAssistantSettingsRequest: () => void;
   onZenModeRequest: () => void;
 };
 
@@ -65,12 +65,12 @@ export function DocumentPanel({
   editorHandleRef,
   editorFocusRequestId,
   onMarkdownChange,
+  onCanonicalMarkdown,
   onRequestSidebarFocus,
   onRequestFileOpen,
   onAiLoadingChange,
   onAiPendingChange,
   onAiSettingsRequest,
-  onAssistantSettingsRequest,
   onZenModeRequest
 }: DocumentPanelProps) {
   const { t } = useTranslation();
@@ -173,6 +173,7 @@ export function DocumentPanel({
                 ref={editorHandleRef}
                 markdown={selectedFileContent}
                 onMarkdownChange={onMarkdownChange}
+                onCanonicalMarkdown={onCanonicalMarkdown}
                 folderPath={folderPath}
                 filePath={selectedFilePath}
                 editorFocusRequestId={editorFocusRequestId}
@@ -181,7 +182,6 @@ export function DocumentPanel({
                 onAiLoadingChange={onAiLoadingChange}
                 onAiPendingChange={onAiPendingChange}
                 onAiSettingsRequest={onAiSettingsRequest}
-                onAssistantSettingsRequest={onAssistantSettingsRequest}
                 onZenModeRequest={onZenModeRequest}
               />
             )}

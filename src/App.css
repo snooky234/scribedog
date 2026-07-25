@@ -24,6 +24,7 @@
 @import "./styles/print.css";
 @import "./styles/find.css";
 @import "./styles/zen-mode.css";
+@import "./styles/chat.css";
 
 @theme inline {
   --font-heading: var(--font-sans);

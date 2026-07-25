@@ -19,6 +19,15 @@
   color: rgba(var(--text-rgb),0.94);
 }
 
+/* Selection highlight the app paints itself while the focus sits somewhere else
+   (typically the AI chat input) — see src/lib/inactiveSelection.ts. Deliberately
+   a little softer than the native selection so the difference between "selected"
+   and "selected, editor not focused" stays readable. */
+.editor-view__surface .pm-inactive-selection {
+  background: rgba(var(--selection-rgb), 0.26);
+  border-radius: 0.15rem;
+}
+
 .editor-view__surface h1 {
   font-size: clamp(1.55rem, 1.9vw, 1.95rem);
   line-height: 1.1;

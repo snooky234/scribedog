@@ -15,6 +15,13 @@
   margin: 0.9rem 0 0.4rem;
 }
 
+/* And above the chat composer, where the panel is narrow. */
+.editor-view__feedback--chat {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.85rem;
+}
+
 .editor-view__feedback--voice .editor-view__feedback-message::before {
   content: "";
   display: inline-block;
@@ -39,6 +46,14 @@
   background: rgba(var(--surface-rgb),0.74);
   color: rgba(var(--text-rgb),0.8);
   cursor: pointer;
+}
+
+/* In the chat footer the button sits in a gap-spaced row next to the
+   assistant select, so it drops its own margin and matches that row's height. */
+.voice-mic-button--chat {
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-left: 0;
 }
 
 .voice-mic-button:hover:not(:disabled) {

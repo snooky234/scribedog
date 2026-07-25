@@ -130,6 +130,41 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       saveError: null
     });
   },
+  // A markdown file can be written in more than one way for the same document
+  // (loose lists, "*" vs "-" bullets, "1)" vs "1."), and the editor always
+  // serializes the one canonical form. Without this, opening such a file
+  // flagged it as unsaved before the user had typed a single character.
+  // The file on disk stays untouched — only the in-memory baseline moves to
+  // the canonical form, and only while the document is unmodified, so a real
+  // edit can never be swallowed here.
+  adoptCanonicalFileContent: (filePath: string, markdown: string) => {
+    const { selectedFilePath, selectedFileContent, selectedFileBaseContent, fileDocuments } = get();
+    const isSelected = filePath === selectedFilePath;
+    const currentDocument = fileDocuments[filePath];
+    const content = currentDocument?.content ?? (isSelected ? selectedFileContent : null);
+    const baseContent = currentDocument?.baseContent ?? (isSelected ? selectedFileBaseContent : null);
+
+    if (content === null || baseContent === null || content !== baseContent || markdown === baseContent) {
+      return;
+    }
+
+    set({
+      fileDocuments: {
+        ...fileDocuments,
+        [filePath]: {
+          content: markdown,
+          baseContent: markdown
+        }
+      },
+      ...(isSelected
+        ? {
+            selectedFileContent: markdown,
+            selectedFileBaseContent: markdown,
+            isDirty: false
+          }
+        : {})
+    });
+  },
   discardSelectedFileChanges: () => {
     const { selectedFilePath, selectedFileBaseContent, fileDocuments } = get();
 

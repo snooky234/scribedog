@@ -138,3 +138,28 @@
   gap: 0.4rem;
   margin-top: 0.6rem;
 }
+
+/* Proposals from the chat agent reuse the rewrite diff's look, but several
+   of them can sit in the document at once — hence the tighter spacing. */
+.ai-diff-widget--suggestion {
+  margin: 0.3rem 0 0.7rem;
+}
+
+/* Shared by the thinking toggles in the editor toolbar and in the chat
+   panel — they're the same control and have to read as the same control.
+   The Toggle component always adds .editor-toolbar__button, whose pressed
+   rule (editor-toolbar.css, imported later) would otherwise win on equal
+   specificity and paint the icon monochrome — hence the doubled class. */
+.ai-thinking-toggle.ai-thinking-toggle[aria-pressed="false"] {
+  color: rgba(var(--overlay-rgb),0.35);
+}
+
+.ai-thinking-toggle.ai-thinking-toggle[aria-pressed="true"] {
+  border-color: rgba(192, 132, 252, 0.55);
+  background: rgba(168, 85, 247, 0.18);
+  color: rgb(192, 132, 252);
+}
+
+.ai-thinking-toggle.ai-thinking-toggle[aria-pressed="true"]:hover {
+  background: rgba(168, 85, 247, 0.28);
+}

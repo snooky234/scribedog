@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { EmojiPicker } from "@/components/EmojiPicker";
-import { DEFAULT_ASSISTANT_INSTRUCTION } from "@/lib/aiClient";
+import { DEFAULT_CHAT_ASSISTANT_INSTRUCTION } from "@/lib/aiClient";
 import {
   DEFAULT_ASSISTANT_ID,
   useAssistantsStore,
@@ -192,7 +192,7 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
               type="button"
               variant="outline"
               className="assistants__reset"
-              onClick={() => setInstruction(DEFAULT_ASSISTANT_INSTRUCTION)}
+              onClick={() => setInstruction(DEFAULT_CHAT_ASSISTANT_INSTRUCTION)}
             >
               <RotateCcw />
               {t("assistants.resetToDefault")}

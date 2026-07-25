@@ -24,8 +24,13 @@ const SHORTCUTS: ShortcutDefinition[] = [
   { id: "findReplace", keys: [[{ mod: "ctrl" }, { literal: "F" }]], descriptionKey: "shortcutsDialog.items.findReplace" },
   {
     id: "zenMode",
-    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "Z" }]],
+    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "Y" }]],
     descriptionKey: "shortcutsDialog.items.zenMode"
+  },
+  {
+    id: "toggleChat",
+    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "A" }]],
+    descriptionKey: "shortcutsDialog.items.toggleChat"
   },
   {
     id: "aiEditDialog",

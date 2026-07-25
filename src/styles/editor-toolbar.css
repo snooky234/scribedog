@@ -133,6 +133,16 @@
   background: linear-gradient(120deg, rgba(180, 100, 250, 0.95), rgba(157, 61, 244, 0.95));
 }
 
+.editor-toolbar__chat-button {
+  border: 1px solid rgba(192, 132, 252, 0.5);
+  background: linear-gradient(120deg, rgba(168, 85, 247, 0.9), rgba(147, 51, 234, 0.9));
+  color: rgba(245, 240, 255, 0.98);
+}
+
+.editor-toolbar__chat-button:hover {
+  background: linear-gradient(120deg, rgba(180, 100, 250, 0.95), rgba(157, 61, 244, 0.95));
+}
+
 .editor-toolbar__ai-check-button:disabled {
   border-color: rgba(var(--overlay-rgb),0.12);
   background: rgba(var(--overlay-rgb),0.06);
@@ -158,19 +168,8 @@
   outline-offset: 1px;
 }
 
-.editor-toolbar__thinking-toggle[aria-pressed="false"] {
-  color: rgba(var(--overlay-rgb),0.35);
-}
-
-.editor-toolbar__thinking-toggle[aria-pressed="true"] {
-  border-color: rgba(192, 132, 252, 0.55);
-  background: rgba(168, 85, 247, 0.18);
-  color: rgb(192, 132, 252);
-}
-
-.editor-toolbar__thinking-toggle[aria-pressed="true"]:hover {
-  background: rgba(168, 85, 247, 0.28);
-}
+/* The thinking toggle's own look lives in ai-widgets.css
+   (.ai-thinking-toggle), shared with the one in the chat panel. */
 
 .editor-popover {
   position: fixed;

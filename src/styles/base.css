@@ -75,6 +75,15 @@ body {
   overflow: hidden;
 }
 
+/* No `gap` here: grid `gap` applies to every column boundary at once, which
+   would double up the sidebar/content spacing that the 1.25rem resizer
+   column to its left already provides. The equivalent 1.25rem resizer
+   column before the chat panel is the actual gap for that boundary. */
+.workspace-grid--chat-open {
+  grid-template-columns:
+    var(--sidebar-width, 320px) 1.25rem minmax(0, 1fr) 1.25rem var(--chat-width, 380px);
+}
+
 .workspace-resizer {
   position: relative;
   display: flex;
@@ -103,7 +112,8 @@ body {
   outline: none;
 }
 
-body.is-resizing-sidebar {
+body.is-resizing-sidebar,
+body.is-resizing-chat {
   cursor: col-resize;
   user-select: none;
 }

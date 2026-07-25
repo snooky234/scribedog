@@ -7,8 +7,12 @@ import { Sidebar } from "@/components/Sidebar";
 import { AppDialogs } from "@/components/app/AppDialogs";
 import { DocumentPanel } from "@/components/app/DocumentPanel";
 import { ZenMode } from "@/components/app/ZenMode";
+import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ChatSessionOverview } from "@/components/chat/ChatSessionOverview";
+import { registerEditorToolBridge } from "@/lib/chat/agentTools";
 import type { BatchEntry, PendingFolderRename } from "@/components/FileTree";
 import { useAppVersion } from "@/hooks/useAppVersion";
+import { CHAT_MAX_WIDTH, CHAT_MIN_WIDTH, useChatWidth } from "@/hooks/useChatWidth";
 import { useDeleteTarget } from "@/hooks/useDeleteTarget";
 import { useExportTarget } from "@/hooks/useExportTarget";
 import { useFolderWatcher } from "@/hooks/useFolderWatcher";
@@ -29,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
 import type { Assistant } from "@/store/useAssistantsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
+import { useChatStore } from "@/store/useChatStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 import "./App.css";
@@ -77,6 +82,9 @@ function App() {
   const updateSelectedFileContent = useAppStore(
     (state) => state.updateSelectedFileContent
   );
+  const adoptCanonicalFileContent = useAppStore(
+    (state) => state.adoptCanonicalFileContent
+  );
   const discardSelectedFileChanges = useAppStore(
     (state) => state.discardSelectedFileChanges
   );
@@ -99,6 +107,9 @@ function App() {
   const loadAiSettings = useAiSettingsStore((state) => state.loadSettings);
   const aiSettings = useAiSettingsStore((state) => state.settings);
   const updateAiSettings = useAiSettingsStore((state) => state.updateSettings);
+  const isChatOpen = useChatStore((state) => state.isOpen);
+  const chatView = useChatStore((state) => state.view);
+  const setChatFolder = useChatStore((state) => state.setFolder);
 
   const dirtyFilePaths = useMemo(
     () =>
@@ -127,6 +138,8 @@ function App() {
 
   const { sidebarWidth, isResizingSidebar, handleResizeStart, handleResizeKeyDown } =
     useSidebarWidth();
+  const { chatWidth, isResizingChat, handleChatResizeStart, handleChatResizeKeyDown } =
+    useChatWidth();
 
   const zenWidth = useEditorSettingsStore((state) => state.zenWidth);
   const { isZenMode, enterZenMode, exitZenMode } = useZenMode({
@@ -290,11 +303,51 @@ function App() {
   useEffect(() => {
     setIsAiLoading(false);
     setIsAiActionPending(false);
+
+    // A selection belongs to the document it was made in. The editor pushes its
+    // own selection changes into the chat store, but it cannot cover the two
+    // cases handled here: a file switch remounts it with a fresh, empty
+    // selection, and closing the file unmounts it entirely.
+    useChatStore.getState().setEditorSelection("");
   }, [selectedFilePath]);
 
   useEffect(() => {
     void loadAiSettings();
   }, [loadAiSettings]);
+
+  // Chat sessions are vault-scoped (persisted into .scribedog/); reload them
+  // whenever the opened folder changes.
+  useEffect(() => {
+    void setChatFolder(folderPath);
+  }, [folderPath, setChatFolder]);
+
+  // The chat agent's document tools (src/lib/chat/agentTools.ts) reach the
+  // editor through this bridge rather than through props, since the store
+  // that drives the agent loop has no path down into the editor component.
+  useEffect(() => {
+    registerEditorToolBridge({
+      getDocument: () => editorHandleRef.current?.getMarkdown() ?? "",
+      getSelection: () => editorHandleRef.current?.getSelectionText() ?? "",
+      listImageSources: () => editorHandleRef.current?.listImageSources() ?? [],
+      listPendingProposals: () => editorHandleRef.current?.listPendingProposals() ?? [],
+      acceptPendingProposals: () => editorHandleRef.current?.acceptPendingProposals() ?? 0,
+      discardPendingProposals: () => editorHandleRef.current?.discardPendingProposals() ?? 0,
+      proposeSelectionReplacement: (text) =>
+        editorHandleRef.current?.proposeSelectionReplacement(text) ?? "failed",
+      proposeInsertion: (text, anchorText) =>
+        editorHandleRef.current?.proposeInsertion(text, anchorText) ?? "failed",
+      proposePassageReplacement: (oldText, newText) =>
+        editorHandleRef.current?.proposePassageReplacement(oldText, newText) ?? "failed",
+      setImageWidth: (src, request) => editorHandleRef.current?.setImageWidth(src, request) ?? null
+    });
+
+    return () => registerEditorToolBridge(null);
+  }, []);
+
+  const openAssistantSettings = () => {
+    setSettingsInitialTab("assistants");
+    setIsAiSettingsOpen(true);
+  };
 
   useStartupFolder(openFolderAtPath);
   useFolderWatcher(refreshFolderFiles);
@@ -315,9 +368,18 @@ function App() {
     >
       <div className="workspace">
         <section
-          className={cn("workspace-grid", isZenMode && "workspace-grid--zen")}
+          className={cn(
+            "workspace-grid",
+            isZenMode && "workspace-grid--zen",
+            isChatOpen && "workspace-grid--chat-open"
+          )}
           aria-label={t("app.workspaceLabel")}
-          style={{ "--sidebar-width": `${sidebarWidth}px` } as React.CSSProperties}
+          style={
+            {
+              "--sidebar-width": `${sidebarWidth}px`,
+              "--chat-width": `${chatWidth}px`
+            } as React.CSSProperties
+          }
         >
           <Sidebar
             folderPath={folderPath}
@@ -402,6 +464,7 @@ function App() {
             editorHandleRef={editorHandleRef}
             editorFocusRequestId={editorFocusRequestId}
             onMarkdownChange={updateSelectedFileContent}
+            onCanonicalMarkdown={adoptCanonicalFileContent}
             onRequestSidebarFocus={() => setSidebarFocusRequestId((id) => id + 1)}
             onRequestFileOpen={(targetFilePath) => void selectFilePathSafely(targetFilePath)}
             onAiLoadingChange={setIsAiLoading}
@@ -410,12 +473,41 @@ function App() {
               setSettingsInitialTab("ai");
               setIsAiSettingsOpen(true);
             }}
-            onAssistantSettingsRequest={() => {
-              setSettingsInitialTab("assistants");
-              setIsAiSettingsOpen(true);
-            }}
             onZenModeRequest={enterZenMode}
           />
+
+          {isChatOpen ? (
+            <div
+              className={cn(
+                "workspace-resizer",
+                isResizingChat && "workspace-resizer--active"
+              )}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={t("app.chatResizeLabel")}
+              aria-valuenow={chatWidth}
+              aria-valuemin={CHAT_MIN_WIDTH}
+              aria-valuemax={CHAT_MAX_WIDTH}
+              tabIndex={0}
+              onPointerDown={handleChatResizeStart}
+              onKeyDown={handleChatResizeKeyDown}
+            >
+              <span className="workspace-resizer__grip" aria-hidden="true" />
+            </div>
+          ) : null}
+
+          {isChatOpen ? (
+            <aside className="chat-column" aria-label={t("chat.panelLabel")}>
+              {chatView === "overview" ? (
+                <ChatSessionOverview />
+              ) : (
+                <ChatPanel
+                  canEditDocument={selectedFilePath !== null}
+                  onAssistantSettingsRequest={openAssistantSettings}
+                />
+              )}
+            </aside>
+          ) : null}
         </section>
       </div>
 

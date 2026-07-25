@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/assets/scribedog-logo-animated.svg" alt="ScribeDog logo" width="150">
+<img src="src/assets/scribedog-logo-animated.svg" alt="ScribeDog logo" width="160">
 
 # ScribeDog
 
@@ -115,7 +115,7 @@ and the source in this repository.
 - **AI spelling & grammar check** — select a passage, press `Ctrl+Shift+X` (or use the toolbar button), and get a clear list of issues with suggested corrections and explanations; apply them one by one or all at once
 
 ### 🧘 Zen mode — distraction-free, full-screen writing
-- Press `Ctrl+Shift+Z` (or the toolbar button) to strip away the sidebar, toolbar, and document header and go full screen, leaving just your text, centered in a comfortable column
+- Press `Ctrl+Shift+Y` (or the toolbar button) to strip away the sidebar, toolbar, and document header and go full screen, leaving just your text, centered in a comfortable column
 - **Drag the column edges** (or use the arrow keys once focused) to resize the text width to your taste — the setting is remembered
 - A small dot in the top-right corner shows unsaved changes; a single button in the top-left takes you back to the normal view
 

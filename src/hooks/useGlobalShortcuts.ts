@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { RefObject } from "react";
 
 import type { EditorHandle } from "@/components/Editor";
+import { useChatStore } from "@/store/useChatStore";
 import { ZOOM_STEP, useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 type UseGlobalShortcutsOptions = {
@@ -35,6 +36,14 @@ export function useGlobalShortcuts({
         event.preventDefault();
         const { spellcheckEnabled, setSpellcheckEnabled } = useEditorSettingsStore.getState();
         setSpellcheckEnabled(!spellcheckEnabled);
+        return;
+      }
+
+      // Toggle the AI chat side panel: Ctrl+Shift+A. event.code guards layouts
+      // where Shift+A composes a different key.
+      if (event.shiftKey && !event.altKey && (key === "a" || event.code === "KeyA")) {
+        event.preventDefault();
+        useChatStore.getState().togglePanel();
         return;
       }
 

@@ -18,7 +18,9 @@ export default defineConfig(async () => ({
     },
   },
 
-  // Only pure logic is covered (no component rendering), so no jsdom is needed.
+  // Only pure logic is covered (no component rendering), so node is the right
+  // default; the few suites that parse markdown through a DOM opt into jsdom
+  // per file with a "@vitest-environment jsdom" comment.
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],

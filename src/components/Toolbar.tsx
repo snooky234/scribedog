@@ -25,6 +25,7 @@ import {
   List,
   ListOrdered,
   Megaphone,
+  MessagesSquare,
   OctagonAlert,
   PawPrint,
   Pilcrow,
@@ -63,7 +64,7 @@ import { CALLOUT_VARIANTS, type CalloutVariant } from "@/lib/editor/extensions/c
 import { checkSpellcheckDictionary } from "@/lib/spellcheckDictionary";
 import { useAiModelsStore } from "@/store/useAiModelsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
-import { DEFAULT_ASSISTANT_ID, useAssistantsStore, type Assistant } from "@/store/useAssistantsStore";
+import { useChatStore } from "@/store/useChatStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 type ToolbarProps = {
@@ -73,20 +74,12 @@ type ToolbarProps = {
   onAiRequest: () => void;
   onAiCheckRequest: () => void;
   onAiSettingsRequest: () => void;
-  onAssistantSettingsRequest: () => void;
   onPrintRequest: () => void;
   onSearchRequest: () => void;
   onZenModeRequest: () => void;
 };
 
 const OPEN_AI_SETTINGS_VALUE = "__open-ai-settings__";
-const OPEN_ASSISTANT_SETTINGS_VALUE = "__open-assistant-settings__";
-
-export function assistantDisplayName(assistant: Assistant, defaultName: string): string {
-  const name = assistant.id === DEFAULT_ASSISTANT_ID && !assistant.name ? defaultName : assistant.name;
-
-  return assistant.emoji ? `${assistant.emoji} ${name}` : name;
-}
 
 type ToggleButtonProps = {
   pressed: boolean;
@@ -115,45 +108,10 @@ function ToggleButton({
   );
 }
 
-function AssistantQuickSelect({ onAssistantSettingsRequest }: { onAssistantSettingsRequest: () => void }) {
-  const { t } = useTranslation();
-  const assistants = useAssistantsStore((state) => state.assistants);
-  const selectedAssistantId = useAssistantsStore((state) => state.selectedAssistantId);
-  const selectAssistant = useAssistantsStore((state) => state.selectAssistant);
-
-  return (
-    <select
-      className="editor-toolbar__model-select"
-      aria-label={t("toolbar.aiAssistant")}
-      title={t("toolbar.aiAssistant")}
-      value={selectedAssistantId}
-      onChange={(event) => {
-        const value = event.target.value;
-        if (value === OPEN_ASSISTANT_SETTINGS_VALUE) {
-          onAssistantSettingsRequest();
-          return;
-        }
-        selectAssistant(value);
-      }}
-    >
-      <option value={OPEN_ASSISTANT_SETTINGS_VALUE}>{t("toolbar.aiOpenAssistantSettings")}</option>
-      <optgroup label={t("toolbar.aiAssistantsGroup")}>
-        {assistants.map((assistant) => (
-          <option key={assistant.id} value={assistant.id}>
-            {assistantDisplayName(assistant, t("assistants.defaultName"))}
-          </option>
-        ))}
-      </optgroup>
-    </select>
-  );
-}
-
 function AiQuickSettings({
-  onAiSettingsRequest,
-  onAssistantSettingsRequest
+  onAiSettingsRequest
 }: {
   onAiSettingsRequest: () => void;
-  onAssistantSettingsRequest: () => void;
 }) {
   const { t } = useTranslation();
   const settings = useAiSettingsStore((state) => state.settings);
@@ -212,10 +170,9 @@ function AiQuickSettings({
           </optgroup>
         ) : null}
       </select>
-      <AssistantQuickSelect onAssistantSettingsRequest={onAssistantSettingsRequest} />
       <Toggle
         pressed={thinkingEnabled}
-        className="editor-toolbar__thinking-toggle"
+        className="ai-thinking-toggle"
         aria-label={t("toolbar.aiThinking")}
         title={thinkingEnabled ? t("toolbar.aiThinkingOn") : t("toolbar.aiThinkingOff")}
         onClick={() => {
@@ -472,7 +429,6 @@ export function Toolbar({
   onAiRequest,
   onAiCheckRequest,
   onAiSettingsRequest,
-  onAssistantSettingsRequest,
   onPrintRequest,
   onSearchRequest,
   onZenModeRequest
@@ -513,7 +469,7 @@ export function Toolbar({
       <div className="editor-toolbar__group">
         <Button
           type="button"
-          size="sm"
+          size="icon-sm"
           aria-label={t("toolbar.aiButton")}
           title={t("toolbar.aiButtonTitle")}
           className="editor-toolbar__ai-button"
@@ -523,7 +479,6 @@ export function Toolbar({
           onClick={onAiRequest}
         >
           <PawPrint />
-          {t("toolbar.aiButtonLabel")}
         </Button>
         {/* The Button's disabled state sets pointer-events: none, which would
             suppress the native title tooltip while no text is selected — the
@@ -545,10 +500,20 @@ export function Toolbar({
             <SpellCheck />
           </Button>
         </span>
-        <AiQuickSettings
-          onAiSettingsRequest={onAiSettingsRequest}
-          onAssistantSettingsRequest={onAssistantSettingsRequest}
-        />
+        <Button
+          type="button"
+          size="icon-sm"
+          aria-label={t("chat.openButton")}
+          title={`${t("chat.openButtonTitle")} (${t("common.keys.ctrl")}+${t("common.keys.shift")}+A)`}
+          className="editor-toolbar__chat-button"
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
+          onClick={() => useChatStore.getState().togglePanel()}
+        >
+          <MessagesSquare />
+        </Button>
+        <AiQuickSettings onAiSettingsRequest={onAiSettingsRequest} />
       </div>
 
       <div className="editor-toolbar__separator" aria-hidden="true" />

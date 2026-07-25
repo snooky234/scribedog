@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { DEFAULT_ASSISTANT_INSTRUCTION } from "@/lib/aiClient";
+import { DEFAULT_CHAT_ASSISTANT_INSTRUCTION, DEFAULT_REWRITE_INSTRUCTION } from "@/lib/aiClient";
 
 const ASSISTANTS_STORAGE_KEY = "scribedog-assistants";
 
@@ -31,8 +31,23 @@ function createDefaultAssistant(): Assistant {
     emoji: "🐾",
     name: "",
     description: "",
-    instruction: DEFAULT_ASSISTANT_INSTRUCTION
+    instruction: DEFAULT_CHAT_ASSISTANT_INSTRUCTION
   };
+}
+
+// Assistants used to also drive "Rewrite with AI" and were seeded from the
+// internal rewrite instruction. Now assistants serve only the chat panel, so a
+// default assistant still carrying that old rewrite text is silently migrated
+// to the new conversational default. Custom assistants are left untouched.
+function migrateDefaultAssistantInstruction(assistant: Assistant): Assistant {
+  if (
+    assistant.id === DEFAULT_ASSISTANT_ID &&
+    assistant.instruction.trim() === DEFAULT_REWRITE_INSTRUCTION.trim()
+  ) {
+    return { ...assistant, instruction: DEFAULT_CHAT_ASSISTANT_INSTRUCTION };
+  }
+
+  return assistant;
 }
 
 function normalizeAssistant(raw: Partial<Assistant> | null): Assistant | null {
@@ -58,8 +73,9 @@ function normalizeAssistants(rawList: unknown): Assistant[] {
         .filter((entry): entry is Assistant => entry !== null)
     : [];
 
-  const defaultAssistant =
-    parsed.find((assistant) => assistant.id === DEFAULT_ASSISTANT_ID) ?? createDefaultAssistant();
+  const defaultAssistant = migrateDefaultAssistantInstruction(
+    parsed.find((assistant) => assistant.id === DEFAULT_ASSISTANT_ID) ?? createDefaultAssistant()
+  );
   const customAssistants = parsed.filter((assistant) => assistant.id !== DEFAULT_ASSISTANT_ID);
 
   return [defaultAssistant, ...customAssistants];
@@ -166,4 +182,12 @@ export function getSelectedAssistant(state: AssistantsState): Assistant {
     state.assistants.find((assistant) => assistant.id === state.selectedAssistantId) ??
     state.assistants[0]
   );
+}
+
+// The default assistant stores an empty name and is rendered with a localized
+// label instead, so it follows the UI language. Prefixes the emoji when set.
+export function assistantDisplayName(assistant: Assistant, defaultName: string): string {
+  const name = assistant.id === DEFAULT_ASSISTANT_ID && !assistant.name ? defaultName : assistant.name;
+
+  return assistant.emoji ? `${assistant.emoji} ${name}` : name;
 }
