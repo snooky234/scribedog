@@ -420,6 +420,7 @@
   "aiClient": {
     "invalidResponse": "The AI response is invalid.",
     "endpointStatus": "The AI endpoint responded with status {{status}}.",
+    "requestTimeout": "The AI endpoint did not respond within {{seconds}} seconds.",
     "urlMustBeLocal": "The AI URL must point to a local HTTP endpoint.",
     "urlMustBeHttps": "This cloud provider's API URL must start with https://.",
     "apiKeyRequired": "Please enter an API key in the AI settings.",

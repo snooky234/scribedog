@@ -424,22 +424,54 @@ async function extractResponseErrorMessage(response: Response): Promise<string> 
   return i18n.t("aiClient.endpointStatus", { status: response.status });
 }
 
+// A request that never answers must not leave the chat spinning forever. The
+// agent loop awaits postJson with no deadline of its own, so a stalled request
+// — a multi-megabyte image body against a cloud endpoint is the case seen in
+// practice — shows up as an endless typing indicator with nothing to report.
+// Generous enough that a slow local model on CPU still finishes a full step.
+const REQUEST_TIMEOUT_MS = 180_000;
+
 async function postJson(url: string, body: unknown, extraHeaders?: Record<string, string>, signal?: AbortSignal) {
-  const response = await tauriFetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...extraHeaders
-    },
-    body: JSON.stringify(body),
-    signal
-  });
+  // Own controller so the deadline and the user's cancel button can both stop
+  // the request while staying distinguishable: only the timeout gets rewritten
+  // into a message, a cancel stays an AbortError the caller swallows.
+  const controller = new AbortController();
+  const forwardAbort = () => controller.abort();
+  let timedOut = false;
 
-  if (!response.ok) {
-    throw new Error(await extractResponseErrorMessage(response));
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
+
+  signal?.addEventListener("abort", forwardAbort);
+
+  try {
+    const response = await tauriFetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...extraHeaders
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(await extractResponseErrorMessage(response));
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (timedOut) {
+      throw new Error(i18n.t("aiClient.requestTimeout", { seconds: Math.round(REQUEST_TIMEOUT_MS / 1000) }));
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", forwardAbort);
   }
-
-  return response.json();
 }
 
 async function getJson(url: string, signal?: AbortSignal, extraHeaders?: Record<string, string>) {

@@ -420,6 +420,7 @@
   "aiClient": {
     "invalidResponse": "AI の応答が無効です。",
     "endpointStatus": "AI エンドポイントがステータス {{status}} を返しました。",
+    "requestTimeout": "AI エンドポイントが {{seconds}} 秒以内に応答しませんでした。",
     "urlMustBeLocal": "AI の URL はローカルの HTTP エンドポイントを指定する必要があります。",
     "urlMustBeHttps": "このクラウドプロバイダーの API URL は https:// で始まる必要があります。",
     "apiKeyRequired": "AI 設定で API キーを入力してください。",

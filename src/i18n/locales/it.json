@@ -420,6 +420,7 @@
   "aiClient": {
     "invalidResponse": "La risposta dell'IA non è valida.",
     "endpointStatus": "L'endpoint IA ha risposto con stato {{status}}.",
+    "requestTimeout": "L'endpoint IA non ha risposto entro {{seconds}} secondi.",
     "urlMustBeLocal": "L'URL dell'IA deve puntare a un endpoint HTTP locale.",
     "urlMustBeHttps": "L'URL API di questo provider cloud deve iniziare con https://.",
     "apiKeyRequired": "Inserisci una chiave API nelle impostazioni IA.",

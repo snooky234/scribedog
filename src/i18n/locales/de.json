@@ -420,6 +420,7 @@
   "aiClient": {
     "invalidResponse": "Die KI-Antwort ist ungültig.",
     "endpointStatus": "Der KI-Endpunkt antwortete mit Status {{status}}.",
+    "requestTimeout": "Der KI-Endpunkt hat innerhalb von {{seconds}} Sekunden nicht geantwortet.",
     "urlMustBeLocal": "Die KI-URL muss auf einen lokalen HTTP-Endpunkt zeigen.",
     "urlMustBeHttps": "Die API-URL dieses Cloud-Providers muss mit https:// beginnen.",
     "apiKeyRequired": "Bitte einen API-Key in den KI-Einstellungen angeben.",

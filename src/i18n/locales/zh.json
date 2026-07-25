@@ -420,6 +420,7 @@
   "aiClient": {
     "invalidResponse": "AI 响应无效。",
     "endpointStatus": "AI 接口返回状态码 {{status}}。",
+    "requestTimeout": "AI 接口在 {{seconds}} 秒内没有响应。",
     "urlMustBeLocal": "AI 地址必须指向本地 HTTP 接口。",
     "urlMustBeHttps": "该云服务提供商的 API 地址必须以 https:// 开头。",
     "apiKeyRequired": "请在 AI 设置中输入 API 密钥。",

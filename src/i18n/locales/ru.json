@@ -422,6 +422,7 @@
   "aiClient": {
     "invalidResponse": "Ответ ИИ недействителен.",
     "endpointStatus": "Конечная точка ИИ ответила со статусом {{status}}.",
+    "requestTimeout": "Конечная точка ИИ не ответила в течение {{seconds}} секунд.",
     "urlMustBeLocal": "URL ИИ должен указывать на локальную конечную точку HTTP.",
     "urlMustBeHttps": "URL API этого облачного провайдера должен начинаться с https://.",
     "apiKeyRequired": "Введите ключ API в настройках ИИ.",

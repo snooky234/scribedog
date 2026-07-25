@@ -19,6 +19,11 @@ export function ChatSessionOverview() {
   const deleteSession = useChatStore((state) => state.deleteSession);
   const newSession = useChatStore((state) => state.newSession);
   const closePanel = useChatStore((state) => state.closePanel);
+  // Only one turn can be in flight at a time, and it always belongs to the
+  // active session — so that one row gets the running indicator.
+  const isStreaming = useChatStore((state) => state.isStreaming);
+  const activeSessionId = useChatStore((state) => state.activeSessionId);
+  const runningSessionId = isStreaming ? activeSessionId : null;
 
   return (
     <div className="chat-overview">
@@ -58,8 +63,24 @@ export function ChatSessionOverview() {
                 className="chat-overview__open"
                 onClick={() => openSession(session.id)}
               >
-                <span className="chat-overview__title">
-                  {session.title || t("chat.untitledSession")}
+                <span className="chat-overview__heading">
+                  {session.id === runningSessionId ? (
+                    <span
+                      className="chat-overview__running"
+                      role="status"
+                      aria-label={t("chat.agentWorking")}
+                      title={t("chat.agentWorking")}
+                    >
+                      <span className="chat-thinking-dots" aria-hidden="true">
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                    </span>
+                  ) : null}
+                  <span className="chat-overview__title">
+                    {session.title || t("chat.untitledSession")}
+                  </span>
                 </span>
                 <span className="chat-overview__meta">{formatTimestamp(session.updatedAt)}</span>
               </button>

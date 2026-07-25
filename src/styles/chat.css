@@ -619,7 +619,22 @@
   cursor: pointer;
 }
 
+.chat-overview__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.chat-overview__running {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: rgba(var(--text-rgb), 0.4);
+}
+
 .chat-overview__title {
+  min-width: 0;
   font-size: 0.86rem;
   font-weight: 500;
   white-space: nowrap;

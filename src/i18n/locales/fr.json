@@ -420,6 +420,7 @@
   "aiClient": {
     "invalidResponse": "La réponse de l'IA est invalide.",
     "endpointStatus": "Le point de terminaison IA a répondu avec le statut {{status}}.",
+    "requestTimeout": "Le point de terminaison IA n'a pas répondu en {{seconds}} secondes.",
     "urlMustBeLocal": "L'URL de l'IA doit pointer vers un point de terminaison HTTP local.",
     "urlMustBeHttps": "L'URL de l'API de ce fournisseur cloud doit commencer par https://.",
     "apiKeyRequired": "Veuillez saisir une clé API dans les paramètres IA.",
