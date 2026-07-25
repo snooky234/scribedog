@@ -20,6 +20,7 @@
 @import "./styles/editor-toolbar.css";
 @import "./styles/editor-content.css";
 @import "./styles/dialogs.css";
+@import "./styles/versions.css";
 @import "./styles/responsive.css";
 @import "./styles/print.css";
 @import "./styles/find.css";

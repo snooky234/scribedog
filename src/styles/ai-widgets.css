@@ -76,8 +76,12 @@
    stays in place (tinted red), the AI result and its actions render as a
    widget right after it (tinted green). */
 .ai-diff-widget__original {
-  background: rgba(var(--error-bg-rgb),0.55);
+  background: var(--diff-removed-bg);
   border-radius: 0.2rem;
+  /* Underline accent on top of the tint: the tint alone has to stay light
+     enough to keep the text readable, which makes it easy to miss — the
+     accent line is what actually makes the marked range pop out. */
+  box-shadow: inset 0 -0.11em 0 var(--diff-removed-accent);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }

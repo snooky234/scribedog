@@ -113,6 +113,7 @@
     "tabGeneral": "General",
     "tabAi": "Configuración de IA",
     "tabAssistants": "Asistentes",
+    "tabVersioning": "Versiones",
     "language": "Idioma",
     "languageGerman": "Alemán",
     "languageEnglish": "Inglés",
@@ -166,6 +167,44 @@
     "newTitle": "Nuevo asistente",
     "deleteConfirmTitle": "¿Eliminar asistente?",
     "deleteConfirmDescription": "El asistente «{{name}}» se eliminará permanentemente."
+  },
+  "versions": {
+    "buttonLabel": "Versiones",
+    "popoverLabel": "Historial de versiones",
+    "popoverTitle": "Versiones",
+    "loading": "Cargando versiones…",
+    "empty": "Todavía no hay versiones guardadas.",
+    "showDiff": "Mostrar diferencias",
+    "restore": "Restaurar",
+    "restoring": "Restaurando…"
+  },
+  "versionDiff": {
+    "title": "Comparación de versiones",
+    "comparedWith": "Guardada {{timestamp}} · comparada con el contenido actual",
+    "viewMode": "Vista",
+    "inline": "En línea",
+    "sideBySide": "Lado a lado",
+    "legendOld": "Versión seleccionada",
+    "legendCurrent": "Contenido actual",
+    "skippedLines_one": "… {{count}} línea sin cambios",
+    "skippedLines_other": "… {{count}} líneas sin cambios",
+    "loading": "Cargando la versión…",
+    "loadError": "No se pudo cargar la versión.",
+    "identical": "Esta versión es idéntica al contenido actual."
+  },
+  "versioningSettings": {
+    "enable": "Activar el control de versiones",
+    "enableHint": "Cada vez que se guarda, se conserva una copia del archivo en la carpeta .scribedog. Desactivar el control de versiones solo impide crear versiones nuevas: el historial existente se conserva.",
+    "maxVersions": "Versiones por archivo",
+    "maxVersionsHint": "Al alcanzar el límite, se elimina la versión más antigua de ese archivo.",
+    "deleteAll": "Eliminar todas las versiones",
+    "deleteAllEyebrow": "Eliminar versiones",
+    "deleteAllTitle": "¿Eliminar permanentemente todas las versiones?",
+    "deleteAllDescription_one": "{{count}} versión guardada de todos los archivos de esta carpeta se eliminará permanentemente.",
+    "deleteAllDescription_other": "{{count}} versiones guardadas de todos los archivos de esta carpeta se eliminarán permanentemente.",
+    "storedCount_one": "{{count}} versión guardada en esta carpeta",
+    "storedCount_other": "{{count}} versiones guardadas en esta carpeta",
+    "noFolder": "No hay ninguna carpeta abierta."
   },
   "shortcutsDialog": {
     "title": "Atajos de teclado",
@@ -443,6 +482,7 @@
     "fileRenameError": "No se pudo renombrar el archivo.",
     "folderRenameError": "No se pudo renombrar la carpeta.",
     "fileDeleteError": "No se pudo eliminar el archivo.",
+    "versionRestoreError": "No se pudo restaurar la versión.",
     "folderDeleteError": "No se pudo eliminar la carpeta.",
     "newFileBaseName": "Nuevo archivo",
     "newFolderBaseName": "Nueva carpeta"

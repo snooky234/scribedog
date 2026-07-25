@@ -9,6 +9,7 @@ import {
   renameMarkdownFile,
   writeMarkdownFile
 } from "@/lib/fileSystem";
+import { readVersionContent } from "@/lib/fileVersions";
 
 import { isDocumentDirty } from "./documents";
 import { toErrorMessage } from "./errors";
@@ -25,6 +26,11 @@ import {
   normalizePathKey
 } from "./pathUtils";
 import type { AppSlice, FileSlice } from "./types";
+import {
+  deleteFileVersionHistory,
+  moveFileVersionHistory,
+  snapshotFileVersion
+} from "./versioning";
 
 export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
   selectFilePath: async (filePath: string) => {
@@ -202,6 +208,8 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
     try {
       await writeMarkdownFile(selectedFilePath, selectedFileContent);
 
+      snapshotFileVersion(folderPath, selectedFilePath, selectedFileContent);
+
       if (folderPath) {
         void cleanupOrphanedImages(
           folderPath,
@@ -248,6 +256,42 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       return false;
     }
   },
+  // Restoring writes the version's content into the open document and saves
+  // it, which creates a *new* version on top of the history. Nothing in the
+  // existing history is rewritten or removed, so a restore can itself be
+  // undone by restoring the entry below it.
+  restoreFileVersion: async (versionId: string) => {
+    const { folderPath, selectedFilePath, isDirty } = get();
+
+    if (!folderPath || !selectedFilePath) {
+      return false;
+    }
+
+    try {
+      const versionContent = await readVersionContent(folderPath, versionId);
+
+      // Unsaved edits would otherwise be overwritten without ever having been
+      // versioned. Saving them first puts them in the history too, so the
+      // restore stays reversible in both directions.
+      if (isDirty) {
+        await get().saveSelectedFile();
+      }
+
+      if (get().selectedFilePath !== selectedFilePath) {
+        return false;
+      }
+
+      get().updateSelectedFileContent(versionContent);
+
+      return await get().saveSelectedFile();
+    } catch (error) {
+      set({
+        fileError: toErrorMessage(error, i18n.t("store.versionRestoreError"))
+      });
+
+      return false;
+    }
+  },
   createNewFile: async (targetDirectory?: string) => {
     const { folderPath, selectedFilePath, filePaths, fileDocuments } = get();
 
@@ -270,6 +314,10 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       }
 
       await writeMarkdownFile(newFilePath, "");
+
+      // The empty initial state is a version like any other: it is what
+      // restoring "back to the beginning" has to land on.
+      snapshotFileVersion(folderPath, newFilePath, "");
 
       const parentRelativePath = getRelativeDisplayPath(folderPath, resolvedTargetDirectory);
       const currentManualOrder = get().manualOrder;
@@ -373,6 +421,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       }
 
       await renameMarkdownFile(filePath, newFilePath);
+      moveFileVersionHistory(get().folderPath, filePath, newFilePath);
 
       const currentState = get();
       const nextDocuments = { ...currentState.fileDocuments };
@@ -430,6 +479,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         fileDocuments[filePath]?.baseContent ?? (await readMarkdownFile(filePath).catch(() => ""));
 
       await deleteMarkdownFile(filePath);
+      deleteFileVersionHistory(folderPath, filePath);
 
       if (folderPath) {
         void cleanupOrphanedImages(folderPath, filePath, contentBeforeDelete, "").catch(() => undefined);
@@ -492,6 +542,10 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         });
       } else {
         await writeMarkdownFile(filePath, newContent);
+
+        // Project-wide replace overwrites files the user never opened, so
+        // this is exactly the case a version history has to cover.
+        snapshotFileVersion(get().folderPath, filePath, newContent);
 
         if (existingDocument) {
           set({

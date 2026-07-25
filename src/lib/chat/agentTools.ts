@@ -5,6 +5,7 @@
 // store — a non-serializable value that would otherwise force awkward prop
 // drilling through components that have nothing to do with the chat.
 
+import { FLAG_SUGGESTION_TOOL_NAME } from "@/lib/aiClient";
 import { normalizeImageSrc, resolveDocumentImagePath } from "@/lib/chat/imageAttachments";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 
@@ -429,7 +430,12 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
   // open — a new proposal next to unsettled ones is what the user has to
   // untangle afterwards. The reading tools stay available: the model still
   // needs them to work out what the user is asking for.
-  if (name === "replace_selection" || name === "insert_at_cursor" || name === "replace_passage") {
+  if (
+    name === "replace_selection" ||
+    name === "insert_at_cursor" ||
+    name === "replace_passage" ||
+    name === FLAG_SUGGESTION_TOOL_NAME
+  ) {
     const blocked = blockedByOpenReview();
 
     if (blocked) {
@@ -491,6 +497,13 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
         })
       };
     }
+    case FLAG_SUGGESTION_TOOL_NAME:
+      return {
+        content:
+          "OK: the user now sees a button to apply your last reply's suggestion. Wait for their decision — " +
+          "do not repeat or reformulate the suggestion, and do not also propose it with an editing tool " +
+          "unless the user explicitly asks you to apply it."
+      };
     default:
       return { content: `Error: unknown tool "${name}".` };
   }

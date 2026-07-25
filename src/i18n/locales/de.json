@@ -113,6 +113,7 @@
     "tabGeneral": "Allgemein",
     "tabAi": "KI-Einstellungen",
     "tabAssistants": "Assistenten",
+    "tabVersioning": "Versionierung",
     "language": "Sprache",
     "languageGerman": "Deutsch",
     "languageEnglish": "Englisch",
@@ -166,6 +167,44 @@
     "newTitle": "Neuer Assistent",
     "deleteConfirmTitle": "Assistent löschen?",
     "deleteConfirmDescription": "Der Assistent „{{name}}“ wird dauerhaft gelöscht."
+  },
+  "versions": {
+    "buttonLabel": "Versionen",
+    "popoverLabel": "Versionsverlauf",
+    "popoverTitle": "Versionen",
+    "loading": "Versionen werden geladen …",
+    "empty": "Noch keine Versionen gespeichert.",
+    "showDiff": "Unterschiede anzeigen",
+    "restore": "Wiederherstellen",
+    "restoring": "Stellt wieder her …"
+  },
+  "versionDiff": {
+    "title": "Versionsvergleich",
+    "comparedWith": "Gespeichert {{timestamp}} · verglichen mit dem aktuellen Stand",
+    "viewMode": "Ansicht",
+    "inline": "Untereinander",
+    "sideBySide": "Nebeneinander",
+    "legendOld": "Gewählte Version",
+    "legendCurrent": "Aktueller Stand",
+    "skippedLines_one": "… {{count}} unveränderte Zeile",
+    "skippedLines_other": "… {{count}} unveränderte Zeilen",
+    "loading": "Version wird geladen …",
+    "loadError": "Die Version konnte nicht geladen werden.",
+    "identical": "Diese Version stimmt mit dem aktuellen Stand überein."
+  },
+  "versioningSettings": {
+    "enable": "Versionierung aktivieren",
+    "enableHint": "Bei jedem Speichern wird eine Kopie der Datei im Ordner .scribedog abgelegt. Wird die Versionierung deaktiviert, entstehen keine neuen Versionen — der vorhandene Verlauf bleibt erhalten.",
+    "maxVersions": "Versionen pro Datei",
+    "maxVersionsHint": "Ist das Limit erreicht, wird jeweils die älteste Version dieser Datei gelöscht.",
+    "deleteAll": "Alle Versionen löschen",
+    "deleteAllEyebrow": "Versionen löschen",
+    "deleteAllTitle": "Alle Versionen endgültig löschen?",
+    "deleteAllDescription_one": "{{count}} gespeicherte Version aller Dateien in diesem Ordner wird unwiderruflich gelöscht.",
+    "deleteAllDescription_other": "{{count}} gespeicherte Versionen aller Dateien in diesem Ordner werden unwiderruflich gelöscht.",
+    "storedCount_one": "{{count}} gespeicherte Version in diesem Ordner",
+    "storedCount_other": "{{count}} gespeicherte Versionen in diesem Ordner",
+    "noFolder": "Kein Ordner geöffnet."
   },
   "shortcutsDialog": {
     "title": "Tastenkürzel",
@@ -443,6 +482,7 @@
     "fileRenameError": "Die Datei konnte nicht umbenannt werden.",
     "folderRenameError": "Der Ordner konnte nicht umbenannt werden.",
     "fileDeleteError": "Die Datei konnte nicht gelöscht werden.",
+    "versionRestoreError": "Die Version konnte nicht wiederhergestellt werden.",
     "folderDeleteError": "Der Ordner konnte nicht gelöscht werden.",
     "newFileBaseName": "Neue Datei",
     "newFolderBaseName": "Neuer Ordner"

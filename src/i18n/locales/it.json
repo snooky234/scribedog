@@ -113,6 +113,7 @@
     "tabGeneral": "Generale",
     "tabAi": "Impostazioni IA",
     "tabAssistants": "Assistenti",
+    "tabVersioning": "Versioni",
     "language": "Lingua",
     "languageGerman": "Tedesco",
     "languageEnglish": "Inglese",
@@ -166,6 +167,44 @@
     "newTitle": "Nuovo assistente",
     "deleteConfirmTitle": "Eliminare l'assistente?",
     "deleteConfirmDescription": "L'assistente “{{name}}” verrà eliminato definitivamente."
+  },
+  "versions": {
+    "buttonLabel": "Versioni",
+    "popoverLabel": "Cronologia delle versioni",
+    "popoverTitle": "Versioni",
+    "loading": "Caricamento delle versioni…",
+    "empty": "Nessuna versione salvata finora.",
+    "showDiff": "Mostra le differenze",
+    "restore": "Ripristina",
+    "restoring": "Ripristino…"
+  },
+  "versionDiff": {
+    "title": "Confronto tra versioni",
+    "comparedWith": "Salvata {{timestamp}} · confrontata con il contenuto attuale",
+    "viewMode": "Vista",
+    "inline": "In linea",
+    "sideBySide": "Affiancate",
+    "legendOld": "Versione selezionata",
+    "legendCurrent": "Contenuto attuale",
+    "skippedLines_one": "… {{count}} riga invariata",
+    "skippedLines_other": "… {{count}} righe invariate",
+    "loading": "Caricamento della versione…",
+    "loadError": "Impossibile caricare la versione.",
+    "identical": "Questa versione è identica al contenuto attuale."
+  },
+  "versioningSettings": {
+    "enable": "Attiva il versionamento",
+    "enableHint": "A ogni salvataggio una copia del file viene conservata nella cartella .scribedog. Disattivare il versionamento interrompe solo la creazione di nuove versioni: la cronologia esistente viene mantenuta.",
+    "maxVersions": "Versioni per file",
+    "maxVersionsHint": "Al raggiungimento del limite viene eliminata la versione più vecchia di quel file.",
+    "deleteAll": "Elimina tutte le versioni",
+    "deleteAllEyebrow": "Elimina versioni",
+    "deleteAllTitle": "Eliminare definitivamente tutte le versioni?",
+    "deleteAllDescription_one": "{{count}} versione salvata di tutti i file di questa cartella verrà eliminata definitivamente.",
+    "deleteAllDescription_other": "{{count}} versioni salvate di tutti i file di questa cartella verranno eliminate definitivamente.",
+    "storedCount_one": "{{count}} versione salvata in questa cartella",
+    "storedCount_other": "{{count}} versioni salvate in questa cartella",
+    "noFolder": "Nessuna cartella aperta."
   },
   "shortcutsDialog": {
     "title": "Scorciatoie da tastiera",
@@ -443,6 +482,7 @@
     "fileRenameError": "Impossibile rinominare il file.",
     "folderRenameError": "Impossibile rinominare la cartella.",
     "fileDeleteError": "Impossibile eliminare il file.",
+    "versionRestoreError": "Impossibile ripristinare la versione.",
     "folderDeleteError": "Impossibile eliminare la cartella.",
     "newFileBaseName": "Nuovo file",
     "newFolderBaseName": "Nuova cartella"

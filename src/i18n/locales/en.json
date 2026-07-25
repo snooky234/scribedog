@@ -113,6 +113,7 @@
     "tabGeneral": "General",
     "tabAi": "AI settings",
     "tabAssistants": "Assistants",
+    "tabVersioning": "Versioning",
     "language": "Language",
     "languageGerman": "German",
     "languageEnglish": "English",
@@ -166,6 +167,44 @@
     "newTitle": "New assistant",
     "deleteConfirmTitle": "Delete assistant?",
     "deleteConfirmDescription": "The assistant “{{name}}” will be permanently deleted."
+  },
+  "versions": {
+    "buttonLabel": "Versions",
+    "popoverLabel": "Version history",
+    "popoverTitle": "Versions",
+    "loading": "Loading versions…",
+    "empty": "No versions saved yet.",
+    "showDiff": "Show differences",
+    "restore": "Restore",
+    "restoring": "Restoring…"
+  },
+  "versionDiff": {
+    "title": "Version comparison",
+    "comparedWith": "Saved {{timestamp}} · compared with the current content",
+    "viewMode": "View",
+    "inline": "Inline",
+    "sideBySide": "Side by side",
+    "legendOld": "Selected version",
+    "legendCurrent": "Current content",
+    "skippedLines_one": "… {{count}} unchanged line",
+    "skippedLines_other": "… {{count}} unchanged lines",
+    "loading": "Loading version…",
+    "loadError": "The version could not be loaded.",
+    "identical": "This version is identical to the current content."
+  },
+  "versioningSettings": {
+    "enable": "Enable versioning",
+    "enableHint": "Every save keeps a copy of the file in the .scribedog folder. Turning versioning off only stops new versions from being created — the existing history is kept.",
+    "maxVersions": "Versions to keep per file",
+    "maxVersionsHint": "Once the limit is reached, the oldest version of that file is dropped.",
+    "deleteAll": "Delete all versions",
+    "deleteAllEyebrow": "Delete versions",
+    "deleteAllTitle": "Permanently delete all versions?",
+    "deleteAllDescription_one": "{{count}} stored version of all files in this folder will be permanently deleted.",
+    "deleteAllDescription_other": "{{count}} stored versions of all files in this folder will be permanently deleted.",
+    "storedCount_one": "{{count}} stored version in this folder",
+    "storedCount_other": "{{count}} stored versions in this folder",
+    "noFolder": "No folder open."
   },
   "shortcutsDialog": {
     "title": "Keyboard shortcuts",
@@ -443,6 +482,7 @@
     "fileRenameError": "The file could not be renamed.",
     "folderRenameError": "The folder could not be renamed.",
     "fileDeleteError": "The file could not be deleted.",
+    "versionRestoreError": "The version could not be restored.",
     "folderDeleteError": "The folder could not be deleted.",
     "newFileBaseName": "New file",
     "newFolderBaseName": "New folder"

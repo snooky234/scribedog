@@ -2,6 +2,7 @@ import { join } from "@tauri-apps/api/path";
 import { exists } from "@tauri-apps/plugin-fs";
 
 import { allowFileAccess, writeMarkdownFile } from "@/lib/fileSystem";
+import { snapshotFileVersion } from "@/store/appStore/versioning";
 
 export const IMPORT_DOCUMENT_EXTENSIONS = ["docx", "pdf"] as const;
 export const IMPORT_IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp"] as const;
@@ -185,6 +186,8 @@ export async function importFiles(
 
       try {
         await writeMarkdownFile(targetFilePath, markdown);
+        // Keeps the "as imported" state restorable after the first edits.
+        snapshotFileVersion(vaultRoot, targetFilePath, markdown);
       } catch (error) {
         item.status = "error";
         item.errorKey = "errorWrite";

@@ -508,9 +508,10 @@
 .ai-check-dialog__original {
   border-radius: 0.2rem;
   padding: 0.05rem 0.3rem;
-  background: rgba(var(--error-bg-rgb),0.55);
+  background: var(--diff-removed-bg);
   color: rgba(var(--text-rgb),0.85);
   text-decoration: line-through;
+  text-decoration-color: var(--diff-removed-accent);
   text-decoration-thickness: 1.5px;
 }
 

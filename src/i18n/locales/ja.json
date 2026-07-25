@@ -113,6 +113,7 @@
     "tabGeneral": "一般",
     "tabAi": "AI 設定",
     "tabAssistants": "アシスタント",
+    "tabVersioning": "バージョン",
     "language": "言語",
     "languageGerman": "ドイツ語",
     "languageEnglish": "英語",
@@ -166,6 +167,44 @@
     "newTitle": "新しいアシスタント",
     "deleteConfirmTitle": "アシスタントを削除しますか？",
     "deleteConfirmDescription": "アシスタント「{{name}}」は完全に削除されます。"
+  },
+  "versions": {
+    "buttonLabel": "バージョン",
+    "popoverLabel": "バージョン履歴",
+    "popoverTitle": "バージョン",
+    "loading": "バージョンを読み込み中 …",
+    "empty": "保存されたバージョンはまだありません。",
+    "showDiff": "差分を表示",
+    "restore": "復元",
+    "restoring": "復元中 …"
+  },
+  "versionDiff": {
+    "title": "バージョンの比較",
+    "comparedWith": "{{timestamp}}に保存 · 現在の内容と比較",
+    "viewMode": "表示",
+    "inline": "インライン",
+    "sideBySide": "左右に並べる",
+    "legendOld": "選択したバージョン",
+    "legendCurrent": "現在の内容",
+    "skippedLines_one": "… 変更のない {{count}} 行",
+    "skippedLines_other": "… 変更のない {{count}} 行",
+    "loading": "バージョンを読み込み中 …",
+    "loadError": "バージョンを読み込めませんでした。",
+    "identical": "このバージョンは現在の内容と同じです。"
+  },
+  "versioningSettings": {
+    "enable": "バージョン管理を有効にする",
+    "enableHint": "保存するたびに、ファイルのコピーが .scribedog フォルダーに保存されます。バージョン管理をオフにしても新しいバージョンが作られなくなるだけで、既存の履歴はそのまま残ります。",
+    "maxVersions": "ファイルごとに保持するバージョン数",
+    "maxVersionsHint": "上限に達すると、そのファイルの最も古いバージョンが削除されます。",
+    "deleteAll": "すべてのバージョンを削除",
+    "deleteAllEyebrow": "バージョンを削除",
+    "deleteAllTitle": "すべてのバージョンを完全に削除しますか？",
+    "deleteAllDescription_one": "このフォルダー内のすべてのファイルの保存済みバージョン {{count}} 件が完全に削除されます。",
+    "deleteAllDescription_other": "このフォルダー内のすべてのファイルの保存済みバージョン {{count}} 件が完全に削除されます。",
+    "storedCount_one": "このフォルダーの保存済みバージョン: {{count}} 件",
+    "storedCount_other": "このフォルダーの保存済みバージョン: {{count}} 件",
+    "noFolder": "フォルダーが開かれていません。"
   },
   "shortcutsDialog": {
     "title": "キーボードショートカット",
@@ -443,6 +482,7 @@
     "fileRenameError": "ファイル名を変更できませんでした。",
     "folderRenameError": "フォルダー名を変更できませんでした。",
     "fileDeleteError": "ファイルを削除できませんでした。",
+    "versionRestoreError": "バージョンを復元できませんでした。",
     "folderDeleteError": "フォルダーを削除できませんでした。",
     "newFileBaseName": "新規ファイル",
     "newFolderBaseName": "新規フォルダー"

@@ -8,11 +8,13 @@ import { SettingsDialog } from "@/components/SettingsDialog";
 import { ShortcutsDialog } from "@/components/ShortcutsDialog";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { UpdateNotification } from "@/components/UpdateNotification";
+import { VersionDiffDialog, type VersionDiffTarget } from "@/components/VersionDiffDialog";
 import type { DeleteTarget } from "@/hooks/useDeleteTarget";
+import type { FileVersion } from "@/lib/fileVersions";
 import type { AiSettings } from "@/store/useAiSettingsStore";
 import type { Assistant } from "@/store/useAssistantsStore";
 
-type SettingsTab = "general" | "ai" | "assistants";
+type SettingsTab = "general" | "ai" | "assistants" | "versioning";
 
 type AppDialogsProps = {
   // Unsaved-changes navigation prompt
@@ -62,6 +64,13 @@ type AppDialogsProps = {
   // Update
   availableUpdate: Update | null;
   onDismissUpdate: () => void;
+
+  // Version diff
+  versionDiffTarget: VersionDiffTarget | null;
+  versionDiffCurrentContent: string;
+  isRestoringVersion: boolean;
+  onRestoreVersion: (version: FileVersion) => void;
+  onCloseVersionDiff: () => void;
 };
 
 export function AppDialogs({
@@ -96,7 +105,12 @@ export function AppDialogs({
   onImported,
   onCloseImport,
   availableUpdate,
-  onDismissUpdate
+  onDismissUpdate,
+  versionDiffTarget,
+  versionDiffCurrentContent,
+  isRestoringVersion,
+  onRestoreVersion,
+  onCloseVersionDiff
 }: AppDialogsProps) {
   return (
     <>
@@ -152,6 +166,15 @@ export function AppDialogs({
         vaultRoot={folderPath}
         onImported={onImported}
         onClose={onCloseImport}
+      />
+
+      <VersionDiffDialog
+        target={versionDiffTarget}
+        folderPath={folderPath}
+        currentContent={versionDiffCurrentContent}
+        isRestoring={isRestoringVersion}
+        onRestore={onRestoreVersion}
+        onClose={onCloseVersionDiff}
       />
 
       {availableUpdate ? (

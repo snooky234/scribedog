@@ -3,6 +3,7 @@ import { open as openImportFilesDialog } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
 
 import type { EditorHandle } from "@/components/Editor";
+import type { SettingsTab } from "@/components/SettingsDialog";
 import { Sidebar } from "@/components/Sidebar";
 import { AppDialogs } from "@/components/app/AppDialogs";
 import { DocumentPanel } from "@/components/app/DocumentPanel";
@@ -28,6 +29,8 @@ import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import { useWebviewZoom } from "@/hooks/useWebviewZoom";
 import { useZenMode } from "@/hooks/useZenMode";
 import { getRelativeDisplayPath } from "@/lib/fileSystem";
+import type { FileVersion } from "@/lib/fileVersions";
+import type { VersionDiffTarget } from "@/components/VersionDiffDialog";
 import { IMPORT_FILE_EXTENSIONS } from "@/lib/import/importer";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
@@ -45,7 +48,9 @@ function App() {
   >(null);
   const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
   const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<"general" | "ai" | "assistants">("general");
+  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>("general");
+  const [versionDiffTarget, setVersionDiffTarget] = useState<VersionDiffTarget | null>(null);
+  const [isRestoringVersion, setIsRestoringVersion] = useState(false);
   // Wrapped in an object so "create new assistant" (assistant: null) is
   // distinguishable from "no edit in progress" (whole value null).
   const [assistantEditTarget, setAssistantEditTarget] = useState<{ assistant: Assistant | null } | null>(null);
@@ -89,6 +94,7 @@ function App() {
     (state) => state.discardSelectedFileChanges
   );
   const saveSelectedFile = useAppStore((state) => state.saveSelectedFile);
+  const restoreFileVersion = useAppStore((state) => state.restoreFileVersion);
   const createNewFile = useAppStore((state) => state.createNewFile);
   const registerImportedFiles = useAppStore((state) => state.registerImportedFiles);
   const createNewFolder = useAppStore((state) => state.createNewFolder);
@@ -344,6 +350,30 @@ function App() {
     return () => registerEditorToolBridge(null);
   }, []);
 
+  const handleVersionDiffRequest = (version: FileVersion) => {
+    setVersionDiffTarget({ version, fileLabel: selectedFileLabel ?? "" });
+  };
+
+  const handleVersionRestore = async (version: FileVersion) => {
+    setIsRestoringVersion(true);
+
+    try {
+      const restored = await restoreFileVersion(version.id);
+
+      if (restored) {
+        setVersionDiffTarget(null);
+      }
+    } finally {
+      setIsRestoringVersion(false);
+    }
+  };
+
+  // A diff open on one file must not survive switching to another — it would
+  // compare a stored version against a document it never belonged to.
+  useEffect(() => {
+    setVersionDiffTarget(null);
+  }, [selectedFilePath]);
+
   const openAssistantSettings = () => {
     setSettingsInitialTab("assistants");
     setIsAiSettingsOpen(true);
@@ -420,6 +450,8 @@ function App() {
             sidebarFocusRequestId={sidebarFocusRequestId}
             onFileTreeSelectionChange={setFileTreeSelection}
             fileTreeSelectionCount={fileTreeSelection.length}
+            onVersionDiffRequest={handleVersionDiffRequest}
+            onVersionRestoreRequest={(version) => void handleVersionRestore(version)}
           />
 
           <div
@@ -555,6 +587,11 @@ function App() {
         onCloseImport={() => setImportFileList(null)}
         availableUpdate={availableUpdate}
         onDismissUpdate={dismissUpdate}
+        versionDiffTarget={versionDiffTarget}
+        versionDiffCurrentContent={selectedFileContent ?? ""}
+        isRestoringVersion={isRestoringVersion}
+        onRestoreVersion={(version) => void handleVersionRestore(version)}
+        onCloseVersionDiff={() => setVersionDiffTarget(null)}
       />
     </main>
   );

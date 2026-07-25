@@ -113,6 +113,7 @@
     "tabGeneral": "Geral",
     "tabAi": "Configurações de IA",
     "tabAssistants": "Assistentes",
+    "tabVersioning": "Versões",
     "language": "Idioma",
     "languageGerman": "Alemão",
     "languageEnglish": "Inglês",
@@ -166,6 +167,44 @@
     "newTitle": "Novo assistente",
     "deleteConfirmTitle": "Excluir assistente?",
     "deleteConfirmDescription": "O assistente “{{name}}” será excluído permanentemente."
+  },
+  "versions": {
+    "buttonLabel": "Versões",
+    "popoverLabel": "Histórico de versões",
+    "popoverTitle": "Versões",
+    "loading": "Carregando versões…",
+    "empty": "Nenhuma versão salva ainda.",
+    "showDiff": "Mostrar diferenças",
+    "restore": "Restaurar",
+    "restoring": "Restaurando…"
+  },
+  "versionDiff": {
+    "title": "Comparação de versões",
+    "comparedWith": "Salva {{timestamp}} · comparada com o conteúdo atual",
+    "viewMode": "Exibição",
+    "inline": "Em linha",
+    "sideBySide": "Lado a lado",
+    "legendOld": "Versão selecionada",
+    "legendCurrent": "Conteúdo atual",
+    "skippedLines_one": "… {{count}} linha sem alterações",
+    "skippedLines_other": "… {{count}} linhas sem alterações",
+    "loading": "Carregando a versão…",
+    "loadError": "Não foi possível carregar a versão.",
+    "identical": "Esta versão é idêntica ao conteúdo atual."
+  },
+  "versioningSettings": {
+    "enable": "Ativar o versionamento",
+    "enableHint": "A cada salvamento, uma cópia do arquivo é mantida na pasta .scribedog. Desativar o versionamento apenas impede a criação de novas versões — o histórico existente é mantido.",
+    "maxVersions": "Versões por arquivo",
+    "maxVersionsHint": "Quando o limite é atingido, a versão mais antiga desse arquivo é removida.",
+    "deleteAll": "Excluir todas as versões",
+    "deleteAllEyebrow": "Excluir versões",
+    "deleteAllTitle": "Excluir permanentemente todas as versões?",
+    "deleteAllDescription_one": "{{count}} versão salva de todos os arquivos desta pasta será excluída permanentemente.",
+    "deleteAllDescription_other": "{{count}} versões salvas de todos os arquivos desta pasta serão excluídas permanentemente.",
+    "storedCount_one": "{{count}} versão salva nesta pasta",
+    "storedCount_other": "{{count}} versões salvas nesta pasta",
+    "noFolder": "Nenhuma pasta aberta."
   },
   "shortcutsDialog": {
     "title": "Atalhos de teclado",
@@ -443,6 +482,7 @@
     "fileRenameError": "Não foi possível renomear o arquivo.",
     "folderRenameError": "Não foi possível renomear a pasta.",
     "fileDeleteError": "Não foi possível excluir o arquivo.",
+    "versionRestoreError": "Não foi possível restaurar a versão.",
     "folderDeleteError": "Não foi possível excluir a pasta.",
     "newFileBaseName": "Novo arquivo",
     "newFolderBaseName": "Nova pasta"

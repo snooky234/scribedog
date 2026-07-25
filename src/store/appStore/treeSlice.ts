@@ -22,6 +22,11 @@ import {
   remapPathUnderRenamedFolder
 } from "./pathUtils";
 import type { AppSlice, FileDocumentState, MoveTreeEntryInput, TreeSlice } from "./types";
+import {
+  moveFileVersionHistory,
+  moveFolderVersionHistory,
+  snapshotFileVersion
+} from "./versioning";
 
 export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
   setSortMode: async (mode: SortMode) => {
@@ -141,8 +146,10 @@ export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
 
         if (kind === "folder") {
           await renameMarkdownFolder(sourcePath, newPath);
+          moveFolderVersionHistory(folderPath, sourcePath, newPath);
         } else {
           await renameMarkdownFile(sourcePath, newPath);
+          moveFileVersionHistory(folderPath, sourcePath, newPath);
         }
 
         nextFilePaths = await Promise.all(
@@ -187,7 +194,11 @@ export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
             // which stay unsaved (both sides were rewritten, so a dirty
             // document stays dirty).
             if (correctedBaseContent !== preMoveContentByPath.get(path)) {
-              await writeMarkdownFile(mappedPath, correctedBaseContent).catch(() => undefined);
+              // Snapshot runs after the version history has been carried over
+              // to the new path above, so it lands on the right file.
+              await writeMarkdownFile(mappedPath, correctedBaseContent)
+                .then(() => snapshotFileVersion(folderPath, mappedPath, correctedBaseContent))
+                .catch(() => undefined);
             }
           } else {
             rewrittenDocuments[mappedPath] = document;
@@ -211,7 +222,9 @@ export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
               );
 
               if (correctedContent !== preMoveContent) {
-                await writeMarkdownFile(mappedPath, correctedContent).catch(() => undefined);
+                await writeMarkdownFile(mappedPath, correctedContent)
+                  .then(() => snapshotFileVersion(folderPath, mappedPath, correctedContent))
+                  .catch(() => undefined);
               }
             })
         );

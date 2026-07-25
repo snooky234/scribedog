@@ -113,6 +113,7 @@
     "tabGeneral": "Général",
     "tabAi": "Paramètres IA",
     "tabAssistants": "Assistants",
+    "tabVersioning": "Versions",
     "language": "Langue",
     "languageGerman": "Allemand",
     "languageEnglish": "Anglais",
@@ -166,6 +167,44 @@
     "newTitle": "Nouvel assistant",
     "deleteConfirmTitle": "Supprimer l'assistant ?",
     "deleteConfirmDescription": "L'assistant « {{name}} » sera définitivement supprimé."
+  },
+  "versions": {
+    "buttonLabel": "Versions",
+    "popoverLabel": "Historique des versions",
+    "popoverTitle": "Versions",
+    "loading": "Chargement des versions…",
+    "empty": "Aucune version enregistrée pour l'instant.",
+    "showDiff": "Afficher les différences",
+    "restore": "Restaurer",
+    "restoring": "Restauration…"
+  },
+  "versionDiff": {
+    "title": "Comparaison de versions",
+    "comparedWith": "Enregistrée {{timestamp}} · comparée au contenu actuel",
+    "viewMode": "Affichage",
+    "inline": "En ligne",
+    "sideBySide": "Côte à côte",
+    "legendOld": "Version sélectionnée",
+    "legendCurrent": "Contenu actuel",
+    "skippedLines_one": "… {{count}} ligne inchangée",
+    "skippedLines_other": "… {{count}} lignes inchangées",
+    "loading": "Chargement de la version…",
+    "loadError": "La version n'a pas pu être chargée.",
+    "identical": "Cette version est identique au contenu actuel."
+  },
+  "versioningSettings": {
+    "enable": "Activer le versionnage",
+    "enableHint": "À chaque enregistrement, une copie du fichier est conservée dans le dossier .scribedog. Désactiver le versionnage empêche seulement la création de nouvelles versions — l'historique existant est conservé.",
+    "maxVersions": "Versions conservées par fichier",
+    "maxVersionsHint": "Une fois la limite atteinte, la version la plus ancienne de ce fichier est supprimée.",
+    "deleteAll": "Supprimer toutes les versions",
+    "deleteAllEyebrow": "Supprimer les versions",
+    "deleteAllTitle": "Supprimer définitivement toutes les versions ?",
+    "deleteAllDescription_one": "{{count}} version enregistrée de tous les fichiers de ce dossier sera définitivement supprimée.",
+    "deleteAllDescription_other": "{{count}} versions enregistrées de tous les fichiers de ce dossier seront définitivement supprimées.",
+    "storedCount_one": "{{count}} version enregistrée dans ce dossier",
+    "storedCount_other": "{{count}} versions enregistrées dans ce dossier",
+    "noFolder": "Aucun dossier ouvert."
   },
   "shortcutsDialog": {
     "title": "Raccourcis clavier",
@@ -443,6 +482,7 @@
     "fileRenameError": "Le fichier n'a pas pu être renommé.",
     "folderRenameError": "Le dossier n'a pas pu être renommé.",
     "fileDeleteError": "Le fichier n'a pas pu être supprimé.",
+    "versionRestoreError": "La version n'a pas pu être restaurée.",
     "folderDeleteError": "Le dossier n'a pas pu être supprimé.",
     "newFileBaseName": "Nouveau fichier",
     "newFolderBaseName": "Nouveau dossier"

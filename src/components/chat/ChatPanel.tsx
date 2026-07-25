@@ -23,7 +23,7 @@ import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog"
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import i18n from "@/i18n";
-import type { AiChatMessage } from "@/lib/aiClient";
+import { FLAG_SUGGESTION_TOOL_NAME, type AiChatMessage } from "@/lib/aiClient";
 import { renderChatMarkdown } from "@/lib/chat/renderMarkdown";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { assistantDisplayName, useAssistantsStore } from "@/store/useAssistantsStore";
@@ -107,6 +107,38 @@ function ToolStatusLine({ toolName, isError }: { toolName: string; isError: bool
       <span>{label}</span>
     </div>
   );
+}
+
+// Tool calls that already put a red/green proposal in the editor. The model
+// decides on its own whether a reply needs the "In Text einarbeiten" button
+// (see FLAG_SUGGESTION_TOOL_NAME), but this stays as a safety net: if it ever
+// flags a message that also used an editing tool in the same turn, offering
+// the button anyway would just resend a change the user is already reviewing.
+const EDITING_TOOL_NAMES = new Set(["replace_selection", "insert_at_cursor", "replace_passage"]);
+
+// Per message: whether an editing tool call has already happened earlier in
+// the same turn (since the preceding user message), up to and including this
+// message. Resets at every user turn since each carries its own review.
+function computeTurnHasProposal(messages: AiChatMessage[]): boolean[] {
+  let turnHasProposal = false;
+
+  return messages.map((message) => {
+    if (message.role === "user") {
+      turnHasProposal = false;
+      return false;
+    }
+
+    const hasEditCall =
+      message.role === "assistant" &&
+      (message.toolCalls?.some((call) => EDITING_TOOL_NAMES.has(call.name)) ?? false);
+    const suppress = turnHasProposal || hasEditCall;
+
+    if (hasEditCall) {
+      turnHasProposal = true;
+    }
+
+    return suppress;
+  });
 }
 
 type AssistantChatMessage = Extract<AiChatMessage, { role: "assistant" }>;
@@ -330,6 +362,7 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   const thinkingEnabled = settings.thinkingMode !== "off";
 
   const messages = activeSession?.messages ?? [];
+  const turnHasProposal = computeTurnHasProposal(messages);
   const isEmptyChat = messages.length === 0 && !isStreaming;
   const hasSessions = useChatStore((state) => state.sessions.length > 0);
 
@@ -483,6 +516,13 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
 
         {messages.map((message, index) => {
           if (message.role === "tool") {
+            // A UI-only signal, not an editor action — the "In Text
+            // einarbeiten" button on the assistant bubble above it already
+            // communicates this, so a status line here would be redundant.
+            if (message.toolName === FLAG_SUGGESTION_TOOL_NAME) {
+              return null;
+            }
+
             return (
               <ToolStatusLine
                 key={index}
@@ -493,11 +533,16 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
           }
 
           if (message.role === "assistant") {
+            const hasSuggestionFlag =
+              message.toolCalls?.some((call) => call.name === FLAG_SUGGESTION_TOOL_NAME) ?? false;
+
             return (
               <AssistantMessage
                 key={index}
                 message={message}
-                canApplyToDocument={canEditDocument && !isStreaming}
+                canApplyToDocument={
+                  canEditDocument && !isStreaming && hasSuggestionFlag && !turnHasProposal[index]
+                }
                 onApplyToDocument={handleApplyToDocument}
               />
             );

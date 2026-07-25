@@ -58,6 +58,7 @@ export type FileSlice = {
   adoptCanonicalFileContent: (filePath: string, markdown: string) => void;
   discardSelectedFileChanges: () => boolean;
   saveSelectedFile: () => Promise<boolean>;
+  restoreFileVersion: (versionId: string) => Promise<boolean>;
   createNewFile: (targetDirectory?: string) => Promise<string | null>;
   registerImportedFiles: (importedFilePaths: string[]) => void;
   renameSelectedFile: (newBaseName: string) => Promise<boolean>;

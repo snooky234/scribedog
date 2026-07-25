@@ -1116,6 +1116,12 @@ export type AiChatRequest = {
   documentContext?: string;
 };
 
+// Name of the tool the model calls to flag that its own reply text (not an
+// editing-tool call) already contains a concrete rewrite the user could apply
+// — see its spec below and the "In Text einarbeiten" button in ChatPanel,
+// which only appears on a message whose toolCalls include this name.
+export const FLAG_SUGGESTION_TOOL_NAME = "flag_pending_suggestion";
+
 // One spec per agent tool, translated below into each provider family's wire
 // format (OpenAI-compatible "function" tools vs. Anthropic's input_schema).
 const AGENT_TOOL_SPECS = [
@@ -1213,6 +1219,17 @@ const AGENT_TOOL_SPECS = [
       },
       required: ["old_text", "new_text"]
     }
+  },
+  {
+    name: FLAG_SUGGESTION_TOOL_NAME,
+    description:
+      "Call this ONLY when the reply you are writing right now already contains a concrete rewritten passage " +
+      "the user could apply, and you are NOT proposing that same change with replace_selection, " +
+      "insert_at_cursor or replace_passage in this turn. It shows the user a button that applies exactly what " +
+      "you wrote. Never call it for an answer, explanation, question or confirmation that does not itself " +
+      "contain a concrete rewrite — and never call it together with an editing tool for the same change, " +
+      "that change already gets its own review widget and a second button would be redundant.",
+    parameters: { type: "object", properties: {}, required: [] }
   }
 ] as const;
 
@@ -1287,6 +1304,11 @@ const AGENT_INSTRUCTION =
   "edit an image's markdown with replace_passage, it cannot work. \"A bit bigger\" is scale 1.25, " +
   "\"much bigger\" scale 1.75, and the same factors below 1 for smaller. One call is enough: the new " +
   "size is applied immediately, so confirm it in one sentence instead of proposing anything.\n" +
+  `9. Prefer the editing tools over writing a rewrite into your reply. But if you do end up writing a ` +
+  `concrete rewritten passage directly in your reply instead of proposing it with a tool, call ` +
+  `${FLAG_SUGGESTION_TOOL_NAME} in that same turn so the user gets a button to apply it — never leave such a ` +
+  `rewrite sitting in your reply text unflagged, and never call it for a reply that is not itself a concrete ` +
+  `rewrite.\n` +
   "If the user only asks a question, answer it normally after reading the document.";
 
 function buildChatSystemPrompt(

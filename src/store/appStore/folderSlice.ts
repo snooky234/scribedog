@@ -38,6 +38,7 @@ import {
   remapPathUnderRenamedFolder
 } from "./pathUtils";
 import type { AppSlice, FileDocumentState, FolderSlice } from "./types";
+import { deleteFolderVersionHistory, moveFolderVersionHistory } from "./versioning";
 
 export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
   openFolder: async () => {
@@ -224,6 +225,7 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
       }
 
       await renameMarkdownFolder(folderPath, newFolderPath);
+      moveFolderVersionHistory(get().folderPath, folderPath, newFolderPath);
 
       const currentState = get();
       const nextFilePaths = await Promise.all(
@@ -288,6 +290,7 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
   deleteFolderPath: async (folderPath: string) => {
     try {
       await deleteMarkdownFolder(folderPath);
+      deleteFolderVersionHistory(get().folderPath, folderPath);
 
       const currentState = get();
       const isSelectedInside =

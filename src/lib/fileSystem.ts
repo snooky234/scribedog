@@ -186,6 +186,12 @@ export async function readMarkdownFile(filePath: string): Promise<string> {
   return readTextFile(filePath);
 }
 
+/**
+ * Every write to a vault markdown file goes through here. Versioning is not
+ * wired in at this level (that would make the filesystem layer depend on the
+ * store), so each caller pairs its write with `snapshotFileVersion` from
+ * store/appStore/versioning.ts — a new call site has to do the same.
+ */
 export async function writeMarkdownFile(filePath: string, markdown: string): Promise<void> {
   await writeTextFile(filePath, markdown);
 }

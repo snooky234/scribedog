@@ -32,6 +32,17 @@
   --success-bg-rgb: 220, 252, 231;
   --warning-bg-rgb: 255, 251, 235;
 
+  /* Diff highlights (AI rewrite/suggestion review, grammar check, version
+     diff). Kept separate from --error-bg-rgb: that token is a panel/toast
+     background and is near-black in dark mode, which leaves an inline text
+     highlight with almost no contrast against the editor. These are
+     saturated colors with a low alpha instead, so they stay readable over
+     both backgrounds. */
+  --diff-removed-bg: rgba(220, 38, 38, 0.16);
+  --diff-removed-accent: rgba(185, 28, 28, 0.55);
+  --diff-added-bg: rgba(22, 163, 74, 0.16);
+  --diff-added-accent: rgba(21, 128, 61, 0.55);
+
   /* Code block tokens. The prose styles give code blocks a dark background in
      both themes, so the palette below is shared; .dark only nudges it. */
   --code-comment: #94a3b8;
@@ -100,6 +111,11 @@
   --error-bg-rgb: 44, 18, 18;
   --success-bg-rgb: 18, 34, 24;
   --warning-bg-rgb: 69, 49, 7;
+
+  --diff-removed-bg: rgba(248, 113, 113, 0.26);
+  --diff-removed-accent: rgba(252, 165, 165, 0.7);
+  --diff-added-bg: rgba(74, 222, 128, 0.22);
+  --diff-added-accent: rgba(134, 239, 172, 0.7);
 
   /* Slightly dimmed against the darker code background of prose-invert. */
   --code-comment: #7c8798;

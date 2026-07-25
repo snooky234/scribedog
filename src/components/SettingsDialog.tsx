@@ -6,6 +6,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 
 import { Button } from "@/components/ui/button";
 import { AssistantsSettings } from "@/components/AssistantsSettings";
+import { VersioningSettings } from "@/components/VersioningSettings";
 import type { Assistant } from "@/store/useAssistantsStore";
 
 import {
@@ -21,7 +22,7 @@ import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
 import { isWindowsPlatform } from "@/lib/platform";
 import { useAppVersion } from "@/hooks/useAppVersion";
 
-export type SettingsTab = "general" | "ai" | "assistants";
+export type SettingsTab = "general" | "ai" | "assistants" | "versioning";
 
 type SettingsDialogProps = {
   open: boolean;
@@ -193,6 +194,19 @@ export function SettingsDialog({
           <button
             type="button"
             role="tab"
+            id="settings-tab-versioning"
+            aria-selected={activeTab === "versioning"}
+            aria-controls="settings-panel-versioning"
+            className={
+              activeTab === "versioning" ? "ai-dialog__tab ai-dialog__tab--active" : "ai-dialog__tab"
+            }
+            onClick={() => setActiveTab("versioning")}
+          >
+            {t("settingsDialog.tabVersioning")}
+          </button>
+          <button
+            type="button"
+            role="tab"
             id="settings-tab-assistants"
             aria-selected={activeTab === "assistants"}
             aria-controls="settings-panel-assistants"
@@ -266,6 +280,10 @@ export function SettingsDialog({
                 {t("settingsDialog.openSourceLicenses")}
               </button>
             </p>
+          </div>
+        ) : activeTab === "versioning" ? (
+          <div id="settings-panel-versioning" role="tabpanel" aria-labelledby="settings-tab-versioning">
+            <VersioningSettings />
           </div>
         ) : activeTab === "assistants" ? (
           <div id="settings-panel-assistants" role="tabpanel" aria-labelledby="settings-tab-assistants">
@@ -412,15 +430,17 @@ export function SettingsDialog({
           </div>
         )}
 
-        {/* Assistants save themselves immediately via their own store, so the
-            AI-settings footer would only mislead on that tab. */}
+        {/* Assistants and versioning save themselves immediately via their own
+            stores, so the AI-settings footer would only mislead on those tabs. */}
         <div className="ai-dialog__actions">
           <Button type="button" variant="outline" onClick={onClose}>
-            {activeTab === "assistants" ? t("common.close") : t("common.cancel")}
+            {activeTab === "assistants" || activeTab === "versioning"
+              ? t("common.close")
+              : t("common.cancel")}
           </Button>
           <Button
             type="button"
-            hidden={activeTab === "assistants"}
+            hidden={activeTab === "assistants" || activeTab === "versioning"}
             onClick={() => {
               onSave({
                 provider,
