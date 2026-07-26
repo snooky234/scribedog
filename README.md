@@ -108,6 +108,26 @@ and the source in this repository.
 
 ## Features
 
+### 📋 Feature overview
+
+| Feature | What it does | Shortcut / access |
+|---|---|---|
+| 🤖 AI rewrite & insert | Rewrite, extend, or generate text in place, local or cloud model | `Ctrl+E` / right-click |
+| 💬 Agentic AI chat | Side-panel chat that reads your document and proposes edits via tool calls | `Ctrl+Shift+A` |
+| ✅ AI spelling & grammar check | List of issues with suggested corrections, apply one by one or all at once | `Ctrl+Shift+X` / toolbar |
+| 🕓 Document versions | Automatic local snapshots on save; diff and restore any previous version | Version history popover |
+| 🧘 Zen mode | Full-screen, distraction-free writing with a resizable text column | `Ctrl+Shift+Y` / toolbar |
+| 🎙️ Voice input | Offline dictation into the document or straight into an AI prompt | `Ctrl+Shift+W` / `Ctrl+Shift+E` |
+| 🧩 Custom assistants | Named, reusable system prompts, switchable from the toolbar | Toolbar dropdown |
+| ✍️ WYSIWYG editing | Headings, tables, images, lists, code blocks, emoji, spell check | — |
+| 🔗 Linked notes | Link notes by drag, dialog, or `[[`; links & backlinks panel; back/forward history | `Ctrl+L` · `Ctrl+Shift+L` · `Alt+←`/`Alt+→` |
+| 📥 Import | Bring in Word, PDF, HTML, or images (via AI OCR) as clean Markdown | Sidebar import |
+| 📤 Export | Export notes or whole folders to PDF, DOCX, ODT, or HTML | Right-click → Export… |
+| 📂 File management | File tree, create/rename/delete, flexible sorting, live filesystem sync | Sidebar |
+| 📱 Mobile access & sync | Plain `.md` files work with any sync service and mobile Markdown app | Bring your own sync |
+| 🎨 Customizable UI | Light/dark theme, 10 languages, fully remappable keyboard shortcuts | `Ctrl+#` (shortcuts cheat sheet) |
+| 🔒 Privacy first | No telemetry, bring-your-own-key cloud AI, tightly scoped filesystem access | — |
+
 ### 🤖 AI-assisted writing — local by default, cloud if you want it
 - Select any text, press `Ctrl+E` (or right-click), type a prompt, and watch the model rewrite or insert content **live** into your document
 - Works out of the box with **Ollama**, **Jan.ai**, and **LM Studio** (local) as well as **OpenAI**, **Anthropic**, and **Mistral** (cloud, bring your own key)
