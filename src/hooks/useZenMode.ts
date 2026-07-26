@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 type UseZenModeOptions = {
@@ -11,6 +11,7 @@ type UseZenModeResult = {
   isZenMode: boolean;
   enterZenMode: () => void;
   exitZenMode: () => void;
+  toggleZenMode: () => void;
 };
 
 export function useZenMode({ canEnter }: UseZenModeOptions): UseZenModeResult {
@@ -69,31 +70,15 @@ export function useZenMode({ canEnter }: UseZenModeOptions): UseZenModeResult {
     })();
   }, []);
 
-  // Ctrl+Shift+Y toggles Zen mode. Registered in the capture phase so it wins
-  // over any editor binding on the same combo.
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        event.shiftKey &&
-        !event.altKey &&
-        (event.key.toLowerCase() === "y" || event.code === "KeyY")
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (isZenModeRef.current) {
-          exitZenMode();
-        } else {
-          enterZenMode();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown, { capture: true });
-
-    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
+  // The keyboard binding itself lives in useGlobalShortcuts so it can be
+  // remapped like every other shortcut.
+  const toggleZenMode = useCallback(() => {
+    if (isZenModeRef.current) {
+      exitZenMode();
+    } else {
+      enterZenMode();
+    }
   }, [enterZenMode, exitZenMode]);
 
-  return { isZenMode, enterZenMode, exitZenMode };
+  return { isZenMode, enterZenMode, exitZenMode, toggleZenMode };
 }

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 export const SPELLCHECK_STORAGE_KEY = "scribedog-spellcheck-enabled";
+export const LINKS_PANEL_STORAGE_KEY = "scribedog-links-panel-visible";
 export const ZOOM_STORAGE_KEY = "scribedog-zoom-level";
 export const ZEN_WIDTH_STORAGE_KEY = "scribedog-zen-width";
 
@@ -77,9 +78,28 @@ function persistSpellcheckEnabled(enabled: boolean): void {
   }
 }
 
+function getStoredLinksPanelVisible(): boolean {
+  try {
+    return window.localStorage.getItem(LINKS_PANEL_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function persistLinksPanelVisible(visible: boolean): void {
+  try {
+    window.localStorage.setItem(LINKS_PANEL_STORAGE_KEY, String(visible));
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
 type EditorSettingsState = {
   spellcheckEnabled: boolean;
   setSpellcheckEnabled: (enabled: boolean) => void;
+  /** Links/backlinks sidebar next to the document, toggled from the toolbar. */
+  linksPanelVisible: boolean;
+  setLinksPanelVisible: (visible: boolean) => void;
   zoomLevel: number;
   setZoomLevel: (level: number) => void;
   zenWidth: number;
@@ -91,6 +111,11 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set) => ({
   setSpellcheckEnabled: (enabled: boolean) => {
     persistSpellcheckEnabled(enabled);
     set({ spellcheckEnabled: enabled });
+  },
+  linksPanelVisible: getStoredLinksPanelVisible(),
+  setLinksPanelVisible: (visible: boolean) => {
+    persistLinksPanelVisible(visible);
+    set({ linksPanelVisible: visible });
   },
   zoomLevel: getStoredZoomLevel(),
   setZoomLevel: (level: number) => {

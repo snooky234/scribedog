@@ -32,7 +32,10 @@ place to write it, with an AI assistant that respects one simple rule:
 **Why ScribeDog?**
 
 - ✨ **True WYSIWYG** — headings, tables, images, and lists look like a document, not like syntax
+- 🔗 **Linked notes** — link one note to another by dragging it in from the sidebar, from the link dialog, or by typing `[[`; a click opens the target, and an optional panel shows links and backlinks
 - 🤖 **AI built in, local by default** — rewrite or generate text with Ollama, Jan.ai, or LM Studio; cloud providers are strictly opt-in
+- 💬 **Agentic AI chat** — a side-panel chat that reads your document and proposes edits itself, each one reviewed before it touches the file; needs a capable (9B+) model, smaller models should stick to simple select-and-rewrite
+- 🕓 **Automatic version history** — every save can be snapshotted locally; browse, diff, and restore any previous version with one click
 - 🎙️ **Voice input, 100% offline** — dictate straight into your document or into the AI prompt; speech recognition runs locally via whisper.cpp, no cloud involved
 - 🧩 **Custom assistants** — save your own system prompts ("translate to English", "make more formal", …) and switch between them right from the toolbar
 - 📥 **Import & export built in** — bring Word, PDF, and HTML files in as Markdown (even images, via AI-powered OCR) and export notes or whole folders to PDF, DOCX, ODT, or HTML
@@ -114,6 +117,22 @@ and the source in this repository.
 - Every AI edit is a single atomic change: one `Ctrl+Z` fully undoes it
 - **AI spelling & grammar check** — select a passage, press `Ctrl+Shift+X` (or use the toolbar button), and get a clear list of issues with suggested corrections and explanations; apply them one by one or all at once
 
+### 💬 AI chat — agentic editing (new)
+- Press `Ctrl+Shift+A` (or the toolbar button) to open the **chat panel** — a resizable side panel with its own session history, separate from the quick select-and-rewrite flow above
+- This is more than a Q&A box: the chat is **agentic**. It can call tools on its own to read your document or current selection, insert text at the cursor, replace a specific passage, or resize an embedded image — deciding what a request actually needs instead of you spelling out every step
+- **Nothing changes your document silently** — every proposed edit goes through the exact same red/green **review widget** as the rest of ScribeDog's AI features: accept, discard, or ask for another version before anything is written
+- Attach an image from your document to the conversation and ask a vision-capable model about it
+- Multiple sessions, rich Markdown rendering of the model's replies, a running indicator while it's thinking, and a request timeout so a stalled call never hangs the panel
+- **Model recommendation:** reliable tool-calling is genuinely hard for small models. Local models from roughly **9B parameters** upward (e.g. Qwen 3.5 9B, Gemma 4 12B) or any of the supported cloud models handle the chat's agentic tools well. **Below that**, a model tends to call tools incorrectly or not at all — for those, use the simple **select text → `Ctrl+E`** rewrite instead; it asks nothing of the model beyond writing text and works reliably even on tiny models.
+
+### 🕓 Document versions — undo across saves
+- Turn on **version history** in the Versioning settings tab, and every save silently snapshots the file's previous content first — saves that don't actually change anything don't create a duplicate snapshot
+- Open the **version history** popover from the document header to see every snapshot with its timestamp
+- **Compare** any snapshot against the current file with a line-by-line diff — inline or side-by-side
+- **Restore** a version in one click; the current content is snapshotted first, so restoring is itself just another undoable step
+- Choose how many versions are kept per file (1–200, default 10), and clear all stored versions at once if you want a fresh start
+- Versions live locally next to your files, in the same hidden `.scribedog` metadata folder as your sidebar preferences — nothing leaves your machine
+
 ### 🧘 Zen mode — distraction-free, full-screen writing
 - Press `Ctrl+Shift+Y` (or the toolbar button) to strip away the sidebar, toolbar, and document header and go full screen, leaving just your text, centered in a comfortable column
 - **Drag the column edges** (or use the arrow keys once focused) to resize the text width to your taste — the setting is remembered
@@ -141,6 +160,15 @@ and the source in this repository.
 - **Emoji picker** with search, including keywords in your local language
 - **Spell check as you type** — optional red-underline spell checking powered by your operating system's built-in spellchecker (toggle it in the toolbar options; on Linux it uses your installed Hunspell/enchant dictionaries)
 - Files are saved as clean, diff-friendly Markdown — fully portable to any other tool
+
+### 🔗 Linked notes — connect your vault
+- **Drag a file from the sidebar into the document** and it becomes a link to that note, labeled with its file name — a multi-selection inserts them all at once
+- **Insert link** in the toolbar (`Ctrl+L`) takes a URL *or* one of the vault's own files, picked from a search list with autocomplete, and inserts it at the cursor position
+- **Type `[[`** anywhere in your text for a wiki-style picker right at the caret: keep typing to filter, `↑`/`↓` to choose, `Enter` to insert
+- **A plain click follows a link** — a note link opens that note (unsaved changes are guarded by the usual save/discard prompt, exactly like clicking the file in the sidebar), any other link opens in your system browser
+- **Links & backlinks panel** — a toolbar toggle (or `Ctrl+Shift+L`) opens a side panel listing what the open note links to and which notes link back to it; one click jumps there, and targets that no longer exist are marked
+- **Back and forward** buttons next to the file name (or `Alt+←` / `Alt+→`) retrace your way through the notes you opened — following a chain of links and coming back is one keystroke, and deleted files are skipped
+- Links are stored as **plain relative Markdown links** (`[Note](sub/note.md)`), so a linked vault stays readable and portable in every other Markdown tool
 
 ### 📥 Import your existing documents
 - **One-click import from the sidebar** — pick one or more files and each becomes a clean Markdown file in your vault
@@ -175,7 +203,7 @@ ScribeDog stores everything as plain `.md` files in a normal folder — so makin
 - Light and dark theme
 - Interface available in **10 languages** — English, German, Spanish, French, Italian, Portuguese, Russian, Ukrainian, Japanese, and Chinese
 - One-click formatting toolbar with active-state highlighting
-- Built-in keyboard shortcuts cheat sheet (`Ctrl+#`)
+- Built-in keyboard shortcuts cheat sheet (`Ctrl+#`) — and **every shortcut in it can be remapped**: click a key combination, press the one you want, and it's saved right away (conflicts are caught before they're assigned)
 - Window size and maximized state are remembered across restarts
 - Launch ScribeDog on a folder from the command line or (on Windows) via the Explorer context menu
 
@@ -231,7 +259,9 @@ Then, in ScribeDog:
 > than the selected passage, such a model may translate the passage instead of
 > keeping it in its original language. If you run into this, a slightly larger
 > model (e.g. Qwen 3.5 9B or Gemma 4 12B) handles these cases much more
-> reliably.
+> reliably. This matters even more for the **agentic AI chat** (see Features
+> above), which depends on the model calling tools correctly — below roughly
+> 9B parameters, prefer the simple select-and-rewrite flow (`Ctrl+E`) instead.
 
 ### Cloud (opt-in — bring your own API key)
 

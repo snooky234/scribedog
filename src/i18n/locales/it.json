@@ -21,6 +21,10 @@
     "shellLabel": "Shell dell'app ScribeDog",
     "workspaceLabel": "Area di lavoro dell'editor",
     "documentAreaLabel": "Area del documento",
+    "navigateBack": "Indietro",
+    "navigateForward": "Avanti",
+    "navigateBackTo": "Indietro a \"{{fileLabel}}\"",
+    "navigateForwardTo": "Avanti a \"{{fileLabel}}\"",
     "sidebarResizeLabel": "Regola la larghezza della barra laterale",
     "chatResizeLabel": "Regola la larghezza del pannello chat",
     "fileNameLabel": "Nome del file",
@@ -106,6 +110,23 @@
     "errorWrite": "Impossibile scrivere il file: {{message}}",
     "errorOcrNoModel": "Nessun modello IA configurato. Carica un modello con supporto per le immagini nelle impostazioni IA per importare immagini.",
     "errorOcrProvider": "Impossibile trascrivere l'immagine — il modello configurato potrebbe non supportare le immagini. ({{message}})"
+  },
+  "linkDialog": {
+    "eyebrow": "Collegamento",
+    "title": "Inserisci collegamento",
+    "titleEdit": "Modifica collegamento",
+    "description": "Inserisci un URL o scegli un file dalla cartella aperta. Il collegamento viene inserito nella posizione del cursore.",
+    "descriptionEdit": "Modifica la destinazione del collegamento sotto il cursore.",
+    "descriptionSelection": "Il testo selezionato \"{{text}}\" diventa il collegamento.",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://example.com",
+    "textLabel": "Testo del collegamento",
+    "textPlaceholder": "Opzionale — altrimenti si usa il nome del file",
+    "fileLabel": "File nella cartella",
+    "filePlaceholder": "Digita un nome file …",
+    "noFileMatches": "Nessun file corrispondente",
+    "remove": "Rimuovi collegamento",
+    "confirm": "OK"
   },
   "settingsDialog": {
     "title": "Impostazioni",
@@ -208,7 +229,7 @@
   },
   "shortcutsDialog": {
     "title": "Scorciatoie da tastiera",
-    "description": "Queste combinazioni di tasti sono disponibili nell'editor.",
+    "description": "Queste combinazioni di tasti sono disponibili. Le scorciatoie personalizzabili si riassegnano facendo clic sulla combinazione.",
     "items": {
       "openFolder": "Apri cartella",
       "newFile": "Crea nuovo file",
@@ -217,11 +238,14 @@
       "printFile": "Stampa file",
       "findReplace": "Trova e sostituisci",
       "zenMode": "Attiva/disattiva la modalità Zen (scrittura senza distrazioni)",
+      "navigateBack": "Torna al file aperto in precedenza",
+      "navigateForward": "Vai al file successivo nella cronologia",
       "toggleChat": "Mostra/nascondi chat IA",
       "aiEditDialog": "Apri finestra di modifica IA",
       "aiVoiceDialog": "Apri la finestra IA con input vocale",
       "dictation": "Detta nell'editor o nella chat (avvia/interrompi)",
       "aiSubmit": "Invia richiesta IA (nella finestra IA)",
+      "insertFileLink": "Collega un file (elenco al cursore)",
       "aiCheckDialog": "Controlla ortografia/grammatica del testo selezionato",
       "toggleSpellcheck": "Attiva/disattiva il controllo ortografico (sottolineatura rossa)",
       "bold": "Grassetto",
@@ -244,7 +268,6 @@
       "blockquote": "Citazione",
       "inlineCode": "Codice in linea",
       "codeBlock": "Blocco di codice",
-      "moveListItem": "Sposta elemento dell'elenco (puntato, numerato o di controllo)",
       "copy": "Copia",
       "paste": "Incolla",
       "undo": "Annulla",
@@ -253,7 +276,25 @@
       "zoomOut": "Riduci lo zoom",
       "zoomReset": "Reimposta lo zoom",
       "shortcutsOverview": "Apri panoramica scorciatoie",
-      "closeDialog": "Chiudi finestra"
+      "closeDialog": "Chiudi finestra",
+      "moveListItemUp": "Sposta l'elemento dell'elenco in alto",
+      "moveListItemDown": "Sposta l'elemento dell'elenco in basso",
+      "toggleLinksPanel": "Mostra/nascondi il pannello dei collegamenti (link e backlink)"
+    },
+    "customizeHint": "Fai clic su una combinazione e premi quella nuova.",
+    "recording": "Premi un tasto …",
+    "recordHint": "Premi la nuova combinazione (deve includere Ctrl o Alt) — Esc annulla.",
+    "record": "Cambia la combinazione di «{{action}}»",
+    "resetOne": "Ripristina «{{action}}» al valore predefinito",
+    "resetAll": "Ripristina tutto",
+    "errorNeedsModifier": "La combinazione deve includere Ctrl o Alt.",
+    "errorConflict": "Già usata da «{{action}}».",
+    "saveError": "Non è stato possibile salvare le scorciatoie: {{message}}",
+    "categories": {
+      "app": "Applicazione",
+      "ai": "IA",
+      "format": "Formattazione",
+      "fixed": "Scorciatoie fisse"
     }
   },
   "sidebar": {
@@ -282,7 +323,8 @@
     "rename": "Rinomina",
     "renameInputLabel": "Nome cartella",
     "fileRenameInputLabel": "Nome file",
-    "export": "Esporta…"
+    "export": "Esporta…",
+    "print": "Stampa…"
   },
   "toolbar": {
     "formattingLabel": "Strumenti di formattazione",
@@ -322,6 +364,8 @@
     "codeBlockTitle": "Blocco di codice (Ctrl+K)",
     "insertLink": "Inserisci link",
     "insertLinkTitle": "Inserisci link (Ctrl+M)",
+    "linksPanel": "Collegamenti e backlink",
+    "linksPanelTitle": "Mostra o nascondi il pannello dei collegamenti",
     "headingMenu": "Titolo",
     "paragraph": "Testo normale",
     "heading4": "Titolo 4",
@@ -375,6 +419,21 @@
     "resultSummary": "Eseguite {{matches}} sostituzioni in {{files}} file",
     "fileMatchBadge": "Corrispondenze: {{count}}"
   },
+  "linksPanel": {
+    "title": "Collegamenti",
+    "refresh": "Aggiorna",
+    "close": "Chiudi pannello",
+    "outgoing": "Collegamenti in uscita ({{count}})",
+    "noOutgoing": "Questo documento non collega altri file.",
+    "backlinks": "Backlink ({{count}})",
+    "backlinksLoading": "Ricerca dei backlink …",
+    "noBacklinks": "Nessun altro file collega questo documento.",
+    "brokenTarget": "Destinazione non trovata"
+  },
+  "fileLinkSuggest": {
+    "hint": "Collega un file",
+    "noMatches": "Nessun file corrispondente"
+  },
   "emojiPicker": {
     "insertEmoji": "Inserisci emoji",
     "selectEmoji": "Scegli emoji"
@@ -423,11 +482,12 @@
     "run": "Esegui"
   },
   "editor": {
-    "linkPrompt": "Inserisci l'URL del link",
     "imageRequiresFile": "Le immagini possono essere inserite solo durante la modifica di un file all'interno di una cartella aperta.",
     "imageInsertFailed": "Impossibile inserire l'immagine \"{{fileName}}\": {{error}}",
     "imageDialogTitle": "Seleziona immagine",
     "imageDialogFilter": "Immagini",
+    "linkRequiresFile": "I file possono essere collegati solo durante la modifica di un file all'interno di una cartella aperta.",
+    "linkTargetMissing": "Il file collegato \"{{href}}\" non è stato trovato.",
     "aiResponseError": "Impossibile caricare la risposta dell'IA.",
     "aiTipModel": "Suggerimento: apri le impostazioni IA e inserisci un modello valido.",
     "aiTipConnection": "Suggerimento: verifica che Ollama o Jan.ai siano in esecuzione e che l'URL API sia raggiungibile.",

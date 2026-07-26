@@ -1100,7 +1100,17 @@ export type AiChatMessage =
       // attachImageData. Absent in the stored history.
       images?: AiChatImage[];
     }
-  | { role: "assistant"; content: string; toolCalls?: ToolCall[] }
+  | {
+      role: "assistant";
+      content: string;
+      toolCalls?: ToolCall[];
+      // The model flagged this reply as offering a change it has not proposed in
+      // the editor, so the transcript shows the "apply to document" button on it
+      // (persisted). Set from the model's own flag_pending_suggestion call —
+      // either inside the turn or from the follow-up question the store asks
+      // when a turn ends without one. See FLAG_SUGGESTION_TOOL_NAME.
+      suggestsEdit?: boolean;
+    }
   | { role: "tool"; toolCallId: string; toolName: string; content: string };
 
 export type AiChatRequest = {
@@ -1114,6 +1124,14 @@ export type AiChatRequest = {
   // prompt so the assistant can talk about "this passage". Not used in the
   // agent (tool-calling) path — the agent reads the document via its tools.
   documentContext?: string;
+  // Replaces the whole system prompt (assistant persona + agent rules) instead
+  // of being composed with it. For the one-question follow-up steps that are not
+  // part of the conversation — see detectPendingSuggestion.
+  systemOverride?: string;
+  // Restricts which agent tools this request offers. Undefined means all of
+  // them; a follow-up step that must not be able to touch the document narrows
+  // it to the one tool it asks about.
+  toolNames?: readonly string[];
 };
 
 // Name of the tool the model calls to flag that its own reply text (not an
@@ -1121,6 +1139,15 @@ export type AiChatRequest = {
 // — see its spec below and the "In Text einarbeiten" button in ChatPanel,
 // which only appears on a message whose toolCalls include this name.
 export const FLAG_SUGGESTION_TOOL_NAME = "flag_pending_suggestion";
+
+// The tools that open a red/green proposal in the editor. A turn that called one
+// of these has already given the user something to accept, which is what makes
+// the flag above redundant for it.
+export const EDITING_TOOL_NAMES: readonly string[] = [
+  "replace_selection",
+  "insert_at_cursor",
+  "replace_passage"
+];
 
 // One spec per agent tool, translated below into each provider family's wire
 // format (OpenAI-compatible "function" tools vs. Anthropic's input_schema).
@@ -1183,7 +1210,7 @@ const AGENT_TOOL_SPECS = [
   {
     name: "replace_selection",
     description:
-      "Propose replacing the user's current selection with new Markdown text. The change is shown to the user for review, not applied directly.",
+      "Propose replacing the user's current selection with new Markdown text. The change is shown to the user for review, not applied directly. The selection is given to you as Markdown: keep its formatting and give anything you add the same markers (checklist items \"- [ ] \", bullets \"- \", numbering, bold and headings).",
     parameters: {
       type: "object",
       properties: { new_text: { type: "string", description: "The Markdown to put in place of the selection." } },
@@ -1223,12 +1250,13 @@ const AGENT_TOOL_SPECS = [
   {
     name: FLAG_SUGGESTION_TOOL_NAME,
     description:
-      "Call this ONLY when the reply you are writing right now already contains a concrete rewritten passage " +
-      "the user could apply, and you are NOT proposing that same change with replace_selection, " +
-      "insert_at_cursor or replace_passage in this turn. It shows the user a button that applies exactly what " +
-      "you wrote. Never call it for an answer, explanation, question or confirmation that does not itself " +
-      "contain a concrete rewrite — and never call it together with an editing tool for the same change, " +
-      "that change already gets its own review widget and a second button would be redundant.",
+      "Shows the user a button that turns the change your reply offers into a reviewable edit of their " +
+      "document. Call this as the last action of a turn whose reply offers a change you did not propose with " +
+      "replace_selection, insert_at_cursor or replace_passage: you wrote the new wording out in the reply, " +
+      "you described a rewrite you are ready to make, or you asked whether you should apply it. Without this " +
+      "call such an offer is dead text the user cannot act on. Do not call it when you already proposed that " +
+      "same change with an editing tool (it has its own review widget), and not when your reply only answers " +
+      "a question, explains something, or confirms a change that is already made.",
     parameters: { type: "object", properties: {}, required: [] }
   }
 ] as const;
@@ -1243,6 +1271,20 @@ const AGENT_TOOLS_ANTHROPIC = AGENT_TOOL_SPECS.map((spec) => ({
   description: spec.description,
   input_schema: spec.parameters
 }));
+
+// Applies request.toolNames. Narrowing the offered tools is the guard that lets
+// a follow-up step ask the model a question without giving it the means to
+// propose or change anything while answering.
+function offeredTools<T extends { name: string } | { function: { name: string } }>(
+  all: T[],
+  toolNames: readonly string[] | undefined
+): T[] {
+  if (!toolNames) {
+    return all;
+  }
+
+  return all.filter((tool) => toolNames.includes("name" in tool ? tool.name : tool.function.name));
+}
 
 // Ollama's tool_calls arguments already arrive as an object; OpenAI-compatible
 // endpoints send them as a JSON string. Passing either through this one
@@ -1287,9 +1329,15 @@ const AGENT_INSTRUCTION =
   "wording, and call the tool once per affected passage — several proposals in one turn are normal " +
   "and expected when the request touches several places. Only use insert_at_cursor for genuinely " +
   "new content that doesn't revise anything.\n" +
+  "3a. Every tool argument is Markdown, and the formatting is part of the passage. When you rewrite " +
+  "a passage or extend it with further entries, keep its markup and give the new entries the same " +
+  "one: checklist items stay \"- [ ] \", bullets stay \"- \", numbered items keep their numbering, " +
+  "and bold, italic or heading markup around the wording stays. Never answer a checklist or list " +
+  "with bare sentences — text you add has to look like the entries that are already there.\n" +
   "4. The tools do NOT change the document: each call shows the user a red/green proposal that they " +
   "accept or discard. So do not ask for permission first, and do not repeat the revised text in " +
-  "your reply — propose it with a tool and then confirm in one short sentence what you proposed.\n" +
+  `your reply — propose it with a tool and then confirm in one short sentence what you proposed. If ` +
+  `you nevertheless end a turn without having proposed the change, rule 9 applies.\n` +
   "5. A proposal stays out of the document until the user accepts it, so a get_document after your " +
   "own proposal shows the OLD text — that is correct and never means the call failed. Never call a " +
   "tool a second time for a change you already proposed: a second proposal means the text ends up in " +
@@ -1304,11 +1352,14 @@ const AGENT_INSTRUCTION =
   "edit an image's markdown with replace_passage, it cannot work. \"A bit bigger\" is scale 1.25, " +
   "\"much bigger\" scale 1.75, and the same factors below 1 for smaller. One call is enough: the new " +
   "size is applied immediately, so confirm it in one sentence instead of proposing anything.\n" +
-  `9. Prefer the editing tools over writing a rewrite into your reply. But if you do end up writing a ` +
-  `concrete rewritten passage directly in your reply instead of proposing it with a tool, call ` +
-  `${FLAG_SUGGESTION_TOOL_NAME} in that same turn so the user gets a button to apply it — never leave such a ` +
-  `rewrite sitting in your reply text unflagged, and never call it for a reply that is not itself a concrete ` +
-  `rewrite.\n` +
+  `9. Before you finish a turn, check what you are leaving behind. If your reply offers the user a change ` +
+  `to their text that you did NOT propose with an editing tool in this turn — you wrote the new wording out ` +
+  `in the reply itself, you described a rewrite you are ready to make, or you asked whether you should apply ` +
+  `it ("would you like me to …?", "shall I apply that?") — then your last action of the turn is to call ` +
+  `${FLAG_SUGGESTION_TOOL_NAME}. That gives the user a button to apply it, and is the only way they can act ` +
+  `on it: an offer left in your reply text unflagged is one the user cannot accept. Do not call it when you ` +
+  `already proposed the change with an editing tool, and not when your reply merely answers a question, ` +
+  `explains something or confirms a change you have already made.\n` +
   "If the user only asks a question, answer it normally after reading the document.";
 
 function buildChatSystemPrompt(
@@ -1316,6 +1367,10 @@ function buildChatSystemPrompt(
   thinkingMode: AiThinkingMode,
   toolsEnabled = false
 ): string {
+  if (request.systemOverride) {
+    return request.systemOverride;
+  }
+
   const baseInstruction = request.assistantInstruction.trim() || DEFAULT_CHAT_ASSISTANT_INSTRUCTION;
 
   const thinkingInstruction =
@@ -1506,7 +1561,7 @@ export async function generateAiChatStep(
       model: settings.model,
       system: buildChatSystemPrompt(request, settings.thinkingMode, true),
       max_tokens: resolveMaxOutputTokens(settings.contextLength),
-      tools: AGENT_TOOLS_ANTHROPIC,
+      tools: offeredTools(AGENT_TOOLS_ANTHROPIC, request.toolNames),
       messages: toAnthropicMessages(request)
     };
 
@@ -1540,7 +1595,7 @@ export async function generateAiChatStep(
       model: settings.model,
       stream: false,
       messages: toOpenAiCompatMessages(request, settings.thinkingMode, true),
-      tools: AGENT_TOOLS_OPENAI,
+      tools: offeredTools(AGENT_TOOLS_OPENAI, request.toolNames),
       options: { num_ctx: settings.contextLength, num_predict: resolveMaxOutputTokens(settings.contextLength) }
     };
 
@@ -1570,7 +1625,7 @@ export async function generateAiChatStep(
   const body: Record<string, unknown> = {
     model: settings.model,
     messages: toOpenAiCompatMessages(request, settings.thinkingMode, false),
-    tools: AGENT_TOOLS_OPENAI,
+    tools: offeredTools(AGENT_TOOLS_OPENAI, request.toolNames),
     tool_choice: "auto",
     temperature: 0.2,
     max_tokens: resolveMaxOutputTokens(settings.contextLength),

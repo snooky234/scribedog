@@ -67,6 +67,7 @@ function normalizeMessage(raw: unknown): AiChatMessage | null {
     imagePaths?: unknown;
     action?: unknown;
     selection?: unknown;
+    suggestsEdit?: unknown;
   };
 
   if (typeof candidate.role !== "string" || !(CHAT_ROLES as string[]).includes(candidate.role)) {
@@ -99,9 +100,14 @@ function normalizeMessage(raw: unknown): AiChatMessage | null {
       ? candidate.toolCalls.map(normalizeToolCall).filter((call): call is ToolCall => call !== null)
       : undefined;
 
-    return toolCalls && toolCalls.length > 0
-      ? { role: "assistant", content: candidate.content, toolCalls }
-      : { role: "assistant", content: candidate.content };
+    // A session written before the flag existed simply has no flag — its
+    // replies reopen without an "apply" button, which is the safe default.
+    return {
+      role: "assistant",
+      content: candidate.content,
+      ...(toolCalls && toolCalls.length > 0 ? { toolCalls } : {}),
+      ...(candidate.suggestsEdit === true ? { suggestsEdit: true } : {})
+    };
   }
 
   // Only the paths are stored, never the base64 payload — a reopened session

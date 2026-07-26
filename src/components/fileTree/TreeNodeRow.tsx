@@ -8,6 +8,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
+import { FILE_LINK_DRAG_MIME } from "@/lib/editor/fileLinks";
 import { getNodeMtimeMs, type FileTreeNode } from "@/lib/fileTree";
 import type { SortMode } from "@/lib/vaultMeta";
 import { useSearchStore } from "@/store/useSearchStore";
@@ -44,6 +45,8 @@ type TreeNodeRowProps = {
   onRowDropIndicatorChange: (key: string, position: DropPosition | null) => void;
   onRowDrop: (node: FileTreeNode, position: DropPosition) => void;
   onRowDragEnd: () => void;
+  /** Absolute paths this drag carries — the row itself, or the whole selection. */
+  resolveDragFilePaths: (node: FileTreeNode) => string[];
 };
 
 export function TreeNodeRow({
@@ -69,7 +72,8 @@ export function TreeNodeRow({
   onRowDragStart,
   onRowDropIndicatorChange,
   onRowDrop,
-  onRowDragEnd
+  onRowDragEnd,
+  resolveDragFilePaths
 }: TreeNodeRowProps) {
   const { t, i18n } = useTranslation();
   // Badge for the currently active project-wide search: number of matches
@@ -87,19 +91,38 @@ export function TreeNodeRow({
       ? formatModifiedLabel(getNodeMtimeMs(node), i18n.resolvedLanguage ?? i18n.language)
       : "";
 
-  const isDragEnabled = sortMode === "manual";
+  // Reordering and moving inside the tree only works in manual sort mode; a
+  // file can always be dragged, because dropping it into the editor inserts a
+  // link to it (see lib/editor/fileLinks.ts).
+  const isReorderEnabled = sortMode === "manual";
+  const isDragEnabled = isReorderEnabled || node.kind === "file";
   const isDragSource = dragSourceKeys.includes(key);
   const isMultiSelected = selectedKeys.has(key);
   const activeDropPosition = dropIndicator?.key === key ? dropIndicator.position : null;
 
-  const dragHandlers = isDragEnabled
+  const dragOutHandlers = isDragEnabled
     ? {
         draggable: true,
         onDragStart: (event: React.DragEvent<HTMLButtonElement>) => {
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData("text/plain", key);
+          const draggedFilePaths = resolveDragFilePaths(node);
+
+          event.dataTransfer.effectAllowed = isReorderEnabled ? "copyMove" : "copy";
+          event.dataTransfer.setData("text/plain", draggedFilePaths.join("\n") || key);
+
+          if (draggedFilePaths.length > 0) {
+            event.dataTransfer.setData(FILE_LINK_DRAG_MIME, JSON.stringify(draggedFilePaths));
+          }
+
           onRowDragStart(node);
         },
+        onDragEnd: () => {
+          onRowDragEnd();
+        }
+      }
+    : {};
+
+  const dropTargetHandlers = isReorderEnabled
+    ? {
         onDragOver: (event: React.DragEvent<HTMLButtonElement>) => {
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
@@ -124,12 +147,11 @@ export function TreeNodeRow({
           event.preventDefault();
           event.stopPropagation();
           onRowDrop(node, activeDropPosition ?? "below");
-        },
-        onDragEnd: () => {
-          onRowDragEnd();
         }
       }
     : {};
+
+  const dragHandlers = { ...dragOutHandlers, ...dropTargetHandlers };
 
   if (node.kind === "folder") {
     const isExpanded = expandedFolderPaths.has(node.relativePath);
@@ -231,6 +253,7 @@ export function TreeNodeRow({
                 onRowDropIndicatorChange={onRowDropIndicatorChange}
                 onRowDrop={onRowDrop}
                 onRowDragEnd={onRowDragEnd}
+                resolveDragFilePaths={resolveDragFilePaths}
               />
             ))}
           </ul>

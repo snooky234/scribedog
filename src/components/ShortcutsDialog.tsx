@@ -1,6 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { RotateCcw } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { bindingFromEvent, formatBinding, hasPrimaryModifier } from "@/lib/shortcuts/binding";
+import {
+  SHORTCUT_CATEGORY_ORDER,
+  SHORTCUT_DEFINITIONS,
+  SHORTCUT_DEFINITIONS_BY_ID,
+  type ShortcutActionId,
+  type ShortcutCategory
+} from "@/lib/shortcuts/definitions";
+import { findConflict, isCustomBinding, resolveBinding } from "@/lib/shortcuts/resolve";
+import { useShortcutsStore } from "@/store/useShortcutsStore";
 
 type ShortcutsDialogProps = {
   open: boolean;
@@ -9,116 +22,33 @@ type ShortcutsDialogProps = {
 
 type KeyToken = { mod: "ctrl" | "alt" | "shift" } | { special: "esc" | "enter" | "rightClick" } | { literal: string };
 
-type ShortcutDefinition = {
-  id: string;
-  keys: KeyToken[][];
-  descriptionKey: string;
-};
-
-const SHORTCUTS: ShortcutDefinition[] = [
-  { id: "openFolder", keys: [[{ mod: "ctrl" }, { literal: "O" }]], descriptionKey: "shortcutsDialog.items.openFolder" },
-  { id: "newFile", keys: [[{ mod: "ctrl" }, { literal: "N" }]], descriptionKey: "shortcutsDialog.items.newFile" },
-  { id: "renameEntry", keys: [[{ literal: "F2" }]], descriptionKey: "shortcutsDialog.items.renameEntry" },
-  { id: "saveFile", keys: [[{ mod: "ctrl" }, { literal: "S" }]], descriptionKey: "shortcutsDialog.items.saveFile" },
-  { id: "printFile", keys: [[{ mod: "ctrl" }, { literal: "P" }]], descriptionKey: "shortcutsDialog.items.printFile" },
-  { id: "findReplace", keys: [[{ mod: "ctrl" }, { literal: "F" }]], descriptionKey: "shortcutsDialog.items.findReplace" },
+/**
+ * Shortcuts that stay as they are: either the platform owns them (clipboard,
+ * undo) or they are a fixed part of an interaction (Tab indent, Esc closes).
+ * They are listed for reference but have no editing affordance.
+ */
+const FIXED_SHORTCUTS: { id: string; keys: KeyToken[]; descriptionKey: string }[] = [
+  { id: "renameEntry", keys: [{ literal: "F2" }], descriptionKey: "shortcutsDialog.items.renameEntry" },
   {
-    id: "zenMode",
-    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "Y" }]],
-    descriptionKey: "shortcutsDialog.items.zenMode"
-  },
-  {
-    id: "toggleChat",
-    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "A" }]],
-    descriptionKey: "shortcutsDialog.items.toggleChat"
-  },
-  {
-    id: "aiEditDialog",
-    keys: [[{ mod: "ctrl" }, { literal: "E" }], [{ special: "rightClick" }]],
+    id: "aiEditContextMenu",
+    keys: [{ special: "rightClick" }],
     descriptionKey: "shortcutsDialog.items.aiEditDialog"
   },
-  {
-    id: "aiVoiceDialog",
-    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "E" }]],
-    descriptionKey: "shortcutsDialog.items.aiVoiceDialog"
-  },
-  {
-    id: "dictation",
-    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "W" }]],
-    descriptionKey: "shortcutsDialog.items.dictation"
-  },
-  {
-    id: "aiSubmit",
-    keys: [[{ mod: "ctrl" }, { special: "enter" }]],
-    descriptionKey: "shortcutsDialog.items.aiSubmit"
-  },
-  {
-    id: "aiCheckDialog",
-    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "X" }]],
-    descriptionKey: "shortcutsDialog.items.aiCheckDialog"
-  },
-  {
-    id: "toggleSpellcheck",
-    keys: [[{ mod: "ctrl" }, { mod: "alt" }, { mod: "shift" }, { literal: "X" }]],
-    descriptionKey: "shortcutsDialog.items.toggleSpellcheck"
-  },
-  { id: "bold", keys: [[{ mod: "ctrl" }, { literal: "B" }]], descriptionKey: "shortcutsDialog.items.bold" },
-  { id: "italic", keys: [[{ mod: "ctrl" }, { literal: "I" }]], descriptionKey: "shortcutsDialog.items.italic" },
-  { id: "underline", keys: [[{ mod: "ctrl" }, { literal: "U" }]], descriptionKey: "shortcutsDialog.items.underline" },
-  { id: "insertLink", keys: [[{ mod: "ctrl" }, { literal: "M" }]], descriptionKey: "shortcutsDialog.items.insertLink" },
-  { id: "bulletList", keys: [[{ mod: "ctrl" }, { literal: "." }]], descriptionKey: "shortcutsDialog.items.bulletList" },
-  {
-    id: "orderedList",
-    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "O" }]],
-    descriptionKey: "shortcutsDialog.items.orderedList"
-  },
-  { id: "checkbox", keys: [[{ mod: "ctrl" }, { literal: "," }]], descriptionKey: "shortcutsDialog.items.checkbox" },
-  {
-    id: "checkboxToggle",
-    keys: [[{ mod: "ctrl" }, { mod: "shift" }, { literal: "," }]],
-    descriptionKey: "shortcutsDialog.items.checkboxToggle"
-  },
-  { id: "strikethrough", keys: [[{ mod: "ctrl" }, { literal: "D" }]], descriptionKey: "shortcutsDialog.items.strikethrough" },
-  { id: "heading1", keys: [[{ mod: "ctrl" }, { literal: "1" }]], descriptionKey: "shortcutsDialog.items.heading1" },
-  { id: "heading2", keys: [[{ mod: "ctrl" }, { literal: "2" }]], descriptionKey: "shortcutsDialog.items.heading2" },
-  { id: "heading3", keys: [[{ mod: "ctrl" }, { literal: "3" }]], descriptionKey: "shortcutsDialog.items.heading3" },
-  { id: "heading4", keys: [[{ mod: "ctrl" }, { literal: "4" }]], descriptionKey: "shortcutsDialog.items.heading4" },
-  { id: "heading5", keys: [[{ mod: "ctrl" }, { literal: "5" }]], descriptionKey: "shortcutsDialog.items.heading5" },
-  { id: "heading6", keys: [[{ mod: "ctrl" }, { literal: "6" }]], descriptionKey: "shortcutsDialog.items.heading6" },
-  {
-    id: "indentIncrease",
-    keys: [[{ literal: "Tab" }]],
-    descriptionKey: "shortcutsDialog.items.indentIncrease"
-  },
+  { id: "aiSubmit", keys: [{ mod: "ctrl" }, { special: "enter" }], descriptionKey: "shortcutsDialog.items.aiSubmit" },
+  // Not a key combination but typed text, so it can neither be rebound nor
+  // conflict with one — it still belongs in this list to be discoverable.
+  { id: "insertFileLink", keys: [{ literal: "[[" }], descriptionKey: "shortcutsDialog.items.insertFileLink" },
+  { id: "indentIncrease", keys: [{ literal: "Tab" }], descriptionKey: "shortcutsDialog.items.indentIncrease" },
   {
     id: "indentDecrease",
-    keys: [[{ mod: "shift" }, { literal: "Tab" }]],
+    keys: [{ mod: "shift" }, { literal: "Tab" }],
     descriptionKey: "shortcutsDialog.items.indentDecrease"
   },
-  { id: "blockquote", keys: [[{ mod: "ctrl" }, { literal: "Q" }]], descriptionKey: "shortcutsDialog.items.blockquote" },
-  { id: "inlineCode", keys: [[{ mod: "ctrl" }, { literal: "G" }]], descriptionKey: "shortcutsDialog.items.inlineCode" },
-  { id: "codeBlock", keys: [[{ mod: "ctrl" }, { literal: "K" }]], descriptionKey: "shortcutsDialog.items.codeBlock" },
-  {
-    id: "moveListItem",
-    keys: [
-      [{ mod: "alt" }, { mod: "shift" }, { literal: "↑" }],
-      [{ mod: "alt" }, { mod: "shift" }, { literal: "↓" }]
-    ],
-    descriptionKey: "shortcutsDialog.items.moveListItem"
-  },
-  { id: "copy", keys: [[{ mod: "ctrl" }, { literal: "C" }]], descriptionKey: "shortcutsDialog.items.copy" },
-  { id: "paste", keys: [[{ mod: "ctrl" }, { literal: "V" }]], descriptionKey: "shortcutsDialog.items.paste" },
-  { id: "undo", keys: [[{ mod: "ctrl" }, { literal: "Z" }]], descriptionKey: "shortcutsDialog.items.undo" },
-  { id: "redo", keys: [[{ mod: "ctrl" }, { literal: "Y" }]], descriptionKey: "shortcutsDialog.items.redo" },
-  { id: "zoomIn", keys: [[{ mod: "ctrl" }, { literal: "+" }]], descriptionKey: "shortcutsDialog.items.zoomIn" },
-  { id: "zoomOut", keys: [[{ mod: "ctrl" }, { literal: "-" }]], descriptionKey: "shortcutsDialog.items.zoomOut" },
-  { id: "zoomReset", keys: [[{ mod: "ctrl" }, { literal: "0" }]], descriptionKey: "shortcutsDialog.items.zoomReset" },
-  {
-    id: "shortcutsOverview",
-    keys: [[{ mod: "ctrl" }, { literal: "#" }]],
-    descriptionKey: "shortcutsDialog.items.shortcutsOverview"
-  },
-  { id: "closeDialog", keys: [[{ special: "esc" }]], descriptionKey: "shortcutsDialog.items.closeDialog" }
+  { id: "copy", keys: [{ mod: "ctrl" }, { literal: "C" }], descriptionKey: "shortcutsDialog.items.copy" },
+  { id: "paste", keys: [{ mod: "ctrl" }, { literal: "V" }], descriptionKey: "shortcutsDialog.items.paste" },
+  { id: "undo", keys: [{ mod: "ctrl" }, { literal: "Z" }], descriptionKey: "shortcutsDialog.items.undo" },
+  { id: "redo", keys: [{ mod: "ctrl" }, { literal: "Y" }], descriptionKey: "shortcutsDialog.items.redo" },
+  { id: "closeDialog", keys: [{ special: "esc" }], descriptionKey: "shortcutsDialog.items.closeDialog" }
 ];
 
 function formatKeyCombo(t: TFunction, tokens: KeyToken[]): string {
@@ -137,11 +67,35 @@ function formatKeyCombo(t: TFunction, tokens: KeyToken[]): string {
     .join(" + ");
 }
 
+type RecordingError =
+  | { kind: "needsModifier" }
+  | { kind: "conflict"; conflictingAction: ShortcutActionId };
+
 export function ShortcutsDialog({ open, onClose }: ShortcutsDialogProps) {
   const { t } = useTranslation();
+  const overrides = useShortcutsStore((state) => state.overrides);
+  const saveError = useShortcutsStore((state) => state.saveError);
+  const setBinding = useShortcutsStore((state) => state.setBinding);
+  const resetBinding = useShortcutsStore((state) => state.resetBinding);
+  const resetAllBindings = useShortcutsStore((state) => state.resetAllBindings);
 
+  const [recordingId, setRecordingId] = useState<ShortcutActionId | null>(null);
+  const [recordingError, setRecordingError] = useState<RecordingError | null>(null);
+
+  const stopRecording = () => {
+    setRecordingId(null);
+    setRecordingError(null);
+  };
+
+  // Reopening the dialog must never resume a half-finished recording.
   useEffect(() => {
     if (!open) {
+      stopRecording();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || recordingId) {
       return;
     }
 
@@ -155,11 +109,116 @@ export function ShortcutsDialog({ open, onClose }: ShortcutsDialogProps) {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+  }, [open, recordingId, onClose]);
+
+  // While recording, every keystroke belongs to the recorder — capture phase
+  // plus stopImmediatePropagation keeps the app's own shortcuts (and the
+  // webview) from acting on the combo being assigned.
+  useEffect(() => {
+    if (!open || !recordingId) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      if (event.key === "Escape") {
+        stopRecording();
+        return;
+      }
+
+      const binding = bindingFromEvent(event);
+
+      if (!binding) {
+        // Only modifiers held so far — keep waiting for the actual key.
+        return;
+      }
+
+      if (!hasPrimaryModifier(binding)) {
+        setRecordingError({ kind: "needsModifier" });
+        return;
+      }
+
+      const conflictingAction = findConflict(overrides, recordingId, binding);
+
+      if (conflictingAction) {
+        setRecordingError({ kind: "conflict", conflictingAction });
+        return;
+      }
+
+      void setBinding(recordingId, binding);
+      stopRecording();
+    };
+
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
+  }, [open, recordingId, overrides, setBinding]);
 
   if (!open) {
     return null;
   }
+
+  const hasCustomBindings = SHORTCUT_DEFINITIONS.some((definition) =>
+    isCustomBinding(overrides, definition.id)
+  );
+
+  const conflictLabel =
+    recordingError?.kind === "conflict"
+      ? t(SHORTCUT_DEFINITIONS_BY_ID.get(recordingError.conflictingAction)!.descriptionKey)
+      : "";
+
+  const renderCategory = (category: ShortcutCategory) => {
+    const definitions = SHORTCUT_DEFINITIONS.filter((definition) => definition.category === category);
+
+    return (
+      <section key={category} className="shortcuts-section">
+        <h4 className="shortcuts-section__title">{t(`shortcutsDialog.categories.${category}`)}</h4>
+        <ul className="shortcuts-list">
+          {definitions.map((definition) => {
+            const isRecording = recordingId === definition.id;
+            const isCustom = isCustomBinding(overrides, definition.id);
+
+            return (
+              <li key={definition.id} className="shortcuts-list__item">
+                <span className="shortcuts-list__label">{t(definition.descriptionKey)}</span>
+                <span className="shortcuts-list__keys-group">
+                  <button
+                    type="button"
+                    className="shortcuts-list__keys shortcuts-list__keys--editable"
+                    data-recording={isRecording ? "true" : undefined}
+                    aria-label={t("shortcutsDialog.record", { action: t(definition.descriptionKey) })}
+                    onClick={() => {
+                      setRecordingError(null);
+                      setRecordingId(isRecording ? null : definition.id);
+                    }}
+                  >
+                    {isRecording
+                      ? t("shortcutsDialog.recording")
+                      : formatBinding(t, resolveBinding(overrides, definition.id))}
+                  </button>
+                  <button
+                    type="button"
+                    className="shortcuts-list__reset"
+                    disabled={!isCustom}
+                    aria-label={t("shortcutsDialog.resetOne", { action: t(definition.descriptionKey) })}
+                    title={t("shortcutsDialog.resetOne", { action: t(definition.descriptionKey) })}
+                    onClick={() => {
+                      stopRecording();
+                      void resetBinding(definition.id);
+                    }}
+                  >
+                    <RotateCcw aria-hidden="true" />
+                  </button>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
+  };
 
   return (
     <div className="ai-dialog" role="presentation" onClick={onClose}>
@@ -173,20 +232,55 @@ export function ShortcutsDialog({ open, onClose }: ShortcutsDialogProps) {
         <h3 id="shortcuts-title">{t("shortcutsDialog.title")}</h3>
         <p className="ai-dialog__description">{t("shortcutsDialog.description")}</p>
 
-        <ul className="shortcuts-list">
-          {SHORTCUTS.map((shortcut) => (
-            <li key={shortcut.id} className="shortcuts-list__item">
-              <span className="shortcuts-list__keys-group">
-                {shortcut.keys.map((tokens, index) => (
-                  <kbd key={index} className="shortcuts-list__keys">
-                    {formatKeyCombo(t, tokens)}
-                  </kbd>
-                ))}
-              </span>
-              <span>{t(shortcut.descriptionKey)}</span>
-            </li>
-          ))}
-        </ul>
+        <p className="shortcuts-hint" role="status">
+          {recordingError?.kind === "needsModifier"
+            ? t("shortcutsDialog.errorNeedsModifier")
+            : recordingError?.kind === "conflict"
+              ? t("shortcutsDialog.errorConflict", { action: conflictLabel })
+              : recordingId
+                ? t("shortcutsDialog.recordHint")
+                : t("shortcutsDialog.customizeHint")}
+        </p>
+
+        {saveError ? (
+          <p className="shortcuts-hint shortcuts-hint--error">
+            {t("shortcutsDialog.saveError", { message: saveError })}
+          </p>
+        ) : null}
+
+        {SHORTCUT_CATEGORY_ORDER.map(renderCategory)}
+
+        <section className="shortcuts-section">
+          <h4 className="shortcuts-section__title">{t("shortcutsDialog.categories.fixed")}</h4>
+          <ul className="shortcuts-list">
+            {FIXED_SHORTCUTS.map((shortcut) => (
+              <li key={shortcut.id} className="shortcuts-list__item">
+                <span className="shortcuts-list__label">{t(shortcut.descriptionKey)}</span>
+                <span className="shortcuts-list__keys-group">
+                  <kbd className="shortcuts-list__keys">{formatKeyCombo(t, shortcut.keys)}</kbd>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="ai-dialog__actions">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!hasCustomBindings}
+            onClick={() => {
+              stopRecording();
+              void resetAllBindings();
+            }}
+          >
+            <RotateCcw aria-hidden="true" />
+            {t("shortcutsDialog.resetAll")}
+          </Button>
+          <Button type="button" onClick={onClose}>
+            {t("common.close")}
+          </Button>
+        </div>
       </div>
     </div>
   );

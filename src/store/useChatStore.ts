@@ -3,11 +3,14 @@ import { create } from "zustand";
 import i18n from "@/i18n";
 import {
   DEFAULT_CHAT_ASSISTANT_INSTRUCTION,
+  EDITING_TOOL_NAMES,
+  FLAG_SUGGESTION_TOOL_NAME,
   generateAiChatStep,
   type AiChatMessage,
   type ChatUserAction
 } from "@/lib/aiClient";
 import { beginChatTurn, executeTool, pendingProposalTurnNote } from "@/lib/chat/agentTools";
+import { detectPendingSuggestion } from "@/lib/chat/pendingSuggestion";
 import { selectMessagesForModel } from "@/lib/chat/contextWindow";
 import { attachImageData } from "@/lib/chat/imageAttachments";
 import { clampSelection, inlineSelectionContext } from "@/lib/chat/selectionContext";
@@ -287,11 +290,41 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const abortController = new AbortController();
     activeAbortController = abortController;
 
-    const appendMessage = (message: AiChatMessage) => {
+    // Answers with the position the message landed at, so a later step can go
+    // back and amend it (see markSuggestsEdit).
+    const appendMessage = (message: AiChatMessage): number => {
+      let index = -1;
+
+      set((state) => ({
+        sessions: state.sessions.map((entry) => {
+          if (entry.id !== session.id) {
+            return entry;
+          }
+
+          index = entry.messages.length;
+          return { ...entry, messages: [...entry.messages, message], updatedAt: Date.now() };
+        })
+      }));
+
+      return index;
+    };
+
+    // Puts the "apply to document" button on an assistant message after the
+    // fact. Addressed by position rather than "the last message": the follow-up
+    // question runs with the turn already finished, so the user may have sent
+    // the next one meanwhile.
+    const markSuggestsEdit = (index: number) => {
       set((state) => ({
         sessions: state.sessions.map((entry) =>
           entry.id === session.id
-            ? { ...entry, messages: [...entry.messages, message], updatedAt: Date.now() }
+            ? {
+                ...entry,
+                messages: entry.messages.map((message, at) =>
+                  at === index && message.role === "assistant"
+                    ? { ...message, suggestsEdit: true }
+                    : message
+                )
+              }
             : entry
         )
       }));
@@ -299,6 +332,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       let iterations = 0;
+      // Whether this turn has already given the user something to accept in the
+      // editor. If it has, the reply needs no "apply" button — the review widget
+      // is the affordance.
+      let turnProposedEdit = false;
+      // Set when the turn ended on a plain text reply that the model did not
+      // flag: the one case where it never got the chance to (see
+      // detectPendingSuggestion). Resolved once the turn is otherwise finished.
+      let unflaggedReply: { index: number; text: string } | null = null;
 
       while (iterations < MAX_ITERATIONS) {
         iterations += 1;
@@ -336,11 +377,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
         );
 
         if (step.toolCalls.length === 0) {
-          appendMessage({ role: "assistant", content: step.text });
+          const index = appendMessage({ role: "assistant", content: step.text });
+
+          if (!turnProposedEdit && step.text.trim()) {
+            unflaggedReply = { index, text: step.text };
+          }
+
           break;
         }
 
-        appendMessage({ role: "assistant", content: step.text, toolCalls: step.toolCalls });
+        appendMessage({
+          role: "assistant",
+          content: step.text,
+          toolCalls: step.toolCalls,
+          // The model's own call is the signal; the button appears on the very
+          // message whose text it flagged. Redundant next to a proposal it made
+          // in the same turn, which rule 9 tells it not to do — but a model that
+          // does both anyway must not produce two ways to apply one change.
+          ...(step.toolCalls.some((call) => call.name === FLAG_SUGGESTION_TOOL_NAME) &&
+          !turnProposedEdit &&
+          !step.toolCalls.some((call) => EDITING_TOOL_NAMES.includes(call.name))
+            ? { suggestsEdit: true }
+            : {})
+        });
+
+        if (step.toolCalls.some((call) => EDITING_TOOL_NAMES.includes(call.name))) {
+          turnProposedEdit = true;
+        }
 
         const imagePaths: string[] = [];
 
@@ -372,12 +435,39 @@ export const useChatStore = create<ChatState>((set, get) => ({
           });
         }
 
+        // Flagging a suggestion ends the turn: the flag says the reply the model
+        // just wrote is what the user acts on, so another step would only append
+        // a second bubble restating it — and the "apply" button hangs on the
+        // flagged message, not on that restatement. The tool result is still
+        // appended above (a tool_calls turn without one is an invalid history on
+        // OpenAI and Anthropic alike), the loop just stops here.
+        if (step.toolCalls.every((call) => call.name === FLAG_SUGGESTION_TOOL_NAME)) {
+          break;
+        }
+
         if (iterations >= MAX_ITERATIONS) {
           appendMessage({ role: "assistant", content: i18n.t("chat.agentStopped") });
         }
       }
 
       set({ isStreaming: false, streamingText: "", streamingThinking: "", error: null });
+
+      // Deliberately after the turn is marked finished: this asks the model one
+      // more question, and the reply it judges is already on screen. Leaving the
+      // turn "running" for it would hold the composer for a request the user is
+      // not waiting for — the button simply appears a moment later.
+      if (unflaggedReply && !abortController.signal.aborted) {
+        const offersEdit = await detectPendingSuggestion(
+          aiSettings,
+          content,
+          unflaggedReply.text,
+          abortController.signal
+        );
+
+        if (offersEdit) {
+          markSuggestsEdit(unflaggedReply.index);
+        }
+      }
     } catch (error) {
       if (abortController.signal.aborted) {
         // Tool edits already applied are single undo steps and stay in the

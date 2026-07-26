@@ -26,6 +26,7 @@ import {
   ListOrdered,
   Megaphone,
   MessagesSquare,
+  Network,
   OctagonAlert,
   PawPrint,
   Pilcrow,
@@ -104,6 +105,26 @@ function ToggleButton({
       onClick={onClick}
     >
       {children}
+    </Toggle>
+  );
+}
+
+// The links/backlinks sidebar is a view toggle rather than a document command,
+// so its state lives in the editor settings store (and survives a restart)
+// instead of travelling through Toolbar props.
+function LinksPanelToggle() {
+  const { t } = useTranslation();
+  const linksPanelVisible = useEditorSettingsStore((state) => state.linksPanelVisible);
+  const setLinksPanelVisible = useEditorSettingsStore((state) => state.setLinksPanelVisible);
+
+  return (
+    <Toggle
+      pressed={linksPanelVisible}
+      aria-label={t("toolbar.linksPanel")}
+      title={t("toolbar.linksPanelTitle")}
+      onClick={() => setLinksPanelVisible(!linksPanelVisible)}
+    >
+      <Network />
     </Toggle>
   );
 }
@@ -711,6 +732,7 @@ export function Toolbar({
         >
           <Search />
         </Button>
+        <LinksPanelToggle />
         <ZoomControl />
         <Button
           type="button"

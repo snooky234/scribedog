@@ -549,9 +549,32 @@
   }
 }
 
+.shortcuts-hint {
+  margin: 0 0 0.9rem;
+  font-size: 0.85rem;
+  color: rgba(var(--text-rgb),0.66);
+  min-height: 1.2rem;
+}
+
+.shortcuts-hint--error {
+  color: var(--destructive-fg, #dc2626);
+}
+
+.shortcuts-section + .shortcuts-section {
+  margin-top: 1.4rem;
+}
+
+.shortcuts-section__title {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.7rem;
+  color: rgba(var(--muted-rgb),0.9);
+}
+
 .shortcuts-list {
   list-style: none;
-  margin: 1.1rem 0 0;
+  margin: 0.55rem 0 0;
   padding: 0;
   display: grid;
   gap: 0.5rem;
@@ -567,6 +590,10 @@
   background: rgba(var(--surface-rgb),0.74);
   padding: 0.6rem 0.9rem;
   color: rgba(var(--text-rgb),0.9);
+}
+
+.shortcuts-list__label {
+  min-width: 0;
 }
 
 .shortcuts-list__keys-group {
@@ -585,6 +612,52 @@
   font-family: inherit;
   font-size: 0.85rem;
   color: rgba(var(--text-rgb),0.95);
+}
+
+.shortcuts-list__keys--editable {
+  cursor: pointer;
+  min-width: 7.5rem;
+  text-align: center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.shortcuts-list__keys--editable:hover {
+  border-color: rgba(var(--overlay-rgb),0.3);
+  background: rgba(var(--overlay-rgb),0.12);
+}
+
+.shortcuts-list__keys--editable[data-recording="true"] {
+  border-color: var(--accent-fg, rgba(var(--text-rgb),0.6));
+  background: rgba(var(--overlay-rgb),0.16);
+  font-style: italic;
+}
+
+.shortcuts-list__reset {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: rgba(var(--text-rgb),0.6);
+  cursor: pointer;
+}
+
+.shortcuts-list__reset svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.shortcuts-list__reset:hover:not(:disabled) {
+  background: rgba(var(--overlay-rgb),0.1);
+  color: rgba(var(--text-rgb),0.95);
+}
+
+.shortcuts-list__reset:disabled {
+  opacity: 0.25;
+  cursor: default;
 }
 
 .unsaved-dialog {

@@ -21,6 +21,10 @@
     "shellLabel": "Interfaz de la aplicación ScribeDog",
     "workspaceLabel": "Área de trabajo del editor",
     "documentAreaLabel": "Área del documento",
+    "navigateBack": "Atrás",
+    "navigateForward": "Adelante",
+    "navigateBackTo": "Volver a \"{{fileLabel}}\"",
+    "navigateForwardTo": "Ir adelante a \"{{fileLabel}}\"",
     "sidebarResizeLabel": "Ajustar el ancho de la barra lateral",
     "chatResizeLabel": "Ajustar el ancho del panel de chat",
     "fileNameLabel": "Nombre del archivo",
@@ -106,6 +110,23 @@
     "errorWrite": "No se pudo escribir el archivo: {{message}}",
     "errorOcrNoModel": "No hay ningún modelo de IA configurado. Carga un modelo con capacidad de visión en los ajustes de IA para importar imágenes.",
     "errorOcrProvider": "No se pudo transcribir la imagen — puede que el modelo configurado no admita imágenes. ({{message}})"
+  },
+  "linkDialog": {
+    "eyebrow": "Enlace",
+    "title": "Insertar enlace",
+    "titleEdit": "Editar enlace",
+    "description": "Introduce una URL o elige un archivo de la carpeta abierta. El enlace se inserta en la posición del cursor.",
+    "descriptionEdit": "Cambia el destino del enlace bajo el cursor.",
+    "descriptionSelection": "El texto seleccionado \"{{text}}\" se convierte en el enlace.",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://example.com",
+    "textLabel": "Texto del enlace",
+    "textPlaceholder": "Opcional: si no, se usa el nombre del archivo",
+    "fileLabel": "Archivo en la carpeta",
+    "filePlaceholder": "Escribe un nombre de archivo …",
+    "noFileMatches": "Ningún archivo coincide",
+    "remove": "Quitar enlace",
+    "confirm": "OK"
   },
   "settingsDialog": {
     "title": "Configuración",
@@ -208,7 +229,7 @@
   },
   "shortcutsDialog": {
     "title": "Atajos de teclado",
-    "description": "Estas combinaciones de teclas están disponibles en el editor.",
+    "description": "Estas combinaciones de teclas están disponibles. Los atajos personalizables se reasignan haciendo clic en la combinación.",
     "items": {
       "openFolder": "Abrir carpeta",
       "newFile": "Crear nuevo archivo",
@@ -217,11 +238,14 @@
       "printFile": "Imprimir archivo",
       "findReplace": "Buscar y reemplazar",
       "zenMode": "Alternar modo Zen (escritura sin distracciones)",
+      "navigateBack": "Volver al archivo abierto anteriormente",
+      "navigateForward": "Avanzar al siguiente archivo del historial",
       "toggleChat": "Mostrar/ocultar el chat de IA",
       "aiEditDialog": "Abrir el cuadro de diálogo de edición con IA",
       "aiVoiceDialog": "Abrir el diálogo de IA con entrada de voz",
       "dictation": "Dictar en el editor o en el chat (iniciar/detener)",
       "aiSubmit": "Enviar solicitud de IA (en el cuadro de diálogo de IA)",
+      "insertFileLink": "Enlazar un archivo (lista en el cursor)",
       "aiCheckDialog": "Revisar el texto seleccionado en busca de errores ortográficos/gramaticales",
       "toggleSpellcheck": "Activar/desactivar la revisión ortográfica (subrayado rojo)",
       "bold": "Negrita",
@@ -244,7 +268,6 @@
       "blockquote": "Cita",
       "inlineCode": "Código en línea",
       "codeBlock": "Bloque de código",
-      "moveListItem": "Mover elemento de lista (viñetas, numerada o de tareas)",
       "copy": "Copiar",
       "paste": "Pegar",
       "undo": "Deshacer",
@@ -253,7 +276,25 @@
       "zoomOut": "Alejar",
       "zoomReset": "Restablecer el zoom",
       "shortcutsOverview": "Abrir el resumen de atajos",
-      "closeDialog": "Cerrar cuadro de diálogo"
+      "closeDialog": "Cerrar cuadro de diálogo",
+      "moveListItemUp": "Subir elemento de lista",
+      "moveListItemDown": "Bajar elemento de lista",
+      "toggleLinksPanel": "Mostrar/ocultar el panel de enlaces (enlaces y retroenlaces)"
+    },
+    "customizeHint": "Haz clic en una combinación y pulsa la nueva.",
+    "recording": "Pulsa una tecla …",
+    "recordHint": "Pulsa la nueva combinación (debe incluir Ctrl o Alt); Esc cancela.",
+    "record": "Cambiar la combinación de «{{action}}»",
+    "resetOne": "Restablecer «{{action}}» al valor predeterminado",
+    "resetAll": "Restablecer todo",
+    "errorNeedsModifier": "La combinación debe incluir Ctrl o Alt.",
+    "errorConflict": "Ya la usa «{{action}}».",
+    "saveError": "No se pudieron guardar los atajos: {{message}}",
+    "categories": {
+      "app": "Aplicación",
+      "ai": "IA",
+      "format": "Formato",
+      "fixed": "Atajos fijos"
     }
   },
   "sidebar": {
@@ -282,7 +323,8 @@
     "rename": "Renombrar",
     "renameInputLabel": "Nombre de la carpeta",
     "fileRenameInputLabel": "Nombre del archivo",
-    "export": "Exportar…"
+    "export": "Exportar…",
+    "print": "Imprimir…"
   },
   "toolbar": {
     "formattingLabel": "Herramientas de formato",
@@ -322,6 +364,8 @@
     "codeBlockTitle": "Bloque de código (Ctrl+K)",
     "insertLink": "Insertar enlace",
     "insertLinkTitle": "Insertar enlace (Ctrl+M)",
+    "linksPanel": "Enlaces y retroenlaces",
+    "linksPanelTitle": "Mostrar u ocultar el panel de enlaces",
     "headingMenu": "Título",
     "paragraph": "Texto normal",
     "heading4": "Título 4",
@@ -375,6 +419,21 @@
     "resultSummary": "Se realizaron {{matches}} reemplazos en {{files}} archivo(s)",
     "fileMatchBadge": "Coincidencias: {{count}}"
   },
+  "linksPanel": {
+    "title": "Enlaces",
+    "refresh": "Actualizar",
+    "close": "Cerrar panel",
+    "outgoing": "Enlaces salientes ({{count}})",
+    "noOutgoing": "Este documento no enlaza con ningún otro archivo.",
+    "backlinks": "Retroenlaces ({{count}})",
+    "backlinksLoading": "Buscando retroenlaces …",
+    "noBacklinks": "Ningún otro archivo enlaza con este documento.",
+    "brokenTarget": "Destino no encontrado"
+  },
+  "fileLinkSuggest": {
+    "hint": "Enlazar un archivo",
+    "noMatches": "Ningún archivo coincide"
+  },
   "emojiPicker": {
     "insertEmoji": "Insertar emoji",
     "selectEmoji": "Elegir emoji"
@@ -423,11 +482,12 @@
     "run": "Ejecutar"
   },
   "editor": {
-    "linkPrompt": "Introduce la URL del enlace",
     "imageRequiresFile": "Las imágenes solo se pueden insertar mientras se edita un archivo dentro de una carpeta abierta.",
     "imageInsertFailed": "No se pudo insertar la imagen «{{fileName}}»: {{error}}",
     "imageDialogTitle": "Seleccionar imagen",
     "imageDialogFilter": "Imágenes",
+    "linkRequiresFile": "Solo se pueden enlazar archivos mientras se edita un archivo dentro de una carpeta abierta.",
+    "linkTargetMissing": "No se encontró el archivo enlazado \"{{href}}\".",
     "aiResponseError": "No se pudo cargar la respuesta de la IA.",
     "aiTipModel": "Consejo: Abre la configuración de IA e introduce un modelo válido.",
     "aiTipConnection": "Consejo: Comprueba si Ollama o Jan.ai se está ejecutando y si la URL de la API es accesible.",

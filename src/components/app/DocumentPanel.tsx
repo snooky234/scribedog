@@ -1,9 +1,13 @@
 import type { RefObject } from "react";
-import { Pencil, Square } from "lucide-react";
+import { ArrowLeft, ArrowRight, Pencil, Square } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
 import { Editor, type EditorHandle } from "@/components/Editor";
+import { VersionsPopover } from "@/components/VersionsPopover";
+import type { FileVersion } from "@/lib/fileVersions";
 import { cn } from "@/lib/utils";
+import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
 
 type DocumentPanelProps = {
   selectedFilePath: string | null;
@@ -12,6 +16,12 @@ type DocumentPanelProps = {
   folderPath: string | null;
   selectedFileContent: string | null;
   appVersion: string | null;
+
+  /** Vault-relative label of the note a back/forward step opens, null when there is none. */
+  backTargetLabel: string | null;
+  forwardTargetLabel: string | null;
+  onNavigateBack: () => void;
+  onNavigateForward: () => void;
 
   isRenamingTitle: boolean;
   titleDraft: string;
@@ -39,6 +49,8 @@ type DocumentPanelProps = {
   onAiPendingChange: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
   onZenModeRequest: () => void;
+  onVersionDiffRequest: (version: FileVersion) => void;
+  onVersionRestoreRequest: (version: FileVersion) => void;
 };
 
 export function DocumentPanel({
@@ -48,6 +60,10 @@ export function DocumentPanel({
   folderPath,
   selectedFileContent,
   appVersion,
+  backTargetLabel,
+  forwardTargetLabel,
+  onNavigateBack,
+  onNavigateForward,
   isRenamingTitle,
   titleDraft,
   titleInputRef,
@@ -71,9 +87,12 @@ export function DocumentPanel({
   onAiLoadingChange,
   onAiPendingChange,
   onAiSettingsRequest,
-  onZenModeRequest
+  onZenModeRequest,
+  onVersionDiffRequest,
+  onVersionRestoreRequest
 }: DocumentPanelProps) {
   const { t } = useTranslation();
+  const versioningEnabled = useVersioningSettingsStore((state) => state.versioningEnabled);
 
   return (
     <section className="detail-panel" aria-label={t("app.documentAreaLabel")}>
@@ -81,6 +100,41 @@ export function DocumentPanel({
         <div className="detail-panel__card detail-panel__card--document">
           <div className="detail-panel__header">
             <div className="detail-panel__title">
+              {/* Navigation across notes belongs to the document as a whole, so
+                  it sits with the file name rather than in the format toolbar. */}
+              <div className="detail-panel__history">
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  disabled={backTargetLabel === null}
+                  aria-label={t("app.navigateBack")}
+                  title={
+                    backTargetLabel
+                      ? t("app.navigateBackTo", { fileLabel: backTargetLabel })
+                      : t("app.navigateBack")
+                  }
+                  onClick={onNavigateBack}
+                >
+                  <ArrowLeft />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  disabled={forwardTargetLabel === null}
+                  aria-label={t("app.navigateForward")}
+                  title={
+                    forwardTargetLabel
+                      ? t("app.navigateForwardTo", { fileLabel: forwardTargetLabel })
+                      : t("app.navigateForward")
+                  }
+                  onClick={onNavigateForward}
+                >
+                  <ArrowRight />
+                </Button>
+              </div>
+
               {isRenamingTitle ? (
                 <h2 className="detail-panel__title-edit">
                   {selectedFileDirectoryLabel ? (
@@ -137,6 +191,14 @@ export function DocumentPanel({
                     <Square size={10} fill="currentColor" strokeWidth={0} />
                   </button>
                 </div>
+              ) : null}
+              {versioningEnabled ? (
+                <VersionsPopover
+                  folderPath={folderPath}
+                  selectedFilePath={selectedFilePath}
+                  onDiffRequest={onVersionDiffRequest}
+                  onRestoreRequest={onVersionRestoreRequest}
+                />
               ) : null}
               <div
                 className={cn(

@@ -26,6 +26,7 @@
     },
     "fs:read-dirs",
     "fs:read-files",
+    "fs:scope-appconfig",
     "fs:allow-write-text-file",
     "fs:allow-write-file",
     "fs:allow-mkdir",

@@ -21,6 +21,10 @@
     "shellLabel": "Interface de l'application ScribeDog",
     "workspaceLabel": "Espace de travail de l'éditeur",
     "documentAreaLabel": "Zone du document",
+    "navigateBack": "Retour",
+    "navigateForward": "Suivant",
+    "navigateBackTo": "Retour à « {{fileLabel}} »",
+    "navigateForwardTo": "Aller à « {{fileLabel}} »",
     "sidebarResizeLabel": "Ajuster la largeur de la barre latérale",
     "chatResizeLabel": "Ajuster la largeur du panneau de discussion",
     "fileNameLabel": "Nom du fichier",
@@ -106,6 +110,23 @@
     "errorWrite": "Le fichier n'a pas pu être écrit : {{message}}",
     "errorOcrNoModel": "Aucun modèle d'IA n'est configuré. Chargez un modèle avec prise en charge des images dans les réglages IA pour importer des images.",
     "errorOcrProvider": "L'image n'a pas pu être transcrite — le modèle configuré ne prend peut-être pas en charge les images. ({{message}})"
+  },
+  "linkDialog": {
+    "eyebrow": "Lien",
+    "title": "Insérer un lien",
+    "titleEdit": "Modifier le lien",
+    "description": "Saisissez une URL ou choisissez un fichier du dossier ouvert. Le lien est inséré à la position du curseur.",
+    "descriptionEdit": "Modifiez la cible du lien sous le curseur.",
+    "descriptionSelection": "Le texte sélectionné « {{text}} » devient le lien.",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://example.com",
+    "textLabel": "Texte du lien",
+    "textPlaceholder": "Facultatif — sinon le nom du fichier est utilisé",
+    "fileLabel": "Fichier du dossier",
+    "filePlaceholder": "Saisissez un nom de fichier …",
+    "noFileMatches": "Aucun fichier correspondant",
+    "remove": "Supprimer le lien",
+    "confirm": "OK"
   },
   "settingsDialog": {
     "title": "Paramètres",
@@ -208,7 +229,7 @@
   },
   "shortcutsDialog": {
     "title": "Raccourcis clavier",
-    "description": "Ces combinaisons de touches sont disponibles dans l'éditeur.",
+    "description": "Ces combinaisons de touches sont disponibles. Les raccourcis personnalisables se réattribuent en cliquant sur la combinaison.",
     "items": {
       "openFolder": "Ouvrir un dossier",
       "newFile": "Créer un nouveau fichier",
@@ -217,11 +238,14 @@
       "printFile": "Imprimer le fichier",
       "findReplace": "Rechercher et remplacer",
       "zenMode": "Basculer le mode Zen (écriture sans distraction)",
+      "navigateBack": "Revenir au fichier précédemment ouvert",
+      "navigateForward": "Aller au fichier suivant de l'historique",
       "toggleChat": "Afficher/masquer le chat IA",
       "aiEditDialog": "Ouvrir la boîte de dialogue d'édition IA",
       "aiVoiceDialog": "Ouvrir le dialogue IA avec saisie vocale",
       "dictation": "Dicter dans l'éditeur ou le chat (démarrer/arrêter)",
       "aiSubmit": "Envoyer la requête IA (dans la boîte de dialogue IA)",
+      "insertFileLink": "Lier un fichier (liste à la position du curseur)",
       "aiCheckDialog": "Vérifier l'orthographe/la grammaire du texte sélectionné",
       "toggleSpellcheck": "Activer/désactiver la vérification orthographique (soulignement rouge)",
       "bold": "Gras",
@@ -244,7 +268,6 @@
       "blockquote": "Citation",
       "inlineCode": "Code en ligne",
       "codeBlock": "Bloc de code",
-      "moveListItem": "Déplacer un élément de liste (puces, numérotée ou à cocher)",
       "copy": "Copier",
       "paste": "Coller",
       "undo": "Annuler",
@@ -253,7 +276,25 @@
       "zoomOut": "Zoom arrière",
       "zoomReset": "Réinitialiser le zoom",
       "shortcutsOverview": "Ouvrir l'aperçu des raccourcis",
-      "closeDialog": "Fermer la boîte de dialogue"
+      "closeDialog": "Fermer la boîte de dialogue",
+      "moveListItemUp": "Déplacer l'élément de liste vers le haut",
+      "moveListItemDown": "Déplacer l'élément de liste vers le bas",
+      "toggleLinksPanel": "Afficher/masquer le panneau des liens (liens et rétroliens)"
+    },
+    "customizeHint": "Cliquez sur une combinaison, puis appuyez sur la nouvelle.",
+    "recording": "Appuyez sur une touche …",
+    "recordHint": "Appuyez sur la nouvelle combinaison (elle doit contenir Ctrl ou Alt) — Échap annule.",
+    "record": "Modifier la combinaison de « {{action}} »",
+    "resetOne": "Réinitialiser « {{action}} »",
+    "resetAll": "Tout réinitialiser",
+    "errorNeedsModifier": "La combinaison doit contenir Ctrl ou Alt.",
+    "errorConflict": "Déjà utilisée par « {{action}} ».",
+    "saveError": "Les raccourcis n'ont pas pu être enregistrés : {{message}}",
+    "categories": {
+      "app": "Application",
+      "ai": "IA",
+      "format": "Mise en forme",
+      "fixed": "Raccourcis fixes"
     }
   },
   "sidebar": {
@@ -282,7 +323,8 @@
     "rename": "Renommer",
     "renameInputLabel": "Nom du dossier",
     "fileRenameInputLabel": "Nom du fichier",
-    "export": "Exporter…"
+    "export": "Exporter…",
+    "print": "Imprimer…"
   },
   "toolbar": {
     "formattingLabel": "Outils de mise en forme",
@@ -322,6 +364,8 @@
     "codeBlockTitle": "Bloc de code (Ctrl+K)",
     "insertLink": "Insérer un lien",
     "insertLinkTitle": "Insérer un lien (Ctrl+M)",
+    "linksPanel": "Liens et rétroliens",
+    "linksPanelTitle": "Afficher ou masquer le panneau des liens",
     "headingMenu": "Titre",
     "paragraph": "Texte normal",
     "heading4": "Titre 4",
@@ -375,6 +419,21 @@
     "resultSummary": "{{matches}} remplacements effectués dans {{files}} fichier(s)",
     "fileMatchBadge": "Occurrences : {{count}}"
   },
+  "linksPanel": {
+    "title": "Liens",
+    "refresh": "Actualiser",
+    "close": "Fermer le panneau",
+    "outgoing": "Liens sortants ({{count}})",
+    "noOutgoing": "Ce document ne renvoie à aucun autre fichier.",
+    "backlinks": "Rétroliens ({{count}})",
+    "backlinksLoading": "Recherche des rétroliens …",
+    "noBacklinks": "Aucun autre fichier ne renvoie à ce document.",
+    "brokenTarget": "Cible introuvable"
+  },
+  "fileLinkSuggest": {
+    "hint": "Lier un fichier",
+    "noMatches": "Aucun fichier correspondant"
+  },
   "emojiPicker": {
     "insertEmoji": "Insérer un emoji",
     "selectEmoji": "Choisir un emoji"
@@ -423,11 +482,12 @@
     "run": "Exécuter"
   },
   "editor": {
-    "linkPrompt": "Entrez l'URL du lien",
     "imageRequiresFile": "Les images ne peuvent être insérées que lors de l'édition d'un fichier dans un dossier ouvert.",
     "imageInsertFailed": "Impossible d'insérer l'image « {{fileName}} » : {{error}}",
     "imageDialogTitle": "Sélectionner une image",
     "imageDialogFilter": "Images",
+    "linkRequiresFile": "Les fichiers ne peuvent être liés que lors de l'édition d'un fichier dans un dossier ouvert.",
+    "linkTargetMissing": "Le fichier lié « {{href}} » est introuvable.",
     "aiResponseError": "La réponse de l'IA n'a pas pu être chargée.",
     "aiTipModel": "Astuce : Ouvrez les paramètres IA et saisissez un modèle valide.",
     "aiTipConnection": "Astuce : Vérifiez qu'Ollama ou Jan.ai est en cours d'exécution et que l'URL de l'API est accessible.",

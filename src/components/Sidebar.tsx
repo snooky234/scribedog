@@ -27,12 +27,9 @@ import {
 } from "@/components/ui/menu";
 import { FileTree, type BatchEntry, type PendingFolderRename } from "@/components/FileTree";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { VersionsPopover } from "@/components/VersionsPopover";
 import { formatFolderLabel } from "@/lib/fileSystem";
-import type { FileVersion } from "@/lib/fileVersions";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import type { MoveTreeEntryInput } from "@/store/useAppStore";
-import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
 
 type SidebarProps = {
   folderPath: string | null;
@@ -60,6 +57,7 @@ type SidebarProps = {
   onExportFileRequest: (filePath: string) => void;
   onExportFolderRequest: (folderPath: string) => void;
   onExportMultipleRequest: (entries: BatchEntry[]) => void;
+  onPrintFileRequest: (filePath: string) => void;
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
   onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
@@ -70,8 +68,6 @@ type SidebarProps = {
   sidebarFocusRequestId: number;
   onFileTreeSelectionChange: (entries: BatchEntry[]) => void;
   fileTreeSelectionCount: number;
-  onVersionDiffRequest: (version: FileVersion) => void;
-  onVersionRestoreRequest: (version: FileVersion) => void;
 };
 
 export function Sidebar({
@@ -100,6 +96,7 @@ export function Sidebar({
   onExportFileRequest,
   onExportFolderRequest,
   onExportMultipleRequest,
+  onPrintFileRequest,
   onRenameFolder,
   onRenameFile,
   onMoveEntry,
@@ -109,13 +106,10 @@ export function Sidebar({
   onRequestEditorFocus,
   sidebarFocusRequestId,
   onFileTreeSelectionChange,
-  fileTreeSelectionCount,
-  onVersionDiffRequest,
-  onVersionRestoreRequest
+  fileTreeSelectionCount
 }: SidebarProps) {
   const { t } = useTranslation();
   const folderLabel = formatFolderLabel(folderPath);
-  const versioningEnabled = useVersioningSettingsStore((state) => state.versioningEnabled);
 
   return (
     <aside className="sidebar-panel" aria-label={t("sidebar.filesLabel")}>
@@ -225,18 +219,6 @@ export function Sidebar({
             </MenuPortal>
           </Menu>
 
-          {/* Hidden entirely while versioning is off — there is nothing to
-              show, and the button would only advertise a feature the user
-              has not switched on. */}
-          {versioningEnabled ? (
-            <VersionsPopover
-              folderPath={folderPath}
-              selectedFilePath={selectedFilePath}
-              onDiffRequest={onVersionDiffRequest}
-              onRestoreRequest={onVersionRestoreRequest}
-            />
-          ) : null}
-
           <Button
             type="button"
             variant="outline"
@@ -316,6 +298,7 @@ export function Sidebar({
             onExportFileRequest={onExportFileRequest}
             onExportFolderRequest={onExportFolderRequest}
             onExportMultipleRequest={onExportMultipleRequest}
+            onPrintFileRequest={onPrintFileRequest}
             onRenameFolder={onRenameFolder}
             onRenameFile={onRenameFile}
             onMoveEntry={onMoveEntry}

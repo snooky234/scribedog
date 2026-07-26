@@ -5,7 +5,7 @@
 // store — a non-serializable value that would otherwise force awkward prop
 // drilling through components that have nothing to do with the chat.
 
-import { FLAG_SUGGESTION_TOOL_NAME } from "@/lib/aiClient";
+import { EDITING_TOOL_NAMES, FLAG_SUGGESTION_TOOL_NAME } from "@/lib/aiClient";
 import { normalizeImageSrc, resolveDocumentImagePath } from "@/lib/chat/imageAttachments";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 
@@ -430,12 +430,7 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
   // open — a new proposal next to unsettled ones is what the user has to
   // untangle afterwards. The reading tools stay available: the model still
   // needs them to work out what the user is asking for.
-  if (
-    name === "replace_selection" ||
-    name === "insert_at_cursor" ||
-    name === "replace_passage" ||
-    name === FLAG_SUGGESTION_TOOL_NAME
-  ) {
+  if (EDITING_TOOL_NAMES.includes(name) || name === FLAG_SUGGESTION_TOOL_NAME) {
     const blocked = blockedByOpenReview();
 
     if (blocked) {

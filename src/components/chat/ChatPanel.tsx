@@ -25,11 +25,16 @@ import { useVoiceInput } from "@/hooks/useVoiceInput";
 import i18n from "@/i18n";
 import { FLAG_SUGGESTION_TOOL_NAME, type AiChatMessage } from "@/lib/aiClient";
 import { renderChatMarkdown } from "@/lib/chat/renderMarkdown";
+import { formatBinding } from "@/lib/shortcuts/binding";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { assistantDisplayName, useAssistantsStore } from "@/store/useAssistantsStore";
 import { getActiveSession, useChatStore } from "@/store/useChatStore";
 
 const OPEN_ASSISTANT_SETTINGS_VALUE = "__open-assistant-settings__";
+
+// Matches the hardcoded Ctrl+Shift+W handler below — shown in the mic
+// button's tooltip so the shortcut stays discoverable.
+const DICTATION_BINDING = { ctrl: true, alt: false, shift: true, code: "KeyW", key: "w", label: "W" };
 
 // How many past sessions the empty chat lists inline; the rest stay reachable
 // through the full overview.
@@ -107,38 +112,6 @@ function ToolStatusLine({ toolName, isError }: { toolName: string; isError: bool
       <span>{label}</span>
     </div>
   );
-}
-
-// Tool calls that already put a red/green proposal in the editor. The model
-// decides on its own whether a reply needs the "In Text einarbeiten" button
-// (see FLAG_SUGGESTION_TOOL_NAME), but this stays as a safety net: if it ever
-// flags a message that also used an editing tool in the same turn, offering
-// the button anyway would just resend a change the user is already reviewing.
-const EDITING_TOOL_NAMES = new Set(["replace_selection", "insert_at_cursor", "replace_passage"]);
-
-// Per message: whether an editing tool call has already happened earlier in
-// the same turn (since the preceding user message), up to and including this
-// message. Resets at every user turn since each carries its own review.
-function computeTurnHasProposal(messages: AiChatMessage[]): boolean[] {
-  let turnHasProposal = false;
-
-  return messages.map((message) => {
-    if (message.role === "user") {
-      turnHasProposal = false;
-      return false;
-    }
-
-    const hasEditCall =
-      message.role === "assistant" &&
-      (message.toolCalls?.some((call) => EDITING_TOOL_NAMES.has(call.name)) ?? false);
-    const suppress = turnHasProposal || hasEditCall;
-
-    if (hasEditCall) {
-      turnHasProposal = true;
-    }
-
-    return suppress;
-  });
 }
 
 type AssistantChatMessage = Extract<AiChatMessage, { role: "assistant" }>;
@@ -362,7 +335,6 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   const thinkingEnabled = settings.thinkingMode !== "off";
 
   const messages = activeSession?.messages ?? [];
-  const turnHasProposal = computeTurnHasProposal(messages);
   const isEmptyChat = messages.length === 0 && !isStreaming;
   const hasSessions = useChatStore((state) => state.sessions.length > 0);
 
@@ -533,16 +505,15 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
           }
 
           if (message.role === "assistant") {
-            const hasSuggestionFlag =
-              message.toolCalls?.some((call) => call.name === FLAG_SUGGESTION_TOOL_NAME) ?? false;
-
             return (
               <AssistantMessage
                 key={index}
                 message={message}
-                canApplyToDocument={
-                  canEditDocument && !isStreaming && hasSuggestionFlag && !turnHasProposal[index]
-                }
+                // suggestsEdit is the model's own verdict that this reply offers
+                // a change nothing in the editor is waiting on — see
+                // FLAG_SUGGESTION_TOOL_NAME. Never derived from the reply text
+                // here: a button on every answer is what made it noise.
+                canApplyToDocument={canEditDocument && !isStreaming && (message.suggestsEdit ?? false)}
                 onApplyToDocument={handleApplyToDocument}
               />
             );
@@ -695,7 +666,7 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
             type="button"
             className="voice-mic-button voice-mic-button--chat"
             disabled={isTranscribing || voice.status === "starting"}
-            title={isRecording ? t("voice.micStop") : t("voice.micStart")}
+            title={`${isRecording ? t("voice.micStop") : t("voice.micStart")} (${formatBinding(t, DICTATION_BINDING)})`}
             aria-label={isRecording ? t("voice.micStop") : t("voice.micStart")}
             onClick={() => {
               setVoiceError(null);

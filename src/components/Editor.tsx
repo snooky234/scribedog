@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { open } from "@tauri-apps/plugin-dialog";
@@ -10,11 +10,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AiCheckDialog } from "@/components/AiCheckDialog";
 import { FindReplacePanel } from "@/components/FindReplacePanel";
 import { AiRewriteDialog } from "@/components/AiRewriteDialog";
+import { LinkDialog, type LinkDialogResult } from "@/components/LinkDialog";
 import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { Toolbar } from "@/components/Toolbar";
+import { FileLinkSuggestionPopover } from "@/components/editor/FileLinkSuggestionPopover";
+import { LinksPanel } from "@/components/editor/LinksPanel";
 import { useAiEditorActions } from "@/components/editor/useAiEditorActions";
 import { useEditorDictation } from "@/components/editor/useEditorDictation";
+import { useFileLinkSuggestion } from "@/components/editor/useFileLinkSuggestion";
 import {
   acceptAllAiSuggestions,
   addAiSuggestion,
@@ -26,11 +30,22 @@ import { normalizeImageSrc } from "@/lib/chat/imageAttachments";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { buildEditorExtensions } from "@/lib/editor/extensions";
 import { duplicatedImageSources } from "@/lib/editor/documentImages";
+import {
+  buildFileLinkHref,
+  buildVaultFileOptions,
+  decodeFileLinkHref,
+  getDraggedVaultFilePaths,
+  getFileLinkLabel,
+  isFileLinkHref,
+  resolveFileLinkTarget,
+  type VaultFileOption
+} from "@/lib/editor/fileLinks";
 import { extractErrorMessage } from "@/lib/editor/errorMessages";
 import { resolveInsertAnchor } from "@/lib/editor/insertAnchor";
 import { getImageFilesFromClipboard, getImageFilesFromDataTransfer } from "@/lib/editor/imageTransfer";
 import { moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
-import { getEditorMarkdown } from "@/lib/editor/markdownStorage";
+import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
+import { getEditorMarkdown, getSelectionMarkdown } from "@/lib/editor/markdownStorage";
 import { findTextRange } from "@/lib/editor/textSearch";
 import {
   allowFileAccess,
@@ -41,9 +56,13 @@ import {
 } from "@/lib/fileSystem";
 import { updateSearchHighlight } from "@/lib/searchHighlight";
 import { printMarkdown } from "@/lib/print";
+import { couldBeShortcut } from "@/lib/shortcuts/binding";
+import { isRetiredDefault, matchShortcut } from "@/lib/shortcuts/resolve";
+import { useAppStore } from "@/store/useAppStore";
 import { useChatStore } from "@/store/useChatStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
+import { useShortcutsStore } from "@/store/useShortcutsStore";
 
 type EditorProps = {
   markdown: string;
@@ -78,12 +97,23 @@ export type EditorHandle = {
   ) => ImageWidthChange | null;
 };
 
-// The selected passage as plain text — the same form the chat agent's
-// get_selection tool answers with.
+type LinkDialogState = {
+  /** Href of the link the caret sits in, "" for a new link. */
+  href: string;
+  selectedText: string;
+  isLinkActive: boolean;
+};
+
+// The selected passage as markdown — the form the chat agent's get_selection
+// tool and the composer's selection chip both work with. Plain text would drop
+// exactly the markers the agent has to carry over when it rewrites or extends
+// the passage: a selected checklist would come back as bare sentences.
 function selectionText(editor: TipTapEditor): string {
   const { from, to } = editor.state.selection;
 
-  return editor.state.doc.textBetween(from, to, "\n");
+  return normalizeEscapedCheckboxes(
+    getSelectionMarkdown(editor, from, to) || editor.state.doc.textBetween(from, to, "\n")
+  );
 }
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
@@ -107,7 +137,21 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const editorRef = useRef<TipTapEditor | null>(null);
   const lastSyncedMarkdownRef = useRef(markdown);
   const spellcheckEnabled = useEditorSettingsStore((state) => state.spellcheckEnabled);
-  const [isLinkModifierHeld, setIsLinkModifierHeld] = useState(false);
+  const linksPanelVisible = useEditorSettingsStore((state) => state.linksPanelVisible);
+  const setLinksPanelVisible = useEditorSettingsStore((state) => state.setLinksPanelVisible);
+  const [linkDialog, setLinkDialog] = useState<LinkDialogState | null>(null);
+
+  // The vault's notes: what the link dialog and the "[[" picker offer, and what
+  // a clicked link is resolved against. editorProps handlers are created once,
+  // so they read the list through a ref that stays current.
+  const vaultFilePaths = useAppStore((state) => state.filePaths);
+  const vaultFilePathsRef = useRef(vaultFilePaths);
+  vaultFilePathsRef.current = vaultFilePaths;
+
+  const fileLinkOptions = useMemo(
+    () => (filePath ? buildVaultFileOptions(folderPath, vaultFilePaths, filePath) : []),
+    [folderPath, vaultFilePaths, filePath]
+  );
 
   const ai = useAiEditorActions({ editorRef, markdown, filePath, onAiLoadingChange, onAiPendingChange });
   const { dictation, toggleDictation } = useEditorDictation({
@@ -135,38 +179,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     }
   };
 
-  // Ctrl+F must work regardless of where the focus currently is (editor,
-  // toolbar, sidebar), so it's registered at window level rather than in
-  // the ProseMirror keymap.
-  useEffect(() => {
-    const handleFindShortcut = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f" && !event.shiftKey && !event.altKey) {
-        event.preventDefault();
-        openFindPanel();
-      }
-    };
-
-    window.addEventListener("keydown", handleFindShortcut);
-
-    return () => window.removeEventListener("keydown", handleFindShortcut);
-  }, []);
-
-  useEffect(() => {
-    const handleModifierChange = (event: KeyboardEvent) => {
-      setIsLinkModifierHeld(event.ctrlKey || event.metaKey);
-    };
-    const handleBlur = () => setIsLinkModifierHeld(false);
-
-    window.addEventListener("keydown", handleModifierChange);
-    window.addEventListener("keyup", handleModifierChange);
-    window.addEventListener("blur", handleBlur);
-
-    return () => {
-      window.removeEventListener("keydown", handleModifierChange);
-      window.removeEventListener("keyup", handleModifierChange);
-      window.removeEventListener("blur", handleBlur);
-    };
-  }, []);
+  // Opening the find panel must work regardless of where the focus currently
+  // is (editor, toolbar, sidebar), so that shortcut is registered globally in
+  // useGlobalShortcuts rather than in the ProseMirror keymap.
 
   const handleLinkRequest = () => {
     const currentEditor = editorRef.current;
@@ -175,29 +190,116 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       return;
     }
 
-    const activeHref = currentEditor.getAttributes("link").href as string | undefined;
-    const nextHref = window.prompt(t("editor.linkPrompt"), activeHref ?? "https://");
+    const { from, to } = currentEditor.state.selection;
 
-    if (nextHref === null) {
+    setLinkDialog({
+      href: (currentEditor.getAttributes("link").href as string | undefined) ?? "",
+      selectedText: currentEditor.state.doc.textBetween(from, to, " "),
+      isLinkActive: currentEditor.isActive("link")
+    });
+  };
+
+  const handleLinkSubmit = ({ href, text }: LinkDialogResult) => {
+    const currentEditor = editorRef.current;
+    setLinkDialog(null);
+
+    if (!currentEditor) {
       return;
     }
 
-    const trimmedHref = nextHref.trim();
-
-    if (!trimmedHref) {
-      if (activeHref) {
-        currentEditor.chain().focus().extendMarkRange("link").unsetLink().run();
-      }
-
+    // With a selection (or the caret inside an existing link) the document
+    // already provides the link text, so only the mark changes. Otherwise the
+    // link is inserted with a text of its own: the chosen label, the note's
+    // file name, or the URL itself as a last resort.
+    if (currentEditor.isActive("link") || !currentEditor.state.selection.empty) {
+      currentEditor.chain().focus().extendMarkRange("link").setLink({ href }).run();
       return;
     }
+
+    const label = text || (isFileLinkHref(href) ? getFileLinkLabel(decodeFileLinkHref(href)) : href);
 
     currentEditor
       .chain()
       .focus()
-      .extendMarkRange("link")
-      .setLink({ href: trimmedHref })
+      .insertContent([{ type: "text", text: label, marks: [{ type: "link", attrs: { href } }] }])
       .run();
+  };
+
+  const handleLinkRemove = () => {
+    setLinkDialog(null);
+    editorRef.current?.chain().focus().extendMarkRange("link").unsetLink().run();
+  };
+
+  /**
+   * Inserts links to other notes of the vault — used by the sidebar drop and
+   * by the "[[" picker. `replaceRange` is the typed trigger the chosen link
+   * takes the place of; without it the links are inserted at `insertPos`.
+   */
+  const insertFileLinks = (
+    targetFilePaths: string[],
+    insertPos: number,
+    replaceRange?: { from: number; to: number }
+  ) => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor || targetFilePaths.length === 0) {
+      return;
+    }
+
+    if (!filePath) {
+      ai.setAiStatus({ kind: "error", message: t("editor.linkRequiresFile") });
+      return;
+    }
+
+    const content = targetFilePaths.flatMap((targetFilePath, index) => {
+      const link = {
+        type: "text",
+        text: getFileLinkLabel(targetFilePath),
+        marks: [{ type: "link", attrs: { href: buildFileLinkHref(filePath, targetFilePath) } }]
+      };
+
+      return index === 0 ? [link] : [{ type: "text", text: " " }, link];
+    });
+
+    currentEditor
+      .chain()
+      .focus()
+      .insertContentAt(replaceRange ?? insertPos, content)
+      .run();
+  };
+
+  const {
+    suggestion: fileLinkSuggestion,
+    refreshSuggestion,
+    closeSuggestion,
+    selectSuggestion,
+    setActiveIndex: setSuggestionActiveIndex,
+    handleSuggestionKeyDown
+  } = useFileLinkSuggestion({
+    editorRef,
+    fileOptions: fileLinkOptions,
+    onSelect: (option: VaultFileOption, range) => {
+      insertFileLinks([option.filePath], range.from, range);
+    }
+  });
+
+  // A link to a note opens that note instead of the browser — routed through
+  // App so the unsaved-changes dialog guards the switch, exactly like clicking
+  // the file in the sidebar.
+  const openFileLink = (href: string) => {
+    const targetFilePath = filePath
+      ? resolveFileLinkTarget(href, filePath, vaultFilePathsRef.current)
+      : null;
+
+    if (!targetFilePath) {
+      ai.setAiStatus({
+        kind: "error",
+        message: t("editor.linkTargetMissing", { href: decodeFileLinkHref(href) })
+      });
+      return;
+    }
+
+    onRequestFileOpen?.(targetFilePath);
   };
 
   type ImagePayload = { fileName: string; mimeType: string; data: Uint8Array };
@@ -672,17 +774,37 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       // An edit can change what the selection covers without the selection
       // itself moving, so the mirror is refreshed from here too.
       syncChatSelection(editor);
+      refreshSuggestion();
     },
     // The chat composer shows the selected passage and sends it as context with
     // the next message (see src/store/useChatStore.ts), which needs the live
     // selection rather than a lookup at send time.
     onSelectionUpdate: ({ editor }) => {
       syncChatSelection(editor);
+      refreshSuggestion();
+    },
+    onBlur: () => {
+      closeSuggestion();
     },
     editorProps: {
       handleDrop: (view, event, _slice, moved) => {
         if (moved) {
           return false;
+        }
+
+        const droppedAt = () => {
+          const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          return coordinates?.pos ?? view.state.selection.from;
+        };
+
+        // Notes dragged out of the sidebar become links, files dragged in from
+        // the OS become images.
+        const draggedFilePaths = getDraggedVaultFilePaths(event.dataTransfer);
+
+        if (draggedFilePaths.length > 0) {
+          event.preventDefault();
+          insertFileLinks(draggedFilePaths, droppedAt());
+          return true;
         }
 
         const files = getImageFilesFromDataTransfer(event.dataTransfer);
@@ -693,10 +815,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
         event.preventDefault();
 
-        const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
-        const insertPos = coordinates?.pos ?? view.state.selection.from;
-
-        void insertImageFiles(files, insertPos);
+        void insertImageFiles(files, droppedAt());
         return true;
       },
       handlePaste: (view, event) => {
@@ -722,7 +841,15 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
           event.preventDefault();
 
-          if (event.ctrlKey || event.metaKey) {
+          // A plain click follows the link — a note opens in the editor, any
+          // other target in the system browser. The raw attribute is what a
+          // note link has to be resolved from: the DOM property would resolve
+          // the relative path against the app's own base URL.
+          const rawHref = anchor.getAttribute("href") ?? "";
+
+          if (isFileLinkHref(rawHref)) {
+            openFileLink(rawHref);
+          } else {
             void openUrl(anchor.href);
           }
 
@@ -730,6 +857,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         }
       },
       handleKeyDown: (view, event) => {
+        // While the "[[" picker is open it owns the arrow keys, Enter, Tab and
+        // Escape — nothing of that may reach the document.
+        if (handleSuggestionKeyDown(event)) {
+          return true;
+        }
+
         if (event.key === "Tab" && event.shiftKey && !event.ctrlKey && !event.metaKey) {
           // Inside a list, Shift+Tab decreases the indent (handled by the
           // list extensions' keymap); only outside a list does it move focus
@@ -749,132 +882,120 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return true;
         }
 
-        if (
-          event.altKey &&
-          event.shiftKey &&
-          !event.ctrlKey &&
-          !event.metaKey &&
-          (event.key === "ArrowUp" || event.key === "ArrowDown")
-        ) {
-          const moved = moveListItem(view, event.key === "ArrowUp" ? "up" : "down");
-
-          if (moved) {
-            event.preventDefault();
-          }
-
-          return moved;
-        }
-
-        if (!(event.ctrlKey || event.metaKey)) {
+        if (!couldBeShortcut(event)) {
           return false;
         }
 
-        const key = event.key.toLowerCase();
+        // Everything below is user-remappable, so the combo is looked up
+        // instead of compared inline. getState() keeps a rebind effective
+        // without recreating the editor.
+        const { overrides } = useShortcutsStore.getState();
+        const action = matchShortcut(overrides, event, "editor");
 
-        if (key === "b") {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleBold().run();
-          return true;
-        }
-
-        if (key === "i") {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleItalic().run();
-          return true;
-        }
-
-        if (key === "k") {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleCodeBlock().run();
-          return true;
-        }
-
-        if (key === "m") {
-          event.preventDefault();
-          handleLinkRequest();
-          return true;
-        }
-
-        if (key === ".") {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleBulletList().run();
-          return true;
-        }
-
-        if (key === "o" && event.shiftKey) {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleOrderedList().run();
-          return true;
-        }
-
-        if (event.code === "Comma") {
-          // Shift changes what event.key reports for this key (e.g. "<" on
-          // US layout), so the physical key code is checked instead to keep
-          // both the plain and Shift variant working across layouts.
-          event.preventDefault();
-
-          if (event.shiftKey) {
-            toggleTaskItemChecked(view);
-          } else {
-            editorRef.current?.chain().focus().toggleTaskList().run();
-          }
-
-          return true;
-        }
-
-        if (key >= "1" && key <= "6" && !event.shiftKey && !event.altKey) {
-          event.preventDefault();
-          const level = Number(key) as 1 | 2 | 3 | 4 | 5 | 6;
-          editorRef.current?.chain().focus().toggleHeading({ level }).run();
-          return true;
-        }
-
-        if (key === "d") {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleStrike().run();
-          return true;
-        }
-
-        if (key === "q") {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleBlockquote().run();
-          return true;
-        }
-
-        if (key === "g") {
-          event.preventDefault();
-          editorRef.current?.chain().focus().toggleCode().run();
-          return true;
-        }
-
-        if (key === "e") {
-          event.preventDefault();
-
-          // Ctrl+Shift+E opens the AI dialog and immediately starts voice
-          // input into the prompt field (issue #7).
-          if (event.shiftKey) {
-            ai.setVoiceStartRequestId((id) => id + 1);
-          }
-
-          ai.openAiDraftFromSelection();
-          return true;
-        }
-
-        if (key === "w" && event.shiftKey) {
-          event.preventDefault();
-          toggleDictation();
-          return true;
-        }
-
-        if (key === "x" && event.shiftKey && !event.altKey) {
-          if (!view.state.selection.empty) {
+        if (!action) {
+          // A default the user moved elsewhere must not silently fall through
+          // to TipTap's own keymap (Ctrl+B, Ctrl+I, Ctrl+U, …).
+          if (isRetiredDefault(overrides, event, "editor")) {
             event.preventDefault();
-            ai.runAiGrammarCheck();
+            return true;
           }
-          return true;
+
+          return false;
         }
 
-        return false;
+        const chain = () => editorRef.current?.chain().focus();
+
+        switch (action) {
+          case "moveListItemUp":
+          case "moveListItemDown": {
+            const moved = moveListItem(view, action === "moveListItemUp" ? "up" : "down");
+
+            if (moved) {
+              event.preventDefault();
+            }
+
+            return moved;
+          }
+          case "aiCheckDialog":
+            // Without a selection there is nothing to check, but the combo is
+            // still consumed so it never reaches the document.
+            if (!view.state.selection.empty) {
+              event.preventDefault();
+              ai.runAiGrammarCheck();
+            }
+
+            return true;
+          case "checkboxToggle":
+            event.preventDefault();
+            toggleTaskItemChecked(view);
+            return true;
+          default:
+            break;
+        }
+
+        event.preventDefault();
+
+        switch (action) {
+          case "bold":
+            chain()?.toggleBold().run();
+            break;
+          case "italic":
+            chain()?.toggleItalic().run();
+            break;
+          case "underline":
+            chain()?.toggleUnderline().run();
+            break;
+          case "strikethrough":
+            chain()?.toggleStrike().run();
+            break;
+          case "inlineCode":
+            chain()?.toggleCode().run();
+            break;
+          case "codeBlock":
+            chain()?.toggleCodeBlock().run();
+            break;
+          case "blockquote":
+            chain()?.toggleBlockquote().run();
+            break;
+          case "insertLink":
+            handleLinkRequest();
+            break;
+          case "bulletList":
+            chain()?.toggleBulletList().run();
+            break;
+          case "orderedList":
+            chain()?.toggleOrderedList().run();
+            break;
+          case "checkbox":
+            chain()?.toggleTaskList().run();
+            break;
+          case "heading1":
+          case "heading2":
+          case "heading3":
+          case "heading4":
+          case "heading5":
+          case "heading6": {
+            const level = Number(action.slice(-1)) as 1 | 2 | 3 | 4 | 5 | 6;
+            chain()?.toggleHeading({ level }).run();
+            break;
+          }
+          case "aiVoiceDialog":
+            // Opens the AI dialog and immediately starts voice input into the
+            // prompt field (issue #7).
+            ai.setVoiceStartRequestId((id) => id + 1);
+            ai.openAiDraftFromSelection();
+            break;
+          case "aiEditDialog":
+            ai.openAiDraftFromSelection();
+            break;
+          case "dictation":
+            toggleDictation();
+            break;
+          default:
+            break;
+        }
+
+        return true;
       },
       attributes: {
         class: "editor-view__surface prose dark:prose-invert max-w-none",
@@ -1005,17 +1126,48 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
             onClose={closeFindPanel}
             onRequestFileOpen={onRequestFileOpen}
           />
-          <ScrollArea className="editor-view__scroll">
-            <EditorContent
-              editor={editor}
-              className={
-                isLinkModifierHeld ? "editor-view__content editor-view__content--link-hint" : "editor-view__content"
-              }
-              onContextMenu={ai.handleAiContextMenu}
-            />
-          </ScrollArea>
+          <div className="editor-view__panes">
+            <ScrollArea className="editor-view__scroll">
+              <EditorContent
+                editor={editor}
+                className="editor-view__content"
+                onContextMenu={ai.handleAiContextMenu}
+              />
+            </ScrollArea>
+
+            {linksPanelVisible ? (
+              <LinksPanel
+                folderPath={folderPath}
+                filePath={filePath}
+                markdown={markdown}
+                vaultFilePaths={vaultFilePaths}
+                onRequestFileOpen={onRequestFileOpen}
+                onClose={() => setLinksPanelVisible(false)}
+              />
+            ) : null}
+          </div>
         </div>
       </EditorFileContext.Provider>
+
+      {fileLinkSuggestion ? (
+        <FileLinkSuggestionPopover
+          suggestion={fileLinkSuggestion}
+          onSelect={selectSuggestion}
+          onActiveIndexChange={setSuggestionActiveIndex}
+        />
+      ) : null}
+
+      <LinkDialog
+        open={linkDialog !== null}
+        initialHref={linkDialog?.href ?? ""}
+        selectedText={linkDialog?.selectedText ?? ""}
+        isLinkActive={linkDialog?.isLinkActive ?? false}
+        fileOptions={fileLinkOptions}
+        currentFilePath={filePath}
+        onSubmit={handleLinkSubmit}
+        onRemove={handleLinkRemove}
+        onCancel={() => setLinkDialog(null)}
+      />
 
       <AiRewriteDialog
         open={ai.aiDraft !== null}

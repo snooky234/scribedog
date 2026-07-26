@@ -21,6 +21,10 @@
     "shellLabel": "ScribeDog 应用外壳",
     "workspaceLabel": "编辑器工作区",
     "documentAreaLabel": "文档区域",
+    "navigateBack": "后退",
+    "navigateForward": "前进",
+    "navigateBackTo": "后退到“{{fileLabel}}”",
+    "navigateForwardTo": "前进到“{{fileLabel}}”",
     "sidebarResizeLabel": "调整侧边栏宽度",
     "chatResizeLabel": "调整聊天面板宽度",
     "fileNameLabel": "文件名",
@@ -106,6 +110,23 @@
     "errorWrite": "无法写入文件：{{message}}",
     "errorOcrNoModel": "尚未配置 AI 模型。请在 AI 设置中加载支持图像的模型以导入图片。",
     "errorOcrProvider": "无法转录图片 — 配置的模型可能不支持图像。（{{message}}）"
+  },
+  "linkDialog": {
+    "eyebrow": "链接",
+    "title": "插入链接",
+    "titleEdit": "编辑链接",
+    "description": "输入网址或从已打开的文件夹中选择文件。链接将插入到光标位置。",
+    "descriptionEdit": "更改光标处链接的目标。",
+    "descriptionSelection": "所选文本“{{text}}”将成为链接。",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://example.com",
+    "textLabel": "链接文本",
+    "textPlaceholder": "可选 — 否则使用文件名",
+    "fileLabel": "文件夹中的文件",
+    "filePlaceholder": "输入文件名 …",
+    "noFileMatches": "没有匹配的文件",
+    "remove": "移除链接",
+    "confirm": "OK"
   },
   "settingsDialog": {
     "title": "设置",
@@ -208,7 +229,7 @@
   },
   "shortcutsDialog": {
     "title": "键盘快捷键",
-    "description": "以下快捷键组合可在编辑器中使用。",
+    "description": "以下快捷键组合可供使用。可自定义的快捷键点击组合即可重新指定。",
     "items": {
       "openFolder": "打开文件夹",
       "newFile": "新建文件",
@@ -217,11 +238,14 @@
       "printFile": "打印文件",
       "findReplace": "查找和替换",
       "zenMode": "切换禅模式（专注写作）",
+      "navigateBack": "返回上一个打开的文件",
+      "navigateForward": "前进到历史记录中的下一个文件",
       "toggleChat": "切换 AI 聊天",
       "aiEditDialog": "打开 AI 编辑对话框",
       "aiVoiceDialog": "打开带语音输入的 AI 对话框",
       "dictation": "向编辑器或聊天口述（开始/停止）",
       "aiSubmit": "提交 AI 请求（在 AI 对话框中）",
+      "insertFileLink": "链接文件（光标处的候选列表）",
       "aiCheckDialog": "检查所选文本的拼写/语法",
       "toggleSpellcheck": "开启/关闭拼写检查（红色波浪线）",
       "bold": "粗体",
@@ -244,7 +268,6 @@
       "blockquote": "引用",
       "inlineCode": "行内代码",
       "codeBlock": "代码块",
-      "moveListItem": "移动列表项（项目符号、编号或清单）",
       "copy": "复制",
       "paste": "粘贴",
       "undo": "撤销",
@@ -253,7 +276,25 @@
       "zoomOut": "缩小",
       "zoomReset": "重置缩放",
       "shortcutsOverview": "打开快捷键概览",
-      "closeDialog": "关闭对话框"
+      "closeDialog": "关闭对话框",
+      "moveListItemUp": "上移列表项",
+      "moveListItemDown": "下移列表项",
+      "toggleLinksPanel": "显示/隐藏链接面板（链接与反向链接）"
+    },
+    "customizeHint": "点击某个快捷键组合，然后按下新的组合。",
+    "recording": "请按键 …",
+    "recordHint": "按下新的快捷键组合（必须包含 Ctrl 或 Alt），按 Esc 取消。",
+    "record": "更改“{{action}}”的快捷键组合",
+    "resetOne": "将“{{action}}”重置为默认值",
+    "resetAll": "全部重置",
+    "errorNeedsModifier": "组合必须包含 Ctrl 或 Alt。",
+    "errorConflict": "已被“{{action}}”占用。",
+    "saveError": "无法保存快捷键：{{message}}",
+    "categories": {
+      "app": "应用程序",
+      "ai": "AI",
+      "format": "格式",
+      "fixed": "固定快捷键"
     }
   },
   "sidebar": {
@@ -282,7 +323,8 @@
     "rename": "重命名",
     "renameInputLabel": "文件夹名称",
     "fileRenameInputLabel": "文件名",
-    "export": "导出…"
+    "export": "导出…",
+    "print": "打印…"
   },
   "toolbar": {
     "formattingLabel": "格式化工具",
@@ -322,6 +364,8 @@
     "codeBlockTitle": "代码块（Ctrl+K）",
     "insertLink": "插入链接",
     "insertLinkTitle": "插入链接（Ctrl+M）",
+    "linksPanel": "链接与反向链接",
+    "linksPanelTitle": "显示或隐藏链接面板",
     "headingMenu": "标题",
     "paragraph": "正文",
     "heading4": "标题 4",
@@ -375,6 +419,21 @@
     "resultSummary": "已在 {{files}} 个文件中完成 {{matches}} 处替换",
     "fileMatchBadge": "匹配项：{{count}}"
   },
+  "linksPanel": {
+    "title": "链接",
+    "refresh": "刷新",
+    "close": "关闭面板",
+    "outgoing": "出链 ({{count}})",
+    "noOutgoing": "此文档未链接其他文件。",
+    "backlinks": "反向链接 ({{count}})",
+    "backlinksLoading": "正在搜索反向链接 …",
+    "noBacklinks": "没有其他文件链接到此文档。",
+    "brokenTarget": "未找到目标"
+  },
+  "fileLinkSuggest": {
+    "hint": "链接文件",
+    "noMatches": "没有匹配的文件"
+  },
   "emojiPicker": {
     "insertEmoji": "插入表情符号",
     "selectEmoji": "选择表情符号"
@@ -423,11 +482,12 @@
     "run": "执行"
   },
   "editor": {
-    "linkPrompt": "输入链接地址",
     "imageRequiresFile": "只有在编辑已打开文件夹中的文件时才能插入图片。",
     "imageInsertFailed": "无法插入图片 “{{fileName}}”：{{error}}",
     "imageDialogTitle": "选择图片",
     "imageDialogFilter": "图片",
+    "linkRequiresFile": "只有在编辑已打开文件夹中的文件时才能链接文件。",
+    "linkTargetMissing": "未找到链接的文件“{{href}}”。",
     "aiResponseError": "无法加载 AI 的响应。",
     "aiTipModel": "提示：打开 AI 设置并输入一个有效的模型。",
     "aiTipConnection": "提示：请检查 Ollama 或 Jan.ai 是否正在运行，以及 API 地址是否可访问。",

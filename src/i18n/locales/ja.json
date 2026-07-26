@@ -21,6 +21,10 @@
     "shellLabel": "ScribeDog アプリシェル",
     "workspaceLabel": "エディターワークスペース",
     "documentAreaLabel": "ドキュメント領域",
+    "navigateBack": "戻る",
+    "navigateForward": "進む",
+    "navigateBackTo": "「{{fileLabel}}」に戻る",
+    "navigateForwardTo": "「{{fileLabel}}」に進む",
     "sidebarResizeLabel": "サイドバーの幅を調整",
     "chatResizeLabel": "チャットパネルの幅を調整",
     "fileNameLabel": "ファイル名",
@@ -106,6 +110,23 @@
     "errorWrite": "ファイルを書き込めませんでした: {{message}}",
     "errorOcrNoModel": "AI モデルが設定されていません。画像をインポートするには、AI 設定で画像対応モデルを読み込んでください。",
     "errorOcrProvider": "画像を文字起こしできませんでした — 設定されたモデルが画像に対応していない可能性があります。({{message}})"
+  },
+  "linkDialog": {
+    "eyebrow": "リンク",
+    "title": "リンクを挿入",
+    "titleEdit": "リンクを編集",
+    "description": "URL を入力するか、開いているフォルダーのファイルを選択してください。リンクはカーソル位置に挿入されます。",
+    "descriptionEdit": "カーソル位置のリンク先を変更します。",
+    "descriptionSelection": "選択したテキスト「{{text}}」がリンクになります。",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://example.com",
+    "textLabel": "リンクテキスト",
+    "textPlaceholder": "省略時はファイル名を使用します",
+    "fileLabel": "フォルダー内のファイル",
+    "filePlaceholder": "ファイル名を入力 …",
+    "noFileMatches": "一致するファイルがありません",
+    "remove": "リンクを削除",
+    "confirm": "OK"
   },
   "settingsDialog": {
     "title": "設定",
@@ -208,7 +229,7 @@
   },
   "shortcutsDialog": {
     "title": "キーボードショートカット",
-    "description": "エディターでは次のキーの組み合わせが使用できます。",
+    "description": "次のキーの組み合わせが使用できます。変更可能なショートカットはキーの組み合わせをクリックすると再割り当てできます。",
     "items": {
       "openFolder": "フォルダーを開く",
       "newFile": "新規ファイルを作成",
@@ -217,11 +238,14 @@
       "printFile": "ファイルを印刷",
       "findReplace": "検索と置換",
       "zenMode": "Zen モードの切り替え（集中して書く）",
+      "navigateBack": "前に開いていたファイルに戻る",
+      "navigateForward": "履歴の次のファイルに進む",
       "toggleChat": "AI チャットの表示切り替え",
       "aiEditDialog": "AI 編集ダイアログを開く",
       "aiVoiceDialog": "音声入力付きでAIダイアログを開く",
       "dictation": "エディターまたはチャットに音声入力する（開始/停止）",
       "aiSubmit": "AI リクエストを送信（AI ダイアログ内）",
+      "insertFileLink": "ファイルをリンク（カーソル位置の候補リスト）",
       "aiCheckDialog": "選択したテキストのスペル・文法をチェック",
       "toggleSpellcheck": "スペルチェック（赤い波線）のオン/オフを切り替え",
       "bold": "太字",
@@ -244,7 +268,6 @@
       "blockquote": "引用",
       "inlineCode": "インラインコード",
       "codeBlock": "コードブロック",
-      "moveListItem": "リスト項目（箇条書き、番号付き、チェックリスト）を移動",
       "copy": "コピー",
       "paste": "貼り付け",
       "undo": "元に戻す",
@@ -253,7 +276,25 @@
       "zoomOut": "縮小",
       "zoomReset": "ズームをリセット",
       "shortcutsOverview": "ショートカット一覧を開く",
-      "closeDialog": "ダイアログを閉じる"
+      "closeDialog": "ダイアログを閉じる",
+      "moveListItemUp": "リスト項目を上へ移動",
+      "moveListItemDown": "リスト項目を下へ移動",
+      "toggleLinksPanel": "リンクパネル（リンクとバックリンク）の表示/非表示"
+    },
+    "customizeHint": "キーの組み合わせをクリックし、新しい組み合わせを押してください。",
+    "recording": "キーを押してください …",
+    "recordHint": "新しいキーの組み合わせを押してください（Ctrl または Alt を含める必要があります）。Esc で中止します。",
+    "record": "「{{action}}」のキーの組み合わせを変更",
+    "resetOne": "「{{action}}」を既定に戻す",
+    "resetAll": "すべて既定に戻す",
+    "errorNeedsModifier": "組み合わせには Ctrl または Alt を含める必要があります。",
+    "errorConflict": "すでに「{{action}}」で使用されています。",
+    "saveError": "ショートカットを保存できませんでした: {{message}}",
+    "categories": {
+      "app": "アプリケーション",
+      "ai": "AI",
+      "format": "書式",
+      "fixed": "固定のショートカット"
     }
   },
   "sidebar": {
@@ -282,7 +323,8 @@
     "rename": "名前を変更",
     "renameInputLabel": "フォルダー名",
     "fileRenameInputLabel": "ファイル名",
-    "export": "エクスポート…"
+    "export": "エクスポート…",
+    "print": "印刷…"
   },
   "toolbar": {
     "formattingLabel": "書式設定ツール",
@@ -322,6 +364,8 @@
     "codeBlockTitle": "コードブロック（Ctrl+K）",
     "insertLink": "リンクを挿入",
     "insertLinkTitle": "リンクを挿入（Ctrl+M）",
+    "linksPanel": "リンクとバックリンク",
+    "linksPanelTitle": "リンクパネルの表示/非表示",
     "headingMenu": "見出し",
     "paragraph": "標準テキスト",
     "heading4": "見出し4",
@@ -375,6 +419,21 @@
     "resultSummary": "{{files}} 個のファイルで {{matches}} 件を置換しました",
     "fileMatchBadge": "検索一致: {{count}}"
   },
+  "linksPanel": {
+    "title": "リンク",
+    "refresh": "更新",
+    "close": "パネルを閉じる",
+    "outgoing": "発リンク ({{count}})",
+    "noOutgoing": "この文書は他のファイルにリンクしていません。",
+    "backlinks": "バックリンク ({{count}})",
+    "backlinksLoading": "バックリンクを検索中 …",
+    "noBacklinks": "この文書にリンクしているファイルはありません。",
+    "brokenTarget": "リンク先が見つかりません"
+  },
+  "fileLinkSuggest": {
+    "hint": "ファイルをリンク",
+    "noMatches": "一致するファイルがありません"
+  },
   "emojiPicker": {
     "insertEmoji": "絵文字を挿入",
     "selectEmoji": "絵文字を選択"
@@ -423,11 +482,12 @@
     "run": "実行"
   },
   "editor": {
-    "linkPrompt": "リンクの URL を入力",
     "imageRequiresFile": "画像は、開いているフォルダー内のファイルを編集している場合にのみ挿入できます。",
     "imageInsertFailed": "画像「{{fileName}}」を挿入できませんでした：{{error}}",
     "imageDialogTitle": "画像を選択",
     "imageDialogFilter": "画像",
+    "linkRequiresFile": "ファイルへのリンクは、開いているフォルダー内のファイルを編集している場合にのみ挿入できます。",
+    "linkTargetMissing": "リンク先のファイル「{{href}}」が見つかりません。",
     "aiResponseError": "AI の応答を読み込めませんでした。",
     "aiTipModel": "ヒント：AI 設定を開き、有効なモデルを入力してください。",
     "aiTipConnection": "ヒント：Ollama または Jan.ai が実行中で、API URL にアクセスできるか確認してください。",

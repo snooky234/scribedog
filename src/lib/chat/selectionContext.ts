@@ -26,7 +26,7 @@ export function clampSelection(selection: string): string {
 function buildSelectionNote(selection: string): string {
   const lines = [
     "[Document context: the user has selected the following passage in the editor, and the message " +
-      "below refers to it.",
+      "below refers to it. It is given as Markdown, exactly as it stands in the document.",
     "--- selected passage ---",
     selection,
     "--- end of selected passage ---"
@@ -39,7 +39,8 @@ function buildSelectionNote(selection: string): string {
   lines.push(
     "This is the passage's current wording, so a request aimed only at it needs neither get_document " +
       "nor get_selection; read the rest of the document only when you genuinely need the surrounding " +
-      "context. Propose a change to the passage with replace_selection.]"
+      "context. Propose a change to the passage with replace_selection, keeping the passage's " +
+      "Markdown formatting and giving anything you add the same markers.]"
   );
 
   return lines.join("\n");

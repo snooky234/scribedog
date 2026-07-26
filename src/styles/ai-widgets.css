@@ -78,10 +78,8 @@
 .ai-diff-widget__original {
   background: var(--diff-removed-bg);
   border-radius: 0.2rem;
-  /* Underline accent on top of the tint: the tint alone has to stay light
-     enough to keep the text readable, which makes it easy to miss — the
-     accent line is what actually makes the marked range pop out. */
-  box-shadow: inset 0 -0.11em 0 var(--diff-removed-accent);
+  text-decoration: line-through;
+  text-decoration-color: var(--diff-removed-accent);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }

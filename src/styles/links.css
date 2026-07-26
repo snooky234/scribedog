@@ -1,0 +1,274 @@
+/* Links between notes: the file picker shared by the link dialog and the "[["
+   popup at the caret, and the links/backlinks side panel. Imported after
+   dialogs.css, whose .unsaved-dialog panel the link dialog builds on. */
+
+.link-dialog__panel {
+  width: min(100%, 32rem);
+}
+
+.link-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.link-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.link-dialog__field > span {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(var(--muted-rgb),0.9);
+}
+
+.link-dialog__field input {
+  width: 100%;
+  border: 1px solid rgba(var(--overlay-rgb),0.14);
+  border-radius: 0.7rem;
+  background: rgba(var(--surface-rgb),0.85);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.92rem;
+  color: inherit;
+}
+
+.link-dialog__field input:focus {
+  outline: 2px solid rgba(var(--overlay-rgb),0.22);
+  outline-offset: 1px;
+}
+
+/* File picker: identical row layout in the dialog and in the caret popup, so
+   both blocks share these declarations. */
+.link-dialog__results,
+.file-link-suggest__results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 13rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.link-dialog__result,
+.file-link-suggest__result {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  background: transparent;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.link-dialog__result svg,
+.file-link-suggest__result svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+  align-self: center;
+  color: rgba(var(--muted-rgb),0.9);
+}
+
+.link-dialog__result:hover,
+.file-link-suggest__result:hover,
+.link-dialog__result--active,
+.file-link-suggest__result--active {
+  border-color: rgba(var(--overlay-rgb),0.16);
+  background: rgba(var(--overlay-rgb),0.08);
+}
+
+.link-dialog__result-label,
+.file-link-suggest__result-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-dialog__result-path,
+.file-link-suggest__result-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 0.78rem;
+  color: rgba(var(--muted-rgb),0.85);
+}
+
+.link-dialog__no-results,
+.file-link-suggest__no-results {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(var(--muted-rgb),0.95);
+}
+
+.file-link-suggest {
+  position: fixed;
+  z-index: 60;
+  border: 1px solid rgba(var(--overlay-rgb),0.14);
+  border-radius: 0.8rem;
+  background: rgba(var(--surface-strong-rgb),0.98);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+  padding: 0.45rem;
+}
+
+.dark .file-link-suggest {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.file-link-suggest__hint {
+  margin: 0 0 0.15rem;
+  padding: 0 0.5rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(var(--muted-rgb),0.85);
+}
+
+/* Document area and links panel sit side by side; the document keeps the
+   scroll container it had before. */
+.editor-view__panes {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0.6rem;
+}
+
+.editor-view__panes > .editor-view__scroll {
+  min-width: 0;
+}
+
+.links-panel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 15rem;
+  min-height: 0;
+  border: 1px solid rgba(var(--overlay-rgb),0.12);
+  border-radius: 1rem;
+  background: rgba(var(--surface-rgb),0.56);
+  padding: 0.6rem;
+}
+
+.links-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.links-panel__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(var(--muted-rgb),0.95);
+}
+
+.links-panel__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.links-panel__section + .links-panel__section {
+  margin-top: 0.9rem;
+}
+
+.links-panel__section-title {
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(var(--text-rgb),0.8);
+}
+
+.links-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.links-panel__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  background: transparent;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85rem;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.links-panel__item svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+  color: rgba(var(--muted-rgb),0.9);
+}
+
+button.links-panel__item:hover {
+  border-color: rgba(var(--overlay-rgb),0.16);
+  background: rgba(var(--overlay-rgb),0.08);
+}
+
+.links-panel__item--broken {
+  cursor: default;
+  color: rgba(var(--muted-rgb),0.95);
+}
+
+.links-panel__item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.links-panel__item-count {
+  margin-left: auto;
+  border-radius: 999px;
+  background: rgba(var(--overlay-rgb),0.12);
+  padding: 0 0.35rem;
+  font-size: 0.7rem;
+  color: rgba(var(--text-rgb),0.8);
+}
+
+.links-panel__empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(var(--muted-rgb),0.9);
+}
+
+/* Zen mode is deliberately free of side panels, and below the layout
+   breakpoint the document column needs the whole width. */
+.workspace-grid--zen .links-panel {
+  display: none;
+}
+
+@media (max-width: 920px) {
+  .links-panel {
+    display: none;
+  }
+}
+

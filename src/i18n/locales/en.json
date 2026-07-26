@@ -21,6 +21,10 @@
     "shellLabel": "ScribeDog app shell",
     "workspaceLabel": "Editor workspace",
     "documentAreaLabel": "Document area",
+    "navigateBack": "Back",
+    "navigateForward": "Forward",
+    "navigateBackTo": "Back to \"{{fileLabel}}\"",
+    "navigateForwardTo": "Forward to \"{{fileLabel}}\"",
     "sidebarResizeLabel": "Adjust sidebar width",
     "chatResizeLabel": "Adjust chat panel width",
     "fileNameLabel": "File name",
@@ -106,6 +110,23 @@
     "errorWrite": "File could not be written: {{message}}",
     "errorOcrNoModel": "No AI model is configured. Load a vision-capable model in the AI settings to import images.",
     "errorOcrProvider": "The image could not be transcribed — the configured model may not support images. ({{message}})"
+  },
+  "linkDialog": {
+    "eyebrow": "Link",
+    "title": "Insert link",
+    "titleEdit": "Edit link",
+    "description": "Enter a URL or pick a file from the open folder. The link is inserted at the cursor position.",
+    "descriptionEdit": "Change the target of the link under the cursor.",
+    "descriptionSelection": "The selected text \"{{text}}\" becomes the link.",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://example.com",
+    "textLabel": "Link text",
+    "textPlaceholder": "Optional — the file name is used otherwise",
+    "fileLabel": "File in the folder",
+    "filePlaceholder": "Type a file name …",
+    "noFileMatches": "No matching file",
+    "remove": "Remove link",
+    "confirm": "OK"
   },
   "settingsDialog": {
     "title": "Settings",
@@ -208,7 +229,7 @@
   },
   "shortcutsDialog": {
     "title": "Keyboard shortcuts",
-    "description": "These key combinations are available in the editor.",
+    "description": "These key combinations are available. Customizable shortcuts can be reassigned by clicking the key combination.",
     "items": {
       "openFolder": "Open folder",
       "newFile": "Create new file",
@@ -217,11 +238,14 @@
       "printFile": "Print file",
       "findReplace": "Find & replace",
       "zenMode": "Toggle Zen mode (distraction-free writing)",
+      "navigateBack": "Back to the previously opened file",
+      "navigateForward": "Forward to the next file in the history",
       "toggleChat": "Toggle AI chat",
       "aiEditDialog": "Open AI edit dialog",
       "aiVoiceDialog": "Open AI dialog with voice input",
       "dictation": "Dictate into the editor or chat (start/stop)",
       "aiSubmit": "Submit AI request (in the AI dialog)",
+      "insertFileLink": "Link a file (picker at the cursor)",
       "aiCheckDialog": "Check selected text for spelling/grammar",
       "toggleSpellcheck": "Toggle spellcheck (red underlines) on/off",
       "bold": "Bold",
@@ -244,7 +268,6 @@
       "blockquote": "Blockquote",
       "inlineCode": "Inline code",
       "codeBlock": "Code block",
-      "moveListItem": "Move list item (bullet, numbered or checklist)",
       "copy": "Copy",
       "paste": "Paste",
       "undo": "Undo",
@@ -253,7 +276,25 @@
       "zoomOut": "Zoom out",
       "zoomReset": "Reset zoom",
       "shortcutsOverview": "Open shortcuts overview",
-      "closeDialog": "Close dialog"
+      "closeDialog": "Close dialog",
+      "moveListItemUp": "Move list item up",
+      "moveListItemDown": "Move list item down",
+      "toggleLinksPanel": "Toggle the links panel (links & backlinks)"
+    },
+    "customizeHint": "Click a key combination, then press the new one.",
+    "recording": "Press a key …",
+    "recordHint": "Press the new key combination (must include Ctrl or Alt) — Esc cancels.",
+    "record": "Change the key combination for “{{action}}”",
+    "resetOne": "Reset “{{action}}” to its default",
+    "resetAll": "Reset all",
+    "errorNeedsModifier": "The combination must include Ctrl or Alt.",
+    "errorConflict": "Already used by “{{action}}”.",
+    "saveError": "The shortcuts could not be saved: {{message}}",
+    "categories": {
+      "app": "Application",
+      "ai": "AI",
+      "format": "Formatting",
+      "fixed": "Fixed shortcuts"
     }
   },
   "sidebar": {
@@ -282,7 +323,8 @@
     "rename": "Rename",
     "renameInputLabel": "Folder name",
     "fileRenameInputLabel": "File name",
-    "export": "Export…"
+    "export": "Export…",
+    "print": "Print…"
   },
   "toolbar": {
     "formattingLabel": "Formatting tools",
@@ -322,6 +364,8 @@
     "codeBlockTitle": "Code block (Ctrl+K)",
     "insertLink": "Insert link",
     "insertLinkTitle": "Insert link (Ctrl+M)",
+    "linksPanel": "Links & backlinks",
+    "linksPanelTitle": "Show or hide the links panel",
     "headingMenu": "Heading",
     "paragraph": "Normal text",
     "heading4": "Heading 4",
@@ -375,6 +419,21 @@
     "resultSummary": "Made {{matches}} replacements in {{files}} file(s)",
     "fileMatchBadge": "Search matches: {{count}}"
   },
+  "linksPanel": {
+    "title": "Links",
+    "refresh": "Refresh",
+    "close": "Close panel",
+    "outgoing": "Outgoing links ({{count}})",
+    "noOutgoing": "This document links to no other file.",
+    "backlinks": "Backlinks ({{count}})",
+    "backlinksLoading": "Searching backlinks …",
+    "noBacklinks": "No other file links to this document.",
+    "brokenTarget": "Target not found"
+  },
+  "fileLinkSuggest": {
+    "hint": "Link a file",
+    "noMatches": "No matching file"
+  },
   "emojiPicker": {
     "insertEmoji": "Insert emoji",
     "selectEmoji": "Choose emoji"
@@ -423,11 +482,12 @@
     "run": "Run"
   },
   "editor": {
-    "linkPrompt": "Enter link URL",
     "imageRequiresFile": "Images can only be inserted while editing a file inside an open folder.",
     "imageInsertFailed": "Could not insert image \"{{fileName}}\": {{error}}",
     "imageDialogTitle": "Select image",
     "imageDialogFilter": "Images",
+    "linkRequiresFile": "Files can only be linked while editing a file inside an open folder.",
+    "linkTargetMissing": "The linked file \"{{href}}\" was not found.",
     "aiResponseError": "The AI response could not be loaded.",
     "aiTipModel": "Tip: Open the AI settings and enter a valid model.",
     "aiTipConnection": "Tip: Check whether Ollama or Jan.ai is running and the API URL is reachable.",

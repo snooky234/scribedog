@@ -29,6 +29,8 @@ import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import { useWebviewZoom } from "@/hooks/useWebviewZoom";
 import { useZenMode } from "@/hooks/useZenMode";
 import { getRelativeDisplayPath } from "@/lib/fileSystem";
+import { findStepIndex } from "@/lib/navigationHistory";
+import { printMarkdown } from "@/lib/print";
 import type { FileVersion } from "@/lib/fileVersions";
 import type { VersionDiffTarget } from "@/components/VersionDiffDialog";
 import { IMPORT_FILE_EXTENSIONS } from "@/lib/import/importer";
@@ -38,6 +40,8 @@ import type { Assistant } from "@/store/useAssistantsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { useChatStore } from "@/store/useChatStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
+import { useNavigationHistoryStore } from "@/store/useNavigationHistoryStore";
+import { useShortcutsStore } from "@/store/useShortcutsStore";
 
 import "./App.css";
 
@@ -46,6 +50,10 @@ function App() {
   const [pendingNavigation, setPendingNavigation] = useState<
     { type: "file"; filePath: string } | { type: "folder" } | null
   >(null);
+  // Set right before a back/forward step so the history effect below moves the
+  // position instead of recording the target as a new entry. Cleared once it is
+  // consumed — or when the unsaved-changes dialog cancels the step.
+  const navigationIntentRef = useRef<{ filePath: string; index: number } | null>(null);
   const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false);
   const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>("general");
@@ -111,8 +119,10 @@ function App() {
   const setSortMode = useAppStore((state) => state.setSortMode);
   const moveTreeEntry = useAppStore((state) => state.moveTreeEntry);
   const loadAiSettings = useAiSettingsStore((state) => state.loadSettings);
+  const loadShortcutOverrides = useShortcutsStore((state) => state.loadOverrides);
   const aiSettings = useAiSettingsStore((state) => state.settings);
   const updateAiSettings = useAiSettingsStore((state) => state.updateSettings);
+  const navigationHistory = useNavigationHistoryStore((state) => state.history);
   const isChatOpen = useChatStore((state) => state.isOpen);
   const chatView = useChatStore((state) => state.view);
   const setChatFolder = useChatStore((state) => state.setFolder);
@@ -148,7 +158,7 @@ function App() {
     useChatWidth();
 
   const zenWidth = useEditorSettingsStore((state) => state.zenWidth);
-  const { isZenMode, enterZenMode, exitZenMode } = useZenMode({
+  const { isZenMode, enterZenMode, exitZenMode, toggleZenMode } = useZenMode({
     canEnter: () => selectedFilePath !== null
   });
 
@@ -192,6 +202,17 @@ function App() {
     closeExport
   } = useExportTarget();
 
+  // Prints a file straight from the sidebar without opening it — reuses the
+  // same "unsaved content wins" read as export so a dirty background tab
+  // still prints its in-memory edits.
+  const handlePrintFileRequest = (filePath: string) => {
+    void readMarkdownForExport(filePath)
+      .then((markdown) => printMarkdown(markdown, filePath))
+      .catch((error: unknown) => {
+        console.error("Print failed:", error);
+      });
+  };
+
   const deleteTargetLabel =
     deleteTarget && deleteTarget.kind !== "multiple" && folderPath
       ? getRelativeDisplayPath(folderPath, deleteTarget.path)
@@ -229,6 +250,63 @@ function App() {
     }
 
     await selectFilePath(filePath);
+  };
+
+  // Opening a different vault has nothing to do with the previous one's
+  // history. Declared before the recording effect below so that a folder switch
+  // which immediately selects a file clears first and records afterwards.
+  useEffect(() => {
+    useNavigationHistoryStore.getState().reset();
+  }, [folderPath]);
+
+  // The single writer of the navigation history: whichever way a note ends up
+  // open — sidebar, a link in the text, the backlinks panel, a search hit, a
+  // freshly created file — it is recorded here exactly once. A back/forward
+  // step announces itself through navigationIntentRef and only moves the
+  // position instead of pushing a new entry.
+  useEffect(() => {
+    if (!selectedFilePath) {
+      return;
+    }
+
+    const intent = navigationIntentRef.current;
+    navigationIntentRef.current = null;
+
+    if (intent && intent.filePath === selectedFilePath) {
+      useNavigationHistoryStore.getState().goTo(intent.index);
+      return;
+    }
+
+    useNavigationHistoryStore.getState().visit(selectedFilePath);
+  }, [selectedFilePath]);
+
+  const backStepIndex = useMemo(
+    () => findStepIndex(navigationHistory, -1, filePaths),
+    [navigationHistory, filePaths]
+  );
+  const forwardStepIndex = useMemo(
+    () => findStepIndex(navigationHistory, 1, filePaths),
+    [navigationHistory, filePaths]
+  );
+
+  const historyEntryLabel = (stepIndex: number | null) => {
+    if (stepIndex === null) {
+      return null;
+    }
+
+    const targetPath = navigationHistory.entries[stepIndex];
+
+    return folderPath ? getRelativeDisplayPath(folderPath, targetPath) : targetPath;
+  };
+
+  const navigateHistory = (stepIndex: number | null) => {
+    if (stepIndex === null) {
+      return;
+    }
+
+    const targetPath = navigationHistory.entries[stepIndex];
+    navigationIntentRef.current = { filePath: targetPath, index: stepIndex };
+    void selectFilePathSafely(targetPath);
   };
 
   const handleCreateFile = async (targetDirectory?: string) => {
@@ -277,6 +355,9 @@ function App() {
   };
 
   const closeUnsavedDialog = () => {
+    // Cancelling the dialog cancels the navigation, so a back/forward step
+    // announced for it must not be applied to whatever is opened next.
+    navigationIntentRef.current = null;
     setPendingNavigation(null);
     setIsUnsavedDialogOpen(false);
   };
@@ -296,7 +377,11 @@ function App() {
       return;
     }
 
+    // Saving/discarding *continues* the navigation, so a back/forward step
+    // survives the dialog closing (which cancels one).
+    const navigationIntent = navigationIntentRef.current;
     closeUnsavedDialog();
+    navigationIntentRef.current = navigationIntent;
 
     if (nextNavigation.type === "file") {
       await selectFilePath(nextNavigation.filePath);
@@ -320,6 +405,12 @@ function App() {
   useEffect(() => {
     void loadAiSettings();
   }, [loadAiSettings]);
+
+  // Custom key bindings are app-wide (shortcuts.json in the app config dir),
+  // so they are loaded once at startup rather than per opened folder.
+  useEffect(() => {
+    void loadShortcutOverrides();
+  }, [loadShortcutOverrides]);
 
   // Chat sessions are vault-scoped (persisted into .scribedog/); reload them
   // whenever the opened folder changes.
@@ -387,6 +478,9 @@ function App() {
     openFolderSafely,
     createFile: handleCreateFile,
     showShortcuts: () => setIsShortcutsOpen(true),
+    toggleZenMode,
+    navigateBack: () => navigateHistory(backStepIndex),
+    navigateForward: () => navigateHistory(forwardStepIndex),
     editorHandleRef
   });
 
@@ -437,6 +531,7 @@ function App() {
             onExportFileRequest={requestExportFile}
             onExportFolderRequest={requestExportFolder}
             onExportMultipleRequest={requestExportMultiple}
+            onPrintFileRequest={handlePrintFileRequest}
             onRenameFolder={renameFolderPath}
             onRenameFile={renameFilePath}
             onMoveEntry={moveTreeEntry}
@@ -450,8 +545,6 @@ function App() {
             sidebarFocusRequestId={sidebarFocusRequestId}
             onFileTreeSelectionChange={setFileTreeSelection}
             fileTreeSelectionCount={fileTreeSelection.length}
-            onVersionDiffRequest={handleVersionDiffRequest}
-            onVersionRestoreRequest={(version) => void handleVersionRestore(version)}
           />
 
           <div
@@ -479,6 +572,10 @@ function App() {
             folderPath={folderPath}
             selectedFileContent={selectedFileContent}
             appVersion={appVersion}
+            backTargetLabel={historyEntryLabel(backStepIndex)}
+            forwardTargetLabel={historyEntryLabel(forwardStepIndex)}
+            onNavigateBack={() => navigateHistory(backStepIndex)}
+            onNavigateForward={() => navigateHistory(forwardStepIndex)}
             isRenamingTitle={isRenamingTitle}
             titleDraft={titleDraft}
             titleInputRef={titleInputRef}
@@ -506,6 +603,8 @@ function App() {
               setIsAiSettingsOpen(true);
             }}
             onZenModeRequest={enterZenMode}
+            onVersionDiffRequest={handleVersionDiffRequest}
+            onVersionRestoreRequest={(version) => void handleVersionRestore(version)}
           />
 
           {isChatOpen ? (

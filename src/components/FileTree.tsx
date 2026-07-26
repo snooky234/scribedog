@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Download, FilePlus, Pencil, Trash2 } from "lucide-react";
+import { Download, FilePlus, Pencil, Printer, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { dirname, join } from "@tauri-apps/api/path";
 
@@ -43,6 +43,7 @@ type FileTreeProps = {
   onDeleteFolderRequest: (folderPath: string) => void;
   onExportFileRequest: (filePath: string) => void;
   onExportFolderRequest: (folderPath: string) => void;
+  onPrintFileRequest: (filePath: string) => void;
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
   onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
@@ -70,6 +71,7 @@ export function FileTree({
   onDeleteFolderRequest,
   onExportFileRequest,
   onExportFolderRequest,
+  onPrintFileRequest,
   onRenameFolder,
   onRenameFile,
   onMoveEntry,
@@ -311,6 +313,30 @@ export function FileTree({
     }
   };
 
+  // What a drag out of the tree carries: the dragged file, or — when it is part
+  // of a multi-selection — every selected file. Folders carry nothing, since
+  // only files can be linked in a document.
+  const resolveDragFilePaths = useCallback(
+    (node: FileTreeNode): string[] => {
+      if (node.kind !== "file") {
+        return [];
+      }
+
+      const key = getNodeKey(node);
+
+      if (!selectedKeys.has(key) || selectedKeys.size <= 1) {
+        return [node.filePath];
+      }
+
+      return flatNodes.flatMap((candidate) =>
+        candidate.kind === "file" && selectedKeys.has(getNodeKey(candidate))
+          ? [candidate.filePath]
+          : []
+      );
+    },
+    [flatNodes, selectedKeys]
+  );
+
   const handleRowContextMenu = (node: FileTreeNode, x: number, y: number) => {
     const key = getNodeKey(node);
 
@@ -364,6 +390,7 @@ export function FileTree({
             onRowDropIndicatorChange={handleRowDropIndicatorChange}
             onRowDrop={handleRowDrop}
             onRowDragEnd={handleRowDragEnd}
+            resolveDragFilePaths={resolveDragFilePaths}
           />
         ))}
       </ul>
@@ -487,6 +514,21 @@ export function FileTree({
                     <Download aria-hidden="true" />
                     {t("fileTree.export")}
                   </button>
+
+                  {contextMenu.kind === "file" ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="file-tree-context-menu__item"
+                      onClick={() => {
+                        onPrintFileRequest(contextMenu.filePath);
+                        setContextMenu(null);
+                      }}
+                    >
+                      <Printer aria-hidden="true" />
+                      {t("fileTree.print")}
+                    </button>
+                  ) : null}
 
                   <button
                     type="button"

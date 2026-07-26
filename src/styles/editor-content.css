@@ -169,7 +169,9 @@
   outline: none;
 }
 
-.editor-view__content--link-hint .editor-view__surface a[href] {
+/* Every link is followed by a plain click (notes open in the editor, anything
+   else in the browser), so links always show the pointer cursor. */
+.editor-view__surface a[href] {
   cursor: pointer;
 }
 

@@ -21,6 +21,10 @@
     "shellLabel": "ScribeDog App-Shell",
     "workspaceLabel": "Editor-Arbeitsbereich",
     "documentAreaLabel": "Dokumentenbereich",
+    "navigateBack": "Zurück",
+    "navigateForward": "Vorwärts",
+    "navigateBackTo": "Zurück zu „{{fileLabel}}“",
+    "navigateForwardTo": "Vorwärts zu „{{fileLabel}}“",
     "sidebarResizeLabel": "Breite der Seitenleiste anpassen",
     "chatResizeLabel": "Breite des Chat-Panels anpassen",
     "fileNameLabel": "Dateiname",
@@ -106,6 +110,23 @@
     "errorWrite": "Datei konnte nicht geschrieben werden: {{message}}",
     "errorOcrNoModel": "Kein KI-Modell konfiguriert. Bitte in den KI-Einstellungen ein Modell mit Bildunterstützung laden, um Bilder zu importieren.",
     "errorOcrProvider": "Bild konnte nicht transkribiert werden — das konfigurierte Modell unterstützt möglicherweise keine Bilder. ({{message}})"
+  },
+  "linkDialog": {
+    "eyebrow": "Link",
+    "title": "Link einfügen",
+    "titleEdit": "Link bearbeiten",
+    "description": "Gib eine URL ein oder wähle eine Datei aus dem geöffneten Ordner. Der Link wird an der Cursorposition eingefügt.",
+    "descriptionEdit": "Ziel des Links unter dem Cursor ändern.",
+    "descriptionSelection": "Der markierte Text \"{{text}}\" wird zum Link.",
+    "urlLabel": "URL",
+    "urlPlaceholder": "https://example.com",
+    "textLabel": "Linktext",
+    "textPlaceholder": "Optional – sonst wird der Dateiname verwendet",
+    "fileLabel": "Datei im Ordner",
+    "filePlaceholder": "Dateinamen tippen …",
+    "noFileMatches": "Keine passende Datei",
+    "remove": "Link entfernen",
+    "confirm": "OK"
   },
   "settingsDialog": {
     "title": "Einstellungen",
@@ -208,7 +229,7 @@
   },
   "shortcutsDialog": {
     "title": "Tastenkürzel",
-    "description": "Diese Tastenkombinationen stehen im Editor zur Verfügung.",
+    "description": "Diese Tastenkombinationen stehen zur Verfügung. Anpassbare Kürzel lassen sich per Klick auf die Tastenkombination neu belegen.",
     "items": {
       "openFolder": "Ordner öffnen",
       "newFile": "Neue Datei anlegen",
@@ -217,11 +238,14 @@
       "printFile": "Datei drucken",
       "findReplace": "Suchen & Ersetzen",
       "zenMode": "Zen-Modus umschalten (ablenkungsfreies Schreiben)",
+      "navigateBack": "Zurück zur vorher geöffneten Datei",
+      "navigateForward": "Vorwärts zur nächsten Datei im Verlauf",
       "toggleChat": "KI-Chat ein-/ausblenden",
       "aiEditDialog": "KI-Bearbeiten-Dialog öffnen",
       "aiVoiceDialog": "KI-Dialog mit Spracheingabe öffnen",
       "dictation": "In Editor oder Chat diktieren (Start/Stopp)",
       "aiSubmit": "KI-Anfrage absenden (im KI-Dialog)",
+      "insertFileLink": "Datei verlinken (Auswahlliste am Cursor)",
       "aiCheckDialog": "Ausgewählten Text auf Rechtschreibung/Grammatik prüfen",
       "toggleSpellcheck": "Rechtschreibprüfung (rote Unterringelung) ein-/ausschalten",
       "bold": "Fett",
@@ -244,7 +268,6 @@
       "blockquote": "Zitat",
       "inlineCode": "Inline-Code",
       "codeBlock": "Code-Block",
-      "moveListItem": "Listenelement (Aufzählung, Nummerierung oder Checkliste) verschieben",
       "copy": "Kopieren",
       "paste": "Einfügen",
       "undo": "Rückgängig",
@@ -253,7 +276,25 @@
       "zoomOut": "Verkleinern",
       "zoomReset": "Zoom zurücksetzen",
       "shortcutsOverview": "Tastenkürzel-Übersicht öffnen",
-      "closeDialog": "Dialog schließen"
+      "closeDialog": "Dialog schließen",
+      "moveListItemUp": "Listenelement nach oben verschieben",
+      "moveListItemDown": "Listenelement nach unten verschieben",
+      "toggleLinksPanel": "Link-Panel (Verweise & Backlinks) ein-/ausblenden"
+    },
+    "customizeHint": "Auf eine Tastenkombination klicken und die neue Kombination drücken.",
+    "recording": "Taste drücken …",
+    "recordHint": "Neue Tastenkombination drücken (muss Strg oder Alt enthalten) — Esc bricht ab.",
+    "record": "Tastenkombination für „{{action}}“ ändern",
+    "resetOne": "„{{action}}“ auf Standard zurücksetzen",
+    "resetAll": "Alle zurücksetzen",
+    "errorNeedsModifier": "Die Kombination muss Strg oder Alt enthalten.",
+    "errorConflict": "Bereits belegt durch „{{action}}“.",
+    "saveError": "Die Tastenkürzel konnten nicht gespeichert werden: {{message}}",
+    "categories": {
+      "app": "Anwendung",
+      "ai": "KI",
+      "format": "Formatierung",
+      "fixed": "Feste Tastenkürzel"
     }
   },
   "sidebar": {
@@ -282,7 +323,8 @@
     "rename": "Umbenennen",
     "renameInputLabel": "Ordnername",
     "fileRenameInputLabel": "Dateiname",
-    "export": "Exportieren…"
+    "export": "Exportieren…",
+    "print": "Drucken…"
   },
   "toolbar": {
     "formattingLabel": "Formatierungswerkzeuge",
@@ -322,6 +364,8 @@
     "codeBlockTitle": "Code-Block (Strg+K)",
     "insertLink": "Link einfügen",
     "insertLinkTitle": "Link einfügen (Strg+M)",
+    "linksPanel": "Links & Backlinks",
+    "linksPanelTitle": "Links-Panel ein-/ausblenden",
     "headingMenu": "Überschrift",
     "paragraph": "Normaler Text",
     "heading4": "Überschrift 4",
@@ -375,6 +419,21 @@
     "resultSummary": "{{matches}} Ersetzungen in {{files}} Datei(en) vorgenommen",
     "fileMatchBadge": "Suchtreffer: {{count}}"
   },
+  "linksPanel": {
+    "title": "Links",
+    "refresh": "Aktualisieren",
+    "close": "Panel schließen",
+    "outgoing": "Ausgehende Links ({{count}})",
+    "noOutgoing": "Dieses Dokument verlinkt keine andere Datei.",
+    "backlinks": "Backlinks ({{count}})",
+    "backlinksLoading": "Backlinks werden gesucht …",
+    "noBacklinks": "Keine andere Datei verlinkt dieses Dokument.",
+    "brokenTarget": "Ziel nicht gefunden"
+  },
+  "fileLinkSuggest": {
+    "hint": "Datei verlinken",
+    "noMatches": "Keine passende Datei"
+  },
   "emojiPicker": {
     "insertEmoji": "Emoji einfügen",
     "selectEmoji": "Emoji auswählen"
@@ -423,11 +482,12 @@
     "run": "Ausführen"
   },
   "editor": {
-    "linkPrompt": "Link-URL eingeben",
     "imageRequiresFile": "Bilder können nur eingefügt werden, wenn eine Datei in einem geöffneten Ordner bearbeitet wird.",
     "imageInsertFailed": "Bild \"{{fileName}}\" konnte nicht eingefügt werden: {{error}}",
     "imageDialogTitle": "Bild auswählen",
     "imageDialogFilter": "Bilder",
+    "linkRequiresFile": "Dateien können nur verlinkt werden, wenn eine Datei in einem geöffneten Ordner bearbeitet wird.",
+    "linkTargetMissing": "Die verlinkte Datei \"{{href}}\" wurde nicht gefunden.",
     "aiResponseError": "Die KI-Antwort konnte nicht geladen werden.",
     "aiTipModel": "Tipp: Öffne die KI-Einstellungen und trage ein gültiges Modell ein.",
     "aiTipConnection": "Tipp: Prüfe, ob Ollama oder Jan.ai läuft und die API-URL erreichbar ist.",
