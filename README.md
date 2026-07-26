@@ -35,9 +35,9 @@ place to write it, with an AI assistant that respects one simple rule:
 - 🔗 **Linked notes** — link one note to another by dragging it in from the sidebar, from the link dialog, or by typing `[[`; a click opens the target, and an optional panel shows links and backlinks
 - 🤖 **AI built in, local by default** — rewrite or generate text with Ollama, Jan.ai, or LM Studio; cloud providers are strictly opt-in
 - 💬 **Agentic AI chat** — a side-panel chat that reads your document and proposes edits itself, each one reviewed before it touches the file; needs a capable (9B+) model, smaller models should stick to simple select-and-rewrite
+- 🧩 **Custom assistants** — save your own system prompts ("translate to English", "make more formal", …) and switch between them right from the chat panel
 - 🕓 **Automatic version history** — every save can be snapshotted locally; browse, diff, and restore any previous version with one click
 - 🎙️ **Voice input, 100% offline** — dictate straight into your document or into the AI prompt; speech recognition runs locally via whisper.cpp, no cloud involved
-- 🧩 **Custom assistants** — save your own system prompts ("translate to English", "make more formal", …) and switch between them right from the toolbar
 - 📥 **Import & export built in** — bring Word, PDF, and HTML files in as Markdown (even images, via AI-powered OCR) and export notes or whole folders to PDF, DOCX, ODT, or HTML
 - 🔓 **100% open source** — MIT-licensed, every release built transparently from this repository by GitHub Actions
 - 🔒 **No telemetry** — no analytics, no account; the only automatic network call is an optional, disableable update check
@@ -118,7 +118,7 @@ and the source in this repository.
 | 🕓 Document versions | Automatic local snapshots on save; diff and restore any previous version | Version history popover |
 | 🧘 Zen mode | Full-screen, distraction-free writing with a resizable text column | `Ctrl+Shift+Y` / toolbar |
 | 🎙️ Voice input | Offline dictation into the document or straight into an AI prompt | `Ctrl+Shift+W` / `Ctrl+Shift+E` |
-| 🧩 Custom assistants | Named, reusable system prompts, switchable from the toolbar | Toolbar dropdown |
+| 🧩 Custom assistants | Named, reusable system prompts for the AI chat, switchable in-panel | Chat panel dropdown |
 | ✍️ WYSIWYG editing | Headings, tables, images, lists, code blocks, emoji, spell check | — |
 | 🔗 Linked notes | Link notes by drag, dialog, or `[[`; links & backlinks panel; back/forward history | `Ctrl+L` · `Ctrl+Shift+L` · `Alt+←`/`Alt+→` |
 | 📥 Import | Bring in Word, PDF, HTML, or images (via AI OCR) as clean Markdown | Sidebar import |
@@ -166,11 +166,11 @@ and the source in this repository.
 - Speech recognition runs **100% locally** via [whisper.cpp](https://github.com/ggerganov/whisper.cpp) — no cloud service, no audio ever leaves your device, in all 10 interface languages and more
 - The multilingual model (~465 MB) is downloaded once on first use, with a clear progress dialog — just like setting up a local LLM
 
-### 🧩 Custom assistants — your own reusable AI prompts
+### 🧩 Custom assistants — your own reusable AI chat personas
 - Define named **assistants** — each with an emoji, name, description, and its own system prompt (e.g. *"Translate to English"*, *"Make more formal"*, *"Summarize technically"*)
-- Switch assistants in one click via a **toolbar dropdown** right next to the model picker; the selected assistant shapes every rewrite and insert request
+- Switch assistants in one click via a **dropdown right in the chat panel**; the selected assistant shapes the system prompt for that agentic conversation
 - Manage them in a dedicated **Assistants settings tab**; the built-in **Default** assistant can be customized too — and restored anytime with *Reset to default*
-- No more retyping the same instructions into the prompt for every request
+- No more retyping the same instructions into the chat for every conversation
 
 ### ✍️ True WYSIWYG Markdown editing
 - Powered by [TipTap](https://tiptap.dev/)/ProseMirror — headings, bold, italic, underline, strikethrough, blockquotes, inline code, links, and ordered/bulleted/task lists all render as formatted content instead of raw syntax
