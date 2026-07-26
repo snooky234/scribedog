@@ -3,6 +3,12 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.1] - 2026-07-27
+
+### Highlights
+- Add details panel showing document stats (word count, reading time), links, and backlinks
+- Improve PDF export quality with manuscript rendering and expanded font support
+
 ## [0.7.0] - 2026-07-26
 
 ### Highlights
