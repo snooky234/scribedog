@@ -3,6 +3,14 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.0] - 2026-07-26
+
+### Highlights
+- Add AI chat panel with agent tools and context management
+- Add request timeout and running indicator for active session
+- Add document versioning with diff preview and restore
+- Add document links, navigation history, and customizable shortcuts
+
 ## [0.6.0] - 2026-07-23
 
 ### Highlights
