@@ -92,7 +92,12 @@
     "conflictSkip": "Skip",
     "conflictOverwrite": "Overwrite",
     "doneSummary": "Export finished: {{exportedCount}} exported, {{skippedCount}} skipped.",
-    "errorMessage": "Export failed: {{message}}"
+    "errorMessage": "Export failed: {{message}}",
+    "eyebrowManuscript": "Manuscript",
+    "titleManuscript": "Export as manuscript",
+    "descriptionManuscript": "Compiles every chapter into one book, in the order the sidebar shows them.",
+    "mergeIntoOneFile": "Merge into one file",
+    "mergeHint": "All notes one after another in a single document instead of one file per note."
   },
   "importDialog": {
     "eyebrow": "Import",
@@ -132,6 +137,7 @@
     "title": "Settings",
     "tabsAriaLabel": "Settings categories",
     "tabGeneral": "General",
+    "tabFonts": "Fonts",
     "tabAi": "AI settings",
     "tabAssistants": "Assistants",
     "tabVersioning": "Versioning",
@@ -169,7 +175,14 @@
     "contextLength": "Context length",
     "thinking": "Thinking",
     "thinkingOn": "On (model default)",
-    "thinkingOff": "Off"
+    "thinkingOff": "Off",
+    "font": "Font",
+    "fontHint": "Applies to the editor and to every export. The list is deliberately closed: only bundled fonts can be embedded in a PDF.",
+    "fontSystem": "System default",
+    "fontPreviewText": "The journey begins",
+    "fontSize": "Text size",
+    "fontSizeValue": "{{size}} pt",
+    "fontSizePreviewText": "The journey begins on a Tuesday in November."
   },
   "assistants": {
     "defaultName": "Default",
@@ -279,7 +292,7 @@
       "closeDialog": "Close dialog",
       "moveListItemUp": "Move list item up",
       "moveListItemDown": "Move list item down",
-      "toggleLinksPanel": "Toggle the links panel (links & backlinks)"
+      "toggleDetailsPanel": "Toggle the details panel (links, backlinks & file info)"
     },
     "customizeHint": "Click a key combination, then press the new one.",
     "recording": "Press a key …",
@@ -324,7 +337,8 @@
     "renameInputLabel": "Folder name",
     "fileRenameInputLabel": "File name",
     "export": "Export…",
-    "print": "Print…"
+    "print": "Print…",
+    "exportManuscript": "Export as manuscript…"
   },
   "toolbar": {
     "formattingLabel": "Formatting tools",
@@ -364,8 +378,8 @@
     "codeBlockTitle": "Code block (Ctrl+K)",
     "insertLink": "Insert link",
     "insertLinkTitle": "Insert link (Ctrl+M)",
-    "linksPanel": "Links & backlinks",
-    "linksPanelTitle": "Show or hide the links panel",
+    "detailsPanel": "Details",
+    "detailsPanelTitle": "Show or hide the details panel",
     "headingMenu": "Heading",
     "paragraph": "Normal text",
     "heading4": "Heading 4",
@@ -419,8 +433,8 @@
     "resultSummary": "Made {{matches}} replacements in {{files}} file(s)",
     "fileMatchBadge": "Search matches: {{count}}"
   },
-  "linksPanel": {
-    "title": "Links",
+  "detailsPanel": {
+    "title": "Details",
     "refresh": "Refresh",
     "close": "Close panel",
     "outgoing": "Outgoing links ({{count}})",
@@ -428,7 +442,14 @@
     "backlinks": "Backlinks ({{count}})",
     "backlinksLoading": "Searching backlinks …",
     "noBacklinks": "No other file links to this document.",
-    "brokenTarget": "Target not found"
+    "brokenTarget": "Target not found",
+    "fileInfo": "File info",
+    "words": "Words",
+    "characters": "Characters",
+    "readingTime": "Reading time",
+    "readingMinutes": "≈ {{count}} min",
+    "createdAt": "First edited",
+    "modifiedAt": "Last edited"
   },
   "fileLinkSuggest": {
     "hint": "Link a file",
@@ -624,5 +645,25 @@
     "toolProposePassageFailed": "Passage not found",
     "toolSettleProposalsFailed": "No open proposals",
     "toolActionFailed": "Action failed"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "Chapter {number}",
+    "coverSection": "Title page",
+    "bookTitle": "Title",
+    "subtitle": "Subtitle",
+    "author": "Author",
+    "includeTitlePage": "Add a title page",
+    "chaptersSection": "Chapters",
+    "numbering": "Numbering",
+    "numberingNone": "None",
+    "numberingNumber": "1. Chapter title",
+    "numberingLabel": "Chapter 1: Chapter title",
+    "titleSource": "Chapter title from",
+    "titleSourceHeading": "The file's first heading",
+    "titleSourceFileName": "File name",
+    "labelTemplate": "Chapter label template",
+    "labelTemplateHint": "{number} is replaced with the chapter number.",
+    "includeChapterHeadings": "Generate chapter headings",
+    "pageBreakBetweenChapters": "Start every chapter on a new page"
   }
 }

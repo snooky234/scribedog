@@ -92,7 +92,12 @@
     "conflictSkip": "跳过",
     "conflictOverwrite": "覆盖",
     "doneSummary": "导出完成：已导出 {{exportedCount}} 个，跳过 {{skippedCount}} 个。",
-    "errorMessage": "导出失败：{{message}}"
+    "errorMessage": "导出失败：{{message}}",
+    "eyebrowManuscript": "书稿",
+    "titleManuscript": "导出为书稿",
+    "descriptionManuscript": "按侧边栏显示的顺序，把所有章节合并成一本书。",
+    "mergeIntoOneFile": "合并为一个文件",
+    "mergeHint": "所有笔记依次排在同一个文档里，而不是每条笔记一个文件。"
   },
   "importDialog": {
     "eyebrow": "导入",
@@ -132,6 +137,7 @@
     "title": "设置",
     "tabsAriaLabel": "设置分类",
     "tabGeneral": "常规",
+    "tabFonts": "字体",
     "tabAi": "AI 设置",
     "tabAssistants": "助手",
     "tabVersioning": "版本",
@@ -169,7 +175,14 @@
     "contextLength": "上下文长度",
     "thinking": "思考模式",
     "thinkingOn": "开启（模型默认）",
-    "thinkingOff": "关闭"
+    "thinkingOff": "关闭",
+    "font": "字体",
+    "fontHint": "同时用于编辑器和所有导出。列表是刻意限定的：只有随应用附带的字体才能嵌入 PDF。",
+    "fontSystem": "系统默认",
+    "fontPreviewText": "旅程就此开始",
+    "fontSize": "字号",
+    "fontSizeValue": "{{size}} 磅",
+    "fontSizePreviewText": "旅程始于十一月的一个星期二。"
   },
   "assistants": {
     "defaultName": "默认",
@@ -279,7 +292,7 @@
       "closeDialog": "关闭对话框",
       "moveListItemUp": "上移列表项",
       "moveListItemDown": "下移列表项",
-      "toggleLinksPanel": "显示/隐藏链接面板（链接与反向链接）"
+      "toggleDetailsPanel": "显示/隐藏详情面板（链接、反向链接与文件信息）"
     },
     "customizeHint": "点击某个快捷键组合，然后按下新的组合。",
     "recording": "请按键 …",
@@ -324,7 +337,8 @@
     "renameInputLabel": "文件夹名称",
     "fileRenameInputLabel": "文件名",
     "export": "导出…",
-    "print": "打印…"
+    "print": "打印…",
+    "exportManuscript": "导出为书稿…"
   },
   "toolbar": {
     "formattingLabel": "格式化工具",
@@ -364,8 +378,8 @@
     "codeBlockTitle": "代码块（Ctrl+K）",
     "insertLink": "插入链接",
     "insertLinkTitle": "插入链接（Ctrl+M）",
-    "linksPanel": "链接与反向链接",
-    "linksPanelTitle": "显示或隐藏链接面板",
+    "detailsPanel": "详情",
+    "detailsPanelTitle": "显示或隐藏详情面板",
     "headingMenu": "标题",
     "paragraph": "正文",
     "heading4": "标题 4",
@@ -419,8 +433,8 @@
     "resultSummary": "已在 {{files}} 个文件中完成 {{matches}} 处替换",
     "fileMatchBadge": "匹配项：{{count}}"
   },
-  "linksPanel": {
-    "title": "链接",
+  "detailsPanel": {
+    "title": "详情",
     "refresh": "刷新",
     "close": "关闭面板",
     "outgoing": "出链 ({{count}})",
@@ -428,7 +442,14 @@
     "backlinks": "反向链接 ({{count}})",
     "backlinksLoading": "正在搜索反向链接 …",
     "noBacklinks": "没有其他文件链接到此文档。",
-    "brokenTarget": "未找到目标"
+    "brokenTarget": "未找到目标",
+    "fileInfo": "文件信息",
+    "words": "字数",
+    "characters": "字符数",
+    "readingTime": "阅读时间",
+    "readingMinutes": "约 {{count}} 分钟",
+    "createdAt": "首次编辑",
+    "modifiedAt": "最近编辑"
   },
   "fileLinkSuggest": {
     "hint": "链接文件",
@@ -624,5 +645,25 @@
     "toolProposePassageFailed": "未找到该段落",
     "toolSettleProposalsFailed": "没有待处理的建议",
     "toolActionFailed": "操作失败"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "第 {number} 章",
+    "coverSection": "扉页",
+    "bookTitle": "书名",
+    "subtitle": "副标题",
+    "author": "作者",
+    "includeTitlePage": "添加扉页",
+    "chaptersSection": "章节",
+    "numbering": "编号",
+    "numberingNone": "无",
+    "numberingNumber": "1. 章节标题",
+    "numberingLabel": "第 1 章：章节标题",
+    "titleSource": "章节标题取自",
+    "titleSourceHeading": "文件的第一个标题",
+    "titleSourceFileName": "文件名",
+    "labelTemplate": "章节名称模板",
+    "labelTemplateHint": "{number} 会替换为章节编号。",
+    "includeChapterHeadings": "生成章节标题",
+    "pageBreakBetweenChapters": "每章另起一页"
   }
 }

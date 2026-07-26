@@ -7,6 +7,7 @@ import {
   ImageRun,
   LevelFormat,
   Packer,
+  PageBreak,
   Paragraph,
   ShadingType,
   Table,
@@ -18,14 +19,27 @@ import {
   type ParagraphChild
 } from "docx";
 
-import type { ExportBlock, InlineRun, TableCell as ModelTableCell } from "./markdownModel";
+import {
+  DEFAULT_DOCUMENT_STYLE,
+  getFontScale,
+  getReferencedFontName,
+  type DocumentStyle
+} from "@/lib/fonts";
+
+import type {
+  BlockAlign,
+  ExportBlock,
+  InlineRun,
+  TableCell as ModelTableCell
+} from "./markdownModel";
 import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 
 const ORDERED_LIST_REFERENCE = "scribedog-ordered";
-// Match the sans-serif look of the editor / HTML export. Arial is the safest
-// sans-serif present on Windows, macOS and most Linux setups; Word/LibreOffice
-// would otherwise fall back to their serif or Calibri-Light defaults.
-const BODY_FONT = "Arial";
+// DOCX references a font by name rather than embedding it, so the reader
+// substitutes when the family is missing. The system default resolves to Arial
+// — the safest sans-serif across Windows, macOS and most Linux setups; Word
+// and LibreOffice would otherwise fall back to their serif or Calibri-Light
+// defaults.
 const MONO_FONT = "Consolas";
 const CODE_FILL = "F4F4F4";
 const BORDER_COLOR = "C8C8C8";
@@ -103,6 +117,18 @@ function runsToDocxChildren(
   return children;
 }
 
+function docxAlignment(align: BlockAlign | undefined): (typeof AlignmentType)[keyof typeof AlignmentType] | undefined {
+  if (align === "center") {
+    return AlignmentType.CENTER;
+  }
+
+  if (align === "right") {
+    return AlignmentType.RIGHT;
+  }
+
+  return undefined;
+}
+
 type ListContext = {
   ordered: boolean;
   level: number;
@@ -141,6 +167,7 @@ function blocksToDocxElements(
         elements.push(
           new Paragraph({
             heading: HEADING_BY_LEVEL[level - 1],
+            alignment: docxAlignment(block.align),
             children: runsToDocxChildren(block.runs, images)
           })
         );
@@ -151,6 +178,7 @@ function blocksToDocxElements(
           new Paragraph({
             ...quoteOptions(),
             ...listParagraphOptions(),
+            alignment: docxAlignment(block.align),
             children: runsToDocxChildren(block.runs, images)
           })
         );
@@ -161,7 +189,10 @@ function blocksToDocxElements(
           ...lines.map(
             (line, index) =>
               new Paragraph({
-                children: [new TextRun({ text: line, font: MONO_FONT, size: 18 })],
+                // Font and size live in the CodeBlock style so they scale with
+                // the document text size instead of being pinned here.
+                style: "CodeBlock",
+                children: [new TextRun({ text: line })],
                 shading: { type: ShadingType.CLEAR, fill: CODE_FILL },
                 spacing: {
                   before: index === 0 ? 120 : 0,
@@ -248,6 +279,9 @@ function blocksToDocxElements(
           })
         );
         break;
+      case "pageBreak":
+        elements.push(new Paragraph({ children: [new PageBreak()] }));
+        break;
     }
   }
 
@@ -275,31 +309,47 @@ function modelCellToDocxCell(cell: ModelTableCell, images: ExportImageMap): Tabl
 export async function renderDocxDocument(
   title: string,
   blocks: ExportBlock[],
-  images: ExportImageMap
+  images: ExportImageMap,
+  style: DocumentStyle = DEFAULT_DOCUMENT_STYLE
 ): Promise<Uint8Array> {
+  const bodyFont = getReferencedFontName(style.fontId);
+  const scale = getFontScale(style.fontSizePt);
+  // docx sizes are in half-points and must stay whole numbers.
+  const halfPoints = (value: number) => Math.round(value * scale);
+
   const document = new Document({
     title,
     styles: {
-      // Body default: sans-serif everywhere unless a run overrides the font
-      // (code runs / mono still opt into Consolas explicitly).
+      // Body default: the chosen family everywhere unless a run overrides the
+      // font (code runs / mono still opt into Consolas explicitly).
       default: {
         document: {
-          run: { font: BODY_FONT, size: 22 },
+          run: { font: bodyFont, size: halfPoints(22) },
           paragraph: { spacing: { after: 140, line: 276 } }
         }
       },
       // Word's built-in heading styles default to Calibri Light and accent
       // colors; pin them to the body font, bold, dark, and matched sizes so
       // headings read like the editor's.
-      paragraphStyles: HEADING_SIZES_HALF_PT.map((size, index) => ({
-        id: `Heading${index + 1}`,
-        name: `Heading ${index + 1}`,
-        basedOn: "Normal",
-        next: "Normal",
-        quickFormat: true,
-        run: { font: BODY_FONT, size, bold: true, color: "1F2328" },
-        paragraph: { spacing: { before: 280, after: 120 }, keepNext: true }
-      }))
+      paragraphStyles: [
+        ...HEADING_SIZES_HALF_PT.map((size, index) => ({
+          id: `Heading${index + 1}`,
+          name: `Heading ${index + 1}`,
+          basedOn: "Normal",
+          next: "Normal",
+          quickFormat: true,
+          run: { font: bodyFont, size: halfPoints(size), bold: true, color: "1F2328" },
+          paragraph: { spacing: { before: 280, after: 120 }, keepNext: true }
+        })),
+        {
+          id: "CodeBlock",
+          name: "Code Block",
+          basedOn: "Normal",
+          next: "Normal",
+          quickFormat: false,
+          run: { font: MONO_FONT, size: halfPoints(18) }
+        }
+      ]
     },
     numbering: {
       config: [

@@ -10,6 +10,7 @@ export type ManualOrderMap = Record<string, string[]>;
 
 const SORT_MODE_FILE_NAME = "sort-mode.json";
 const ORDER_FILE_NAME = "order.json";
+const MANUSCRIPT_FILE_NAME = "manuscript.json";
 const SORT_MODES: SortMode[] = ["name", "modified", "manual"];
 
 async function vaultMetaDirPath(folderPath: string): Promise<string> {
@@ -80,4 +81,46 @@ export async function writeManualOrder(folderPath: string, order: ManualOrderMap
   const dirPath = await vaultMetaDirPath(folderPath);
   await mkdir(dirPath, { recursive: true });
   await writeTextFile(await join(dirPath, ORDER_FILE_NAME), JSON.stringify(order, null, 2));
+}
+
+/**
+ * Cover data and compile options for the manuscript export. Kept per vault
+ * rather than app-wide: title and author belong to one book, and a user who
+ * opens a second vault is working on a different one.
+ *
+ * Stored as a loose record and validated on read, so a settings file written
+ * by a newer version never breaks the dialog.
+ */
+export type StoredManuscriptSettings = Record<string, unknown>;
+
+export async function readManuscriptSettings(
+  folderPath: string
+): Promise<StoredManuscriptSettings> {
+  try {
+    const filePath = await join(await vaultMetaDirPath(folderPath), MANUSCRIPT_FILE_NAME);
+
+    if (!(await exists(filePath))) {
+      return {};
+    }
+
+    const parsed: unknown = JSON.parse(await readTextFile(filePath));
+
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as StoredManuscriptSettings)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function writeManuscriptSettings(
+  folderPath: string,
+  settings: StoredManuscriptSettings
+): Promise<void> {
+  const dirPath = await vaultMetaDirPath(folderPath);
+  await mkdir(dirPath, { recursive: true });
+  await writeTextFile(
+    await join(dirPath, MANUSCRIPT_FILE_NAME),
+    JSON.stringify(settings, null, 2)
+  );
 }

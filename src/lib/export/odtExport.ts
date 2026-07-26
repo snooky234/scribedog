@@ -1,5 +1,14 @@
 import { strToU8, zipSync, type Zippable } from "fflate";
 
+import {
+  APP_FONTS,
+  DEFAULT_DOCUMENT_STYLE,
+  getFontScale,
+  getReferencedFontName,
+  type AppFontId,
+  type DocumentStyle
+} from "@/lib/fonts";
+
 import type { ExportBlock, InlineRun } from "./markdownModel";
 import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 
@@ -10,9 +19,26 @@ import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 
 const ODT_MIMETYPE = "application/vnd.oasis.opendocument.text";
 
-// Match the editor / HTML export's sans-serif look. Arial is the safest
-// sans-serif present across Windows, macOS and most Linux setups.
-const BODY_FONT = "Arial";
+// ODT references a font by name rather than embedding it, so the reader
+// substitutes when the family is missing. The system default resolves to
+// Arial — the safest sans-serif across Windows, macOS and most Linux setups.
+
+// Shared by the regular heading styles in styles.xml and their centred
+// counterparts among the automatic styles in content.xml.
+const HEADING_SIZES_PT = [20, 16, 13.5, 12, 11, 10.5];
+
+// Body and code sizes the document text size scales along with the headings.
+const BODY_SIZE_PT = 11;
+const CODE_SIZE_PT = 9;
+
+function formatPt(sizePt: number, scale: number): string {
+  return `${Math.round(sizePt * scale * 100) / 100}pt`;
+}
+
+function odfGenericFamily(fontId: AppFontId): string {
+  const { category } = APP_FONTS[fontId];
+  return category === "serif" ? "roman" : category === "mono" ? "modern" : "swiss";
+}
 
 function escapeXml(text: string): string {
   return text
@@ -202,12 +228,23 @@ function blocksToOdtXml(blocks: ExportBlock[], state: OdtWriterState, paragraphS
     switch (block.kind) {
       case "heading": {
         const level = Math.min(Math.max(block.level, 1), 6);
-        xml += `<text:h text:style-name="Heading_20_${level}" text:outline-level="${level}">${runsToOdtXml(block.runs, state)}</text:h>`;
+        // Centred headings need their own automatic style: Word ignores a
+        // fo:text-align inherited through style:parent-style-name.
+        const headingStyle =
+          block.align === "center" ? `H_center_${level}` : `Heading_20_${level}`;
+        xml += `<text:h text:style-name="${headingStyle}" text:outline-level="${level}">${runsToOdtXml(block.runs, state)}</text:h>`;
         break;
       }
-      case "paragraph":
-        xml += `<text:p text:style-name="${paragraphStyle}">${runsToOdtXml(block.runs, state)}</text:p>`;
+      case "paragraph": {
+        const style =
+          block.align === "center"
+            ? "P_center"
+            : block.align === "right"
+              ? "P_right"
+              : paragraphStyle;
+        xml += `<text:p text:style-name="${style}">${runsToOdtXml(block.runs, state)}</text:p>`;
         break;
+      }
       case "codeBlock":
         for (const line of block.text.split("\n")) {
           xml += `<text:p text:style-name="P_code">${encodeOdtText(line)}</text:p>`;
@@ -285,6 +322,9 @@ function blocksToOdtXml(blocks: ExportBlock[], state: OdtWriterState, paragraphS
       case "hr":
         xml += '<text:p text:style-name="P_hr"/>';
         break;
+      case "pageBreak":
+        xml += '<text:p text:style-name="P_pagebreak"/>';
+        break;
     }
   }
 
@@ -319,23 +359,37 @@ function buildListStyleXml(name: string, ordered: boolean): string {
   return `<text:list-style style:name="${name}">${levels}</text:list-style>`;
 }
 
-function buildContentXml(blocks: ExportBlock[], state: OdtWriterState): string {
+function buildContentXml(
+  blocks: ExportBlock[],
+  state: OdtWriterState,
+  bodyFont: string,
+  genericFamily: string,
+  scale: number
+): string {
   // T_b / T_i are also used standalone (table headers, image alt fallback).
   const usedTextStyles = new Set([...collectTextStyles(blocks), "T_b", "T_i"]);
 
   // Word does not resolve parent-style-name chains between automatic styles,
   // so every paragraph style carries the body font explicitly instead of
   // inheriting it from P_default/Standard.
-  const bodyFontProps = `<style:text-properties style:font-name="${BODY_FONT}" fo:font-family="${BODY_FONT}"/>`;
+  const bodyFontProps = `<style:text-properties style:font-name="${bodyFont}" fo:font-family="${bodyFont}" fo:font-size="${formatPt(BODY_SIZE_PT, scale)}"/>`;
 
   const automaticStyles = [
     ...[...usedTextStyles].map(textStyleXml),
     `<style:style style:name="P_default" style:family="paragraph" style:parent-style-name="Standard"><style:paragraph-properties fo:margin-top="0.05cm" fo:margin-bottom="0.15cm"/>${bodyFontProps}</style:style>`,
     `<style:style style:name="P_center" style:family="paragraph" style:parent-style-name="Standard"><style:paragraph-properties fo:text-align="center"/>${bodyFontProps}</style:style>`,
     `<style:style style:name="P_right" style:family="paragraph" style:parent-style-name="Standard"><style:paragraph-properties fo:text-align="end"/>${bodyFontProps}</style:style>`,
-    '<style:style style:name="P_code" style:family="paragraph"><style:paragraph-properties fo:background-color="#f4f4f4" fo:margin-left="0.2cm" fo:margin-top="0cm" fo:margin-bottom="0cm"/><style:text-properties style:font-name="Consolas" fo:font-family="Consolas" fo:font-size="9pt"/></style:style>',
-    `<style:style style:name="P_quote" style:family="paragraph" style:parent-style-name="Standard"><style:paragraph-properties fo:margin-left="0.5cm" fo:border-left="0.06cm solid #c8c8c8" fo:padding="0.15cm" fo:margin-top="0.05cm" fo:margin-bottom="0.15cm"/><style:text-properties style:font-name="${BODY_FONT}" fo:font-family="${BODY_FONT}" fo:color="#666666"/></style:style>`,
+    `<style:style style:name="P_code" style:family="paragraph"><style:paragraph-properties fo:background-color="#f4f4f4" fo:margin-left="0.2cm" fo:margin-top="0cm" fo:margin-bottom="0cm"/><style:text-properties style:font-name="Consolas" fo:font-family="Consolas" fo:font-size="${formatPt(CODE_SIZE_PT, scale)}"/></style:style>`,
+    `<style:style style:name="P_quote" style:family="paragraph" style:parent-style-name="Standard"><style:paragraph-properties fo:margin-left="0.5cm" fo:border-left="0.06cm solid #c8c8c8" fo:padding="0.15cm" fo:margin-top="0.05cm" fo:margin-bottom="0.15cm"/><style:text-properties style:font-name="${bodyFont}" fo:font-family="${bodyFont}" fo:font-size="${formatPt(BODY_SIZE_PT, scale)}" fo:color="#666666"/></style:style>`,
     '<style:style style:name="P_hr" style:family="paragraph"><style:paragraph-properties fo:border-bottom="0.02cm solid #c8c8c8" fo:margin-top="0.3cm" fo:margin-bottom="0.3cm"/></style:style>',
+    '<style:style style:name="P_pagebreak" style:family="paragraph"><style:paragraph-properties fo:break-before="page" fo:margin-top="0cm" fo:margin-bottom="0cm"/></style:style>',
+    ...HEADING_SIZES_PT.map(
+      (size, index) =>
+        `<style:style style:name="H_center_${index + 1}" style:family="paragraph">` +
+        `<style:paragraph-properties fo:text-align="center" fo:margin-top="0.4cm" fo:margin-bottom="0.2cm" fo:keep-with-next="always"/>` +
+        `<style:text-properties style:font-name="${bodyFont}" fo:font-family="${bodyFont}" fo:font-size="${formatPt(size, scale)}" fo:font-weight="bold" fo:color="#1f2328"/>` +
+        `</style:style>`
+    ),
     `<style:style style:name="P_task" style:family="paragraph" style:parent-style-name="Standard"><style:paragraph-properties fo:margin-left="0.635cm" fo:margin-top="0.05cm" fo:margin-bottom="0.15cm"/>${bodyFontProps}</style:style>`,
     '<style:style style:name="TC_body" style:family="table-cell"><style:table-cell-properties fo:border="0.018cm solid #c8c8c8" fo:padding="0.1cm"/></style:style>',
     '<style:style style:name="TC_header" style:family="table-cell"><style:table-cell-properties fo:border="0.018cm solid #c8c8c8" fo:padding="0.1cm" fo:background-color="#f0f0f0"/></style:style>',
@@ -350,31 +404,30 @@ function buildContentXml(blocks: ExportBlock[], state: OdtWriterState): string {
   return (
     '<?xml version="1.0" encoding="UTF-8"?>' +
     `<office:document-content ${CONTENT_XML_NAMESPACES} office:version="1.2">` +
-    FONT_FACE_DECLS +
+    fontFaceDecls(bodyFont, genericFamily) +
     `<office:automatic-styles>${automaticStyles}</office:automatic-styles>` +
     `<office:body><office:text>${blocksToOdtXml(blocks, state)}</office:text></office:body>` +
     "</office:document-content>"
   );
 }
 
-// Sans-serif everywhere: font-face declarations must exist in BOTH styles.xml
-// and content.xml — style:font-name references only resolve against the decls
-// of the file they appear in; Word falls back to its serif default otherwise.
-// fo:font-family is set alongside as a second channel Word reads reliably.
-const FONT_FACE_DECLS =
+// Font-face declarations must exist in BOTH styles.xml and content.xml —
+// style:font-name references only resolve against the decls of the file they
+// appear in; Word falls back to its serif default otherwise. fo:font-family is
+// set alongside as a second channel Word reads reliably.
+const fontFaceDecls = (bodyFont: string, genericFamily: string) =>
   "<office:font-face-decls>" +
-  `<style:font-face style:name="${BODY_FONT}" svg:font-family="${BODY_FONT}" style:font-family-generic="swiss" style:font-pitch="variable"/>` +
+  `<style:font-face style:name="${bodyFont}" svg:font-family="${bodyFont}" style:font-family-generic="${genericFamily}" style:font-pitch="variable"/>` +
   '<style:font-face style:name="Consolas" svg:font-family="Consolas" style:font-family-generic="modern" style:font-pitch="fixed"/>' +
   "</office:font-face-decls>";
 
-function buildStylesXml(): string {
-  const headingSizes = [20, 16, 13.5, 12, 11, 10.5];
-  const headingStyles = headingSizes
+function buildStylesXml(bodyFont: string, genericFamily: string, scale: number): string {
+  const headingStyles = HEADING_SIZES_PT
     .map(
       (size, index) =>
         `<style:style style:name="Heading_20_${index + 1}" style:display-name="Heading ${index + 1}" style:family="paragraph" style:parent-style-name="Standard" style:next-style-name="Standard">` +
         `<style:paragraph-properties fo:margin-top="0.4cm" fo:margin-bottom="0.2cm" fo:keep-with-next="always"/>` +
-        `<style:text-properties style:font-name="${BODY_FONT}" fo:font-family="${BODY_FONT}" fo:font-size="${size}pt" fo:font-weight="bold" fo:color="#1f2328"/>` +
+        `<style:text-properties style:font-name="${bodyFont}" fo:font-family="${bodyFont}" fo:font-size="${formatPt(size, scale)}" fo:font-weight="bold" fo:color="#1f2328"/>` +
         `</style:style>`
     )
     .join("");
@@ -382,10 +435,10 @@ function buildStylesXml(): string {
   return (
     '<?xml version="1.0" encoding="UTF-8"?>' +
     `<office:document-styles ${CONTENT_XML_NAMESPACES} office:version="1.2">` +
-    FONT_FACE_DECLS +
+    fontFaceDecls(bodyFont, genericFamily) +
     "<office:styles>" +
-    `<style:default-style style:family="paragraph"><style:text-properties style:font-name="${BODY_FONT}" fo:font-family="${BODY_FONT}"/></style:default-style>` +
-    `<style:style style:name="Standard" style:family="paragraph"><style:text-properties style:font-name="${BODY_FONT}" fo:font-family="${BODY_FONT}"/></style:style>` +
+    `<style:default-style style:family="paragraph"><style:text-properties style:font-name="${bodyFont}" fo:font-family="${bodyFont}"/></style:default-style>` +
+    `<style:style style:name="Standard" style:family="paragraph"><style:text-properties style:font-name="${bodyFont}" fo:font-family="${bodyFont}"/></style:style>` +
     headingStyles +
     "</office:styles>" +
     "</office:document-styles>"
@@ -411,7 +464,14 @@ function buildManifestXml(picturePaths: Iterable<string>): string {
   );
 }
 
-export function renderOdtDocument(blocks: ExportBlock[], images: ExportImageMap): Uint8Array {
+export function renderOdtDocument(
+  blocks: ExportBlock[],
+  images: ExportImageMap,
+  style: DocumentStyle = DEFAULT_DOCUMENT_STYLE
+): Uint8Array {
+  const bodyFont = getReferencedFontName(style.fontId);
+  const genericFamily = odfGenericFamily(style.fontId);
+  const scale = getFontScale(style.fontSizePt);
   const picturePaths = new Map<string, string>();
   const pictureFiles: Record<string, Uint8Array> = {};
   let pictureIndex = 0;
@@ -429,8 +489,8 @@ export function renderOdtDocument(blocks: ExportBlock[], images: ExportImageMap)
     // Per ODF spec the mimetype entry must come first and stay uncompressed.
     mimetype: [strToU8(ODT_MIMETYPE), { level: 0 }],
     "META-INF/manifest.xml": strToU8(buildManifestXml(picturePaths.values())),
-    "content.xml": strToU8(buildContentXml(blocks, state)),
-    "styles.xml": strToU8(buildStylesXml()),
+    "content.xml": strToU8(buildContentXml(blocks, state, bodyFont, genericFamily, scale)),
+    "styles.xml": strToU8(buildStylesXml(bodyFont, genericFamily, scale)),
     ...pictureFiles
   };
 

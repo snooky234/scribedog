@@ -2,8 +2,10 @@ import { create } from "zustand";
 
 import {
   clampMaxVersionsPerFile,
-  MAX_VERSIONS_PER_FILE_DEFAULT
+  MAX_VERSIONS_PER_FILE_DEFAULT,
+  MAX_VERSIONS_PER_FILE_LEGACY_DEFAULT
 } from "@/lib/fileVersions";
+import { getLastOpenedFolderPath } from "@/lib/fileSystem";
 
 export const VERSIONING_ENABLED_STORAGE_KEY = "scribedog-versioning-enabled";
 export const VERSIONING_MAX_VERSIONS_STORAGE_KEY = "scribedog-versioning-max-versions";
@@ -24,11 +26,25 @@ function persistVersioningEnabled(enabled: boolean): void {
   }
 }
 
+function getDefaultMaxVersions(): number {
+  // No explicit value has ever been saved. `getLastOpenedFolderPath` is set
+  // the first time any folder is opened, which every pre-existing install
+  // has already done — so its presence tells a fresh install (new default)
+  // apart from an existing one (keeps the historical default it was
+  // implicitly using).
+  return getLastOpenedFolderPath() !== null ? MAX_VERSIONS_PER_FILE_LEGACY_DEFAULT : MAX_VERSIONS_PER_FILE_DEFAULT;
+}
+
 function getStoredMaxVersions(): number {
   try {
     const raw = window.localStorage.getItem(VERSIONING_MAX_VERSIONS_STORAGE_KEY);
-    const parsed = raw === null ? Number.NaN : Number.parseInt(raw, 10);
-    return Number.isFinite(parsed) ? clampMaxVersionsPerFile(parsed) : MAX_VERSIONS_PER_FILE_DEFAULT;
+
+    if (raw === null) {
+      return getDefaultMaxVersions();
+    }
+
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) ? clampMaxVersionsPerFile(parsed) : getDefaultMaxVersions();
   } catch {
     return MAX_VERSIONS_PER_FILE_DEFAULT;
   }

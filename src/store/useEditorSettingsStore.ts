@@ -1,9 +1,22 @@
 import { create } from "zustand";
 
+import {
+  clampFontSizePt,
+  DEFAULT_FONT_ID,
+  DEFAULT_FONT_SIZE_PT,
+  ensureFontStylesLoaded,
+  getFontDefinition,
+  getFontScale,
+  resolveFontId,
+  type AppFontId
+} from "@/lib/fonts";
+
 export const SPELLCHECK_STORAGE_KEY = "scribedog-spellcheck-enabled";
-export const LINKS_PANEL_STORAGE_KEY = "scribedog-links-panel-visible";
+export const DETAILS_PANEL_STORAGE_KEY = "scribedog-details-panel-visible";
 export const ZOOM_STORAGE_KEY = "scribedog-zoom-level";
 export const ZEN_WIDTH_STORAGE_KEY = "scribedog-zen-width";
+export const FONT_STORAGE_KEY = "scribedog-font-id";
+export const FONT_SIZE_STORAGE_KEY = "scribedog-font-size-pt";
 
 // Zoom level is an offset in percent relative to normal size (0 = 100%).
 export const ZOOM_MIN = -30;
@@ -78,17 +91,50 @@ function persistSpellcheckEnabled(enabled: boolean): void {
   }
 }
 
-function getStoredLinksPanelVisible(): boolean {
+function getStoredDetailsPanelVisible(): boolean {
   try {
-    return window.localStorage.getItem(LINKS_PANEL_STORAGE_KEY) === "true";
+    return window.localStorage.getItem(DETAILS_PANEL_STORAGE_KEY) === "true";
   } catch {
     return false;
   }
 }
 
-function persistLinksPanelVisible(visible: boolean): void {
+function persistDetailsPanelVisible(visible: boolean): void {
   try {
-    window.localStorage.setItem(LINKS_PANEL_STORAGE_KEY, String(visible));
+    window.localStorage.setItem(DETAILS_PANEL_STORAGE_KEY, String(visible));
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
+function getStoredFontId(): AppFontId {
+  try {
+    return resolveFontId(window.localStorage.getItem(FONT_STORAGE_KEY));
+  } catch {
+    return DEFAULT_FONT_ID;
+  }
+}
+
+function persistFontId(fontId: AppFontId): void {
+  try {
+    window.localStorage.setItem(FONT_STORAGE_KEY, fontId);
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
+function getStoredFontSizePt(): number {
+  try {
+    const raw = window.localStorage.getItem(FONT_SIZE_STORAGE_KEY);
+    return raw === null ? DEFAULT_FONT_SIZE_PT : clampFontSizePt(Number.parseFloat(raw));
+  } catch {
+    return DEFAULT_FONT_SIZE_PT;
+  }
+}
+
+function persistFontSizePt(sizePt: number): void {
+  try {
+    window.localStorage.setItem(FONT_SIZE_STORAGE_KEY, String(sizePt));
   } catch {
     // localStorage may be unavailable in some environments.
   }
@@ -97,14 +143,48 @@ function persistLinksPanelVisible(visible: boolean): void {
 type EditorSettingsState = {
   spellcheckEnabled: boolean;
   setSpellcheckEnabled: (enabled: boolean) => void;
-  /** Links/backlinks sidebar next to the document, toggled from the toolbar. */
-  linksPanelVisible: boolean;
-  setLinksPanelVisible: (visible: boolean) => void;
+  /**
+   * Document font, shared by the editor and every export format. Selecting it
+   * pulls in the family's faces on demand (see src/lib/fonts.ts).
+   */
+  fontId: AppFontId;
+  setFontId: (fontId: AppFontId) => void;
+  /** Document body size in points; travels into every export. */
+  fontSizePt: number;
+  setFontSizePt: (sizePt: number) => void;
+  /** Details sidebar next to the document, toggled from the toolbar. */
+  detailsPanelVisible: boolean;
+  setDetailsPanelVisible: (visible: boolean) => void;
   zoomLevel: number;
   setZoomLevel: (level: number) => void;
   zenWidth: number;
   setZenWidth: (width: number) => void;
 };
+
+// Two custom properties drive every editing surface (normal view, Zen mode,
+// print), the same way useThemeStore drives the colour scheme.
+function applyDocumentFont(fontId: AppFontId): void {
+  document.documentElement.style.setProperty(
+    "--font-document",
+    getFontDefinition(fontId).cssStack
+  );
+}
+
+function applyDocumentFontScale(sizePt: number): void {
+  document.documentElement.style.setProperty(
+    "--document-font-scale",
+    String(getFontScale(sizePt))
+  );
+}
+
+const initialFontId = getStoredFontId();
+const initialFontSizePt = getStoredFontSizePt();
+
+// The stored family has to be in the document before the editor paints, or the
+// first frame renders in the fallback face and visibly reflows.
+void ensureFontStylesLoaded(initialFontId);
+applyDocumentFont(initialFontId);
+applyDocumentFontScale(initialFontSizePt);
 
 export const useEditorSettingsStore = create<EditorSettingsState>((set) => ({
   spellcheckEnabled: getStoredSpellcheckEnabled(),
@@ -112,10 +192,24 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set) => ({
     persistSpellcheckEnabled(enabled);
     set({ spellcheckEnabled: enabled });
   },
-  linksPanelVisible: getStoredLinksPanelVisible(),
-  setLinksPanelVisible: (visible: boolean) => {
-    persistLinksPanelVisible(visible);
-    set({ linksPanelVisible: visible });
+  fontId: initialFontId,
+  setFontId: (fontId: AppFontId) => {
+    persistFontId(fontId);
+    set({ fontId });
+    applyDocumentFont(fontId);
+    void ensureFontStylesLoaded(fontId);
+  },
+  fontSizePt: initialFontSizePt,
+  setFontSizePt: (sizePt: number) => {
+    const clamped = clampFontSizePt(sizePt);
+    persistFontSizePt(clamped);
+    set({ fontSizePt: clamped });
+    applyDocumentFontScale(clamped);
+  },
+  detailsPanelVisible: getStoredDetailsPanelVisible(),
+  setDetailsPanelVisible: (visible: boolean) => {
+    persistDetailsPanelVisible(visible);
+    set({ detailsPanelVisible: visible });
   },
   zoomLevel: getStoredZoomLevel(),
   setZoomLevel: (level: number) => {

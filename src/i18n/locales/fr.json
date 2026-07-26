@@ -92,7 +92,12 @@
     "conflictSkip": "Ignorer",
     "conflictOverwrite": "Écraser",
     "doneSummary": "Export terminé : {{exportedCount}} exporté(s), {{skippedCount}} ignoré(s).",
-    "errorMessage": "Échec de l'export : {{message}}"
+    "errorMessage": "Échec de l'export : {{message}}",
+    "eyebrowManuscript": "Manuscrit",
+    "titleManuscript": "Exporter comme manuscrit",
+    "descriptionManuscript": "Assemble tous les chapitres en un seul livre, dans l'ordre affiché par la barre latérale.",
+    "mergeIntoOneFile": "Fusionner en un seul fichier",
+    "mergeHint": "Toutes les notes à la suite dans un même document, au lieu d'un fichier par note."
   },
   "importDialog": {
     "eyebrow": "Import",
@@ -132,6 +137,7 @@
     "title": "Paramètres",
     "tabsAriaLabel": "Catégories de paramètres",
     "tabGeneral": "Général",
+    "tabFonts": "Polices",
     "tabAi": "Paramètres IA",
     "tabAssistants": "Assistants",
     "tabVersioning": "Versions",
@@ -169,7 +175,14 @@
     "contextLength": "Longueur du contexte",
     "thinking": "Réflexion",
     "thinkingOn": "Activée (par défaut du modèle)",
-    "thinkingOff": "Désactivée"
+    "thinkingOff": "Désactivée",
+    "font": "Police",
+    "fontHint": "S'applique à l'éditeur et à tous les exports. La liste est volontairement fermée : seules les polices fournies peuvent être intégrées à un PDF.",
+    "fontSystem": "Police du système",
+    "fontPreviewText": "Le voyage commence",
+    "fontSize": "Taille du texte",
+    "fontSizeValue": "{{size}} pt",
+    "fontSizePreviewText": "Le voyage commence un mardi de novembre."
   },
   "assistants": {
     "defaultName": "Par défaut",
@@ -279,7 +292,7 @@
       "closeDialog": "Fermer la boîte de dialogue",
       "moveListItemUp": "Déplacer l'élément de liste vers le haut",
       "moveListItemDown": "Déplacer l'élément de liste vers le bas",
-      "toggleLinksPanel": "Afficher/masquer le panneau des liens (liens et rétroliens)"
+      "toggleDetailsPanel": "Afficher/masquer le panneau de détails (liens, rétroliens et infos du fichier)"
     },
     "customizeHint": "Cliquez sur une combinaison, puis appuyez sur la nouvelle.",
     "recording": "Appuyez sur une touche …",
@@ -324,7 +337,8 @@
     "renameInputLabel": "Nom du dossier",
     "fileRenameInputLabel": "Nom du fichier",
     "export": "Exporter…",
-    "print": "Imprimer…"
+    "print": "Imprimer…",
+    "exportManuscript": "Exporter comme manuscrit…"
   },
   "toolbar": {
     "formattingLabel": "Outils de mise en forme",
@@ -364,8 +378,8 @@
     "codeBlockTitle": "Bloc de code (Ctrl+K)",
     "insertLink": "Insérer un lien",
     "insertLinkTitle": "Insérer un lien (Ctrl+M)",
-    "linksPanel": "Liens et rétroliens",
-    "linksPanelTitle": "Afficher ou masquer le panneau des liens",
+    "detailsPanel": "Détails",
+    "detailsPanelTitle": "Afficher ou masquer le panneau de détails",
     "headingMenu": "Titre",
     "paragraph": "Texte normal",
     "heading4": "Titre 4",
@@ -419,8 +433,8 @@
     "resultSummary": "{{matches}} remplacements effectués dans {{files}} fichier(s)",
     "fileMatchBadge": "Occurrences : {{count}}"
   },
-  "linksPanel": {
-    "title": "Liens",
+  "detailsPanel": {
+    "title": "Détails",
     "refresh": "Actualiser",
     "close": "Fermer le panneau",
     "outgoing": "Liens sortants ({{count}})",
@@ -428,7 +442,14 @@
     "backlinks": "Rétroliens ({{count}})",
     "backlinksLoading": "Recherche des rétroliens …",
     "noBacklinks": "Aucun autre fichier ne renvoie à ce document.",
-    "brokenTarget": "Cible introuvable"
+    "brokenTarget": "Cible introuvable",
+    "fileInfo": "Informations sur le fichier",
+    "words": "Mots",
+    "characters": "Caractères",
+    "readingTime": "Temps de lecture",
+    "readingMinutes": "≈ {{count}} min",
+    "createdAt": "Première modification",
+    "modifiedAt": "Dernière modification"
   },
   "fileLinkSuggest": {
     "hint": "Lier un fichier",
@@ -624,5 +645,25 @@
     "toolProposePassageFailed": "Passage introuvable",
     "toolSettleProposalsFailed": "Aucune proposition en attente",
     "toolActionFailed": "Échec de l'action"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "Chapitre {number}",
+    "coverSection": "Page de titre",
+    "bookTitle": "Titre",
+    "subtitle": "Sous-titre",
+    "author": "Auteur",
+    "includeTitlePage": "Ajouter une page de titre",
+    "chaptersSection": "Chapitres",
+    "numbering": "Numérotation",
+    "numberingNone": "Aucune",
+    "numberingNumber": "1. Titre du chapitre",
+    "numberingLabel": "Chapitre 1 : titre du chapitre",
+    "titleSource": "Titre du chapitre depuis",
+    "titleSourceHeading": "Le premier titre du fichier",
+    "titleSourceFileName": "Le nom du fichier",
+    "labelTemplate": "Modèle de libellé de chapitre",
+    "labelTemplateHint": "{number} est remplacé par le numéro du chapitre.",
+    "includeChapterHeadings": "Générer les titres de chapitre",
+    "pageBreakBetweenChapters": "Commencer chaque chapitre sur une nouvelle page"
   }
 }

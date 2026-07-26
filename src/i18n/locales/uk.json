@@ -94,7 +94,12 @@
     "conflictSkip": "Пропустити",
     "conflictOverwrite": "Перезаписати",
     "doneSummary": "Експорт завершено: експортовано {{exportedCount}}, пропущено {{skippedCount}}.",
-    "errorMessage": "Помилка експорту: {{message}}"
+    "errorMessage": "Помилка експорту: {{message}}",
+    "eyebrowManuscript": "Рукопис",
+    "titleManuscript": "Експортувати як рукопис",
+    "descriptionManuscript": "Збирає всі розділи в одну книгу в тому порядку, у якому їх показує бічна панель.",
+    "mergeIntoOneFile": "Об'єднати в один файл",
+    "mergeHint": "Усі нотатки поспіль в одному документі замість окремого файлу для кожної."
   },
   "importDialog": {
     "eyebrow": "Імпорт",
@@ -134,6 +139,7 @@
     "title": "Налаштування",
     "tabsAriaLabel": "Категорії налаштувань",
     "tabGeneral": "Загальні",
+    "tabFonts": "Шрифти",
     "tabAi": "Налаштування ШІ",
     "tabAssistants": "Асистенти",
     "tabVersioning": "Версії",
@@ -171,7 +177,14 @@
     "contextLength": "Довжина контексту",
     "thinking": "Міркування",
     "thinkingOn": "Увімкнено (типово для моделі)",
-    "thinkingOff": "Вимкнено"
+    "thinkingOff": "Вимкнено",
+    "font": "Шрифт",
+    "fontHint": "Застосовується до редактора й до всіх експортів. Список навмисно обмежений: вбудувати в PDF можна лише вбудовані шрифти.",
+    "fontSystem": "Системний за умовчанням",
+    "fontPreviewText": "Подорож починається",
+    "fontSize": "Розмір тексту",
+    "fontSizeValue": "{{size}} пт",
+    "fontSizePreviewText": "Подорож починається у вівторок у листопаді."
   },
   "assistants": {
     "defaultName": "За замовчуванням",
@@ -287,7 +300,7 @@
       "closeDialog": "Закрити діалог",
       "moveListItemUp": "Перемістити елемент списку вгору",
       "moveListItemDown": "Перемістити елемент списку вниз",
-      "toggleLinksPanel": "Показати/приховати панель посилань (посилання та зворотні посилання)"
+      "toggleDetailsPanel": "Показати/сховати панель відомостей (посилання, зворотні посилання та про файл)"
     },
     "customizeHint": "Клацніть на комбінації та натисніть нову.",
     "recording": "Натисніть клавішу …",
@@ -332,7 +345,8 @@
     "renameInputLabel": "Назва папки",
     "fileRenameInputLabel": "Ім'я файлу",
     "export": "Експортувати…",
-    "print": "Друк…"
+    "print": "Друк…",
+    "exportManuscript": "Експортувати як рукопис…"
   },
   "toolbar": {
     "formattingLabel": "Інструменти форматування",
@@ -372,8 +386,8 @@
     "codeBlockTitle": "Блок коду (Ctrl+K)",
     "insertLink": "Вставити посилання",
     "insertLinkTitle": "Вставити посилання (Ctrl+M)",
-    "linksPanel": "Посилання та зворотні посилання",
-    "linksPanelTitle": "Показати або сховати панель посилань",
+    "detailsPanel": "Відомості",
+    "detailsPanelTitle": "Показати або сховати панель відомостей",
     "headingMenu": "Заголовок",
     "paragraph": "Звичайний текст",
     "heading4": "Заголовок 4",
@@ -427,8 +441,8 @@
     "resultSummary": "Виконано замін: {{matches}} у файлах: {{files}}",
     "fileMatchBadge": "Збігів: {{count}}"
   },
-  "linksPanel": {
-    "title": "Посилання",
+  "detailsPanel": {
+    "title": "Відомості",
     "refresh": "Оновити",
     "close": "Закрити панель",
     "outgoing": "Вихідні посилання ({{count}})",
@@ -436,7 +450,14 @@
     "backlinks": "Зворотні посилання ({{count}})",
     "backlinksLoading": "Пошук зворотних посилань …",
     "noBacklinks": "Інші файли не посилаються на цей документ.",
-    "brokenTarget": "Ціль не знайдено"
+    "brokenTarget": "Ціль не знайдено",
+    "fileInfo": "Про файл",
+    "words": "Слів",
+    "characters": "Символів",
+    "readingTime": "Час читання",
+    "readingMinutes": "≈ {{count}} хв",
+    "createdAt": "Перше редагування",
+    "modifiedAt": "Останнє редагування"
   },
   "fileLinkSuggest": {
     "hint": "Посилання на файл",
@@ -632,5 +653,25 @@
     "toolProposePassageFailed": "Фрагмент не знайдено",
     "toolSettleProposalsFailed": "Немає відкритих пропозицій",
     "toolActionFailed": "Дію не виконано"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "Розділ {number}",
+    "coverSection": "Титульна сторінка",
+    "bookTitle": "Назва",
+    "subtitle": "Підзаголовок",
+    "author": "Автор",
+    "includeTitlePage": "Додати титульну сторінку",
+    "chaptersSection": "Розділи",
+    "numbering": "Нумерація",
+    "numberingNone": "Без нумерації",
+    "numberingNumber": "1. Назва розділу",
+    "numberingLabel": "Розділ 1: назва розділу",
+    "titleSource": "Назва розділу з",
+    "titleSourceHeading": "Першого заголовка файлу",
+    "titleSourceFileName": "Імені файлу",
+    "labelTemplate": "Шаблон позначення розділу",
+    "labelTemplateHint": "{number} замінюється номером розділу.",
+    "includeChapterHeadings": "Створювати заголовки розділів",
+    "pageBreakBetweenChapters": "Починати кожен розділ з нової сторінки"
   }
 }

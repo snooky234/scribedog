@@ -1,0 +1,169 @@
+/* Details sidebar: the panel to the right of the document with the note's
+   links/backlinks and its file info. Not to be confused with .detail-panel
+   (detail-panel.css), which is the document card itself. */
+
+/* Document area and details sidebar sit side by side; the document keeps the
+   scroll container it had before. */
+.editor-view__panes {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0.6rem;
+}
+
+.editor-view__panes > .editor-view__scroll {
+  min-width: 0;
+}
+
+.details-sidebar {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 15rem;
+  min-height: 0;
+  border: 1px solid rgba(var(--overlay-rgb),0.12);
+  border-radius: 1rem;
+  background: rgba(var(--surface-rgb),0.56);
+  padding: 0.6rem;
+}
+
+.details-sidebar__header {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.details-sidebar__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(var(--muted-rgb),0.95);
+}
+
+.details-sidebar__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.details-sidebar__section + .details-sidebar__section {
+  margin-top: 0.9rem;
+}
+
+.details-sidebar__section-title {
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(var(--text-rgb),0.8);
+}
+
+.details-sidebar__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.details-sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  background: transparent;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85rem;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.details-sidebar__item svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+  color: rgba(var(--muted-rgb),0.9);
+}
+
+button.details-sidebar__item:hover {
+  border-color: rgba(var(--overlay-rgb),0.16);
+  background: rgba(var(--overlay-rgb),0.08);
+}
+
+.details-sidebar__item--broken {
+  cursor: default;
+  color: rgba(var(--muted-rgb),0.95);
+}
+
+.details-sidebar__item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.details-sidebar__item-count {
+  margin-left: auto;
+  border-radius: 999px;
+  background: rgba(var(--overlay-rgb),0.12);
+  padding: 0 0.35rem;
+  font-size: 0.7rem;
+  color: rgba(var(--text-rgb),0.8);
+}
+
+.details-sidebar__empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(var(--muted-rgb),0.9);
+}
+
+/* File info: label left, value right, wrapping to its own line when the
+   sidebar is too narrow for both. Rows share the link rows' font size and
+   padding, so both halves of the panel read as one list. */
+.details-sidebar__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+}
+
+.details-sidebar__fact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.2rem 0.6rem;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85rem;
+}
+
+.details-sidebar__fact dt {
+  color: rgba(var(--muted-rgb),0.95);
+}
+
+.details-sidebar__fact dd {
+  margin: 0;
+  text-align: right;
+  color: rgba(var(--text-rgb),0.9);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Zen mode is deliberately free of side panels, and below the layout
+   breakpoint the document column needs the whole width. */
+.workspace-grid--zen .details-sidebar {
+  display: none;
+}
+
+@media (max-width: 920px) {
+  .details-sidebar {
+    display: none;
+  }
+}

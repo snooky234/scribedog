@@ -2,12 +2,29 @@ import { join } from "@tauri-apps/api/path";
 import { exists, mkdir, writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
 
 import { allowMarkdownFolderAccess, listMarkdownFiles, type MarkdownFileRecord } from "@/lib/fileSystem";
-import { collectImageSrcs, loadExportImages } from "./imageAssets";
-import { parseMarkdownToBlocks } from "./markdownModel";
+import { buildFileTree, type FileTreeNode } from "@/lib/fileTree";
+import { DEFAULT_DOCUMENT_STYLE, type DocumentStyle } from "@/lib/fonts";
+import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 
+import { collectImageSrcs, loadExportImages, type ExportImageMap } from "./imageAssets";
+import { compileManuscript, type ManuscriptOptions, type ManuscriptSource } from "./manuscript";
+import { parseMarkdownToBlocks, type ExportBlock } from "./markdownModel";
+
+/** Formats available when every note becomes its own file. */
 export const EXPORT_FORMATS = ["pdf", "docx", "odt", "html"] as const;
 
-export type ExportFormat = (typeof EXPORT_FORMATS)[number];
+/**
+ * Formats available when the notes are merged into one document. EPUB is only
+ * here: a book made of one note per file would be a folder full of one-chapter
+ * e-books, which is never what anyone wants.
+ */
+export const MERGED_EXPORT_FORMATS = [...EXPORT_FORMATS, "epub"] as const;
+
+export type ExportFormat = (typeof MERGED_EXPORT_FORMATS)[number];
+
+export function isMergedOnlyFormat(format: ExportFormat): boolean {
+  return !(EXPORT_FORMATS as readonly string[]).includes(format);
+}
 
 export type ConflictDecision = "overwrite" | "skip" | "cancel";
 
@@ -58,7 +75,9 @@ export function setLastExportDirectory(directory: string): void {
 export function getLastExportFormat(): ExportFormat {
   try {
     const stored = window.localStorage.getItem(LAST_EXPORT_FORMAT_STORAGE_KEY);
-    return EXPORT_FORMATS.includes(stored as ExportFormat) ? (stored as ExportFormat) : "pdf";
+    return MERGED_EXPORT_FORMATS.includes(stored as ExportFormat)
+      ? (stored as ExportFormat)
+      : "pdf";
   } catch {
     return "pdf";
   }
@@ -82,35 +101,52 @@ export function sanitizeExportName(name: string): string {
   return sanitized || "export";
 }
 
+type RenderedExport = { bytes?: Uint8Array; text?: string };
+
+// Dynamic imports keep the heavyweight format libraries (pdfmake, docx,
+// fflate) out of the startup bundle — they load on first export only.
+async function renderBlocksAs(
+  format: ExportFormat,
+  title: string,
+  blocks: ExportBlock[],
+  images: ExportImageMap,
+  style: DocumentStyle
+): Promise<RenderedExport> {
+  switch (format) {
+    case "html": {
+      const { renderHtmlDocument } = await import("./htmlExport");
+      return { text: renderHtmlDocument(title, blocks, images, style) };
+    }
+    case "pdf": {
+      const { renderPdfDocument } = await import("./pdfExport");
+      return { bytes: await renderPdfDocument(title, blocks, images, style) };
+    }
+    case "docx": {
+      const { renderDocxDocument } = await import("./docxExport");
+      return { bytes: await renderDocxDocument(title, blocks, images, style) };
+    }
+    case "odt": {
+      const { renderOdtDocument } = await import("./odtExport");
+      return { bytes: renderOdtDocument(blocks, images, style) };
+    }
+    case "epub":
+      // Guarded by the dialog, which only offers EPUB in merged mode; a single
+      // block list carries no chapter structure for a spine.
+      throw new Error("EPUB requires a merged manuscript export");
+  }
+}
+
 async function renderExportBytes(
   format: ExportFormat,
   title: string,
   markdown: string,
-  markdownFilePath: string
-): Promise<{ bytes?: Uint8Array; text?: string }> {
+  markdownFilePath: string,
+  style: DocumentStyle
+): Promise<RenderedExport> {
   const blocks = parseMarkdownToBlocks(markdown);
   const images = await loadExportImages(markdownFilePath, collectImageSrcs(blocks));
 
-  // Dynamic imports keep the heavyweight format libraries (pdfmake, docx,
-  // fflate) out of the startup bundle — they load on first export only.
-  switch (format) {
-    case "html": {
-      const { renderHtmlDocument } = await import("./htmlExport");
-      return { text: renderHtmlDocument(title, blocks, images) };
-    }
-    case "pdf": {
-      const { renderPdfDocument } = await import("./pdfExport");
-      return { bytes: await renderPdfDocument(title, blocks, images) };
-    }
-    case "docx": {
-      const { renderDocxDocument } = await import("./docxExport");
-      return { bytes: await renderDocxDocument(title, blocks, images) };
-    }
-    case "odt": {
-      const { renderOdtDocument } = await import("./odtExport");
-      return { bytes: renderOdtDocument(blocks, images) };
-    }
-  }
+  return renderBlocksAs(format, title, blocks, images, style);
 }
 
 async function writeExportFile(
@@ -131,10 +167,19 @@ export type SingleExportInput = {
   baseName: string;
   readMarkdown: MarkdownReader;
   onConflict: ConflictResolver;
+  style?: DocumentStyle;
 };
 
 export async function exportSingleNote(input: SingleExportInput): Promise<ExportOutcome> {
-  const { markdownFilePath, format, targetDirectory, baseName, readMarkdown, onConflict } = input;
+  const {
+    markdownFilePath,
+    format,
+    targetDirectory,
+    baseName,
+    readMarkdown,
+    onConflict,
+    style = DEFAULT_DOCUMENT_STYLE
+  } = input;
 
   await allowMarkdownFolderAccess(targetDirectory);
 
@@ -154,7 +199,13 @@ export async function exportSingleNote(input: SingleExportInput): Promise<Export
   }
 
   const markdown = await readMarkdown(markdownFilePath);
-  const rendered = await renderExportBytes(format, sanitizeExportName(baseName), markdown, markdownFilePath);
+  const rendered = await renderExportBytes(
+    format,
+    sanitizeExportName(baseName),
+    markdown,
+    markdownFilePath,
+    style
+  );
   await writeExportFile(targetPath, rendered);
   setLastExportDirectory(targetDirectory);
   setLastExportFormat(format);
@@ -170,6 +221,7 @@ export type FolderExportInput = {
   readMarkdown: MarkdownReader;
   onConflict: ConflictResolver;
   onProgress?: (progress: ExportProgress) => void;
+  style?: DocumentStyle;
 };
 
 type ExportRecordsInput = {
@@ -179,13 +231,14 @@ type ExportRecordsInput = {
   readMarkdown: MarkdownReader;
   onConflict: ConflictResolver;
   onProgress?: (progress: ExportProgress) => void;
+  style: DocumentStyle;
 };
 
 // Shared write/conflict/progress core for exporting a resolved list of notes
 // (each with a relativePath under exportRootPath) — used by both the
 // single-folder export and the multi-selection export.
 async function writeExportRecords(input: ExportRecordsInput): Promise<ExportOutcome> {
-  const { records, format, exportRootPath, readMarkdown, onConflict, onProgress } = input;
+  const { records, format, exportRootPath, readMarkdown, onConflict, onProgress, style } = input;
 
   let exportedCount = 0;
   let skippedCount = 0;
@@ -242,7 +295,7 @@ async function writeExportRecords(input: ExportRecordsInput): Promise<ExportOutc
     }
 
     const markdown = await readMarkdown(record.filePath);
-    const rendered = await renderExportBytes(format, baseName, markdown, record.filePath);
+    const rendered = await renderExportBytes(format, baseName, markdown, record.filePath, style);
     await writeExportFile(targetPath, rendered);
     exportedCount += 1;
   }
@@ -263,7 +316,8 @@ export async function exportFolderNotes(input: FolderExportInput): Promise<Expor
     folderName,
     readMarkdown,
     onConflict,
-    onProgress
+    onProgress,
+    style = DEFAULT_DOCUMENT_STYLE
   } = input;
 
   await allowMarkdownFolderAccess(targetDirectory);
@@ -279,7 +333,8 @@ export async function exportFolderNotes(input: FolderExportInput): Promise<Expor
     exportRootPath,
     readMarkdown,
     onConflict,
-    onProgress
+    onProgress,
+    style
   });
 
   setLastExportDirectory(targetDirectory);
@@ -298,6 +353,7 @@ export type MultipleExportInput = {
   readMarkdown: MarkdownReader;
   onConflict: ConflictResolver;
   onProgress?: (progress: ExportProgress) => void;
+  style?: DocumentStyle;
 };
 
 // Exports an arbitrary multi-selection (files and/or folders) into a single
@@ -305,7 +361,16 @@ export type MultipleExportInput = {
 // folder is resolved recursively via listMarkdownFiles and its own name is
 // prefixed onto the relativePath so its subfolder structure is preserved.
 export async function exportMultipleNotes(input: MultipleExportInput): Promise<ExportOutcome> {
-  const { entries, format, targetDirectory, folderName, readMarkdown, onConflict, onProgress } = input;
+  const {
+    entries,
+    format,
+    targetDirectory,
+    folderName,
+    readMarkdown,
+    onConflict,
+    onProgress,
+    style = DEFAULT_DOCUMENT_STYLE
+  } = input;
 
   await allowMarkdownFolderAccess(targetDirectory);
 
@@ -337,13 +402,149 @@ export async function exportMultipleNotes(input: MultipleExportInput): Promise<E
     exportRootPath,
     readMarkdown,
     onConflict,
-    onProgress
+    onProgress,
+    style
   });
 
   setLastExportDirectory(targetDirectory);
   setLastExportFormat(format);
 
   return outcome;
+}
+
+// ---------------------------------------------------------------------------
+// Merged / manuscript export
+// ---------------------------------------------------------------------------
+
+/**
+ * Chapter order, exactly as the sidebar shows it. Anything else would silently
+ * reorder a book whose chapters the user arranged by hand, so the tree — with
+ * its sort mode and manual drag order — is the single source of truth.
+ */
+export function collectOrderedRecords(
+  records: MarkdownFileRecord[],
+  sortMode: SortMode,
+  manualOrder: ManualOrderMap
+): MarkdownFileRecord[] {
+  const tree = buildFileTree(records, [], { sortMode, manualOrder });
+  const ordered: MarkdownFileRecord[] = [];
+  const byRelativePath = new Map(records.map((record) => [record.relativePath, record]));
+
+  const visit = (nodes: FileTreeNode[]) => {
+    for (const node of nodes) {
+      if (node.kind === "folder") {
+        visit(node.children);
+        continue;
+      }
+
+      const record = byRelativePath.get(node.relativePath);
+
+      if (record) {
+        ordered.push(record);
+      }
+    }
+  };
+
+  visit(tree);
+
+  return ordered;
+}
+
+export type MergedExportInput = {
+  /** Chapter files, already in the order they should appear in the book. */
+  records: MarkdownFileRecord[];
+  format: ExportFormat;
+  targetDirectory: string;
+  baseName: string;
+  readMarkdown: MarkdownReader;
+  onConflict: ConflictResolver;
+  onProgress?: (progress: ExportProgress) => void;
+  manuscriptOptions: ManuscriptOptions;
+  style?: DocumentStyle;
+  /** BCP 47 tag for the EPUB's dc:language. */
+  language?: string;
+};
+
+/**
+ * Compiles many notes into a single document. Both entry points land here: the
+ * export dialog's "merge into one file" checkbox passes MERGE_ONLY_OPTIONS,
+ * the manuscript dialog passes the user's cover and numbering settings.
+ */
+export async function exportMergedNotes(input: MergedExportInput): Promise<ExportOutcome> {
+  const {
+    records,
+    format,
+    targetDirectory,
+    baseName,
+    readMarkdown,
+    onConflict,
+    onProgress,
+    manuscriptOptions,
+    style = DEFAULT_DOCUMENT_STYLE,
+    language = "en"
+  } = input;
+
+  await allowMarkdownFolderAccess(targetDirectory);
+
+  const fileName = `${sanitizeExportName(baseName)}.${format}`;
+  const targetPath = await join(targetDirectory, fileName);
+
+  if (await exists(targetPath)) {
+    const { decision } = await onConflict(fileName);
+
+    if (decision === "cancel") {
+      return { exportedCount: 0, skippedCount: 0, cancelled: true };
+    }
+
+    if (decision === "skip") {
+      return { exportedCount: 0, skippedCount: 1, cancelled: false };
+    }
+  }
+
+  const sources: ManuscriptSource[] = [];
+
+  for (const [index, record] of records.entries()) {
+    onProgress?.({
+      completed: index,
+      total: records.length,
+      currentFileName: record.relativePath
+    });
+
+    sources.push({
+      filePath: record.filePath,
+      relativePath: record.relativePath,
+      markdown: await readMarkdown(record.filePath)
+    });
+  }
+
+  const manuscript = await compileManuscript(sources, manuscriptOptions);
+  const documentTitle = manuscriptOptions.title.trim() || sanitizeExportName(baseName);
+
+  onProgress?.({ completed: records.length, total: records.length, currentFileName: fileName });
+
+  const rendered: RenderedExport =
+    format === "epub"
+      ? await (async () => {
+          const { renderEpubDocument } = await import("./epubExport");
+          return {
+            bytes: renderEpubDocument(
+              manuscript,
+              {
+                title: documentTitle,
+                author: manuscriptOptions.author.trim(),
+                language
+              },
+              style
+            )
+          };
+        })()
+      : await renderBlocksAs(format, documentTitle, manuscript.blocks, manuscript.images, style);
+
+  await writeExportFile(targetPath, rendered);
+  setLastExportDirectory(targetDirectory);
+  setLastExportFormat(format);
+
+  return { exportedCount: 1, skippedCount: 0, cancelled: false };
 }
 
 export async function countExportableNotes(sourceFolderPath: string): Promise<number> {

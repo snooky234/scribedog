@@ -92,7 +92,12 @@
     "conflictSkip": "スキップ",
     "conflictOverwrite": "上書き",
     "doneSummary": "エクスポート完了: {{exportedCount}} 件エクスポート、{{skippedCount}} 件スキップ。",
-    "errorMessage": "エクスポートに失敗しました: {{message}}"
+    "errorMessage": "エクスポートに失敗しました: {{message}}",
+    "eyebrowManuscript": "原稿",
+    "titleManuscript": "原稿として書き出す",
+    "descriptionManuscript": "サイドバーに表示されている順序で、すべての章を 1 冊にまとめます。",
+    "mergeIntoOneFile": "1 つのファイルにまとめる",
+    "mergeHint": "ノートごとに 1 ファイルではなく、すべてのノートを 1 つの文書に続けて収めます。"
   },
   "importDialog": {
     "eyebrow": "インポート",
@@ -132,6 +137,7 @@
     "title": "設定",
     "tabsAriaLabel": "設定カテゴリ",
     "tabGeneral": "一般",
+    "tabFonts": "フォント",
     "tabAi": "AI 設定",
     "tabAssistants": "アシスタント",
     "tabVersioning": "バージョン",
@@ -169,7 +175,14 @@
     "contextLength": "コンテキスト長",
     "thinking": "思考モード",
     "thinkingOn": "オン（モデルの既定値）",
-    "thinkingOff": "オフ"
+    "thinkingOff": "オフ",
+    "font": "フォント",
+    "fontHint": "エディターとすべての書き出しに適用されます。一覧を限定しているのは、PDF に埋め込めるのが同梱フォントだけだからです。",
+    "fontSystem": "システム標準",
+    "fontPreviewText": "旅がはじまる",
+    "fontSize": "文字サイズ",
+    "fontSizeValue": "{{size}} pt",
+    "fontSizePreviewText": "旅は十一月の火曜日にはじまる。"
   },
   "assistants": {
     "defaultName": "デフォルト",
@@ -279,7 +292,7 @@
       "closeDialog": "ダイアログを閉じる",
       "moveListItemUp": "リスト項目を上へ移動",
       "moveListItemDown": "リスト項目を下へ移動",
-      "toggleLinksPanel": "リンクパネル（リンクとバックリンク）の表示/非表示"
+      "toggleDetailsPanel": "詳細パネル（リンク・バックリンク・ファイル情報）の表示を切り替え"
     },
     "customizeHint": "キーの組み合わせをクリックし、新しい組み合わせを押してください。",
     "recording": "キーを押してください …",
@@ -324,7 +337,8 @@
     "renameInputLabel": "フォルダー名",
     "fileRenameInputLabel": "ファイル名",
     "export": "エクスポート…",
-    "print": "印刷…"
+    "print": "印刷…",
+    "exportManuscript": "原稿として書き出す…"
   },
   "toolbar": {
     "formattingLabel": "書式設定ツール",
@@ -364,8 +378,8 @@
     "codeBlockTitle": "コードブロック（Ctrl+K）",
     "insertLink": "リンクを挿入",
     "insertLinkTitle": "リンクを挿入（Ctrl+M）",
-    "linksPanel": "リンクとバックリンク",
-    "linksPanelTitle": "リンクパネルの表示/非表示",
+    "detailsPanel": "詳細",
+    "detailsPanelTitle": "詳細パネルの表示を切り替え",
     "headingMenu": "見出し",
     "paragraph": "標準テキスト",
     "heading4": "見出し4",
@@ -419,8 +433,8 @@
     "resultSummary": "{{files}} 個のファイルで {{matches}} 件を置換しました",
     "fileMatchBadge": "検索一致: {{count}}"
   },
-  "linksPanel": {
-    "title": "リンク",
+  "detailsPanel": {
+    "title": "詳細",
     "refresh": "更新",
     "close": "パネルを閉じる",
     "outgoing": "発リンク ({{count}})",
@@ -428,7 +442,14 @@
     "backlinks": "バックリンク ({{count}})",
     "backlinksLoading": "バックリンクを検索中 …",
     "noBacklinks": "この文書にリンクしているファイルはありません。",
-    "brokenTarget": "リンク先が見つかりません"
+    "brokenTarget": "リンク先が見つかりません",
+    "fileInfo": "ファイル情報",
+    "words": "単語数",
+    "characters": "文字数",
+    "readingTime": "読了時間",
+    "readingMinutes": "約 {{count}} 分",
+    "createdAt": "最初の編集",
+    "modifiedAt": "最終編集"
   },
   "fileLinkSuggest": {
     "hint": "ファイルをリンク",
@@ -624,5 +645,25 @@
     "toolProposePassageFailed": "該当箇所が見つかりません",
     "toolSettleProposalsFailed": "保留中の提案はありません",
     "toolActionFailed": "操作に失敗しました"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "第 {number} 章",
+    "coverSection": "扉",
+    "bookTitle": "タイトル",
+    "subtitle": "サブタイトル",
+    "author": "著者",
+    "includeTitlePage": "扉を付ける",
+    "chaptersSection": "章",
+    "numbering": "番号付け",
+    "numberingNone": "なし",
+    "numberingNumber": "1. 章タイトル",
+    "numberingLabel": "第 1 章: 章タイトル",
+    "titleSource": "章タイトルの取得元",
+    "titleSourceHeading": "ファイル先頭の見出し",
+    "titleSourceFileName": "ファイル名",
+    "labelTemplate": "章ラベルのテンプレート",
+    "labelTemplateHint": "{number} は章番号に置き換えられます。",
+    "includeChapterHeadings": "章見出しを生成する",
+    "pageBreakBetweenChapters": "各章を新しいページから始める"
   }
 }

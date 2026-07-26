@@ -199,6 +199,7 @@ function App() {
     requestExportFolder,
     requestExportMultiple,
     readMarkdownForExport,
+    resolveOrderedRecords,
     closeExport
   } = useExportTarget();
 
@@ -679,6 +680,7 @@ function App() {
         onCancelDelete={cancelDeleteTarget}
         exportTarget={exportTarget}
         readMarkdownForExport={readMarkdownForExport}
+        resolveOrderedExportRecords={resolveOrderedRecords}
         onCloseExport={closeExport}
         importFileList={importFileList}
         folderPath={folderPath}

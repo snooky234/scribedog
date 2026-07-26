@@ -92,7 +92,12 @@
     "conflictSkip": "Pular",
     "conflictOverwrite": "Sobrescrever",
     "doneSummary": "Exportação concluída: {{exportedCount}} exportados, {{skippedCount}} pulados.",
-    "errorMessage": "Falha na exportação: {{message}}"
+    "errorMessage": "Falha na exportação: {{message}}",
+    "eyebrowManuscript": "Manuscrito",
+    "titleManuscript": "Exportar como manuscrito",
+    "descriptionManuscript": "Reúne todos os capítulos num único livro, na ordem apresentada pela barra lateral.",
+    "mergeIntoOneFile": "Juntar num só ficheiro",
+    "mergeHint": "Todas as notas seguidas num único documento, em vez de um ficheiro por nota."
   },
   "importDialog": {
     "eyebrow": "Importar",
@@ -132,6 +137,7 @@
     "title": "Configurações",
     "tabsAriaLabel": "Categorias de configurações",
     "tabGeneral": "Geral",
+    "tabFonts": "Tipos de letra",
     "tabAi": "Configurações de IA",
     "tabAssistants": "Assistentes",
     "tabVersioning": "Versões",
@@ -169,7 +175,14 @@
     "contextLength": "Tamanho do contexto",
     "thinking": "Raciocínio",
     "thinkingOn": "Ativado (padrão do modelo)",
-    "thinkingOff": "Desativado"
+    "thinkingOff": "Desativado",
+    "font": "Tipo de letra",
+    "fontHint": "Aplica-se ao editor e a todas as exportações. A lista é fechada de propósito: só os tipos de letra incluídos podem ser incorporados num PDF.",
+    "fontSystem": "Predefinição do sistema",
+    "fontPreviewText": "A viagem começa",
+    "fontSize": "Tamanho do texto",
+    "fontSizeValue": "{{size}} pt",
+    "fontSizePreviewText": "A viagem começa numa terça-feira de novembro."
   },
   "assistants": {
     "defaultName": "Padrão",
@@ -279,7 +292,7 @@
       "closeDialog": "Fechar diálogo",
       "moveListItemUp": "Mover item de lista para cima",
       "moveListItemDown": "Mover item de lista para baixo",
-      "toggleLinksPanel": "Mostrar/ocultar o painel de ligações (ligações e retroligações)"
+      "toggleDetailsPanel": "Mostrar/ocultar o painel de detalhes (links, backlinks e informações do arquivo)"
     },
     "customizeHint": "Clique numa combinação e prima a nova.",
     "recording": "Prima uma tecla …",
@@ -324,7 +337,8 @@
     "renameInputLabel": "Nome da pasta",
     "fileRenameInputLabel": "Nome do arquivo",
     "export": "Exportar…",
-    "print": "Imprimir…"
+    "print": "Imprimir…",
+    "exportManuscript": "Exportar como manuscrito…"
   },
   "toolbar": {
     "formattingLabel": "Ferramentas de formatação",
@@ -364,8 +378,8 @@
     "codeBlockTitle": "Bloco de código (Ctrl+K)",
     "insertLink": "Inserir link",
     "insertLinkTitle": "Inserir link (Ctrl+M)",
-    "linksPanel": "Links e backlinks",
-    "linksPanelTitle": "Mostrar ou ocultar o painel de links",
+    "detailsPanel": "Detalhes",
+    "detailsPanelTitle": "Mostrar ou ocultar o painel de detalhes",
     "headingMenu": "Título",
     "paragraph": "Texto normal",
     "heading4": "Título 4",
@@ -419,8 +433,8 @@
     "resultSummary": "{{matches}} substituições feitas em {{files}} arquivo(s)",
     "fileMatchBadge": "Ocorrências: {{count}}"
   },
-  "linksPanel": {
-    "title": "Links",
+  "detailsPanel": {
+    "title": "Detalhes",
     "refresh": "Atualizar",
     "close": "Fechar painel",
     "outgoing": "Links de saída ({{count}})",
@@ -428,7 +442,14 @@
     "backlinks": "Backlinks ({{count}})",
     "backlinksLoading": "Procurando backlinks …",
     "noBacklinks": "Nenhum outro arquivo vincula este documento.",
-    "brokenTarget": "Destino não encontrado"
+    "brokenTarget": "Destino não encontrado",
+    "fileInfo": "Informações do arquivo",
+    "words": "Palavras",
+    "characters": "Caracteres",
+    "readingTime": "Tempo de leitura",
+    "readingMinutes": "≈ {{count}} min",
+    "createdAt": "Primeira edição",
+    "modifiedAt": "Última edição"
   },
   "fileLinkSuggest": {
     "hint": "Vincular um arquivo",
@@ -624,5 +645,25 @@
     "toolProposePassageFailed": "Trecho não encontrado",
     "toolSettleProposalsFailed": "Nenhuma proposta pendente",
     "toolActionFailed": "Falha na ação"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "Capítulo {number}",
+    "coverSection": "Folha de rosto",
+    "bookTitle": "Título",
+    "subtitle": "Subtítulo",
+    "author": "Autor",
+    "includeTitlePage": "Acrescentar uma folha de rosto",
+    "chaptersSection": "Capítulos",
+    "numbering": "Numeração",
+    "numberingNone": "Nenhuma",
+    "numberingNumber": "1. Título do capítulo",
+    "numberingLabel": "Capítulo 1: título do capítulo",
+    "titleSource": "Título do capítulo a partir de",
+    "titleSourceHeading": "O primeiro título do ficheiro",
+    "titleSourceFileName": "O nome do ficheiro",
+    "labelTemplate": "Modelo do rótulo de capítulo",
+    "labelTemplateHint": "{number} é substituído pelo número do capítulo.",
+    "includeChapterHeadings": "Gerar títulos de capítulo",
+    "pageBreakBetweenChapters": "Começar cada capítulo numa página nova"
   }
 }

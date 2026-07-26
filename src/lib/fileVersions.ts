@@ -30,7 +30,9 @@ const INDEX_FILE_NAME = "index.json";
 
 export const MAX_VERSIONS_PER_FILE_MIN = 1;
 export const MAX_VERSIONS_PER_FILE_MAX = 200;
-export const MAX_VERSIONS_PER_FILE_DEFAULT = 10;
+export const MAX_VERSIONS_PER_FILE_DEFAULT = 20;
+/** Default for installs that predate the bump from 10 to 20, so their effective setting doesn't silently change. */
+export const MAX_VERSIONS_PER_FILE_LEGACY_DEFAULT = 10;
 
 export function clampMaxVersionsPerFile(value: number): number {
   if (!Number.isFinite(value)) {

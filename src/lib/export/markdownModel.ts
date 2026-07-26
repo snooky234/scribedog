@@ -34,14 +34,23 @@ export type ExportListItem = {
   children: ExportBlock[];
 };
 
+// Markdown itself never produces an alignment — it stays undefined for every
+// parsed document, so normal exports are unaffected. The manuscript compiler
+// sets it to centre the title page.
+export type BlockAlign = "left" | "center" | "right";
+
 export type ExportBlock =
-  | { kind: "heading"; level: number; runs: InlineRun[] }
-  | { kind: "paragraph"; runs: InlineRun[] }
+  | { kind: "heading"; level: number; runs: InlineRun[]; align?: BlockAlign }
+  | { kind: "paragraph"; runs: InlineRun[]; align?: BlockAlign }
   | { kind: "codeBlock"; text: string }
   | { kind: "blockquote"; children: ExportBlock[] }
   | { kind: "list"; ordered: boolean; start: number; items: ExportListItem[] }
   | { kind: "table"; rows: TableCell[][] }
-  | { kind: "hr" };
+  | { kind: "hr" }
+  // Never produced by markdown parsing — the manuscript compiler inserts these
+  // between chapters (see manuscript.ts). Each paged format turns it into its
+  // own hard page break; HTML/EPUB only break when printed.
+  | { kind: "pageBreak" };
 
 // Same underline mapping as the editor (Editor.tsx): "++text++" is parsed by
 // markdown-it-ins; the exporters treat <ins> as underline.

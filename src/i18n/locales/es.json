@@ -92,7 +92,12 @@
     "conflictSkip": "Omitir",
     "conflictOverwrite": "Sobrescribir",
     "doneSummary": "Exportación finalizada: {{exportedCount}} exportados, {{skippedCount}} omitidos.",
-    "errorMessage": "Error al exportar: {{message}}"
+    "errorMessage": "Error al exportar: {{message}}",
+    "eyebrowManuscript": "Manuscrito",
+    "titleManuscript": "Exportar como manuscrito",
+    "descriptionManuscript": "Reúne todos los capítulos en un solo libro, en el orden que muestra la barra lateral.",
+    "mergeIntoOneFile": "Combinar en un solo archivo",
+    "mergeHint": "Todas las notas seguidas en un único documento, en lugar de un archivo por nota."
   },
   "importDialog": {
     "eyebrow": "Importar",
@@ -132,6 +137,7 @@
     "title": "Configuración",
     "tabsAriaLabel": "Categorías de configuración",
     "tabGeneral": "General",
+    "tabFonts": "Fuentes",
     "tabAi": "Configuración de IA",
     "tabAssistants": "Asistentes",
     "tabVersioning": "Versiones",
@@ -169,7 +175,14 @@
     "contextLength": "Longitud de contexto",
     "thinking": "Razonamiento",
     "thinkingOn": "Activado (predeterminado del modelo)",
-    "thinkingOff": "Desactivado"
+    "thinkingOff": "Desactivado",
+    "font": "Fuente",
+    "fontHint": "Se aplica al editor y a todas las exportaciones. La lista es cerrada a propósito: solo las fuentes incluidas pueden incrustarse en un PDF.",
+    "fontSystem": "Predeterminada del sistema",
+    "fontPreviewText": "El viaje comienza",
+    "fontSize": "Tamaño del texto",
+    "fontSizeValue": "{{size}} pt",
+    "fontSizePreviewText": "El viaje comienza un martes de noviembre."
   },
   "assistants": {
     "defaultName": "Predeterminado",
@@ -279,7 +292,7 @@
       "closeDialog": "Cerrar cuadro de diálogo",
       "moveListItemUp": "Subir elemento de lista",
       "moveListItemDown": "Bajar elemento de lista",
-      "toggleLinksPanel": "Mostrar/ocultar el panel de enlaces (enlaces y retroenlaces)"
+      "toggleDetailsPanel": "Mostrar/ocultar el panel de detalles (enlaces, retroenlaces e información del archivo)"
     },
     "customizeHint": "Haz clic en una combinación y pulsa la nueva.",
     "recording": "Pulsa una tecla …",
@@ -324,7 +337,8 @@
     "renameInputLabel": "Nombre de la carpeta",
     "fileRenameInputLabel": "Nombre del archivo",
     "export": "Exportar…",
-    "print": "Imprimir…"
+    "print": "Imprimir…",
+    "exportManuscript": "Exportar como manuscrito…"
   },
   "toolbar": {
     "formattingLabel": "Herramientas de formato",
@@ -364,8 +378,8 @@
     "codeBlockTitle": "Bloque de código (Ctrl+K)",
     "insertLink": "Insertar enlace",
     "insertLinkTitle": "Insertar enlace (Ctrl+M)",
-    "linksPanel": "Enlaces y retroenlaces",
-    "linksPanelTitle": "Mostrar u ocultar el panel de enlaces",
+    "detailsPanel": "Detalles",
+    "detailsPanelTitle": "Mostrar u ocultar el panel de detalles",
     "headingMenu": "Título",
     "paragraph": "Texto normal",
     "heading4": "Título 4",
@@ -419,8 +433,8 @@
     "resultSummary": "Se realizaron {{matches}} reemplazos en {{files}} archivo(s)",
     "fileMatchBadge": "Coincidencias: {{count}}"
   },
-  "linksPanel": {
-    "title": "Enlaces",
+  "detailsPanel": {
+    "title": "Detalles",
     "refresh": "Actualizar",
     "close": "Cerrar panel",
     "outgoing": "Enlaces salientes ({{count}})",
@@ -428,7 +442,14 @@
     "backlinks": "Retroenlaces ({{count}})",
     "backlinksLoading": "Buscando retroenlaces …",
     "noBacklinks": "Ningún otro archivo enlaza con este documento.",
-    "brokenTarget": "Destino no encontrado"
+    "brokenTarget": "Destino no encontrado",
+    "fileInfo": "Información del archivo",
+    "words": "Palabras",
+    "characters": "Caracteres",
+    "readingTime": "Tiempo de lectura",
+    "readingMinutes": "≈ {{count}} min",
+    "createdAt": "Primera edición",
+    "modifiedAt": "Última edición"
   },
   "fileLinkSuggest": {
     "hint": "Enlazar un archivo",
@@ -624,5 +645,25 @@
     "toolProposePassageFailed": "Pasaje no encontrado",
     "toolSettleProposalsFailed": "No hay propuestas abiertas",
     "toolActionFailed": "La acción falló"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "Capítulo {number}",
+    "coverSection": "Portada",
+    "bookTitle": "Título",
+    "subtitle": "Subtítulo",
+    "author": "Autor",
+    "includeTitlePage": "Añadir una portada",
+    "chaptersSection": "Capítulos",
+    "numbering": "Numeración",
+    "numberingNone": "Ninguna",
+    "numberingNumber": "1. Título del capítulo",
+    "numberingLabel": "Capítulo 1: título del capítulo",
+    "titleSource": "Título del capítulo desde",
+    "titleSourceHeading": "El primer encabezado del archivo",
+    "titleSourceFileName": "El nombre del archivo",
+    "labelTemplate": "Plantilla de etiqueta de capítulo",
+    "labelTemplateHint": "{number} se sustituye por el número del capítulo.",
+    "includeChapterHeadings": "Generar encabezados de capítulo",
+    "pageBreakBetweenChapters": "Empezar cada capítulo en una página nueva"
   }
 }

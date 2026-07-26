@@ -94,12 +94,13 @@ export function useGlobalShortcuts({
         case "toggleChat":
           useChatStore.getState().togglePanel();
           return;
-        case "toggleLinksPanel": {
-          // The panel shows the current file's links/backlinks, so it only
-          // makes sense with a document open.
+        case "toggleDetailsPanel": {
+          // The panel shows details of the current file, so it only makes
+          // sense with a document open.
           if (selectedFilePath) {
-            const { linksPanelVisible, setLinksPanelVisible } = useEditorSettingsStore.getState();
-            setLinksPanelVisible(!linksPanelVisible);
+            const { detailsPanelVisible, setDetailsPanelVisible } =
+              useEditorSettingsStore.getState();
+            setDetailsPanelVisible(!detailsPanelVisible);
           }
 
           return;

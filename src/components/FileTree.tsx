@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { createPortal } from "react-dom";
-import { Download, FilePlus, Pencil, Printer, Trash2 } from "lucide-react";
+import { BookOpen, Download, FilePlus, Pencil, Printer, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { dirname, join } from "@tauri-apps/api/path";
 
+import type { ExportMode } from "@/components/ExportDialog";
 import { getRelativeDisplayPath, type MarkdownFileRecord } from "@/lib/fileSystem";
 import { buildFileTree, type FileTreeNode } from "@/lib/fileTree";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import type { MoveTreeEntryInput } from "@/store/useAppStore";
 
+import { ContextMenuSurface } from "./fileTree/ContextMenuSurface";
 import { TreeNodeRow } from "./fileTree/TreeNodeRow";
 import { useExpandedFolders } from "./fileTree/useExpandedFolders";
 import { useTreeContextMenu } from "./fileTree/useTreeContextMenu";
@@ -41,14 +42,14 @@ type FileTreeProps = {
   onCreateFileRequest: (targetDirectory: string) => void;
   onDeleteFileRequest: (filePath: string) => void;
   onDeleteFolderRequest: (folderPath: string) => void;
-  onExportFileRequest: (filePath: string) => void;
-  onExportFolderRequest: (folderPath: string) => void;
+  onExportFileRequest: (filePath: string, mode: ExportMode) => void;
+  onExportFolderRequest: (folderPath: string, mode: ExportMode) => void;
   onPrintFileRequest: (filePath: string) => void;
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
   onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
   onDeleteMultipleRequest: (entries: BatchEntry[]) => void;
-  onExportMultipleRequest: (entries: BatchEntry[]) => void;
+  onExportMultipleRequest: (entries: BatchEntry[], mode: ExportMode) => void;
   onRequestEditorFocus?: () => void;
   focusRequestId?: number;
   onSelectionChange?: (entries: BatchEntry[]) => void;
@@ -395,164 +396,191 @@ export function FileTree({
         ))}
       </ul>
 
-      {contextMenu
-        ? createPortal(
-            <div
-              className="file-tree-context-menu"
-              role="menu"
-              style={{ top: contextMenu.y, left: contextMenu.x }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              {contextMenu.kind === "multiple" ? (
-                <>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="file-tree-context-menu__item"
-                    onClick={() => {
-                      const entries = getTopLevelSelection(contextMenu.keys, flatNodes).map(
-                        (node): BatchEntry => ({
-                          kind: node.kind,
-                          path: node.kind === "file" ? node.filePath : node.relativePath
-                        })
-                      );
+      {contextMenu ? (
+        <ContextMenuSurface
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {contextMenu.kind === "multiple" ? (
+            <>
+              {(["standard", "manuscript"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  role="menuitem"
+                  className="file-tree-context-menu__item"
+                  onClick={() => {
+                    const entries = getTopLevelSelection(contextMenu.keys, flatNodes).map(
+                      (node): BatchEntry => ({
+                        kind: node.kind,
+                        path: node.kind === "file" ? node.filePath : node.relativePath
+                      })
+                    );
 
-                      void Promise.all(
-                        entries.map(async (entry) => ({
-                          kind: entry.kind,
-                          path:
-                            entry.kind === "folder" ? await join(folderPath, entry.path) : entry.path
-                        }))
-                      ).then(onExportMultipleRequest);
+                    void Promise.all(
+                      entries.map(async (entry) => ({
+                        kind: entry.kind,
+                        path:
+                          entry.kind === "folder"
+                            ? await join(folderPath, entry.path)
+                            : entry.path
+                      }))
+                    ).then((resolved) => onExportMultipleRequest(resolved, mode));
 
-                      setContextMenu(null);
-                    }}
-                  >
+                    setContextMenu(null);
+                  }}
+                >
+                  {mode === "manuscript" ? (
+                    <BookOpen aria-hidden="true" />
+                  ) : (
                     <Download aria-hidden="true" />
-                    {t("fileTree.export")}
-                  </button>
+                  )}
+                  {t(mode === "manuscript" ? "fileTree.exportManuscript" : "fileTree.export")}
+                </button>
+              ))}
 
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="file-tree-context-menu__item file-tree-context-menu__item--danger"
-                    onClick={() => {
-                      const entries = getTopLevelSelection(contextMenu.keys, flatNodes).map(
-                        (node): BatchEntry => ({
-                          kind: node.kind,
-                          path: node.kind === "file" ? node.filePath : node.relativePath
-                        })
-                      );
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item file-tree-context-menu__item--danger"
+                onClick={() => {
+                  const entries = getTopLevelSelection(contextMenu.keys, flatNodes).map(
+                    (node): BatchEntry => ({
+                      kind: node.kind,
+                      path: node.kind === "file" ? node.filePath : node.relativePath
+                    })
+                  );
 
-                      void Promise.all(
-                        entries.map(async (entry) => ({
-                          kind: entry.kind,
-                          path:
-                            entry.kind === "folder" ? await join(folderPath, entry.path) : entry.path
-                        }))
-                      ).then(onDeleteMultipleRequest);
+                  void Promise.all(
+                    entries.map(async (entry) => ({
+                      kind: entry.kind,
+                      path:
+                        entry.kind === "folder" ? await join(folderPath, entry.path) : entry.path
+                    }))
+                  ).then(onDeleteMultipleRequest);
 
-                      setContextMenu(null);
-                    }}
-                  >
-                    <Trash2 aria-hidden="true" />
-                    {t("fileTree.delete")}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="file-tree-context-menu__item"
-                    onClick={() => {
-                      const targetDirectoryPromise =
-                        contextMenu.kind === "folder"
-                          ? join(folderPath, contextMenu.relativePath)
-                          : dirname(contextMenu.filePath);
+                  setContextMenu(null);
+                }}
+              >
+                <Trash2 aria-hidden="true" />
+                {t("fileTree.delete")}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item"
+                onClick={() => {
+                  const targetDirectoryPromise =
+                    contextMenu.kind === "folder"
+                      ? join(folderPath, contextMenu.relativePath)
+                      : dirname(contextMenu.filePath);
 
-                      void targetDirectoryPromise.then(onCreateFileRequest);
-                      setContextMenu(null);
-                    }}
-                  >
-                    <FilePlus aria-hidden="true" />
-                    {t("sidebar.newFile")}
-                  </button>
+                  void targetDirectoryPromise.then(onCreateFileRequest);
+                  setContextMenu(null);
+                }}
+              >
+                <FilePlus aria-hidden="true" />
+                {t("sidebar.newFile")}
+              </button>
 
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="file-tree-context-menu__item"
-                    onClick={() => {
-                      if (contextMenu.kind === "folder") {
-                        startFolderRename(contextMenu.relativePath);
-                      } else {
-                        startFileRename(getRelativeDisplayPath(folderPath, contextMenu.filePath));
-                      }
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item"
+                onClick={() => {
+                  if (contextMenu.kind === "folder") {
+                    startFolderRename(contextMenu.relativePath);
+                  } else {
+                    startFileRename(getRelativeDisplayPath(folderPath, contextMenu.filePath));
+                  }
 
-                      setContextMenu(null);
-                    }}
-                  >
-                    <Pencil aria-hidden="true" />
-                    {t("fileTree.rename")}
-                  </button>
+                  setContextMenu(null);
+                }}
+              >
+                <Pencil aria-hidden="true" />
+                {t("fileTree.rename")}
+              </button>
 
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="file-tree-context-menu__item"
-                    onClick={() => {
-                      if (contextMenu.kind === "folder") {
-                        void join(folderPath, contextMenu.relativePath).then(onExportFolderRequest);
-                      } else {
-                        onExportFileRequest(contextMenu.filePath);
-                      }
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item"
+                onClick={() => {
+                  if (contextMenu.kind === "folder") {
+                    void join(folderPath, contextMenu.relativePath).then((path) =>
+                      onExportFolderRequest(path, "standard")
+                    );
+                  } else {
+                    onExportFileRequest(contextMenu.filePath, "standard");
+                  }
 
-                      setContextMenu(null);
-                    }}
-                  >
-                    <Download aria-hidden="true" />
-                    {t("fileTree.export")}
-                  </button>
+                  setContextMenu(null);
+                }}
+              >
+                <Download aria-hidden="true" />
+                {t("fileTree.export")}
+              </button>
 
-                  {contextMenu.kind === "file" ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="file-tree-context-menu__item"
-                      onClick={() => {
-                        onPrintFileRequest(contextMenu.filePath);
-                        setContextMenu(null);
-                      }}
-                    >
-                      <Printer aria-hidden="true" />
-                      {t("fileTree.print")}
-                    </button>
-                  ) : null}
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item"
+                onClick={() => {
+                  if (contextMenu.kind === "folder") {
+                    void join(folderPath, contextMenu.relativePath).then((path) =>
+                      onExportFolderRequest(path, "manuscript")
+                    );
+                  } else {
+                    onExportFileRequest(contextMenu.filePath, "manuscript");
+                  }
 
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="file-tree-context-menu__item file-tree-context-menu__item--danger"
-                    onClick={() => {
-                      if (contextMenu.kind === "folder") {
-                        void join(folderPath, contextMenu.relativePath).then(onDeleteFolderRequest);
-                      } else {
-                        onDeleteFileRequest(contextMenu.filePath);
-                      }
+                  setContextMenu(null);
+                }}
+              >
+                <BookOpen aria-hidden="true" />
+                {t("fileTree.exportManuscript")}
+              </button>
 
-                      setContextMenu(null);
-                    }}
-                  >
-                    <Trash2 aria-hidden="true" />
-                    {t("fileTree.delete")}
-                  </button>
-                </>
-              )}
-            </div>,
-            document.body
-          )
-        : null}
+              {contextMenu.kind === "file" ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="file-tree-context-menu__item"
+                  onClick={() => {
+                    onPrintFileRequest(contextMenu.filePath);
+                    setContextMenu(null);
+                  }}
+                >
+                  <Printer aria-hidden="true" />
+                  {t("fileTree.print")}
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item file-tree-context-menu__item--danger"
+                onClick={() => {
+                  if (contextMenu.kind === "folder") {
+                    void join(folderPath, contextMenu.relativePath).then(onDeleteFolderRequest);
+                  } else {
+                    onDeleteFileRequest(contextMenu.filePath);
+                  }
+
+                  setContextMenu(null);
+                }}
+              >
+                <Trash2 aria-hidden="true" />
+                {t("fileTree.delete")}
+              </button>
+            </>
+          )}
+        </ContextMenuSurface>
+      ) : null}
     </>
   );
 }

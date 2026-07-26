@@ -17,6 +17,13 @@
   background: rgba(var(--surface-rgb),0.56);
   padding: 1.2rem 1.25rem 1.4rem;
   color: rgba(var(--text-rgb),0.94);
+  /* Document font and size from the general settings — the same family and
+     scale the export uses. Both set on :root by useEditorSettingsStore.
+     The scale multiplies the surface's base size; everything inside is sized
+     in em by the prose styles, so the whole hierarchy moves with it. This is
+     the document's own size, independent of the toolbar zoom. */
+  font-family: var(--font-document, var(--font-sans));
+  font-size: calc(1rem * var(--document-font-scale, 1));
 }
 
 /* Selection highlight the app paints itself while the focus sits somewhere else

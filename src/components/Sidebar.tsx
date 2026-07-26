@@ -1,7 +1,11 @@
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowDownAZ,
   ArrowUpDown,
+  BookOpen,
   Clock,
+  Download,
   FileText,
   FolderOpen,
   FolderPlus,
@@ -14,6 +18,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import type { ExportMode } from "@/components/ExportDialog";
 import { Button } from "@/components/ui/button";
 import {
   Menu,
@@ -54,9 +59,9 @@ type SidebarProps = {
   onDeleteFolderRequest: (folderPath: string) => void;
   onDeleteMultipleRequest: (entries: BatchEntry[]) => void;
   onDeleteToolbarRequest: () => void;
-  onExportFileRequest: (filePath: string) => void;
-  onExportFolderRequest: (folderPath: string) => void;
-  onExportMultipleRequest: (entries: BatchEntry[]) => void;
+  onExportFileRequest: (filePath: string, mode: ExportMode) => void;
+  onExportFolderRequest: (folderPath: string, mode: ExportMode) => void;
+  onExportMultipleRequest: (entries: BatchEntry[], mode: ExportMode) => void;
   onPrintFileRequest: (filePath: string) => void;
   onRenameFolder: (folderPath: string, newBaseName: string) => Promise<boolean>;
   onRenameFile: (filePath: string, newBaseName: string) => Promise<boolean>;
@@ -110,24 +115,39 @@ export function Sidebar({
 }: SidebarProps) {
   const { t } = useTranslation();
   const folderLabel = formatFolderLabel(folderPath);
+  const [rootContextMenu, setRootContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // Same dismissal rules as the tree's own menu (useTreeContextMenu): any
+  // click, a competing right-click, a scroll or Escape closes it.
+  useEffect(() => {
+    if (!rootContextMenu) {
+      return;
+    }
+
+    const close = () => setRootContextMenu(null);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        close();
+      }
+    };
+
+    window.addEventListener("click", close);
+    window.addEventListener("contextmenu", close, true);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("contextmenu", close, true);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [rootContextMenu]);
 
   return (
     <aside className="sidebar-panel" aria-label={t("sidebar.filesLabel")}>
       <div className="sidebar-panel__header">
         <div className="sidebar-panel__actions">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onOpenFolder}
-            disabled={isLoading}
-            className="sidebar-panel__open"
-            aria-label={t("sidebar.openFolder")}
-            title={t("sidebar.openFolder")}
-          >
-            <FolderOpen />
-          </Button>
-
           <Button
             type="button"
             variant="outline"
@@ -242,9 +262,65 @@ export function Sidebar({
           </Button>
         </div>
         <div>
-          <p className="sidebar-panel__folder">{folderLabel}</p>
-        </div>        
+          <button
+            type="button"
+            className="sidebar-panel__folder"
+            onClick={onOpenFolder}
+            disabled={isLoading}
+            title={folderPath ?? t("sidebar.openFolder")}
+            aria-label={t("sidebar.openFolder")}
+            // The vault root is the natural target for "export the whole book",
+            // but it is not a row in the tree — so it carries its own menu.
+            onContextMenu={(event) => {
+              if (folderPath === null) {
+                return;
+              }
+
+              event.preventDefault();
+              setRootContextMenu({ x: event.clientX, y: event.clientY });
+            }}
+          >
+            {folderLabel}
+          </button>
+        </div>
       </div>
+
+      {rootContextMenu && folderPath !== null
+        ? createPortal(
+            <div
+              className="file-tree-context-menu"
+              role="menu"
+              style={{ top: rootContextMenu.y, left: rootContextMenu.x }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item"
+                onClick={() => {
+                  onExportFolderRequest(folderPath, "standard");
+                  setRootContextMenu(null);
+                }}
+              >
+                <Download aria-hidden="true" />
+                {t("fileTree.export")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item"
+                onClick={() => {
+                  onExportFolderRequest(folderPath, "manuscript");
+                  setRootContextMenu(null);
+                }}
+              >
+                <BookOpen aria-hidden="true" />
+                {t("fileTree.exportManuscript")}
+              </button>
+            </div>,
+            document.body
+          )
+        : null}
 
       {folderError ? (
         <div className="sidebar-panel__message sidebar-panel__message--error">

@@ -24,14 +24,36 @@
 }
 
 .sidebar-panel__folder {
+  display: block;
+  width: 100%;
   max-width: none;
-  overflow-wrap: anywhere;
-  white-space: normal;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /* Truncate the start (vault root) rather than the end, so the part of the
+     path closest to the current folder stays visible; the full path is
+     still available via the title tooltip. */
+  direction: rtl;
+  text-align: left;
   font-size: 0.9rem;
+  font-family: inherit;
+  color: rgba(var(--text-rgb),0.72);
+  border: none;
+  background: transparent;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  margin: -0.25rem -0.4rem;
+  cursor: pointer;
+  transition: background 160ms ease;
 }
 
-.sidebar-panel__open {
-  flex-shrink: 0;
+.sidebar-panel__folder:hover {
+  background: rgba(var(--surface-hover-rgb), 0.92);
+}
+
+.sidebar-panel__folder:disabled {
+  cursor: default;
+  opacity: 0.7;
 }
 
 

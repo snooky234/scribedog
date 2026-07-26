@@ -1,22 +1,27 @@
-import type { ExportBlock, InlineRun } from "./markdownModel";
+import { DEFAULT_DOCUMENT_STYLE, getFontDefinition, getFontScale, type DocumentStyle } from "@/lib/fonts";
+
+import type { BlockAlign, ExportBlock, InlineRun } from "./markdownModel";
 import type { ExportImageMap } from "./imageAssets";
 
 // Standalone HTML export: one self-contained file, styles inlined, local
 // images embedded as data URIs (the exported file must work without the
 // vault next to it).
 
-const DOCUMENT_CSS = `
+const documentCss = (fontStack: string, baseSizePx: number) => `
   :root { color-scheme: light; }
   body {
     margin: 0 auto;
     padding: 3rem 2.5rem 4rem;
     max-width: 46rem;
-    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    font-size: 16px;
+    font-family: ${fontStack};
+    font-size: ${baseSizePx}px;
     line-height: 1.65;
     color: #1f2328;
     background: #ffffff;
   }
+  /* Manuscript chapter breaks: invisible on screen, a real page break in
+     print/PDF — an HTML file has no pages of its own. */
+  .page-break { break-before: page; page-break-before: always; height: 0; }
   h1, h2, h3, h4, h5, h6 { line-height: 1.25; margin: 1.6em 0 0.6em; }
   h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
   h2 { font-size: 1.5em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
@@ -110,6 +115,10 @@ function renderRuns(runs: InlineRun[], images: ExportImageMap): string {
   return html;
 }
 
+function alignAttribute(align: BlockAlign | undefined): string {
+  return align && align !== "left" ? ` style="text-align:${align}"` : "";
+}
+
 function renderBlocks(blocks: ExportBlock[], images: ExportImageMap): string {
   let html = "";
 
@@ -117,11 +126,12 @@ function renderBlocks(blocks: ExportBlock[], images: ExportImageMap): string {
     switch (block.kind) {
       case "heading": {
         const level = Math.min(Math.max(block.level, 1), 6);
-        html += `<h${level}>${renderRuns(block.runs, images)}</h${level}>\n`;
+        const align = alignAttribute(block.align);
+        html += `<h${level}${align}>${renderRuns(block.runs, images)}</h${level}>\n`;
         break;
       }
       case "paragraph":
-        html += `<p>${renderRuns(block.runs, images)}</p>\n`;
+        html += `<p${alignAttribute(block.align)}>${renderRuns(block.runs, images)}</p>\n`;
         break;
       case "codeBlock":
         html += `<pre><code>${escapeHtml(block.text)}</code></pre>\n`;
@@ -179,6 +189,9 @@ function renderBlocks(blocks: ExportBlock[], images: ExportImageMap): string {
       case "hr":
         html += "<hr />\n";
         break;
+      case "pageBreak":
+        html += '<div class="page-break"></div>\n';
+        break;
     }
   }
 
@@ -194,7 +207,8 @@ export function renderHtmlBody(blocks: ExportBlock[], images: ExportImageMap): s
 export function renderHtmlDocument(
   title: string,
   blocks: ExportBlock[],
-  images: ExportImageMap
+  images: ExportImageMap,
+  style: DocumentStyle = DEFAULT_DOCUMENT_STYLE
 ): string {
   return [
     "<!doctype html>",
@@ -203,7 +217,10 @@ export function renderHtmlDocument(
     '<meta charset="utf-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1" />',
     `<title>${escapeHtml(title)}</title>`,
-    `<style>${DOCUMENT_CSS}</style>`,
+    `<style>${documentCss(
+      getFontDefinition(style.fontId).cssStack,
+      Math.round(16 * getFontScale(style.fontSizePt) * 100) / 100
+    )}</style>`,
     "</head>",
     "<body>",
     renderBlocks(blocks, images),

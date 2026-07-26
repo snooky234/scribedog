@@ -92,7 +92,12 @@
     "conflictSkip": "Salta",
     "conflictOverwrite": "Sovrascrivi",
     "doneSummary": "Esportazione completata: {{exportedCount}} esportati, {{skippedCount}} saltati.",
-    "errorMessage": "Esportazione non riuscita: {{message}}"
+    "errorMessage": "Esportazione non riuscita: {{message}}",
+    "eyebrowManuscript": "Manoscritto",
+    "titleManuscript": "Esporta come manoscritto",
+    "descriptionManuscript": "Unisce tutti i capitoli in un unico libro, nell'ordine mostrato dalla barra laterale.",
+    "mergeIntoOneFile": "Unisci in un solo file",
+    "mergeHint": "Tutte le note una dopo l'altra in un unico documento, invece di un file per nota."
   },
   "importDialog": {
     "eyebrow": "Importa",
@@ -132,6 +137,7 @@
     "title": "Impostazioni",
     "tabsAriaLabel": "Categorie di impostazioni",
     "tabGeneral": "Generale",
+    "tabFonts": "Caratteri",
     "tabAi": "Impostazioni IA",
     "tabAssistants": "Assistenti",
     "tabVersioning": "Versioni",
@@ -169,7 +175,14 @@
     "contextLength": "Lunghezza del contesto",
     "thinking": "Ragionamento",
     "thinkingOn": "Attivo (predefinito del modello)",
-    "thinkingOff": "Disattivo"
+    "thinkingOff": "Disattivo",
+    "font": "Carattere",
+    "fontHint": "Vale per l'editor e per tutte le esportazioni. L'elenco è volutamente chiuso: solo i caratteri inclusi possono essere incorporati in un PDF.",
+    "fontSystem": "Predefinito di sistema",
+    "fontPreviewText": "Il viaggio comincia",
+    "fontSize": "Dimensione del testo",
+    "fontSizeValue": "{{size}} pt",
+    "fontSizePreviewText": "Il viaggio comincia un martedì di novembre."
   },
   "assistants": {
     "defaultName": "Predefinito",
@@ -279,7 +292,7 @@
       "closeDialog": "Chiudi finestra",
       "moveListItemUp": "Sposta l'elemento dell'elenco in alto",
       "moveListItemDown": "Sposta l'elemento dell'elenco in basso",
-      "toggleLinksPanel": "Mostra/nascondi il pannello dei collegamenti (link e backlink)"
+      "toggleDetailsPanel": "Mostra/nascondi il pannello dei dettagli (collegamenti, backlink e info file)"
     },
     "customizeHint": "Fai clic su una combinazione e premi quella nuova.",
     "recording": "Premi un tasto …",
@@ -324,7 +337,8 @@
     "renameInputLabel": "Nome cartella",
     "fileRenameInputLabel": "Nome file",
     "export": "Esporta…",
-    "print": "Stampa…"
+    "print": "Stampa…",
+    "exportManuscript": "Esporta come manoscritto…"
   },
   "toolbar": {
     "formattingLabel": "Strumenti di formattazione",
@@ -364,8 +378,8 @@
     "codeBlockTitle": "Blocco di codice (Ctrl+K)",
     "insertLink": "Inserisci link",
     "insertLinkTitle": "Inserisci link (Ctrl+M)",
-    "linksPanel": "Collegamenti e backlink",
-    "linksPanelTitle": "Mostra o nascondi il pannello dei collegamenti",
+    "detailsPanel": "Dettagli",
+    "detailsPanelTitle": "Mostra o nascondi il pannello dei dettagli",
     "headingMenu": "Titolo",
     "paragraph": "Testo normale",
     "heading4": "Titolo 4",
@@ -419,8 +433,8 @@
     "resultSummary": "Eseguite {{matches}} sostituzioni in {{files}} file",
     "fileMatchBadge": "Corrispondenze: {{count}}"
   },
-  "linksPanel": {
-    "title": "Collegamenti",
+  "detailsPanel": {
+    "title": "Dettagli",
     "refresh": "Aggiorna",
     "close": "Chiudi pannello",
     "outgoing": "Collegamenti in uscita ({{count}})",
@@ -428,7 +442,14 @@
     "backlinks": "Backlink ({{count}})",
     "backlinksLoading": "Ricerca dei backlink …",
     "noBacklinks": "Nessun altro file collega questo documento.",
-    "brokenTarget": "Destinazione non trovata"
+    "brokenTarget": "Destinazione non trovata",
+    "fileInfo": "Informazioni sul file",
+    "words": "Parole",
+    "characters": "Caratteri",
+    "readingTime": "Tempo di lettura",
+    "readingMinutes": "≈ {{count}} min",
+    "createdAt": "Prima modifica",
+    "modifiedAt": "Ultima modifica"
   },
   "fileLinkSuggest": {
     "hint": "Collega un file",
@@ -624,5 +645,25 @@
     "toolProposePassageFailed": "Passaggio non trovato",
     "toolSettleProposalsFailed": "Nessuna proposta in sospeso",
     "toolActionFailed": "Azione non riuscita"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "Capitolo {number}",
+    "coverSection": "Frontespizio",
+    "bookTitle": "Titolo",
+    "subtitle": "Sottotitolo",
+    "author": "Autore",
+    "includeTitlePage": "Aggiungi un frontespizio",
+    "chaptersSection": "Capitoli",
+    "numbering": "Numerazione",
+    "numberingNone": "Nessuna",
+    "numberingNumber": "1. Titolo del capitolo",
+    "numberingLabel": "Capitolo 1: titolo del capitolo",
+    "titleSource": "Titolo del capitolo da",
+    "titleSourceHeading": "Il primo titolo del file",
+    "titleSourceFileName": "Il nome del file",
+    "labelTemplate": "Modello di etichetta del capitolo",
+    "labelTemplateHint": "{number} viene sostituito con il numero del capitolo.",
+    "includeChapterHeadings": "Genera i titoli dei capitoli",
+    "pageBreakBetweenChapters": "Inizia ogni capitolo su una nuova pagina"
   }
 }

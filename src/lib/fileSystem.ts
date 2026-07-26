@@ -135,6 +135,31 @@ async function collectMarkdownFiles(
   }
 }
 
+export type FileTimestamps = {
+  /** Creation time; null where the platform does not report one. */
+  createdMs: number | null;
+  modifiedMs: number | null;
+};
+
+/**
+ * Creation and modification time of a file for the details panel. Not every
+ * filesystem records a birth time (and some report the epoch instead), so a
+ * missing value is null rather than a misleading 1970 date.
+ */
+export async function getFileTimestamps(path: string): Promise<FileTimestamps> {
+  try {
+    const info = await stat(path);
+    const toMs = (value: Date | null | undefined): number | null => {
+      const ms = value?.getTime() ?? 0;
+      return ms > 0 ? ms : null;
+    };
+
+    return { createdMs: toMs(info.birthtime), modifiedMs: toMs(info.mtime) };
+  } catch {
+    return { createdMs: null, modifiedMs: null };
+  }
+}
+
 export async function getPathMtimeMs(path: string): Promise<number> {
   try {
     const info = await stat(path);

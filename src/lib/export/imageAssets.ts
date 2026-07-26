@@ -115,10 +115,18 @@ export async function loadExportImages(
   markdownFilePath: string,
   imageSrcs: Iterable<string>
 ): Promise<ExportImageMap> {
-  const fileDirPath = await dirname(markdownFilePath);
   const assets: ExportImageMap = new Map();
+  const uniqueSrcs = new Set(imageSrcs);
 
-  for (const src of new Set(imageSrcs)) {
+  // Resolving the directory is an IPC round-trip; a document without images
+  // (and every chapter of a text-only manuscript) has no reason to pay it.
+  if (uniqueSrcs.size === 0) {
+    return assets;
+  }
+
+  const fileDirPath = await dirname(markdownFilePath);
+
+  for (const src of uniqueSrcs) {
     if (!src || ABSOLUTE_URL_PATTERN.test(src)) {
       continue;
     }

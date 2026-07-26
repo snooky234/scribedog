@@ -25,7 +25,7 @@ export type ShortcutActionId =
   | "navigateBack"
   | "navigateForward"
   | "toggleChat"
-  | "toggleLinksPanel"
+  | "toggleDetailsPanel"
   | "aiEditDialog"
   | "aiVoiceDialog"
   | "dictation"
@@ -194,11 +194,11 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: letter(CTRL_SHIFT, "A")
   },
   {
-    id: "toggleLinksPanel",
+    id: "toggleDetailsPanel",
     scope: "global",
     category: "app",
-    descriptionKey: "shortcutsDialog.items.toggleLinksPanel",
-    defaultBinding: letter(CTRL_SHIFT, "L")
+    descriptionKey: "shortcutsDialog.items.toggleDetailsPanel",
+    defaultBinding: letter(CTRL_SHIFT, "D")
   },
   {
     id: "aiEditDialog",

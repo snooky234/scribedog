@@ -15,7 +15,7 @@ import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog"
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { Toolbar } from "@/components/Toolbar";
 import { FileLinkSuggestionPopover } from "@/components/editor/FileLinkSuggestionPopover";
-import { LinksPanel } from "@/components/editor/LinksPanel";
+import { DetailsPanel } from "@/components/editor/DetailsPanel";
 import { useAiEditorActions } from "@/components/editor/useAiEditorActions";
 import { useEditorDictation } from "@/components/editor/useEditorDictation";
 import { useFileLinkSuggestion } from "@/components/editor/useFileLinkSuggestion";
@@ -137,8 +137,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const editorRef = useRef<TipTapEditor | null>(null);
   const lastSyncedMarkdownRef = useRef(markdown);
   const spellcheckEnabled = useEditorSettingsStore((state) => state.spellcheckEnabled);
-  const linksPanelVisible = useEditorSettingsStore((state) => state.linksPanelVisible);
-  const setLinksPanelVisible = useEditorSettingsStore((state) => state.setLinksPanelVisible);
+  const detailsPanelVisible = useEditorSettingsStore((state) => state.detailsPanelVisible);
+  const setDetailsPanelVisible = useEditorSettingsStore((state) => state.setDetailsPanelVisible);
   const [linkDialog, setLinkDialog] = useState<LinkDialogState | null>(null);
 
   // The vault's notes: what the link dialog and the "[[" picker offer, and what
@@ -1135,14 +1135,14 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
               />
             </ScrollArea>
 
-            {linksPanelVisible ? (
-              <LinksPanel
+            {detailsPanelVisible ? (
+              <DetailsPanel
                 folderPath={folderPath}
                 filePath={filePath}
                 markdown={markdown}
                 vaultFilePaths={vaultFilePaths}
                 onRequestFileOpen={onRequestFileOpen}
-                onClose={() => setLinksPanelVisible(false)}
+                onClose={() => setDetailsPanelVisible(false)}
               />
             ) : null}
           </div>

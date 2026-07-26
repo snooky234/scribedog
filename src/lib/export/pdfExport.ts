@@ -1,8 +1,11 @@
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 
+import { DEFAULT_DOCUMENT_STYLE, getFontScale, type DocumentStyle } from "@/lib/fonts";
+
 import type { ExportBlock, InlineRun } from "./markdownModel";
 import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 import { splitEmojiSegments } from "./emojiSegments";
+import { registerPdfFont } from "./pdfFonts";
 
 type PdfMakeModule = typeof import("pdfmake/build/pdfmake");
 
@@ -173,19 +176,29 @@ function blocksToPdfContent(blocks: ExportBlock[], images: ExportImageMap): Cont
     switch (block.kind) {
       case "heading": {
         const level = Math.min(Math.max(block.level, 1), 6);
-        content.push({ text: runsToPdfText(block.runs, images), style: `h${level}` });
+        content.push({
+          text: runsToPdfText(block.runs, images),
+          style: `h${level}`,
+          alignment: block.align
+        });
         break;
       }
       case "paragraph":
         for (const chunk of runsToBlockContent(block.runs, images, "paragraph")) {
-          content.push(chunk);
+          content.push(
+            block.align && typeof chunk === "object"
+              ? ({ ...chunk, alignment: block.align } as Content)
+              : chunk
+          );
         }
         break;
       case "codeBlock":
         content.push({
           table: {
             widths: ["*"],
-            body: [[{ text: block.text, font: "Courier", fontSize: 9, margin: [8, 6, 8, 6] }]]
+            // Size comes from the "code" style so it scales with the document
+            // text size along with everything else.
+            body: [[{ text: block.text, font: "Courier", style: "code", margin: [8, 6, 8, 6] }]]
           },
           layout: {
             hLineWidth: () => 0,
@@ -286,6 +299,11 @@ function blocksToPdfContent(blocks: ExportBlock[], images: ExportImageMap): Cont
           margin: [0, 10, 0, 10]
         });
         break;
+      case "pageBreak":
+        // An empty node carrying the break: pdfmake needs the flag on a real
+        // content element, and margin-less empty text adds no visible space.
+        content.push({ text: "", pageBreak: "after", margin: [0, 0, 0, 0] });
+        break;
     }
   }
 
@@ -295,23 +313,33 @@ function blocksToPdfContent(blocks: ExportBlock[], images: ExportImageMap): Cont
 export async function renderPdfDocument(
   title: string,
   blocks: ExportBlock[],
-  images: ExportImageMap
+  images: ExportImageMap,
+  style: DocumentStyle = DEFAULT_DOCUMENT_STYLE
 ): Promise<Uint8Array> {
   const pdfMake = await loadPdfMake();
+  // Falls back to Roboto when the family cannot be embedded, so a font issue
+  // never costs the user the export itself.
+  const bodyFont = await registerPdfFont(
+    pdfMake as unknown as Parameters<typeof registerPdfFont>[0],
+    style.fontId
+  );
+  const scale = getFontScale(style.fontSizePt);
+  const sized = (points: number) => Math.round(points * scale * 100) / 100;
 
   const documentDefinition: TDocumentDefinitions = {
     info: { title },
     pageSize: "A4",
     pageMargins: [72, 72, 72, 72],
-    defaultStyle: { font: "Roboto", fontSize: 10.5, lineHeight: 1.35 },
+    defaultStyle: { font: bodyFont, fontSize: sized(10.5), lineHeight: 1.35 },
     styles: {
-      h1: { fontSize: 22, bold: true, margin: [0, 14, 0, 8] },
-      h2: { fontSize: 17, bold: true, margin: [0, 12, 0, 6] },
-      h3: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] },
-      h4: { fontSize: 12, bold: true, margin: [0, 8, 0, 4] },
-      h5: { fontSize: 10.5, bold: true, margin: [0, 8, 0, 4] },
-      h6: { fontSize: 10.5, bold: true, color: MUTED_COLOR, margin: [0, 8, 0, 4] },
-      paragraph: { margin: [0, 2, 0, 6] }
+      h1: { fontSize: sized(22), bold: true, margin: [0, 14, 0, 8] },
+      h2: { fontSize: sized(17), bold: true, margin: [0, 12, 0, 6] },
+      h3: { fontSize: sized(14), bold: true, margin: [0, 10, 0, 5] },
+      h4: { fontSize: sized(12), bold: true, margin: [0, 8, 0, 4] },
+      h5: { fontSize: sized(10.5), bold: true, margin: [0, 8, 0, 4] },
+      h6: { fontSize: sized(10.5), bold: true, color: MUTED_COLOR, margin: [0, 8, 0, 4] },
+      paragraph: { margin: [0, 2, 0, 6] },
+      code: { fontSize: sized(9) }
     },
     content: blocksToPdfContent(blocks, images)
   };

@@ -15,6 +15,16 @@ import {
   PROVIDER_DEFAULT_API_URL,
   PROVIDER_DISPLAY_NAME
 } from "@/lib/aiClient";
+import {
+  APP_FONTS,
+  APP_FONT_IDS,
+  ensureFontStylesLoaded,
+  FONT_SIZE_PT_MAX,
+  FONT_SIZE_PT_MIN,
+  FONT_SIZE_PT_STEP,
+  getFontScale
+} from "@/lib/fonts";
+import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { AI_PROVIDERS, type AiProvider, type AiSettings } from "@/store/useAiSettingsStore";
 import { persistLanguage, type SupportedLanguage } from "@/i18n";
 import { type Theme, useThemeStore } from "@/store/useThemeStore";
@@ -22,7 +32,93 @@ import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
 import { isWindowsPlatform } from "@/lib/platform";
 import { useAppVersion } from "@/hooks/useAppVersion";
 
-export type SettingsTab = "general" | "ai" | "assistants" | "versioning";
+export type SettingsTab = "general" | "fonts" | "ai" | "assistants" | "versioning";
+
+/**
+ * Document font for editor and export alike. The preview renders the actual
+ * face — which is the point of the box: a font name tells the user nothing,
+ * and the difference between two serifs only shows in the letterforms.
+ */
+function FontSetting() {
+  const { t } = useTranslation();
+  const fontId = useEditorSettingsStore((state) => state.fontId);
+  const setFontId = useEditorSettingsStore((state) => state.setFontId);
+  const fontSizePt = useEditorSettingsStore((state) => state.fontSizePt);
+  const setFontSizePt = useEditorSettingsStore((state) => state.setFontSizePt);
+
+  // Every family's faces are needed at once here, since the list shows each
+  // option in its own font rather than in the UI font.
+  useEffect(() => {
+    APP_FONT_IDS.forEach((id) => void ensureFontStylesLoaded(id));
+  }, []);
+
+  return (
+    <div className="font-setting">
+      <span className="font-setting__label">{t("settingsDialog.font")}</span>
+      <p className="font-setting__hint">{t("settingsDialog.fontHint")}</p>
+
+      <div className="font-setting__options" role="radiogroup" aria-label={t("settingsDialog.font")}>
+        {APP_FONT_IDS.map((id) => {
+          const definition = APP_FONTS[id];
+          const label = definition.label ?? t("settingsDialog.fontSystem");
+          const isSelected = id === fontId;
+
+          return (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={isSelected}
+              className="font-setting__option"
+              data-selected={isSelected ? "true" : undefined}
+              onClick={() => setFontId(id)}
+            >
+              <span className="font-setting__name">{label}</span>
+              <span
+                className="font-setting__preview"
+                style={{ fontFamily: definition.cssStack }}
+                aria-hidden="true"
+              >
+                {t("settingsDialog.fontPreviewText")}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="font-setting__size">
+        <label className="font-setting__size-label" htmlFor="settings-font-size">
+          {t("settingsDialog.fontSize")}
+          <output htmlFor="settings-font-size" className="font-setting__size-value">
+            {t("settingsDialog.fontSizeValue", { size: fontSizePt })}
+          </output>
+        </label>
+
+        <input
+          id="settings-font-size"
+          type="range"
+          min={FONT_SIZE_PT_MIN}
+          max={FONT_SIZE_PT_MAX}
+          step={FONT_SIZE_PT_STEP}
+          value={fontSizePt}
+          onChange={(event) => setFontSizePt(Number.parseFloat(event.target.value))}
+        />
+
+        {/* Preview in the chosen family *and* size — the slider number alone
+            does not tell anyone whether the text will read comfortably. */}
+        <p
+          className="font-setting__size-preview"
+          style={{
+            fontFamily: APP_FONTS[fontId].cssStack,
+            fontSize: `calc(1rem * ${getFontScale(fontSizePt)})`
+          }}
+        >
+          {t("settingsDialog.fontSizePreviewText")}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 type SettingsDialogProps = {
   open: boolean;
@@ -183,6 +279,19 @@ export function SettingsDialog({
           <button
             type="button"
             role="tab"
+            id="settings-tab-fonts"
+            aria-selected={activeTab === "fonts"}
+            aria-controls="settings-panel-fonts"
+            className={
+              activeTab === "fonts" ? "ai-dialog__tab ai-dialog__tab--active" : "ai-dialog__tab"
+            }
+            onClick={() => setActiveTab("fonts")}
+          >
+            {t("settingsDialog.tabFonts")}
+          </button>
+          <button
+            type="button"
+            role="tab"
             id="settings-tab-ai"
             aria-selected={activeTab === "ai"}
             aria-controls="settings-panel-ai"
@@ -190,19 +299,6 @@ export function SettingsDialog({
             onClick={() => setActiveTab("ai")}
           >
             {t("settingsDialog.tabAi")}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            id="settings-tab-versioning"
-            aria-selected={activeTab === "versioning"}
-            aria-controls="settings-panel-versioning"
-            className={
-              activeTab === "versioning" ? "ai-dialog__tab ai-dialog__tab--active" : "ai-dialog__tab"
-            }
-            onClick={() => setActiveTab("versioning")}
-          >
-            {t("settingsDialog.tabVersioning")}
           </button>
           <button
             type="button"
@@ -216,6 +312,19 @@ export function SettingsDialog({
             onClick={() => setActiveTab("assistants")}
           >
             {t("settingsDialog.tabAssistants")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="settings-tab-versioning"
+            aria-selected={activeTab === "versioning"}
+            aria-controls="settings-panel-versioning"
+            className={
+              activeTab === "versioning" ? "ai-dialog__tab ai-dialog__tab--active" : "ai-dialog__tab"
+            }
+            onClick={() => setActiveTab("versioning")}
+          >
+            {t("settingsDialog.tabVersioning")}
           </button>
         </div>
 
@@ -280,6 +389,10 @@ export function SettingsDialog({
                 {t("settingsDialog.openSourceLicenses")}
               </button>
             </p>
+          </div>
+        ) : activeTab === "fonts" ? (
+          <div id="settings-panel-fonts" role="tabpanel" aria-labelledby="settings-tab-fonts">
+            <FontSetting />
           </div>
         ) : activeTab === "versioning" ? (
           <div id="settings-panel-versioning" role="tabpanel" aria-labelledby="settings-tab-versioning">
@@ -430,17 +543,18 @@ export function SettingsDialog({
           </div>
         )}
 
-        {/* Assistants and versioning save themselves immediately via their own
-            stores, so the AI-settings footer would only mislead on those tabs. */}
+        {/* Fonts, assistants and versioning save themselves immediately via
+            their own stores, so the AI-settings footer would only mislead on
+            those tabs. */}
         <div className="ai-dialog__actions">
           <Button type="button" variant="outline" onClick={onClose}>
-            {activeTab === "assistants" || activeTab === "versioning"
+            {activeTab === "fonts" || activeTab === "assistants" || activeTab === "versioning"
               ? t("common.close")
               : t("common.cancel")}
           </Button>
           <Button
             type="button"
-            hidden={activeTab === "assistants" || activeTab === "versioning"}
+            hidden={activeTab === "fonts" || activeTab === "assistants" || activeTab === "versioning"}
             onClick={() => {
               onSave({
                 provider,

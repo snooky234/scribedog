@@ -92,7 +92,12 @@
     "conflictSkip": "Überspringen",
     "conflictOverwrite": "Überschreiben",
     "doneSummary": "Export abgeschlossen: {{exportedCount}} exportiert, {{skippedCount}} übersprungen.",
-    "errorMessage": "Export fehlgeschlagen: {{message}}"
+    "errorMessage": "Export fehlgeschlagen: {{message}}",
+    "eyebrowManuscript": "Manuskript",
+    "titleManuscript": "Als Manuskript exportieren",
+    "descriptionManuscript": "Fügt alle Kapitel in der Reihenfolge der Seitenleiste zu einem Buch zusammen.",
+    "mergeIntoOneFile": "In eine Datei zusammenfassen",
+    "mergeHint": "Alle Notizen hintereinander in einem Dokument statt je eine Datei pro Notiz."
   },
   "importDialog": {
     "eyebrow": "Import",
@@ -132,6 +137,7 @@
     "title": "Einstellungen",
     "tabsAriaLabel": "Einstellungskategorien",
     "tabGeneral": "Allgemein",
+    "tabFonts": "Schriften",
     "tabAi": "KI-Einstellungen",
     "tabAssistants": "Assistenten",
     "tabVersioning": "Versionierung",
@@ -169,7 +175,14 @@
     "contextLength": "Context-Länge",
     "thinking": "Denken",
     "thinkingOn": "An (Modell-Standard)",
-    "thinkingOff": "Aus"
+    "thinkingOff": "Aus",
+    "font": "Schriftart",
+    "fontHint": "Gilt für den Editor und für alle Exporte. Die Auswahl ist bewusst begrenzt: nur mitgelieferte Schriften lassen sich in ein PDF einbetten.",
+    "fontSystem": "Systemstandard",
+    "fontPreviewText": "Der Aufbruch beginnt",
+    "fontSize": "Schriftgröße",
+    "fontSizeValue": "{{size}} pt",
+    "fontSizePreviewText": "Der Aufbruch beginnt an einem Dienstag im November."
   },
   "assistants": {
     "defaultName": "Standard",
@@ -279,7 +292,7 @@
       "closeDialog": "Dialog schließen",
       "moveListItemUp": "Listenelement nach oben verschieben",
       "moveListItemDown": "Listenelement nach unten verschieben",
-      "toggleLinksPanel": "Link-Panel (Verweise & Backlinks) ein-/ausblenden"
+      "toggleDetailsPanel": "Detail-Panel (Links, Backlinks & Datei-Info) ein-/ausblenden"
     },
     "customizeHint": "Auf eine Tastenkombination klicken und die neue Kombination drücken.",
     "recording": "Taste drücken …",
@@ -324,7 +337,8 @@
     "renameInputLabel": "Ordnername",
     "fileRenameInputLabel": "Dateiname",
     "export": "Exportieren…",
-    "print": "Drucken…"
+    "print": "Drucken…",
+    "exportManuscript": "Als Manuskript exportieren …"
   },
   "toolbar": {
     "formattingLabel": "Formatierungswerkzeuge",
@@ -364,8 +378,8 @@
     "codeBlockTitle": "Code-Block (Strg+K)",
     "insertLink": "Link einfügen",
     "insertLinkTitle": "Link einfügen (Strg+M)",
-    "linksPanel": "Links & Backlinks",
-    "linksPanelTitle": "Links-Panel ein-/ausblenden",
+    "detailsPanel": "Details",
+    "detailsPanelTitle": "Detail-Panel ein-/ausblenden",
     "headingMenu": "Überschrift",
     "paragraph": "Normaler Text",
     "heading4": "Überschrift 4",
@@ -419,8 +433,8 @@
     "resultSummary": "{{matches}} Ersetzungen in {{files}} Datei(en) vorgenommen",
     "fileMatchBadge": "Suchtreffer: {{count}}"
   },
-  "linksPanel": {
-    "title": "Links",
+  "detailsPanel": {
+    "title": "Details",
     "refresh": "Aktualisieren",
     "close": "Panel schließen",
     "outgoing": "Ausgehende Links ({{count}})",
@@ -428,7 +442,14 @@
     "backlinks": "Backlinks ({{count}})",
     "backlinksLoading": "Backlinks werden gesucht …",
     "noBacklinks": "Keine andere Datei verlinkt dieses Dokument.",
-    "brokenTarget": "Ziel nicht gefunden"
+    "brokenTarget": "Ziel nicht gefunden",
+    "fileInfo": "Datei-Info",
+    "words": "Wörter",
+    "characters": "Zeichen",
+    "readingTime": "Lesezeit",
+    "readingMinutes": "ca. {{count}} Min.",
+    "createdAt": "Erste Bearbeitung",
+    "modifiedAt": "Letzte Bearbeitung"
   },
   "fileLinkSuggest": {
     "hint": "Datei verlinken",
@@ -624,5 +645,25 @@
     "toolProposePassageFailed": "Textstelle nicht gefunden",
     "toolSettleProposalsFailed": "Keine offenen Vorschläge",
     "toolActionFailed": "Aktion fehlgeschlagen"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "Kapitel {number}",
+    "coverSection": "Deckblatt",
+    "bookTitle": "Titel",
+    "subtitle": "Untertitel",
+    "author": "Autor",
+    "includeTitlePage": "Deckblatt voranstellen",
+    "chaptersSection": "Kapitel",
+    "numbering": "Nummerierung",
+    "numberingNone": "Keine",
+    "numberingNumber": "1. Kapiteltitel",
+    "numberingLabel": "Kapitel 1: Kapiteltitel",
+    "titleSource": "Kapiteltitel aus",
+    "titleSourceHeading": "Erster Überschrift der Datei",
+    "titleSourceFileName": "Dateiname",
+    "labelTemplate": "Vorlage für die Kapitelbezeichnung",
+    "labelTemplateHint": "{number} wird durch die Kapitelnummer ersetzt.",
+    "includeChapterHeadings": "Kapitelüberschriften erzeugen",
+    "pageBreakBetweenChapters": "Jedes Kapitel auf einer neuen Seite beginnen"
   }
 }

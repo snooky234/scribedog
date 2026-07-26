@@ -3,8 +3,9 @@ import type { Update } from "@tauri-apps/plugin-updater";
 import { AssistantEditDialog } from "@/components/AssistantEditDialog";
 import { DeleteFileDialog } from "@/components/DeleteFileDialog";
 import { ExportDialog, type ExportDialogTarget } from "@/components/ExportDialog";
+import type { MarkdownFileRecord } from "@/lib/fileSystem";
 import { ImportDialog } from "@/components/ImportDialog";
-import { SettingsDialog } from "@/components/SettingsDialog";
+import { SettingsDialog, type SettingsTab } from "@/components/SettingsDialog";
 import { ShortcutsDialog } from "@/components/ShortcutsDialog";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { UpdateNotification } from "@/components/UpdateNotification";
@@ -13,8 +14,6 @@ import type { DeleteTarget } from "@/hooks/useDeleteTarget";
 import type { FileVersion } from "@/lib/fileVersions";
 import type { AiSettings } from "@/store/useAiSettingsStore";
 import type { Assistant } from "@/store/useAssistantsStore";
-
-type SettingsTab = "general" | "ai" | "assistants" | "versioning";
 
 type AppDialogsProps = {
   // Unsaved-changes navigation prompt
@@ -53,6 +52,7 @@ type AppDialogsProps = {
   // Export
   exportTarget: ExportDialogTarget | null;
   readMarkdownForExport: (filePath: string) => Promise<string>;
+  resolveOrderedExportRecords: (target: ExportDialogTarget) => MarkdownFileRecord[];
   onCloseExport: () => void;
 
   // Import
@@ -99,6 +99,7 @@ export function AppDialogs({
   onCancelDelete,
   exportTarget,
   readMarkdownForExport,
+  resolveOrderedExportRecords,
   onCloseExport,
   importFileList,
   folderPath,
@@ -158,6 +159,7 @@ export function AppDialogs({
       <ExportDialog
         target={exportTarget}
         readMarkdown={readMarkdownForExport}
+        resolveOrderedRecords={resolveOrderedExportRecords}
         onClose={onCloseExport}
       />
 

@@ -120,7 +120,8 @@ and the source in this repository.
 | 🎙️ Voice input | Offline dictation into the document or straight into an AI prompt | `Ctrl+Shift+W` / `Ctrl+Shift+E` |
 | 🧩 Custom assistants | Named, reusable system prompts for the AI chat, switchable in-panel | Chat panel dropdown |
 | ✍️ WYSIWYG editing | Headings, tables, images, lists, code blocks, emoji, spell check | — |
-| 🔗 Linked notes | Link notes by drag, dialog, or `[[`; links & backlinks panel; back/forward history | `Ctrl+L` · `Ctrl+Shift+L` · `Alt+←`/`Alt+→` |
+| 🔗 Linked notes | Link notes by drag, dialog, or `[[`; links & backlinks in the details panel; back/forward history | `Ctrl+L` · `Ctrl+Shift+D` · `Alt+←`/`Alt+→` |
+| 🔍 Details panel | Links and backlinks of the open note plus its word count, reading time and edit dates | `Ctrl+Shift+D` / toolbar |
 | 📥 Import | Bring in Word, PDF, HTML, or images (via AI OCR) as clean Markdown | Sidebar import |
 | 📤 Export | Export notes or whole folders to PDF, DOCX, ODT, or HTML | Right-click → Export… |
 | 📂 File management | File tree, create/rename/delete, flexible sorting, live filesystem sync | Sidebar |
@@ -186,7 +187,7 @@ and the source in this repository.
 - **Insert link** in the toolbar (`Ctrl+L`) takes a URL *or* one of the vault's own files, picked from a search list with autocomplete, and inserts it at the cursor position
 - **Type `[[`** anywhere in your text for a wiki-style picker right at the caret: keep typing to filter, `↑`/`↓` to choose, `Enter` to insert
 - **A plain click follows a link** — a note link opens that note (unsaved changes are guarded by the usual save/discard prompt, exactly like clicking the file in the sidebar), any other link opens in your system browser
-- **Links & backlinks panel** — a toolbar toggle (or `Ctrl+Shift+L`) opens a side panel listing what the open note links to and which notes link back to it; one click jumps there, and targets that no longer exist are marked
+- **Details panel** — a toolbar toggle (or `Ctrl+Shift+D`) opens a side panel listing what the open note links to and which notes link back to it; one click jumps there, and targets that no longer exist are marked. Below that, **File info** shows the note's word count, its estimated reading time and when it was first and last edited
 - **Back and forward** buttons next to the file name (or `Alt+←` / `Alt+→`) retrace your way through the notes you opened — following a chain of links and coming back is one keystroke, and deleted files are skipped
 - Links are stored as **plain relative Markdown links** (`[Note](sub/note.md)`), so a linked vault stays readable and portable in every other Markdown tool
 

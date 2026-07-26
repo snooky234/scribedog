@@ -94,7 +94,12 @@
     "conflictSkip": "Пропустить",
     "conflictOverwrite": "Перезаписать",
     "doneSummary": "Экспорт завершён: экспортировано {{exportedCount}}, пропущено {{skippedCount}}.",
-    "errorMessage": "Ошибка экспорта: {{message}}"
+    "errorMessage": "Ошибка экспорта: {{message}}",
+    "eyebrowManuscript": "Рукопись",
+    "titleManuscript": "Экспорт как рукопись",
+    "descriptionManuscript": "Собирает все главы в одну книгу в том порядке, в каком они показаны на боковой панели.",
+    "mergeIntoOneFile": "Объединить в один файл",
+    "mergeHint": "Все заметки подряд в одном документе вместо отдельного файла на каждую заметку."
   },
   "importDialog": {
     "eyebrow": "Импорт",
@@ -134,6 +139,7 @@
     "title": "Настройки",
     "tabsAriaLabel": "Категории настроек",
     "tabGeneral": "Общие",
+    "tabFonts": "Шрифты",
     "tabAi": "Настройки ИИ",
     "tabAssistants": "Ассистенты",
     "tabVersioning": "Версии",
@@ -171,7 +177,14 @@
     "contextLength": "Длина контекста",
     "thinking": "Рассуждение",
     "thinkingOn": "Включено (по умолчанию для модели)",
-    "thinkingOff": "Выключено"
+    "thinkingOff": "Выключено",
+    "font": "Шрифт",
+    "fontHint": "Применяется к редактору и ко всем экспортам. Список намеренно ограничен: встроить в PDF можно только поставляемые шрифты.",
+    "fontSystem": "Системный по умолчанию",
+    "fontPreviewText": "Путешествие начинается",
+    "fontSize": "Размер текста",
+    "fontSizeValue": "{{size}} пт",
+    "fontSizePreviewText": "Путешествие начинается во вторник в ноябре."
   },
   "assistants": {
     "defaultName": "По умолчанию",
@@ -287,7 +300,7 @@
       "closeDialog": "Закрыть диалог",
       "moveListItemUp": "Переместить элемент списка вверх",
       "moveListItemDown": "Переместить элемент списка вниз",
-      "toggleLinksPanel": "Показать/скрыть панель ссылок (ссылки и обратные ссылки)"
+      "toggleDetailsPanel": "Показать/скрыть панель сведений (ссылки, обратные ссылки и сведения о файле)"
     },
     "customizeHint": "Щёлкните по комбинации и нажмите новую.",
     "recording": "Нажмите клавишу …",
@@ -332,7 +345,8 @@
     "renameInputLabel": "Имя папки",
     "fileRenameInputLabel": "Имя файла",
     "export": "Экспортировать…",
-    "print": "Печать…"
+    "print": "Печать…",
+    "exportManuscript": "Экспорт как рукопись…"
   },
   "toolbar": {
     "formattingLabel": "Инструменты форматирования",
@@ -372,8 +386,8 @@
     "codeBlockTitle": "Блок кода (Ctrl+K)",
     "insertLink": "Вставить ссылку",
     "insertLinkTitle": "Вставить ссылку (Ctrl+M)",
-    "linksPanel": "Ссылки и обратные ссылки",
-    "linksPanelTitle": "Показать или скрыть панель ссылок",
+    "detailsPanel": "Сведения",
+    "detailsPanelTitle": "Показать или скрыть панель сведений",
     "headingMenu": "Заголовок",
     "paragraph": "Обычный текст",
     "heading4": "Заголовок 4",
@@ -427,8 +441,8 @@
     "resultSummary": "Выполнено замен: {{matches}} в файлах: {{files}}",
     "fileMatchBadge": "Совпадений: {{count}}"
   },
-  "linksPanel": {
-    "title": "Ссылки",
+  "detailsPanel": {
+    "title": "Сведения",
     "refresh": "Обновить",
     "close": "Закрыть панель",
     "outgoing": "Исходящие ссылки ({{count}})",
@@ -436,7 +450,14 @@
     "backlinks": "Обратные ссылки ({{count}})",
     "backlinksLoading": "Поиск обратных ссылок …",
     "noBacklinks": "Другие файлы не ссылаются на этот документ.",
-    "brokenTarget": "Цель не найдена"
+    "brokenTarget": "Цель не найдена",
+    "fileInfo": "О файле",
+    "words": "Слов",
+    "characters": "Символов",
+    "readingTime": "Время чтения",
+    "readingMinutes": "≈ {{count}} мин",
+    "createdAt": "Первое изменение",
+    "modifiedAt": "Последнее изменение"
   },
   "fileLinkSuggest": {
     "hint": "Ссылка на файл",
@@ -632,5 +653,25 @@
     "toolProposePassageFailed": "Фрагмент не найден",
     "toolSettleProposalsFailed": "Нет открытых предложений",
     "toolActionFailed": "Действие не выполнено"
+  },
+  "manuscript": {
+    "chapterLabelTemplate": "Глава {number}",
+    "coverSection": "Титульный лист",
+    "bookTitle": "Название",
+    "subtitle": "Подзаголовок",
+    "author": "Автор",
+    "includeTitlePage": "Добавить титульный лист",
+    "chaptersSection": "Главы",
+    "numbering": "Нумерация",
+    "numberingNone": "Без нумерации",
+    "numberingNumber": "1. Название главы",
+    "numberingLabel": "Глава 1: название главы",
+    "titleSource": "Название главы из",
+    "titleSourceHeading": "Первого заголовка файла",
+    "titleSourceFileName": "Имени файла",
+    "labelTemplate": "Шаблон обозначения главы",
+    "labelTemplateHint": "{number} заменяется номером главы.",
+    "includeChapterHeadings": "Создавать заголовки глав",
+    "pageBreakBetweenChapters": "Начинать каждую главу с новой страницы"
   }
 }
