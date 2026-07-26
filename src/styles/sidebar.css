@@ -23,6 +23,11 @@
   gap: 0.5rem;
 }
 
+.sidebar-panel__folder-wrap {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
 .sidebar-panel__folder {
   display: block;
   width: 100%;

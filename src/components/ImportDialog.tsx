@@ -140,7 +140,6 @@ export function ImportDialog({ files, vaultRoot, onImported, onClose }: ImportDi
         aria-labelledby="import-dialog-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="unsaved-dialog__eyebrow">{t("importDialog.eyebrow")}</p>
         <h3 id="import-dialog-title">{t("importDialog.title")}</h3>
 
         <p className="unsaved-dialog__description" role="status">

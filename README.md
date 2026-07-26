@@ -134,7 +134,13 @@ and the source in this repository.
 - Works out of the box with **Ollama**, **Jan.ai**, and **LM Studio** (local) as well as **OpenAI**, **Anthropic**, and **Mistral** (cloud, bring your own key)
 - Optional toggles to include the whole document as context and to preserve formatting
 - Model "thinking"/reasoning output is filtered automatically — only the final answer touches your document
+
+  <img src="src/assets/scribe-dog-ai-assisted-writing.png" alt="ScribeDog AI rewrite dialog" width="700">
+
 - **Review before you accept** — the original passage stays untouched (highlighted in red) while the AI's answer streams in right below it as a live Markdown preview; **accept**, **discard**, or **keep refining** with another prompt before anything actually changes your document
+
+  <img src="src/assets/scribe-dog-ai-assisted-proposal.png" alt="ScribeDog AI review widget with accept/discard" width="700">
+
 - Every AI edit is a single atomic change: one `Ctrl+Z` fully undoes it
 - **AI spelling & grammar check** — select a passage, press `Ctrl+Shift+X` (or use the toolbar button), and get a clear list of issues with suggested corrections and explanations; apply them one by one or all at once
 
@@ -144,12 +150,21 @@ and the source in this repository.
 - **Nothing changes your document silently** — every proposed edit goes through the exact same red/green **review widget** as the rest of ScribeDog's AI features: accept, discard, or ask for another version before anything is written
 - Attach an image from your document to the conversation and ask a vision-capable model about it
 - Multiple sessions, rich Markdown rendering of the model's replies, a running indicator while it's thinking, and a request timeout so a stalled call never hangs the panel
+
+  <img src="src/assets/scribe-dog-ai-chat.png" alt="ScribeDog agentic AI chat panel" width="700">
+
 - **Model recommendation:** reliable tool-calling is genuinely hard for small models. Local models from roughly **9B parameters** upward (e.g. Qwen 3.5 9B, Gemma 4 12B) or any of the supported cloud models handle the chat's agentic tools well. **Below that**, a model tends to call tools incorrectly or not at all — for those, use the simple **select text → `Ctrl+E`** rewrite instead; it asks nothing of the model beyond writing text and works reliably even on tiny models.
 
 ### 🕓 Document versions — undo across saves
 - Turn on **version history** in the Versioning settings tab, and every save silently snapshots the file's previous content first — saves that don't actually change anything don't create a duplicate snapshot
 - Open the **version history** popover from the document header to see every snapshot with its timestamp
+
+  <img src="src/assets/scribe-dog-document-versions.png" alt="ScribeDog version history popover" width="300">
+
 - **Compare** any snapshot against the current file with a line-by-line diff — inline or side-by-side
+
+  <img src="src/assets/scribe-dog-version-comparison.png" alt="ScribeDog side-by-side version comparison" width="700">
+
 - **Restore** a version in one click; the current content is snapshotted first, so restoring is itself just another undoable step
 - Choose how many versions are kept per file (1–200, default 10), and clear all stored versions at once if you want a fresh start
 - Versions live locally next to your files, in the same hidden `.scribedog` metadata folder as your sidebar preferences — nothing leaves your machine
@@ -167,10 +182,19 @@ and the source in this repository.
 - Speech recognition runs **100% locally** via [whisper.cpp](https://github.com/ggerganov/whisper.cpp) — no cloud service, no audio ever leaves your device, in all 10 interface languages and more
 - The multilingual model (~465 MB) is downloaded once on first use, with a clear progress dialog — just like setting up a local LLM
 
+  <img src="src/assets/scribe-dog-voice-input.png" alt="ScribeDog offline voice dictation" width="700">
+
 ### 🧩 Custom assistants — your own reusable AI chat personas
 - Define named **assistants** — each with an emoji, name, description, and its own system prompt (e.g. *"Translate to English"*, *"Make more formal"*, *"Summarize technically"*)
 - Switch assistants in one click via a **dropdown right in the chat panel**; the selected assistant shapes the system prompt for that agentic conversation
+
+  <img src="src/assets/scribe-dog-ai-assistant-selection.png" alt="ScribeDog assistant selection dropdown" width="300">
+
 - Manage them in a dedicated **Assistants settings tab**; the built-in **Default** assistant can be customized too — and restored anytime with *Reset to default*
+
+  <img src="src/assets/scribe-dog-ai-assistant-settings.png" alt="ScribeDog Assistants settings tab" width="450">
+  <img src="src/assets/scribe-dog-ai-assistant-settings2.png" alt="ScribeDog edit assistant dialog" width="450">
+
 - No more retyping the same instructions into the chat for every conversation
 
 ### ✍️ True WYSIWYG Markdown editing
@@ -196,6 +220,9 @@ and the source in this repository.
 - **Word (`.docx`), PDF, and HTML** are converted **entirely offline** — structure like headings, lists, emphasis, and tables is preserved as far as the source allows, and no AI or network connection is needed
 - **Embedded images** are extracted into the vault's `images/` folder and linked automatically, just like pasted images
 - **Images become text** — import screenshots, scans, or photos of pages (PNG, JPG, GIF, WebP) and your configured **vision-capable AI model** turns them into editable Markdown via OCR — locally, if that's where your model runs
+
+  <img src="src/assets/scribe-dog-image-ocr-import.png" alt="ScribeDog Assistants settings tab" width="800">
+
 - Existing files are never overwritten — name conflicts get a numeric suffix, and a mixed batch imports what it can instead of failing as a whole
 
 ### 📤 Export for sharing and printing
@@ -222,6 +249,9 @@ ScribeDog stores everything as plain `.md` files in a normal folder — so makin
 
 ### 🎨 Comfortable to use
 - Light and dark theme
+
+  <img src="src/assets/scribe-dog-light-theme.png" alt="ScribeDog light theme" width="700">
+
 - Interface available in **10 languages** — English, German, Spanish, French, Italian, Portuguese, Russian, Ukrainian, Japanese, and Chinese
 - One-click formatting toolbar with active-state highlighting
 - Built-in keyboard shortcuts cheat sheet (`Ctrl+#`) — and **every shortcut in it can be remapped**: click a key combination, press the one you want, and it's saved right away (conflicts are caught before they're assigned)

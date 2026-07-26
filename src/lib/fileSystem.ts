@@ -287,7 +287,7 @@ export function formatFolderLabel(folderPath: string | null): string {
     return i18n.t("fileSystem.noFolderOpen");
   }
 
-  return `${normalizeDisplayPath(folderPath)}/`;
+  return normalizeDisplayPath(folderPath);
 }
 
 function sanitizeImageFileName(fileName: string, mimeType: string): string {

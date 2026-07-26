@@ -261,7 +261,7 @@ export function Sidebar({
             <Keyboard />
           </Button>
         </div>
-        <div>
+        <div className="sidebar-panel__folder-wrap">
           <button
             type="button"
             className="sidebar-panel__folder"

@@ -827,7 +827,7 @@
 .import-dialog__list {
   margin-top: 1rem;
   max-height: 16rem;
-  overflow-y: auto;
+  overflow-y: scroll;
   scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
