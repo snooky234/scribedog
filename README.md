@@ -59,53 +59,6 @@ notes — fluently, privately, and for free.
 
 ---
 
-## 📥 Installation
-
-Grab the latest installer for your platform from the
-[**Releases page**](https://github.com/snooky234/scribedog/releases/latest):
-
-**Windows**
-- `ScribeDog_x.y.z_x64-setup.exe` — NSIS installer (recommended). Also adds an optional **"Open with ScribeDog"** entry to the Explorer folder context menu.
-- `ScribeDog_x.y.z_x64_en-US.msi` — MSI package
-
-**Linux**
-- `ScribeDog_x.y.z_amd64.AppImage` — no installation needed, just mark it executable and run it
-- `ScribeDog_x.y.z_amd64.deb` — for Debian/Ubuntu-based distributions
-
-> **Note:** The installers are not code-signed, so you may see a warning on
-> first launch — Windows SmartScreen ("More info → Run anyway"). You can
-> verify every release is built directly from this repository by GitHub
-> Actions.
-
-### ⚠️ About the "Windows protected your PC" warning
-
-Because ScribeDog's installers aren't (yet) signed with a paid code-signing
-certificate, Windows SmartScreen shows this warning the first time you run a
-freshly downloaded installer. **This is expected and not a sign that
-anything is wrong** — it simply means the binary hasn't built up enough
-reputation with Microsoft yet, not that it's been flagged as malicious.
-Every release is built transparently from this repository's source by
-GitHub Actions, so you can always verify what went into it.
-
-To proceed:
-
-1. Click **"More info"**.
-
-   <img src="src/assets/smartscreen01.png" alt="SmartScreen warning – click More info" width="400">
-
-2. Click **"Run anyway"**.
-
-   <img src="src/assets/smartscreen02.png" alt="SmartScreen warning – click Run anyway" width="400">
-
-**Heads-up:** some antivirus/security suites also run their own scan on the
-installer during setup (in addition to, or instead of, SmartScreen). This is
-normal for unsigned, less widely distributed apps — just let the scan
-finish. If you want to double-check what's actually in a given release,
-compare it against the corresponding [GitHub Actions build](https://github.com/snooky234/scribedog/actions)
-and the source in this repository.
-
----
-
 ## Features
 
 ### 📋 Feature overview
@@ -263,6 +216,53 @@ ScribeDog stores everything as plain `.md` files in a normal folder — so makin
 - Beyond that optional update check, local AI providers mean the only network call is to the local endpoint *you* configure, and only when you trigger an AI action
 - Cloud AI is strictly **bring-your-own-key**: your key is stored in the operating system's credential store (Windows Credential Manager, macOS Keychain, Linux Secret Service) — not in plain text on disk — and sent only to the provider you chose, with no ScribeDog server in between. The settings dialog shows a clear notice whenever a cloud provider is selected
 - Tauri capabilities are scoped tightly: filesystem access is limited to the folder you open, HTTP access to your configured AI endpoint
+
+---
+
+## 📥 Installation
+
+Grab the latest installer for your platform from the
+[**Releases page**](https://github.com/snooky234/scribedog/releases/latest):
+
+**Windows**
+- `ScribeDog_x.y.z_x64-setup.exe` — NSIS installer (recommended). Also adds an optional **"Open with ScribeDog"** entry to the Explorer folder context menu.
+- `ScribeDog_x.y.z_x64_en-US.msi` — MSI package
+
+**Linux**
+- `ScribeDog_x.y.z_amd64.AppImage` — no installation needed, just mark it executable and run it
+- `ScribeDog_x.y.z_amd64.deb` — for Debian/Ubuntu-based distributions
+
+> **Note:** The installers are not code-signed, so you may see a warning on
+> first launch — Windows SmartScreen ("More info → Run anyway"). You can
+> verify every release is built directly from this repository by GitHub
+> Actions.
+
+### ⚠️ About the "Windows protected your PC" warning
+
+Because ScribeDog's installers aren't (yet) signed with a paid code-signing
+certificate, Windows SmartScreen shows this warning the first time you run a
+freshly downloaded installer. **This is expected and not a sign that
+anything is wrong** — it simply means the binary hasn't built up enough
+reputation with Microsoft yet, not that it's been flagged as malicious.
+Every release is built transparently from this repository's source by
+GitHub Actions, so you can always verify what went into it.
+
+To proceed:
+
+1. Click **"More info"**.
+
+   <img src="src/assets/smartscreen01.png" alt="SmartScreen warning – click More info" width="400">
+
+2. Click **"Run anyway"**.
+
+   <img src="src/assets/smartscreen02.png" alt="SmartScreen warning – click Run anyway" width="400">
+
+**Heads-up:** some antivirus/security suites also run their own scan on the
+installer during setup (in addition to, or instead of, SmartScreen). This is
+normal for unsigned, less widely distributed apps — just let the scan
+finish. If you want to double-check what's actually in a given release,
+compare it against the corresponding [GitHub Actions build](https://github.com/snooky234/scribedog/actions)
+and the source in this repository.
 
 ---
 
