@@ -48,6 +48,36 @@ function afterTopLevelBlock(doc: ProseMirrorNode, pos: number): number {
 }
 
 /**
+ * Whether this document holds anything an anchor could ever name — any text, or
+ * an image. A note the user just created holds neither.
+ *
+ * That case has to be kept apart from "the anchor was not found": the agent is
+ * told to always say where new text goes (rule 6 of the system prompt), so on a
+ * fresh note it passes an anchor taken from the chat — the attached file, its
+ * own earlier answer — and every one of them comes back unresolvable. The
+ * insertion then never happens and the model concludes it cannot write into an
+ * empty note at all. There is exactly one place text can go in a document with
+ * no content, so here the anchor is moot rather than wrong.
+ */
+export function hasAnchorableContent(doc: ProseMirrorNode): boolean {
+  if (doc.textContent.trim()) {
+    return true;
+  }
+
+  let hasImage = false;
+
+  doc.descendants((node) => {
+    if (node.type.name === "image") {
+      hasImage = true;
+    }
+
+    return !hasImage;
+  });
+
+  return hasImage;
+}
+
+/**
  * Resolves an anchor to the position the new text goes after. Returns null
  * when the anchor names nothing in this document — the caller reports that
  * back to the model rather than silently falling back to the caret, which is

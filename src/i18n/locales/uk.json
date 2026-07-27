@@ -690,6 +690,7 @@
     "toolReadNoteFailed": "Не вдалося прочитати нотатку",
     "sourcesLabel": "Джерела",
     "agentWorking": "Агент працює…",
+    "otherSessionBusy": "Зараз формується відповідь в іншому чаті.",
     "agentStopped": "Зупинено після кількох кроків без остаточної відповіді.",
     "toolReadImageFailed": "Не вдалося прочитати зображення",
     "toolResizeImageFailed": "Не вдалося змінити розмір зображення",

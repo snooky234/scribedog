@@ -31,9 +31,17 @@ const MAX_CHUNK_CHARS: usize = 1_500;
 const BM25_K1: f32 = 1.2;
 const BM25_B: f32 = 0.75;
 
-/// How much text of a passage travels back as a preview. The agent reads the
-/// full passage with read_note when it wants more.
+/// Smallest preview a single hit gets, however many hits share the budget.
 const SNIPPET_CHARS: usize = 400;
+
+/// How much passage text one search may hand back in total, split evenly across
+/// the hits it actually returns. A search that finds one short note should
+/// return that note *whole* rather than a 400-character teaser: the follow-up
+/// read_note call is the step weak models skip, and they then answer from the
+/// preview as if it were the full text. With the budget divided by the hit
+/// count, anything up to four hits comes back as complete passages
+/// (MAX_CHUNK_CHARS each) and only a wide search degrades to previews.
+const SNIPPET_BUDGET_CHARS: usize = 4_000;
 
 #[derive(Clone, Serialize)]
 pub struct SearchHit {
@@ -43,6 +51,10 @@ pub struct SearchHit {
     /// Empty for text above the first heading.
     pub heading_path: String,
     pub snippet: String,
+    /// Whether the snippet is a cut-down preview of a longer passage. The
+    /// frontend says so in words in the tool result — an "…" alone reads to a
+    /// model like an ellipsis in the note itself, not like a truncation.
+    pub truncated: bool,
     pub score: f32,
 }
 
@@ -375,10 +387,10 @@ fn chunks_for_file(state: &RagState, path: &Path) -> Vec<Chunk> {
     chunks
 }
 
-fn build_snippet(chunk: &Chunk, query_tokens: &[String]) -> String {
+fn build_snippet(chunk: &Chunk, query_tokens: &[String], budget: usize) -> String {
     let characters: Vec<char> = chunk.text.chars().collect();
 
-    if characters.len() <= SNIPPET_CHARS {
+    if characters.len() <= budget {
         return chunk.text.clone();
     }
 
@@ -394,8 +406,8 @@ fn build_snippet(chunk: &Chunk, query_tokens: &[String]) -> String {
 
     // find() gives a byte offset; convert it to a char offset before slicing.
     let match_char_index = lowercase[..first_match].chars().count();
-    let start = match_char_index.saturating_sub(80).min(characters.len().saturating_sub(SNIPPET_CHARS));
-    let end = (start + SNIPPET_CHARS).min(characters.len());
+    let start = match_char_index.saturating_sub(80).min(characters.len().saturating_sub(budget));
+    let end = (start + budget).min(characters.len());
 
     let mut snippet = String::new();
 
@@ -465,7 +477,9 @@ pub fn rag_search_text(state: tauri::State<'_, RagState>, request: SearchRequest
         document_frequencies.insert(token.as_str(), count);
     }
 
-    let mut hits: Vec<SearchHit> = corpus
+    // Score first, cut to the limit, and only then build the previews: how much
+    // text each hit may carry depends on how many hits survive the cut.
+    let mut scored: Vec<(f32, &String, &Chunk)> = corpus
         .iter()
         .filter_map(|(path, chunk)| {
             let mut score = 0.0_f32;
@@ -487,19 +501,25 @@ pub fn rag_search_text(state: tauri::State<'_, RagState>, request: SearchRequest
                 score += idf * (frequency * (BM25_K1 + 1.0)) / (frequency + length_norm);
             }
 
-            (score > 0.0).then(|| SearchHit {
-                path: path.clone(),
-                heading_path: chunk.heading_path.clone(),
-                snippet: build_snippet(chunk, &query_tokens),
-                score,
-            })
+            (score > 0.0).then_some((score, path, chunk))
         })
         .collect();
 
-    hits.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
-    hits.truncate(request.limit.clamp(1, 20));
+    scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+    scored.truncate(request.limit.clamp(1, 20));
 
-    hits
+    let budget = (SNIPPET_BUDGET_CHARS / scored.len().max(1)).max(SNIPPET_CHARS);
+
+    scored
+        .into_iter()
+        .map(|(score, path, chunk)| SearchHit {
+            path: path.clone(),
+            heading_path: chunk.heading_path.clone(),
+            snippet: build_snippet(chunk, &query_tokens, budget),
+            truncated: chunk.text.chars().count() > budget,
+            score,
+        })
+        .collect()
 }
 
 #[derive(Deserialize)]
@@ -597,6 +617,30 @@ mod tests {
     #[test]
     fn tokenizes_non_ascii_words_whole() {
         assert_eq!(tokenize("Präzision, Größe!"), vec!["präzision", "größe"]);
+    }
+
+    #[test]
+    fn a_passage_within_the_budget_comes_back_whole() {
+        // The case that made a short poem look unfinished: a note longer than
+        // SNIPPET_CHARS but well inside the per-hit budget of a small result
+        // set has to arrive complete, without a trailing "…".
+        let body = "zeile eins\n".repeat(50);
+        let chunks = split_markdown(&format!("# Gedicht\n\n{body}"));
+        let snippet = build_snippet(&chunks[0], &["zeile".to_string()], 1_000);
+
+        assert!(snippet.chars().count() > SNIPPET_CHARS);
+        assert_eq!(snippet, chunks[0].text);
+        assert!(!snippet.contains('…'));
+    }
+
+    #[test]
+    fn a_passage_over_the_budget_is_marked_as_a_preview() {
+        let body = "zeile eins\n".repeat(50);
+        let chunks = split_markdown(&format!("# Gedicht\n\n{body}"));
+        let snippet = build_snippet(&chunks[0], &["zeile".to_string()], 200);
+
+        assert!(snippet.chars().count() <= 202);
+        assert!(snippet.ends_with('…'));
     }
 
     #[test]

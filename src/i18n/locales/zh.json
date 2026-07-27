@@ -680,6 +680,7 @@
     "toolReadNoteFailed": "无法读取笔记",
     "sourcesLabel": "来源",
     "agentWorking": "智能体正在处理…",
+    "otherSessionBusy": "正在回答另一个会话。",
     "agentStopped": "经过多个步骤仍未给出最终回答，已停止。",
     "toolReadImageFailed": "无法读取图片",
     "toolResizeImageFailed": "无法调整图片大小",

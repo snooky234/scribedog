@@ -680,6 +680,7 @@
     "toolReadNoteFailed": "ノートを読み込めませんでした",
     "sourcesLabel": "出典",
     "agentWorking": "エージェントが作業中…",
+    "otherSessionBusy": "現在、別のチャットに回答中です。",
     "agentStopped": "最終的な回答が得られないまま、複数のステップの後に停止しました。",
     "toolReadImageFailed": "画像を読み取れませんでした",
     "toolResizeImageFailed": "画像のサイズを変更できませんでした",

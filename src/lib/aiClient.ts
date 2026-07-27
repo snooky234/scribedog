@@ -1332,8 +1332,9 @@ const VAULT_TOOL_SPECS = [
       "meeting, a decision, a person, a project, \"the other X\", or anything they say they wrote down " +
       "somewhere — including when they ask you to insert, continue or reuse it: search for it yourself " +
       "before asking them to paste or repeat it. It answers with the best matching " +
-      "passages and the file each came from; call read_note on a result before you rely on its wording, " +
-      "because the snippet is only a preview. This is a keyword search: query with the distinctive words a " +
+      "passages and the file each came from. A short passage comes back complete and you can work with it " +
+      "as it stands; a passage the result marks as cut off is a preview, and you have to call read_note on " +
+      "it before you rely on its wording. This is a keyword search: query with the distinctive words a " +
       "note would actually contain (names, project titles, terms), not with the user's whole sentence, and " +
       "search again with different words when the first attempt finds nothing. Do not use it for the " +
       "document the user currently has open — get_document gives you that one in full.",
@@ -1352,9 +1353,10 @@ const VAULT_TOOL_SPECS = [
   {
     name: "read_note",
     description:
-      "Read one of the user's notes in full, or a single section of it. Call this after search_vault when a " +
-      "result looks relevant: the snippets it returns are previews and are regularly cut mid-sentence, so " +
-      "answering from a snippet alone is how you end up quoting something the note does not say. Pass path " +
+      "Read one of the user's notes in full, or a single section of it. Call this whenever a search result " +
+      "is marked as cut off and you need its wording, and whenever you need the note around a passage: a " +
+      "preview is cut mid-sentence, so answering from one is how you end up quoting something the note does " +
+      "not say. A result that is not marked as cut off you already have in full. Pass path " +
       "exactly as search_vault reported it, and section as that result's heading trail to get just that " +
       "part. Never guess a path that no search result mentioned.",
     parameters: {
@@ -1525,8 +1527,10 @@ const VAULT_INSTRUCTION =
   "V2. search_vault is a keyword search. Query with the distinctive words the note itself would contain, " +
   "not with the user's sentence. If nothing comes back, try again with other words (a synonym, a name, a " +
   "shorter query) before you conclude there is nothing.\n" +
-  "V3. The snippets are previews and are often cut mid-sentence. Before you state anything as fact, or " +
-  "quote, call read_note for that result and read the actual passage. Never present a snippet as a quote.\n" +
+  "V3. A search result that is marked as cut off is a preview, ending mid-sentence at an arbitrary point. " +
+  "Never quote one, never treat its last words as the end of the text, and call read_note for that result " +
+  "before you state anything from it as fact. A result not marked as cut off is the passage in full — use " +
+  "it as it stands instead of calling read_note again for the same text.\n" +
   "V4. Name the note you took an answer from, in your reply, the way a person would (\"in Projekte/Kunde " +
   "A.md you noted …\"). The user sees the sources listed under your answer as well, but a claim whose " +
   "source is not visible in the sentence itself is one they cannot check.\n" +

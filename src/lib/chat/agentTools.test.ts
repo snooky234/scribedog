@@ -26,9 +26,9 @@ const listPendingProposals = vi.fn<EditorToolBridge["listPendingProposals"]>(() 
 const acceptPendingProposals = vi.fn<EditorToolBridge["acceptPendingProposals"]>(() => 0);
 const discardPendingProposals = vi.fn<EditorToolBridge["discardPendingProposals"]>(() => 0);
 
-function registerBridge(sources: string[] = ["images/photo.png"]) {
+function registerBridge(sources: string[] = ["images/photo.png"], document = "Hello") {
   registerEditorToolBridge({
-    getDocument: () => "Hello",
+    getDocument: () => document,
     getSelection: () => "",
     listImageSources: () => sources,
     listPendingProposals,
@@ -195,6 +195,31 @@ describe("get_document with open proposals", () => {
     const result = await executeTool("get_document", {});
 
     expect(result.content).toBe("Hello");
+  });
+});
+
+// A note the user just created and saved. "(empty document)" on its own read as
+// a dead end to the model, which then kept the text it had written in the chat
+// instead of putting it into the document.
+describe("get_document on an empty note", () => {
+  it("says how to write into it instead of just reporting it is empty", async () => {
+    registerBridge(["images/photo.png"], "");
+    beginChatTurn();
+
+    const result = await executeTool("get_document", {});
+
+    expect(result.content).toContain("empty");
+    expect(result.content).toContain("insert_at_cursor");
+    expect(result.content).toContain("NO after_text");
+  });
+
+  it("treats a document of pure whitespace the same way", async () => {
+    registerBridge(["images/photo.png"], "\n\n  \n");
+    beginChatTurn();
+
+    const result = await executeTool("get_document", {});
+
+    expect(result.content).toContain("insert_at_cursor");
   });
 });
 

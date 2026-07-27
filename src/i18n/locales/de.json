@@ -680,6 +680,7 @@
     "toolReadNoteFailed": "Notiz konnte nicht gelesen werden",
     "sourcesLabel": "Quellen",
     "agentWorking": "Der Agent arbeitet …",
+    "otherSessionBusy": "Ein anderer Chat wird gerade beantwortet.",
     "agentStopped": "Nach mehreren Schritten ohne abschließende Antwort gestoppt.",
     "toolReadImageFailed": "Bild konnte nicht gelesen werden",
     "toolResizeImageFailed": "Bildgröße konnte nicht geändert werden",

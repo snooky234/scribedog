@@ -19,11 +19,13 @@ export function ChatSessionOverview() {
   const deleteSession = useChatStore((state) => state.deleteSession);
   const newSession = useChatStore((state) => state.newSession);
   const closePanel = useChatStore((state) => state.closePanel);
-  // Only one turn can be in flight at a time, and it always belongs to the
-  // active session — so that one row gets the running indicator.
-  const isStreaming = useChatStore((state) => state.isStreaming);
-  const activeSessionId = useChatStore((state) => state.activeSessionId);
-  const runningSessionId = isStreaming ? activeSessionId : null;
+  // Only one turn can be in flight at a time, and it stays with the session it
+  // was sent from — which is exactly why the store tracks that id separately:
+  // reaching this list means the user navigated away from it, so the active
+  // session is no longer the one being answered.
+  const runningSessionId = useChatStore((state) =>
+    state.isStreaming ? state.streamingSessionId : null
+  );
 
   return (
     <div className="chat-overview">

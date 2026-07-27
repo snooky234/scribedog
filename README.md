@@ -35,6 +35,8 @@ place to write it, with an AI assistant that respects one simple rule:
 - 🔗 **Linked notes** — link one note to another by dragging it in from the sidebar, from the link dialog, or by typing `[[`; a click opens the target, and an optional panel shows links and backlinks
 - 🤖 **AI built in, local by default** — rewrite or generate text with Ollama, Jan.ai, or LM Studio; cloud providers are strictly opt-in
 - 💬 **Agentic AI chat** — a side-panel chat that reads your document and proposes edits itself, each one reviewed before it touches the file; needs a capable (9B+) model, smaller models should stick to simple select-and-rewrite
+- 📚 **Knowledge base** — let the AI look things up across your own notes, not just the open file, and answer with the sources it used; opt-in and folder by folder
+- 📎 **Files as context** — drag notes from the sidebar (or any text file from your desktop) onto the chat and ask about them directly
 - 🧩 **Custom assistants** — save your own system prompts ("translate to English", "make more formal", …) and switch between them right from the chat panel
 - 🕓 **Automatic version history** — every save can be snapshotted locally; browse, diff, and restore any previous version with one click
 - 🎙️ **Voice input, 100% offline** — dictate straight into your document or into the AI prompt; speech recognition runs locally via whisper.cpp, no cloud involved
@@ -67,6 +69,8 @@ notes — fluently, privately, and for free.
 |---|---|---|
 | 🤖 AI rewrite & insert | Rewrite, extend, or generate text in place, local or cloud model | `Ctrl+E` / right-click |
 | 💬 Agentic AI chat | Side-panel chat that reads your document and proposes edits via tool calls | `Ctrl+Shift+A` |
+| 📚 Knowledge base | The AI searches your whole folder of notes and answers from them, listing its sources | Settings → Knowledge base |
+| 📎 Files as chat context | Drag notes or text files onto the chat panel and ask about their content | Drag & drop into chat |
 | ✅ AI spelling & grammar check | List of issues with suggested corrections, apply one by one or all at once | `Ctrl+Shift+X` / toolbar |
 | 🕓 Document versions | Automatic local snapshots on save; diff and restore any previous version | Version history popover |
 | 🧘 Zen mode | Full-screen, distraction-free writing with a resizable text column | `Ctrl+Shift+Y` / toolbar |
@@ -107,6 +111,26 @@ notes — fluently, privately, and for free.
   <img src="src/assets/scribe-dog-ai-chat.png" alt="ScribeDog agentic AI chat panel" width="700">
 
 - **Model recommendation:** reliable tool-calling is genuinely hard for small models. Local models from roughly **9B parameters** upward (e.g. Qwen 3.5 9B, Gemma 4 12B) or any of the supported cloud models handle the chat's agentic tools well. **Below that**, a model tends to call tools incorrectly or not at all — for those, use the simple **select text → `Ctrl+E`** rewrite instead; it asks nothing of the model beyond writing text and works reliably even on tiny models.
+
+### 📚 Knowledge base — the AI answers from your own notes (new)
+- Switch on the **knowledge base** in the *Knowledge base* settings tab and the AI chat stops being limited to the file you happen to have open: when you ask a question, ScribeDog **searches your notes for the words in it**, hands the model the passages that match, and the answer comes with a **list of the notes it came from** — one click opens the note, right at the section it was taken from
+- **Where it's useful:**
+  - *Work & projects* — "What did I agree with client A about the delivery date?" The answer sits in a meeting note you wrote three months ago and whose file name you've long forgotten; names like *client A* and terms like *delivery date* are exactly what the search is good at, and you get the answer without opening a single file.
+  - *Writing a novel* — keep character sheets, place descriptions, and timeline notes in your vault and ask "What eye colour did I give Mara, and where does she first meet Jonas?" — the character names pull up the right sheets instead of you scrolling through your own story bible.
+  - *Recipes, travel notes, learning journals* — ask about a dish, a place, or a term and the answer is pulled together from several notes at once, each one listed underneath.
+- **Ask with the words you'd expect to find in the note.** Today the search matches the *words* of your question — which makes it precise with names, terms, and project numbers, but it won't find a note that says the same thing in entirely different words. Searching by meaning as well is on the roadmap below
+- **You decide what it may read**, folder by folder: tick the folders that should be searchable and untick the private ones — a folder you create later inside an included one is included as well, which the settings tab spells out in plain words
+- **Off by default and per folder** — turning it on is a deliberate, informed choice: as long as it's off, the AI only ever sees the document you have open. The settings tab states clearly what is read and, with a cloud provider selected, that found passages leave your device
+- **The search itself runs entirely on your machine**, in the Rust backend — nothing is uploaded, indexed in the cloud, or stored permanently, and your notes are only ever read, never modified. Only the passages found for your specific question are sent on to the AI model you configured — which, with a local model like Ollama, means nothing leaves the computer at all
+- A **toggle right in the chat panel** turns the knowledge base off for a single conversation when you just want to talk about the open document
+
+### 📎 Drag files into the chat — ask about exactly this file
+- **Drag one or more files onto the chat panel** — notes from the sidebar, or any text file straight from your desktop (`.md`, `.txt`, `.csv`, `.json`, `.log`, `.html`, …) — and they become the conversation's primary source: the chat answers from them first, before its own knowledge and before anything the knowledge base search turns up
+- **Where it's useful:**
+  - *Compare and merge* — drag in two notes ("last year's concept" and "this year's draft") and ask what actually changed, or have them merged into one text.
+  - *A file that isn't in your vault at all* — drop a CSV export or a log file from your Downloads folder onto the chat and ask for a summary; no import, no copy-paste, and it works even with the knowledge base switched off.
+- Attached files show up as **chips above the input field** and can be removed individually with one click; of a very long file only the beginning is sent, and the chip says so
+- Works **independently of the knowledge base** — dragging a file in *is* the permission to read it, so no setting has to be enabled and the file doesn't have to live in your vault
 
 ### 🕓 Document versions — undo across saves
 - Turn on **version history** in the Versioning settings tab, and every save silently snapshots the file's previous content first — saves that don't actually change anything don't create a duplicate snapshot
@@ -215,6 +239,7 @@ ScribeDog stores everything as plain `.md` files in a normal folder — so makin
 - No telemetry, no analytics — ScribeDog doesn't collect or transmit usage data. The one exception: on Windows, it checks GitHub on startup for a new release (a simple version comparison, no usage data sent), which can be turned off in settings
 - Beyond that optional update check, local AI providers mean the only network call is to the local endpoint *you* configure, and only when you trigger an AI action
 - Cloud AI is strictly **bring-your-own-key**: your key is stored in the operating system's credential store (Windows Credential Manager, macOS Keychain, Linux Secret Service) — not in plain text on disk — and sent only to the provider you chose, with no ScribeDog server in between. The settings dialog shows a clear notice whenever a cloud provider is selected
+- The **knowledge base is off until you switch it on**, and only then may the AI read notes beyond the open document — folder by folder, with the folders you untick staying out. The search runs locally; only the passages found for your question are sent to the AI provider you configured
 - Tauri capabilities are scoped tightly: filesystem access is limited to the folder you open, HTTP access to your configured AI endpoint
 
 ---
@@ -328,7 +353,7 @@ ScribeDog aims to become the **private writing studio** for everyone who writes 
 without compromising on the local-first, open-source principles above.
 Ideas on the list for upcoming versions (subject to change, feedback welcome!):
 
-- 📚 **Context notes ("story bible")** — keep character sheets, glossaries, or project notes in a folder and have them automatically included as AI context
+- 🔎 **Knowledge base: search by meaning** — find the right note even when you ask in different words than you wrote it in, on top of today's word-based search
 - 🎯 **Writing goals & statistics** — word-count targets, reading time, daily progress
 - ✒️ **Offline style & readability analysis** — highlight filler words, passive voice, and long sentences; optional local grammar checking (e.g. LanguageTool)
 - 💡 **AI autocomplete** — optional inline "ghost text" suggestions while you type, accepted with `Tab`

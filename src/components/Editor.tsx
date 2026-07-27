@@ -41,7 +41,7 @@ import {
   type VaultFileOption
 } from "@/lib/editor/fileLinks";
 import { extractErrorMessage } from "@/lib/editor/errorMessages";
-import { resolveInsertAnchor } from "@/lib/editor/insertAnchor";
+import { hasAnchorableContent, resolveInsertAnchor } from "@/lib/editor/insertAnchor";
 import { getImageFilesFromClipboard, getImageFilesFromDataTransfer } from "@/lib/editor/imageTransfer";
 import { moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
@@ -656,10 +656,13 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     const doc = currentEditor.state.doc;
     // Without an anchor the insertion lands at the caret, which is wherever
     // the user last clicked in the document — see insertAnchor.ts for why a
-    // named anchor is the better answer whenever the model has one.
-    const anchor = anchorText?.trim() ? resolveInsertAnchor(doc, anchorText) : null;
+    // named anchor is the better answer whenever the model has one, and why an
+    // anchor is ignored in a document that has nothing to anchor to instead of
+    // failing the insertion (a note the user just created).
+    const usesAnchor = Boolean(anchorText?.trim()) && hasAnchorableContent(doc);
+    const anchor = usesAnchor ? resolveInsertAnchor(doc, anchorText as string) : null;
 
-    if (anchorText?.trim() && anchor === null) {
+    if (usesAnchor && anchor === null) {
       return "anchor-not-found";
     }
 

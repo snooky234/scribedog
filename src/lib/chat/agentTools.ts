@@ -225,16 +225,30 @@ async function runVaultSearch(args: Record<string, unknown>): Promise<ToolResult
   const formatted = hits
     .map((hit, index) => {
       const location = hit.headingPath ? `${hit.path} — section "${hit.headingPath}"` : hit.path;
+      // Spelling the truncation out beats the "…" the search itself appends: a
+      // model reads that as an ellipsis belonging to the note and reports the
+      // preview's last words as the note's last words.
+      const cutOff = hit.truncated
+        ? "\n[Preview cut off here — this passage continues. Call read_note for its full text before " +
+          "quoting or continuing it.]"
+        : "";
 
-      return `[${index + 1}] ${location}\n${hit.snippet}`;
+      return `[${index + 1}] ${location}\n${hit.snippet}${cutOff}`;
     })
     .join("\n\n");
 
+  // Only warn about previews when there actually is one. Told that a complete
+  // passage "may be cut off", a model hedges about text it has in full — or
+  // worse, treats the end of a short note as an unfinished sentence.
+  const anyTruncated = hits.some((hit) => hit.truncated);
+  const preamble = anyTruncated
+    ? `${hits.length} passage(s) found for "${query}". Passages marked as cut off are previews — call ` +
+      "read_note with that path (and section) before you rely on their wording:"
+    : `${hits.length} passage(s) found for "${query}". Each one is reproduced in full below, so you can ` +
+      "work with it directly; read_note gives you the rest of the note around it if you need more context:";
+
   return {
-    content:
-      `${hits.length} passage(s) found for "${query}". These are previews and may be cut off — call ` +
-      "read_note with the path (and section) of the one you want before you rely on its wording:\n\n" +
-      formatted,
+    content: `${preamble}\n\n${formatted}`,
     sources: hits.map((hit) => ({ path: hit.path, headingPath: hit.headingPath }))
   };
 }
@@ -460,9 +474,14 @@ const OUTCOME_MESSAGES: Record<ProposalOutcome, string> = {
   "image-duplicate":
     "Error: your text embeds an image that is already in the document, which would show it twice. Write only " +
     "the new text and leave every ![alt](path) out of it — to change an image call set_image_width.",
+  // An anchor copied out of an attached file or out of the model's own earlier
+  // answer is the usual cause — none of that is in the document. Retrying with
+  // no anchor at all is then the right move, so the message has to offer it.
   "anchor-not-found":
-    "Error: after_text was not found in the document. Pass a few distinctive words from the single line the " +
-    "new text should follow, or the path of an image (e.g. images/photo.png) to put it below that image.",
+    "Error: after_text was not found in the document. It has to be text that is already IN the document — " +
+    "not from an attached file or from your own earlier reply. Retry with a few distinctive words from the " +
+    "single line the new text should follow, or the path of an image (e.g. images/photo.png) to put it below " +
+    "that image — or omit after_text entirely if the document holds nothing the new text should follow.",
   // Repeating "copy it verbatim" is what sends a model into a retry loop — the
   // lookup already tolerates formatting differences, so a failure almost always
   // means old_text was too long or spanned several blocks. Point at the fix that
@@ -483,6 +502,20 @@ function outcomeMessage(outcome: ProposalOutcome, overrides: Partial<Record<Prop
  * ("insertion proposed") — and the model resolves that contradiction by
  * proposing the same text again.
  */
+/**
+ * What get_document answers for a note that has no content yet.
+ *
+ * "(empty document)" on its own read as a dead end: the model reported the note
+ * was empty and offered to keep its text in the chat instead of putting it
+ * there. An empty note is the *easiest* case to write into — it just has no
+ * passage to anchor to, which the answer has to say out loud because rule 6 of
+ * the system prompt otherwise has the model reaching for an after_text.
+ */
+const EMPTY_DOCUMENT_NOTE =
+  "(The document is empty — it has no text yet.) This is not a problem: to write into it call " +
+  "insert_at_cursor with the complete new text and NO after_text. Never tell the user that an empty " +
+  "document cannot be written to, and never leave text you wrote for their document in the chat only.";
+
 function pendingProposalNote(): string {
   const pending = bridge?.listPendingProposals() ?? [];
 
@@ -535,11 +568,11 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
   }
 
   switch (name) {
-    case "get_document":
-      return {
-        content:
-          (normalizeEscapedCheckboxes(bridge.getDocument()) || "(empty document)") + pendingProposalNote()
-      };
+    case "get_document": {
+      const document = normalizeEscapedCheckboxes(bridge.getDocument());
+
+      return { content: (document.trim() ? document : EMPTY_DOCUMENT_NOTE) + pendingProposalNote() };
+    }
     case "get_selection":
       return { content: bridge.getSelection() || "(no selection)" };
     // The knowledge base tools read files the user never opened, which is why

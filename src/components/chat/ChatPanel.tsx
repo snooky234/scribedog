@@ -409,7 +409,15 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   const isTranscribing = voice.status === "transcribing";
 
   const activeSession = useChatStore(getActiveSession);
+  // Two different questions, and mixing them up is what made the "working…"
+  // bubble follow the user into older chats: `isStreaming` says a turn is in
+  // flight *somewhere* (only one may be, so it gates sending), while
+  // `isAnswering` says the turn belongs to the chat on screen (so it gets the
+  // bubble and the stop button).
   const isStreaming = useChatStore((state) => state.isStreaming);
+  const isAnswering = useChatStore(
+    (state) => state.isStreaming && state.streamingSessionId === state.activeSessionId
+  );
   const streamingText = useChatStore((state) => state.streamingText);
   const streamingThinking = useChatStore((state) => state.streamingThinking);
   const error = useChatStore((state) => state.error);
@@ -444,7 +452,7 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   );
 
   const messages = activeSession?.messages ?? [];
-  const isEmptyChat = messages.length === 0 && !isStreaming;
+  const isEmptyChat = messages.length === 0 && !isAnswering;
   const hasSessions = useChatStore((state) => state.sessions.length > 0);
 
   // Follow the conversation as it grows and as tokens stream in.
@@ -780,7 +788,7 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
           );
         })}
 
-        {isStreaming ? (
+        {isAnswering ? (
           <div className="chat-message chat-message--assistant">
             {streamingThinking ? (
               <div className="chat-message__thinking">{streamingThinking}</div>
@@ -805,6 +813,13 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
       <footer className="chat-panel__footer">
         {!loadedFolderPath ? (
           <p className="chat-panel__hint">{t("chat.noFolderHint")}</p>
+        ) : null}
+
+        {/* Only one turn runs at a time, so the composer stays shut while
+            another chat is being answered. Said out loud here, because a send
+            button that silently does nothing reads as a bug. */}
+        {isStreaming && !isAnswering ? (
+          <p className="chat-panel__hint">{t("chat.otherSessionBusy")}</p>
         ) : null}
 
         {/* The files this chat answers from first. They stay attached until the
@@ -889,7 +904,7 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={handleKeyDown}
           />
-          {isStreaming ? (
+          {isAnswering ? (
             <Button
               type="button"
               size="icon"
@@ -905,8 +920,8 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
               type="button"
               size="icon"
               aria-label={t("chat.send")}
-              title={t("chat.send")}
-              disabled={!draft.trim()}
+              title={isStreaming ? t("chat.otherSessionBusy") : t("chat.send")}
+              disabled={!draft.trim() || isStreaming}
               onClick={handleSend}
             >
               <SendHorizontal className="size-4" />

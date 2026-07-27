@@ -680,6 +680,7 @@
     "toolReadNoteFailed": "No se pudo leer la nota",
     "sourcesLabel": "Fuentes",
     "agentWorking": "El agente está trabajando…",
+    "otherSessionBusy": "Se está respondiendo a otro chat en este momento.",
     "agentStopped": "Detenido tras varios pasos sin una respuesta final.",
     "toolReadImageFailed": "No se pudo leer la imagen",
     "toolResizeImageFailed": "No se pudo redimensionar la imagen",

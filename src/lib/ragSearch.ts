@@ -18,6 +18,11 @@ export type VaultSearchHit = {
   path: string;
   headingPath: string;
   snippet: string;
+  // The snippet is a shortened preview of a longer passage. False means it is
+  // the passage in full — which is the common case for short notes, and which
+  // the tool result has to state, because a model told "this may be cut off"
+  // will report a complete note as unfinished.
+  truncated: boolean;
   score: number;
 };
 
@@ -25,6 +30,7 @@ type RustSearchHit = {
   path: string;
   heading_path: string;
   snippet: string;
+  truncated: boolean;
   score: number;
 };
 
@@ -79,6 +85,7 @@ export async function searchVault(query: string, limit = 6): Promise<VaultSearch
     path: hit.path,
     headingPath: hit.heading_path,
     snippet: hit.snippet,
+    truncated: hit.truncated,
     score: hit.score
   }));
 }

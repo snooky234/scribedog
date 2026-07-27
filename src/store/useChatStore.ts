@@ -43,6 +43,12 @@ type ChatState = {
   loadedFolderPath: string | null;
   // Live view of the in-flight assistant turn (never persisted).
   isStreaming: boolean;
+  // Which session the in-flight turn belongs to — *not* necessarily the active
+  // one: the user can go back to the overview and open an older chat while an
+  // answer is still coming in. Everything that renders "working…" has to
+  // compare against this rather than against isStreaming alone, or the
+  // indicator follows the navigation instead of staying with its turn.
+  streamingSessionId: string | null;
   streamingText: string;
   streamingThinking: string;
   error: string | null;
@@ -159,6 +165,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sessions: [],
   loadedFolderPath: null,
   isStreaming: false,
+  streamingSessionId: null,
   streamingText: "",
   streamingThinking: "",
   error: null,
@@ -219,6 +226,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isOpen: true,
       view: "chat",
       activeSessionId: null,
+      streamingSessionId: null,
       streamingText: "",
       streamingThinking: "",
       error: null,
@@ -243,6 +251,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({
       activeSessionId: null,
       view: "chat",
+      streamingSessionId: null,
       streamingText: "",
       streamingThinking: "",
       error: null,
@@ -271,6 +280,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         sessions: [],
         activeSessionId: null,
         view: "chat",
+        streamingSessionId: null,
         streamingText: "",
         streamingThinking: "",
         error: null,
@@ -286,6 +296,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       sessions,
       activeSessionId: null,
       view: "chat",
+      streamingSessionId: null,
       streamingText: "",
       streamingThinking: "",
       error: null,
@@ -350,10 +361,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
       activeSessionId: session.id,
       view: "chat",
       isStreaming: true,
+      streamingSessionId: session.id,
       streamingText: "",
       streamingThinking: "",
       error: null
     }));
+
+    // The attachment list and the knowledge-base switch are re-read on every
+    // step below, so detaching a file or switching the lookup off takes effect
+    // from the next step on. That only makes sense while this turn's chat is
+    // the one on screen: opening another session clears the attachments (they
+    // belong to the chat they were dropped into) and carries its own lookup
+    // preference, which would silently strip the running request. Once the user
+    // has navigated away, the turn keeps what it was sent with.
+    const attachedAtSend = get().attachedFiles;
+    const useKnowledgeBaseAtSend = get().useKnowledgeBase;
+    const isOnScreen = () => get().activeSessionId === session.id;
+    const currentAttachedFiles = () => (isOnScreen() ? get().attachedFiles : attachedAtSend);
+    const currentUseKnowledgeBase = () =>
+      isOnScreen() ? get().useKnowledgeBase : useKnowledgeBaseAtSend;
 
     // Budget estimate: the real system prompt adds boilerplate, but chars/4 is
     // already heuristic — the assistant instruction is the part that actually
@@ -440,12 +466,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
           selectMessagesForModel(
             // Expanded before trimming: the selection and attachment notes
             // become part of the content and are charged against the budget
-            // along with it. Re-read from the store per iteration like the
-            // history itself, so a file detached mid-turn is gone from the next
-            // step's request.
+            // along with it. Re-read per iteration like the history itself, so
+            // a file detached mid-turn is gone from the next step's request
+            // (see currentAttachedFiles for the one case that does not hold).
             inlineAttachedFiles(
               inlineSelectionContext(current.messages),
-              get().attachedFiles,
+              currentAttachedFiles(),
               aiSettings.contextLength
             ),
             systemEstimate,
@@ -462,8 +488,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             assistantInstruction: assistant.instruction,
             // Re-read per step rather than captured before the loop: the user
             // can switch the knowledge base off mid-turn, and the next step
-            // must not still be offered tools that read their notes.
-            vaultSearchEnabled: isKnowledgeBaseReady() && get().useKnowledgeBase
+            // must not still be offered tools that read their notes (again
+            // with the caveat in currentUseKnowledgeBase).
+            vaultSearchEnabled: isKnowledgeBaseReady() && currentUseKnowledgeBase()
           },
           abortController.signal
         );
@@ -560,7 +587,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
 
-      set({ isStreaming: false, streamingText: "", streamingThinking: "", error: null });
+      set({
+        isStreaming: false,
+        streamingSessionId: null,
+        streamingText: "",
+        streamingThinking: "",
+        error: null
+      });
 
       // Deliberately after the turn is marked finished: this asks the model one
       // more question, and the reply it judges is already on screen. Leaving the
@@ -582,12 +615,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (abortController.signal.aborted) {
         // Tool edits already applied are single undo steps and stay in the
         // document — only the loop itself needs to stop here.
-        set({ isStreaming: false, streamingText: "", streamingThinking: "", error: null });
+        set({
+          isStreaming: false,
+          streamingSessionId: null,
+          streamingText: "",
+          streamingThinking: "",
+          error: null
+        });
       } else {
         set({
           isStreaming: false,
+          streamingSessionId: null,
           streamingText: "",
           streamingThinking: "",
+          // Shown in the panel, which may well be sitting on a different chat by
+          // now — but an error the user never sees is worse than one that
+          // arrives in the wrong place, and openSession clears it on the next
+          // navigation.
           error: formatAiError(error, i18n.t)
         });
       }
