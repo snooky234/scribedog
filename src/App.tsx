@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { dirname, join } from "@tauri-apps/api/path";
 import { open as openImportFilesDialog } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
 
@@ -29,6 +30,7 @@ import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import { useWebviewZoom } from "@/hooks/useWebviewZoom";
 import { useZenMode } from "@/hooks/useZenMode";
 import { getRelativeDisplayPath } from "@/lib/fileSystem";
+import { clearVaultSearchCache } from "@/lib/ragSearch";
 import { findStepIndex } from "@/lib/navigationHistory";
 import { printMarkdown } from "@/lib/print";
 import type { FileVersion } from "@/lib/fileVersions";
@@ -39,6 +41,7 @@ import { useAppStore } from "@/store/useAppStore";
 import type { Assistant } from "@/store/useAssistantsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { useChatStore } from "@/store/useChatStore";
+import { useRagSettingsStore } from "@/store/useRagSettingsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useNavigationHistoryStore } from "@/store/useNavigationHistoryStore";
 import { useShortcutsStore } from "@/store/useShortcutsStore";
@@ -64,6 +67,10 @@ function App() {
   const [assistantEditTarget, setAssistantEditTarget] = useState<{ assistant: Assistant | null } | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [importFileList, setImportFileList] = useState<string[] | null>(null);
+  const [importTargetFolder, setImportTargetFolder] = useState<string | null>(null);
+  const [importInsertAfterBasename, setImportInsertAfterBasename] = useState<string | null | undefined>(
+    undefined
+  );
   const [pendingFolderRename, setPendingFolderRename] = useState<PendingFolderRename | null>(
     null
   );
@@ -126,6 +133,7 @@ function App() {
   const isChatOpen = useChatStore((state) => state.isOpen);
   const chatView = useChatStore((state) => state.view);
   const setChatFolder = useChatStore((state) => state.setFolder);
+  const loadRagSettings = useRagSettingsStore((state) => state.loadForFolder);
 
   const dirtyFilePaths = useMemo(
     () =>
@@ -310,8 +318,40 @@ function App() {
     void selectFilePathSafely(targetPath);
   };
 
+  // Shared by "new file", "new folder" and "import": the new entry lands
+  // directly after the tree's current selection — one level deeper (as the
+  // first child) when a folder is selected, same level (directly after it)
+  // when a file is selected. Falls back to appending at the vault root when
+  // nothing or more than one entry is selected.
+  const resolveNewEntryTarget = async (): Promise<{
+    targetDirectory: string | null;
+    insertAfterBasename: string | null | undefined;
+  }> => {
+    if (!folderPath) {
+      return { targetDirectory: null, insertAfterBasename: undefined };
+    }
+
+    if (fileTreeSelection.length !== 1) {
+      return { targetDirectory: folderPath, insertAfterBasename: undefined };
+    }
+
+    const [entry] = fileTreeSelection;
+
+    if (entry.kind === "folder") {
+      return { targetDirectory: await join(folderPath, entry.path), insertAfterBasename: null };
+    }
+
+    const basename = entry.path.replace(/\\/g, "/").split("/").pop() ?? "";
+
+    return { targetDirectory: await dirname(entry.path), insertAfterBasename: basename };
+  };
+
   const handleCreateFile = async (targetDirectory?: string) => {
-    const newFilePath = await createNewFile(targetDirectory);
+    const resolved =
+      targetDirectory !== undefined
+        ? { targetDirectory, insertAfterBasename: undefined as string | null | undefined }
+        : await resolveNewEntryTarget();
+    const newFilePath = await createNewFile(resolved.targetDirectory ?? undefined, resolved.insertAfterBasename);
 
     if (newFilePath) {
       const fileName = newFilePath.replace(/\\/g, "/").split("/").pop() ?? "";
@@ -320,7 +360,8 @@ function App() {
   };
 
   const handleCreateFolder = async () => {
-    const newFolderPath = await createNewFolder();
+    const { targetDirectory, insertAfterBasename } = await resolveNewEntryTarget();
+    const newFolderPath = await createNewFolder(targetDirectory ?? undefined, insertAfterBasename);
 
     if (newFolderPath) {
       folderRenameRequestIdRef.current += 1;
@@ -347,12 +388,20 @@ function App() {
       typeof selected === "string" ? [selected] : Array.isArray(selected) ? selected : [];
 
     if (selectedPaths.length > 0) {
+      const { targetDirectory, insertAfterBasename } = await resolveNewEntryTarget();
+      setImportTargetFolder(targetDirectory);
+      setImportInsertAfterBasename(insertAfterBasename);
       setImportFileList(selectedPaths);
     }
   };
 
   const handleImported = (createdFilePaths: string[]) => {
-    registerImportedFiles(createdFilePaths);
+    if (!folderPath) {
+      return;
+    }
+
+    const parentRelativePath = getRelativeDisplayPath(folderPath, importTargetFolder ?? folderPath);
+    registerImportedFiles(createdFilePaths, parentRelativePath, importInsertAfterBasename);
   };
 
   const closeUnsavedDialog = () => {
@@ -418,6 +467,15 @@ function App() {
   useEffect(() => {
     void setChatFolder(folderPath);
   }, [folderPath, setChatFolder]);
+
+  // Same for the knowledge base's settings — which folders the AI may read is
+  // consent given for one vault, and must never carry over to the next one.
+  // Clearing the search cache alongside makes sure no passage of the previous
+  // vault can still be returned.
+  useEffect(() => {
+    void loadRagSettings(folderPath);
+    void clearVaultSearchCache();
+  }, [folderPath, loadRagSettings]);
 
   // The chat agent's document tools (src/lib/chat/agentTools.ts) reach the
   // editor through this bridge rather than through props, since the store
@@ -684,6 +742,7 @@ function App() {
         onCloseExport={closeExport}
         importFileList={importFileList}
         folderPath={folderPath}
+        importTargetFolder={importTargetFolder}
         onImported={handleImported}
         onCloseImport={() => setImportFileList(null)}
         availableUpdate={availableUpdate}

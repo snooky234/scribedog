@@ -46,7 +46,7 @@ export type FolderSlice = {
   openFolder: () => Promise<boolean>;
   openFolderAtPath: (folderPath: string) => Promise<boolean>;
   refreshFolderFiles: () => Promise<boolean>;
-  createNewFolder: () => Promise<string | null>;
+  createNewFolder: (targetDirectory?: string, insertAfterBasename?: string | null) => Promise<string | null>;
   renameFolderPath: (folderPath: string, newBaseName: string) => Promise<boolean>;
   deleteFolderPath: (folderPath: string) => Promise<boolean>;
 };
@@ -59,8 +59,12 @@ export type FileSlice = {
   discardSelectedFileChanges: () => boolean;
   saveSelectedFile: () => Promise<boolean>;
   restoreFileVersion: (versionId: string) => Promise<boolean>;
-  createNewFile: (targetDirectory?: string) => Promise<string | null>;
-  registerImportedFiles: (importedFilePaths: string[]) => void;
+  createNewFile: (targetDirectory?: string, insertAfterBasename?: string | null) => Promise<string | null>;
+  registerImportedFiles: (
+    importedFilePaths: string[],
+    parentRelativePath: string,
+    insertAfterBasename?: string | null
+  ) => void;
   renameSelectedFile: (newBaseName: string) => Promise<boolean>;
   renameFilePath: (filePath: string, newBaseName: string) => Promise<boolean>;
   deleteFilePath: (filePath: string) => Promise<boolean>;

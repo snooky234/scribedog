@@ -1,3 +1,4 @@
+mod rag;
 mod voice;
 
 use std::{path::PathBuf, sync::Mutex};
@@ -177,15 +178,24 @@ fn check_spellcheck_dictionary(language: String) -> SpellcheckDictionaryStatus {
 }
 
 const KEYRING_SERVICE: &str = "scribedog";
-const KEYRING_ACCOUNT: &str = "ai-api-key";
+// Pre-multi-provider versions kept every provider's key under this one
+// account. Each provider now gets its own account (see api_key_entry); this
+// legacy account is only ever read once, to migrate that single leftover key
+// to whichever provider first asks (see get_api_key).
+const LEGACY_KEYRING_ACCOUNT: &str = "ai-api-key";
 
-fn api_key_entry() -> Result<keyring::Entry, String> {
-    keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT).map_err(|error| error.to_string())
+fn api_key_entry(provider: &str) -> Result<keyring::Entry, String> {
+    let account = format!("{LEGACY_KEYRING_ACCOUNT}:{provider}");
+    keyring::Entry::new(KEYRING_SERVICE, &account).map_err(|error| error.to_string())
+}
+
+fn legacy_api_key_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(KEYRING_SERVICE, LEGACY_KEYRING_ACCOUNT).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
-fn store_api_key(api_key: String) -> Result<(), String> {
-    let entry = api_key_entry()?;
+fn store_api_key(provider: String, api_key: String) -> Result<(), String> {
+    let entry = api_key_entry(&provider)?;
 
     if api_key.is_empty() {
         // Deleting a credential that was never stored is not an error.
@@ -199,12 +209,31 @@ fn store_api_key(api_key: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn get_api_key() -> Result<String, String> {
-    let entry = api_key_entry()?;
+fn get_api_key(provider: String) -> Result<String, String> {
+    let entry = api_key_entry(&provider)?;
 
     match entry.get_password() {
         Ok(api_key) => Ok(api_key),
-        Err(keyring::Error::NoEntry) => Ok(String::new()),
+        Err(keyring::Error::NoEntry) => {
+            // One-time migration: a pre-multi-provider install has at most one
+            // leftover key, under the shared legacy account. It belonged to
+            // whichever provider was configured back then, so the first
+            // provider to ask for a key after upgrading inherits it; deleting
+            // the legacy entry afterward means no other provider ever sees it.
+            let legacy_entry = legacy_api_key_entry()?;
+
+            match legacy_entry.get_password() {
+                Ok(legacy_api_key) => {
+                    entry
+                        .set_password(&legacy_api_key)
+                        .map_err(|error| error.to_string())?;
+                    let _ = legacy_entry.delete_credential();
+                    Ok(legacy_api_key)
+                }
+                Err(keyring::Error::NoEntry) => Ok(String::new()),
+                Err(error) => Err(error.to_string()),
+            }
+        }
         Err(error) => Err(error.to_string()),
     }
 }
@@ -238,6 +267,7 @@ pub fn run() {
         })
         .manage(FolderWatchState::default())
         .manage(voice::VoiceState::default())
+        .manage(rag::RagState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init());
@@ -262,7 +292,10 @@ pub fn run() {
             voice::download_voice_model,
             voice::start_voice_recording,
             voice::stop_voice_recording,
-            voice::cancel_voice_recording
+            voice::cancel_voice_recording,
+            rag::rag_search_text,
+            rag::rag_read_note,
+            rag::rag_clear_cache
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

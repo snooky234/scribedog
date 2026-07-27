@@ -13,6 +13,9 @@ type ImportDialogProps = {
   // The selected source files; null keeps the dialog closed.
   files: string[] | null;
   vaultRoot: string | null;
+  // Folder the new notes are written into; falls back to vaultRoot when null
+  // (no specific folder selected in the tree).
+  targetFolder: string | null;
   onImported: (createdFilePaths: string[]) => void;
   onClose: () => void;
 };
@@ -37,7 +40,7 @@ function statusIcon(item: ImportItemResult) {
   return <span className="import-dialog__icon" aria-hidden="true" />;
 }
 
-export function ImportDialog({ files, vaultRoot, onImported, onClose }: ImportDialogProps) {
+export function ImportDialog({ files, vaultRoot, targetFolder, onImported, onClose }: ImportDialogProps) {
   const { t } = useTranslation();
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -65,6 +68,7 @@ export function ImportDialog({ files, vaultRoot, onImported, onClose }: ImportDi
     void importFiles(
       files,
       vaultRoot,
+      targetFolder ?? vaultRoot,
       (nextProgress) => {
         if (runIdRef.current === runId) {
           setProgress(nextProgress);
@@ -86,7 +90,7 @@ export function ImportDialog({ files, vaultRoot, onImported, onClose }: ImportDi
     // onImported is intentionally excluded: the import must run exactly once
     // per file selection, not restart when the parent re-renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [files, vaultRoot]);
+  }, [files, vaultRoot, targetFolder]);
 
   const handleCancel = useCallback(() => {
     if (!isRunning) {

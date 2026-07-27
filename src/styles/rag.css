@@ -1,0 +1,252 @@
+/* Knowledge base ("Wissensbasis") settings tab — see DOCS/wissensbasis-plan.md */
+
+.rag-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.rag-settings__intro {
+  margin: 1rem 0 0.5rem 0;
+  color: rgba(var(--text-rgb), 0.82);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.rag-settings__hint {
+  margin: 0.4rem 0;
+  color: rgba(var(--muted-rgb), 1);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* The consent notice. Deliberately loud and shown while the feature is on
+   (not only while switching it on) for cloud providers — local providers
+   never send anything off-device, so the notice doesn't apply to them. */
+.rag-settings__warning {
+  display: flex;
+  gap: 0.65rem;
+  width: 100%;
+  border: 1px solid rgba(var(--overlay-rgb), 0.14);
+  border-left: 3px solid var(--amber-fg);
+  border-radius: 0.5rem;
+  background: rgba(var(--warning-bg-rgb), 0.75);
+  padding: 0.75rem 0.85rem;
+}
+
+.rag-settings__warning strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--amber-fg);
+  font-size: 0.85rem;
+}
+
+.rag-settings__warning p {
+  margin: 0 0 0.4rem;
+  color: rgba(var(--text-rgb), 0.86);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.rag-settings__warning p:last-child {
+  margin-bottom: 0;
+}
+
+.rag-settings__warning-icon {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.1rem;
+  color: var(--amber-fg);
+}
+
+.rag-settings__warning-cloud {
+  font-weight: 600;
+}
+
+.rag-settings__folders {
+  width: 100%;
+}
+
+.rag-settings__folders-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.rag-settings__count {
+  margin: 0;
+  color: rgba(var(--muted-rgb), 1);
+  font-size: 0.82rem;
+}
+
+/* Folder picker */
+
+.rag-tree {
+  max-height: 15rem;
+  overflow-y: auto;
+  margin: 0;
+  border: 1px solid rgba(var(--overlay-rgb), 0.12);
+  border-radius: 0.5rem;
+  background: rgba(var(--surface-raised-rgb), 1);
+  padding: 0.35rem 0.3rem;
+  list-style: none;
+}
+
+.rag-tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rag-tree__row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 0.35rem;
+  padding: 0.12rem 0.3rem;
+}
+
+.rag-tree__row:hover {
+  background: rgba(var(--surface-hover-rgb), 1);
+}
+
+.rag-tree__twisty {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: none;
+  cursor: pointer;
+  color: rgba(var(--muted-rgb), 1);
+}
+
+.rag-tree__twisty svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.rag-tree__twisty--empty {
+  cursor: default;
+}
+
+.rag-tree__label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  cursor: pointer;
+  font-size: 0.84rem;
+}
+
+.rag-tree__label:has(input:disabled) {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.rag-tree__icon {
+  flex: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  color: rgba(var(--muted-rgb), 1);
+}
+
+.rag-tree__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The per-folder file count is what makes the consent notice concrete: it
+   answers "how much is this actually about" before anything is ticked. */
+.rag-tree__count {
+  flex: none;
+  margin-left: auto;
+  padding-left: 0.5rem;
+  color: rgba(var(--muted-rgb), 1);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* "Mehr erfahren" dialog */
+
+.rag-explainer {
+  max-width: 34rem;
+  max-height: 80vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.rag-explainer__section {
+  margin-top: 1rem;
+}
+
+.rag-explainer__section h4 {
+  margin: 0 0 0.3rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.rag-explainer__section p {
+  margin: 0;
+  color: rgba(var(--text-rgb), 0.82);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+/* Sources under a chat answer */
+
+.chat-message__sources {
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(var(--overlay-rgb), 0.1);
+  padding-top: 0.4rem;
+}
+
+.chat-message__sources-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: rgba(var(--muted-rgb), 1);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chat-message__sources ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-message__sources button {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--blue-fg);
+  font-size: 0.76rem;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-message__sources button:hover {
+  text-decoration: underline;
+}
+
+.chat-message__sources-section {
+  color: rgba(var(--muted-rgb), 1);
+}

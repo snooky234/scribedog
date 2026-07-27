@@ -77,7 +77,9 @@ function readStoredSettings(): AiSettings {
 // The API key lives in the OS credential store (Windows Credential Manager,
 // macOS Keychain, Linux Secret Service) instead of localStorage, so it is
 // never written to disk in plain text. Everything else stays in localStorage.
-function persistSettings(settings: AiSettings) {
+// Each provider gets its own credential-store entry — otherwise entering a key
+// for one provider silently overwrites whatever key was stored for another.
+function persistNonSecretSettings(settings: AiSettings) {
   if (typeof window === "undefined") {
     return;
   }
@@ -85,7 +87,18 @@ function persistSettings(settings: AiSettings) {
   const { apiKey, ...persistableSettings } = settings;
 
   window.localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(persistableSettings));
-  void invoke("store_api_key", { apiKey });
+}
+
+function storeApiKeyForProvider(provider: AiProvider, apiKey: string) {
+  void invoke("store_api_key", { provider, apiKey });
+}
+
+export async function loadApiKeyForProvider(provider: AiProvider): Promise<string> {
+  try {
+    return await invoke<string>("get_api_key", { provider });
+  } catch {
+    return "";
+  }
 }
 
 async function loadStoredApiKey(storedSettings: AiSettings): Promise<string> {
@@ -93,7 +106,7 @@ async function loadStoredApiKey(storedSettings: AiSettings): Promise<string> {
   // credential store once, then strip it from localStorage.
   if (storedSettings.apiKey) {
     try {
-      await invoke("store_api_key", { apiKey: storedSettings.apiKey });
+      await invoke("store_api_key", { provider: storedSettings.provider, apiKey: storedSettings.apiKey });
       const { apiKey, ...persistableSettings } = storedSettings;
       window.localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(persistableSettings));
     } catch {
@@ -103,11 +116,7 @@ async function loadStoredApiKey(storedSettings: AiSettings): Promise<string> {
     return storedSettings.apiKey;
   }
 
-  try {
-    return await invoke<string>("get_api_key");
-  } catch {
-    return "";
-  }
+  return loadApiKeyForProvider(storedSettings.provider);
 }
 
 export const useAiSettingsStore = create<AiSettingsState>((set, get) => ({
@@ -124,16 +133,47 @@ export const useAiSettingsStore = create<AiSettingsState>((set, get) => ({
     set({ settings: { ...storedSettings, apiKey }, isLoaded: true });
   },
   updateSettings: (patch) => {
-    set((state) => {
-      const nextSettings = normalizeSettings({ ...state.settings, ...patch });
+    const previousSettings = get().settings;
+    const nextSettings = normalizeSettings({ ...previousSettings, ...patch });
 
-      persistSettings(nextSettings);
+    // patch.apiKey, when present, always belongs to patch.provider (or the
+    // unchanged current provider) — the settings dialog's Save button always
+    // sends both together from one form, so this is never a stale value left
+    // over from a provider the user isn't looking at anymore.
+    if (patch.apiKey !== undefined) {
+      storeApiKeyForProvider(nextSettings.provider, nextSettings.apiKey);
+      persistNonSecretSettings(nextSettings);
+      set({ settings: nextSettings });
+      return;
+    }
 
-      return { settings: nextSettings };
-    });
+    if (nextSettings.provider !== previousSettings.provider) {
+      // Provider changed without a key for it in the same patch. Never carry
+      // the old provider's key forward under the new provider's name — that
+      // would silently reproduce the exact bug this file exists to prevent.
+      // Show nothing until the new provider's own stored key (if any) loads.
+      const settingsWithBlankKey: AiSettings = { ...nextSettings, apiKey: "" };
+
+      persistNonSecretSettings(settingsWithBlankKey);
+      set({ settings: settingsWithBlankKey });
+
+      void loadApiKeyForProvider(nextSettings.provider).then((apiKey) => {
+        const current = get().settings;
+
+        if (current.provider === nextSettings.provider) {
+          set({ settings: { ...current, apiKey } });
+        }
+      });
+
+      return;
+    }
+
+    persistNonSecretSettings(nextSettings);
+    set({ settings: nextSettings });
   },
   resetSettings: () => {
-    persistSettings(defaultAiSettings);
+    persistNonSecretSettings(defaultAiSettings);
+    storeApiKeyForProvider(defaultAiSettings.provider, defaultAiSettings.apiKey);
     set({ settings: defaultAiSettings });
   }
 }));

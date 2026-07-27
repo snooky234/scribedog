@@ -14,10 +14,13 @@ import { readVersionContent } from "@/lib/fileVersions";
 import { isDocumentDirty } from "./documents";
 import { toErrorMessage } from "./errors";
 import {
-  appendManualOrderEntry,
+  currentChildBasenames,
+  ensureManualOrderEntry,
+  insertManualOrderEntry,
   persistManualOrderIfChanged,
   removeManualOrderEntry,
-  renameManualOrderEntry
+  renameManualOrderEntry,
+  resolveManualOrderInsertIndex
 } from "./manualOrder";
 import {
   getBasename,
@@ -292,16 +295,15 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       return false;
     }
   },
-  createNewFile: async (targetDirectory?: string) => {
-    const { folderPath, selectedFilePath, filePaths, fileDocuments } = get();
+  createNewFile: async (targetDirectory?: string, insertAfterBasename?: string | null) => {
+    const { folderPath, filePaths, fileDocuments, emptyFolderPaths } = get();
 
     if (!folderPath) {
       return null;
     }
 
     try {
-      const resolvedTargetDirectory =
-        targetDirectory ?? (selectedFilePath ? await dirname(selectedFilePath) : folderPath);
+      const resolvedTargetDirectory = targetDirectory ?? folderPath;
 
       const newFileBaseName = i18n.t("store.newFileBaseName");
       const existingPathKeys = new Set(filePaths.map(normalizePathKey));
@@ -321,10 +323,21 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
 
       const parentRelativePath = getRelativeDisplayPath(folderPath, resolvedTargetDirectory);
       const currentManualOrder = get().manualOrder;
-      const nextManualOrder = appendManualOrderEntry(
+      const seededManualOrder = ensureManualOrderEntry(
         currentManualOrder,
         parentRelativePath,
-        getBasename(newFilePath)
+        currentChildBasenames(folderPath, filePaths, emptyFolderPaths, parentRelativePath)
+      );
+      const insertIndex = resolveManualOrderInsertIndex(
+        seededManualOrder,
+        parentRelativePath,
+        insertAfterBasename
+      );
+      const nextManualOrder = insertManualOrderEntry(
+        seededManualOrder,
+        parentRelativePath,
+        getBasename(newFilePath),
+        insertIndex
       );
       persistManualOrderIfChanged(folderPath, currentManualOrder, nextManualOrder);
 
@@ -354,10 +367,15 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       return null;
     }
   },
-  // Optimistically registers files the import wrote to the vault root: adds
-  // them to the tree and appends them to the manual sort order (mirroring
-  // createNewFile), without selecting them or touching the open editor.
-  registerImportedFiles: (importedFilePaths: string[]) => {
+  // Optimistically registers files the import wrote to disk: adds them to
+  // the tree and inserts them into the manual sort order under the folder
+  // they actually landed in (mirroring createNewFile), without selecting
+  // them or touching the open editor.
+  registerImportedFiles: (
+    importedFilePaths: string[],
+    parentRelativePath: string,
+    insertAfterBasename?: string | null
+  ) => {
     const { folderPath } = get();
 
     if (!folderPath || importedFilePaths.length === 0) {
@@ -367,7 +385,14 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
     let nextFilePaths = get().filePaths;
     const existingPathKeys = new Set(nextFilePaths.map(normalizePathKey));
     const currentManualOrder = get().manualOrder;
-    let nextManualOrder = currentManualOrder;
+    let nextManualOrder = ensureManualOrderEntry(
+      currentManualOrder,
+      parentRelativePath,
+      currentChildBasenames(folderPath, nextFilePaths, get().emptyFolderPaths, parentRelativePath)
+    );
+    // Chains each subsequent file directly after the previous one, so the
+    // whole imported batch lands together right after the chosen anchor.
+    let anchorBasename = insertAfterBasename;
 
     for (const importedFilePath of importedFilePaths) {
       if (existingPathKeys.has(normalizePathKey(importedFilePath))) {
@@ -376,7 +401,11 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
 
       existingPathKeys.add(normalizePathKey(importedFilePath));
       nextFilePaths = insertFilePathSorted(nextFilePaths, importedFilePath);
-      nextManualOrder = appendManualOrderEntry(nextManualOrder, "", getBasename(importedFilePath));
+
+      const basename = getBasename(importedFilePath);
+      const insertIndex = resolveManualOrderInsertIndex(nextManualOrder, parentRelativePath, anchorBasename);
+      nextManualOrder = insertManualOrderEntry(nextManualOrder, parentRelativePath, basename, insertIndex);
+      anchorBasename = basename;
     }
 
     persistManualOrderIfChanged(folderPath, currentManualOrder, nextManualOrder);

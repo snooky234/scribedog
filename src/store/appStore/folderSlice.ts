@@ -22,13 +22,16 @@ import {
 import { toErrorMessage } from "./errors";
 import { buildFileMtimeMap, createLoadedFolderState } from "./folderState";
 import {
-  appendManualOrderEntry,
+  currentChildBasenames,
+  ensureManualOrderEntry,
+  insertManualOrderEntry,
   persistManualOrderIfChanged,
   reconcileManualOrder,
   rekeyManualOrderFolderPrefix,
   removeManualOrderEntry,
   removeManualOrderFolderPrefix,
-  renameManualOrderEntry
+  renameManualOrderEntry,
+  resolveManualOrderInsertIndex
 } from "./manualOrder";
 import {
   getBasename,
@@ -162,29 +165,38 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
       return false;
     }
   },
-  createNewFolder: async () => {
-    const { folderPath, selectedFilePath, emptyFolderPaths } = get();
+  createNewFolder: async (targetDirectory?: string, insertAfterBasename?: string | null) => {
+    const { folderPath, filePaths, emptyFolderPaths } = get();
 
     if (!folderPath) {
       return null;
     }
 
     try {
-      const targetDirectory = selectedFilePath
-        ? await dirname(selectedFilePath)
-        : folderPath;
+      const resolvedTargetDirectory = targetDirectory ?? folderPath;
 
       const newFolderPath = await createUniqueMarkdownFolder(
-        targetDirectory,
+        resolvedTargetDirectory,
         i18n.t("store.newFolderBaseName")
       );
 
-      const parentRelativePath = getRelativeDisplayPath(folderPath, targetDirectory);
+      const parentRelativePath = getRelativeDisplayPath(folderPath, resolvedTargetDirectory);
       const currentManualOrder = get().manualOrder;
-      const nextManualOrder = appendManualOrderEntry(
+      const seededManualOrder = ensureManualOrderEntry(
         currentManualOrder,
         parentRelativePath,
-        getBasename(newFolderPath)
+        currentChildBasenames(folderPath, filePaths, emptyFolderPaths, parentRelativePath)
+      );
+      const insertIndex = resolveManualOrderInsertIndex(
+        seededManualOrder,
+        parentRelativePath,
+        insertAfterBasename
+      );
+      const nextManualOrder = insertManualOrderEntry(
+        seededManualOrder,
+        parentRelativePath,
+        getBasename(newFolderPath),
+        insertIndex
       );
       persistManualOrderIfChanged(folderPath, currentManualOrder, nextManualOrder);
 

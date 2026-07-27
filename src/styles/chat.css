@@ -30,6 +30,37 @@
   overflow: hidden;
 }
 
+/* Anchor for the drop overlay below. */
+.chat-panel {
+  position: relative;
+}
+
+.chat-panel--drop-target {
+  border-color: rgba(168, 85, 247, 0.55);
+}
+
+/* Covers the whole panel while files are dragged over it: the drop target is
+   the panel, not a strip of it, and a hint pinned to one corner would suggest
+   otherwise. Pointer events stay off so the drag keeps reaching the panel's own
+   handlers underneath. */
+.chat-panel__dropzone {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgba(var(--surface-rgb), 0.92);
+  color: rgba(168, 85, 247, 0.95);
+  font-size: 0.85rem;
+  text-align: center;
+  pointer-events: none;
+}
+
 .chat-panel__header {
   display: flex;
   align-items: center;
@@ -85,6 +116,13 @@
   text-align: center;
   color: rgba(var(--text-rgb), 0.55);
   font-size: 0.85rem;
+}
+
+.chat-panel__empty-hint {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: rgba(var(--text-rgb), 0.42);
 }
 
 /* --- Recent sessions inside an empty chat ------------------------------- */
@@ -512,6 +550,59 @@
 .chat-panel__selection-drop:hover {
   background: rgba(var(--overlay-rgb), 0.1);
   color: rgba(var(--text-rgb), 0.85);
+}
+
+/* The files this chat answers from first. They wrap rather than scroll: five is
+   the cap, and a hidden attachment is one the user cannot detach. */
+.chat-panel__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.chat-panel__attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.2rem 0.25rem 0.2rem 0.45rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  background: rgba(168, 85, 247, 0.1);
+  color: rgba(var(--text-rgb), 0.8);
+  font-size: 0.74rem;
+}
+
+.chat-panel__attachment-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-panel__attach-error {
+  margin: 0;
+  font-size: 0.74rem;
+  color: rgba(248, 113, 113, 0.95);
+}
+
+/* The same chip inside the transcript, telling what a past turn was asked with. */
+.chat-message__attachments {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.5rem;
+  background: rgba(168, 85, 247, 0.1);
+  color: rgba(var(--text-rgb), 0.6);
+  font-size: 0.74rem;
+}
+
+.chat-message__attachments span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .chat-panel__input-row {

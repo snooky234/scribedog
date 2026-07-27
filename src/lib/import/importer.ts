@@ -109,13 +109,17 @@ function classifyError(extension: string): ImportErrorKey {
 }
 
 /**
- * Imports each selected file as one markdown file in the vault root. Every
- * file is handled independently: a failing file is reported per item and
- * never aborts the rest of the batch.
+ * Imports each selected file as one markdown file into targetDirectory
+ * (defaults to the vault root when the caller has no more specific folder
+ * selected). vaultRoot stays the actual vault root throughout — it is what
+ * anchors the shared images/ folder and the version history, regardless of
+ * which subfolder the new note lands in. Every file is handled independently:
+ * a failing file is reported per item and never aborts the rest of the batch.
  */
 export async function importFiles(
   sourcePaths: string[],
   vaultRoot: string,
+  targetDirectory: string,
   onProgress: (progress: ImportProgress) => void,
   signal?: AbortSignal
 ): Promise<ImportItemResult[]> {
@@ -173,7 +177,7 @@ export async function importFiles(
       await allowFileAccess(item.sourcePath).catch(() => undefined);
 
       const baseName = sanitizeBaseName(base);
-      const targetFilePath = await resolveUniqueMarkdownPath(vaultRoot, baseName);
+      const targetFilePath = await resolveUniqueMarkdownPath(targetDirectory, baseName);
 
       const markdown = await convertSourceToMarkdown(
         extension,

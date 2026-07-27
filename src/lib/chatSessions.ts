@@ -65,6 +65,7 @@ function normalizeMessage(raw: unknown): AiChatMessage | null {
     toolCallId?: unknown;
     toolName?: unknown;
     imagePaths?: unknown;
+    attachedFileNames?: unknown;
     action?: unknown;
     selection?: unknown;
     suggestsEdit?: unknown;
@@ -116,6 +117,13 @@ function normalizeMessage(raw: unknown): AiChatMessage | null {
     ? candidate.imagePaths.filter((path): path is string => typeof path === "string" && path.length > 0)
     : undefined;
 
+  // Likewise only the names of the files that were attached to this turn; the
+  // content was never stored, so a reopened session shows what a question was
+  // asked about without re-reading anything (see attachedFiles.ts).
+  const attachedFileNames = Array.isArray(candidate.attachedFileNames)
+    ? candidate.attachedFileNames.filter((name): name is string => typeof name === "string" && name.length > 0)
+    : undefined;
+
   // A session written before action turns existed simply has no flag — those
   // turns keep rendering as the plain user bubble they were saved as.
   const action = (CHAT_USER_ACTIONS as string[]).includes(candidate.action as string)
@@ -132,7 +140,8 @@ function normalizeMessage(raw: unknown): AiChatMessage | null {
     content: candidate.content,
     ...(action ? { action } : {}),
     ...(selection ? { selection } : {}),
-    ...(imagePaths && imagePaths.length > 0 ? { imagePaths } : {})
+    ...(imagePaths && imagePaths.length > 0 ? { imagePaths } : {}),
+    ...(attachedFileNames && attachedFileNames.length > 0 ? { attachedFileNames } : {})
   };
 }
 

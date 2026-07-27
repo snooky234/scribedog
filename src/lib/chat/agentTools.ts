@@ -5,9 +5,10 @@
 // store — a non-serializable value that would otherwise force awkward prop
 // drilling through components that have nothing to do with the chat.
 
-import { EDITING_TOOL_NAMES, FLAG_SUGGESTION_TOOL_NAME } from "@/lib/aiClient";
+import { EDITING_TOOL_NAMES, FLAG_SUGGESTION_TOOL_NAME, type VaultSourceRef } from "@/lib/aiClient";
 import { normalizeImageSrc, resolveDocumentImagePath } from "@/lib/chat/imageAttachments";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
+import { readNote, searchVault } from "@/lib/ragSearch";
 
 // What set_image_width did, so the tool result can name the resulting size.
 // width === null means the image was reset to its natural size.
@@ -174,7 +175,102 @@ function settleProposals(accept: boolean): ToolResult {
 // provider that isn't Anthropic), so it reports success and names the image it
 // resolved; the store then appends it as a real image on a user turn. See
 // sendMessage in src/store/useChatStore.ts.
-export type ToolResult = { content: string; imagePath?: string };
+//
+// `sources` travels the same way for the knowledge base tools: the note a
+// result came from is not something the model should have to repeat back, so
+// the store collects it off the tool results and hangs it on the assistant turn
+// the chat renders.
+export type ToolResult = { content: string; imagePath?: string; sources?: VaultSourceRef[] };
+
+// Upper bound on what read_note hands back in one call. A long note would
+// otherwise eat the whole context window in a single tool result and push the
+// conversation — including the user's actual question — out of it.
+const MAX_NOTE_CHARS = 8_000;
+
+/**
+ * Runs a knowledge base search and formats the hits for the model.
+ *
+ * The result deliberately reads as a list of *leads*, not as an answer: each
+ * entry repeats the exact path and heading trail that read_note expects back,
+ * because a model that has to reconstruct those arguments from prose gets them
+ * subtly wrong and then reports the note as missing.
+ */
+async function runVaultSearch(args: Record<string, unknown>): Promise<ToolResult> {
+  const query = typeof args.query === "string" ? args.query.trim() : "";
+
+  if (!query) {
+    return { content: "Error: no search query given. Pass the distinctive words to search for." };
+  }
+
+  const requestedLimit = typeof args.limit === "number" ? args.limit : Number.parseInt(String(args.limit ?? ""), 10);
+  const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 20) : 6;
+
+  let hits;
+
+  try {
+    hits = await searchVault(query, limit);
+  } catch {
+    return { content: "Error: the knowledge base could not be searched." };
+  }
+
+  if (hits.length === 0) {
+    return {
+      content:
+        `No passage found for "${query}". This is a keyword search, so try again with different words — a ` +
+        "name, a project title, a single distinctive term — before telling the user there is nothing. If a " +
+        "second search also finds nothing, say plainly that their notes do not cover it."
+    };
+  }
+
+  const formatted = hits
+    .map((hit, index) => {
+      const location = hit.headingPath ? `${hit.path} — section "${hit.headingPath}"` : hit.path;
+
+      return `[${index + 1}] ${location}\n${hit.snippet}`;
+    })
+    .join("\n\n");
+
+  return {
+    content:
+      `${hits.length} passage(s) found for "${query}". These are previews and may be cut off — call ` +
+      "read_note with the path (and section) of the one you want before you rely on its wording:\n\n" +
+      formatted,
+    sources: hits.map((hit) => ({ path: hit.path, headingPath: hit.headingPath }))
+  };
+}
+
+async function runReadNote(args: Record<string, unknown>): Promise<ToolResult> {
+  const path = typeof args.path === "string" ? args.path.trim() : "";
+  const section = typeof args.section === "string" ? args.section.trim() : "";
+
+  if (!path) {
+    return {
+      content: "Error: no path given. Pass the path exactly as search_vault reported it."
+    };
+  }
+
+  const markdown = await readNote(path, section);
+
+  if (markdown === null) {
+    return {
+      content:
+        `Error: "${path}" is not a note the knowledge base covers. Use a path exactly as search_vault ` +
+        "reported it, and do not guess paths — run search_vault again if you need one."
+    };
+  }
+
+  if (!markdown.trim()) {
+    return { content: `"${path}" is empty.`, sources: [{ path, headingPath: section }] };
+  }
+
+  const truncated = markdown.length > MAX_NOTE_CHARS;
+  const body = truncated ? `${markdown.slice(0, MAX_NOTE_CHARS)}\n\n[…note continues]` : markdown;
+
+  return {
+    content: `${path}${section ? ` — section "${section}"` : ""}:\n\n${body}`,
+    sources: [{ path, headingPath: section }]
+  };
+}
 
 /**
  * Resolves the path a model passed to get_image against the images actually
@@ -446,6 +542,14 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
       };
     case "get_selection":
       return { content: bridge.getSelection() || "(no selection)" };
+    // The knowledge base tools read files the user never opened, which is why
+    // they are gated on the vault's own setting rather than on the editor
+    // bridge. ragSearch re-checks that setting on every call, so a request that
+    // was in flight when the user switched the feature off finds nothing.
+    case "search_vault":
+      return runVaultSearch(args);
+    case "read_note":
+      return runReadNote(args);
     case "get_image":
       return resolveImageArgument(args.path);
     case "set_image_width":

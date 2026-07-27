@@ -772,6 +772,44 @@ function supportsThinkingExtension(provider: AiProvider): boolean {
   return provider === "jan" || provider === "lmstudio";
 }
 
+// OpenAI moved its newer model families off the legacy chat-completions
+// parameters: `max_tokens` was replaced by `max_completion_tokens` and is
+// rejected outright by gpt-5/o-series ("Unsupported parameter: 'max_tokens'"),
+// while the reasoning models additionally accept only their default
+// temperature and reject `stop` altogether. Every other OpenAI-compatible
+// backend (Mistral, Jan, LM Studio) still expects the old shape, so the
+// rewrite stays scoped to the openai provider.
+function isOpenAiReasoningModel(model: string): boolean {
+  return /^(o\d|gpt-5)/i.test(model.trim());
+}
+
+function withOpenAiParamCompat(settings: AiSettings, body: Record<string, unknown>): Record<string, unknown> {
+  if (settings.provider !== "openai") {
+    return body;
+  }
+
+  const { max_tokens: maxTokens, temperature, stop, ...rest } = body;
+  const compatBody: Record<string, unknown> = { ...rest };
+
+  if (maxTokens !== undefined) {
+    compatBody.max_completion_tokens = maxTokens;
+  }
+
+  // The prompt stop sequences exist to rein in weak local models (see
+  // PROMPT_STOP_SEQUENCES); dropping them for a reasoning model costs nothing.
+  if (!isOpenAiReasoningModel(settings.model)) {
+    if (temperature !== undefined) {
+      compatBody.temperature = temperature;
+    }
+
+    if (stop !== undefined) {
+      compatBody.stop = stop;
+    }
+  }
+
+  return compatBody;
+}
+
 async function requestOpenAiCompatible(
   settings: AiSettings,
   request: AiContentRequest,
@@ -803,7 +841,7 @@ async function requestOpenAiCompatible(
 
   const payload = await postJson(
     new URL("/v1/chat/completions", settings.apiUrl).toString(),
-    requestBody,
+    withOpenAiParamCompat(settings, requestBody),
     buildOpenAiCompatibleAuthHeaders(settings),
     signal
   );
@@ -843,7 +881,7 @@ export async function streamOpenAiCompatibleMarkdown(
 
   return streamJsonLines(
     new URL("/v1/chat/completions", settings.apiUrl).toString(),
-    requestBody,
+    withOpenAiParamCompat(settings, requestBody),
     handlers,
     (payload) => {
       // OpenAI-compatible endpoints (Jan, llama.cpp, …) return the reasoning
@@ -1096,6 +1134,11 @@ export type AiChatMessage =
       selection?: string;
       // Document-relative paths of images attached to this turn (persisted).
       imagePaths?: string[];
+      // Names of the files the user had attached to the chat when this turn was
+      // sent (persisted). Only the names: the content lives in the chat store
+      // while the file stays attached and is folded into the request from there
+      // — see src/lib/chat/attachedFiles.ts.
+      attachedFileNames?: string[];
       // The same images with their payload, filled in per request by
       // attachImageData. Absent in the stored history.
       images?: AiChatImage[];
@@ -1110,8 +1153,16 @@ export type AiChatMessage =
       // either inside the turn or from the follow-up question the store asks
       // when a turn ends without one. See FLAG_SUGGESTION_TOOL_NAME.
       suggestsEdit?: boolean;
+      // Notes from the vault this answer drew on, collected from the knowledge
+      // base tool calls of the same turn (persisted). The transcript lists them
+      // as clickable sources under the reply — an answer assembled from files
+      // the user did not open is only trustworthy if they can see which ones.
+      sources?: VaultSourceRef[];
     }
   | { role: "tool"; toolCallId: string; toolName: string; content: string };
+
+/** One note an answer was based on; see the assistant turn's `sources`. */
+export type VaultSourceRef = { path: string; headingPath: string };
 
 export type AiChatRequest = {
   // Conversation history already trimmed to the context budget by the caller
@@ -1132,6 +1183,11 @@ export type AiChatRequest = {
   // them; a follow-up step that must not be able to touch the document narrows
   // it to the one tool it asks about.
   toolNames?: readonly string[];
+  // Offers the knowledge base tools on top of the standard ones. Off unless the
+  // user switched the feature on for the open vault — these tools read notes
+  // the user never opened, so their availability is a consent decision, not a
+  // capability one (see src/store/useRagSettingsStore.ts).
+  vaultSearchEnabled?: boolean;
 };
 
 // Name of the tool the model calls to flag that its own reply text (not an
@@ -1261,16 +1317,90 @@ const AGENT_TOOL_SPECS = [
   }
 ] as const;
 
-const AGENT_TOOLS_OPENAI = AGENT_TOOL_SPECS.map((spec) => ({
-  type: "function",
-  function: { name: spec.name, description: spec.description, parameters: spec.parameters }
-}));
+// The knowledge base's tools ("Wissensbasis", see DOCS/wissensbasis-plan.md).
+// Kept apart from the specs above because they are the only ones whose
+// availability depends on a setting: they read files the user never opened, so
+// they are offered only once the feature has been switched on for this vault.
+export const VAULT_TOOL_NAMES: readonly string[] = ["search_vault", "read_note"];
 
-const AGENT_TOOLS_ANTHROPIC = AGENT_TOOL_SPECS.map((spec) => ({
-  name: spec.name,
-  description: spec.description,
-  input_schema: spec.parameters
-}));
+const VAULT_TOOL_SPECS = [
+  {
+    name: "search_vault",
+    description:
+      "Search the user's other notes in this vault for passages that answer the question or supply the " +
+      "material. Use it whenever the user refers to something that is not in the open document — an earlier " +
+      "meeting, a decision, a person, a project, \"the other X\", or anything they say they wrote down " +
+      "somewhere — including when they ask you to insert, continue or reuse it: search for it yourself " +
+      "before asking them to paste or repeat it. It answers with the best matching " +
+      "passages and the file each came from; call read_note on a result before you rely on its wording, " +
+      "because the snippet is only a preview. This is a keyword search: query with the distinctive words a " +
+      "note would actually contain (names, project titles, terms), not with the user's whole sentence, and " +
+      "search again with different words when the first attempt finds nothing. Do not use it for the " +
+      "document the user currently has open — get_document gives you that one in full.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "The distinctive words to search for, e.g. \"Kunde A Liefertermin\"."
+        },
+        limit: { type: "integer", description: "How many passages to return. Default 6, at most 20." }
+      },
+      required: ["query"]
+    }
+  },
+  {
+    name: "read_note",
+    description:
+      "Read one of the user's notes in full, or a single section of it. Call this after search_vault when a " +
+      "result looks relevant: the snippets it returns are previews and are regularly cut mid-sentence, so " +
+      "answering from a snippet alone is how you end up quoting something the note does not say. Pass path " +
+      "exactly as search_vault reported it, and section as that result's heading trail to get just that " +
+      "part. Never guess a path that no search result mentioned.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description: "The note's path exactly as search_vault reported it, e.g. Projekte/Kunde A.md."
+        },
+        section: {
+          type: "string",
+          description:
+            "Optional heading trail of one passage, exactly as search_vault reported it, e.g. " +
+            "\"Kunde A > Entscheidungen\". Omit to read the whole note."
+        }
+      },
+      required: ["path"]
+    }
+  }
+] as const;
+
+type ToolSpec = {
+  readonly name: string;
+  readonly description: string;
+  readonly parameters: Record<string, unknown>;
+};
+
+function toOpenAiTools(specs: readonly ToolSpec[]) {
+  return specs.map((spec) => ({
+    type: "function",
+    function: { name: spec.name, description: spec.description, parameters: spec.parameters }
+  }));
+}
+
+function toAnthropicTools(specs: readonly ToolSpec[]) {
+  return specs.map((spec) => ({
+    name: spec.name,
+    description: spec.description,
+    input_schema: spec.parameters
+  }));
+}
+
+const AGENT_TOOLS_OPENAI = toOpenAiTools(AGENT_TOOL_SPECS as readonly ToolSpec[]);
+const AGENT_TOOLS_ANTHROPIC = toAnthropicTools(AGENT_TOOL_SPECS as readonly ToolSpec[]);
+const VAULT_TOOLS_OPENAI = toOpenAiTools(VAULT_TOOL_SPECS as readonly ToolSpec[]);
+const VAULT_TOOLS_ANTHROPIC = toAnthropicTools(VAULT_TOOL_SPECS as readonly ToolSpec[]);
 
 // Applies request.toolNames. Narrowing the offered tools is the guard that lets
 // a follow-up step ask the model a question without giving it the means to
@@ -1284,6 +1414,22 @@ function offeredTools<T extends { name: string } | { function: { name: string } 
   }
 
   return all.filter((tool) => toolNames.includes("name" in tool ? tool.name : tool.function.name));
+}
+
+/**
+ * The tools one request offers: the standard set, plus the knowledge base's
+ * when the vault has it switched on, narrowed by request.toolNames.
+ *
+ * Composing here rather than at the call sites keeps the three provider
+ * families from drifting — a tool added to only two of them is a bug that only
+ * shows up on whichever provider the developer happened not to test.
+ */
+function requestTools<T extends { name: string } | { function: { name: string } }>(
+  base: T[],
+  vault: T[],
+  request: AiChatRequest
+): T[] {
+  return offeredTools(request.vaultSearchEnabled ? [...base, ...vault] : base, request.toolNames);
 }
 
 // Ollama's tool_calls arguments already arrive as an object; OpenAI-compatible
@@ -1362,6 +1508,31 @@ const AGENT_INSTRUCTION =
   `explains something or confirms a change you have already made.\n` +
   "If the user only asks a question, answer it normally after reading the document.";
 
+// Added on top of AGENT_INSTRUCTION only when the vault's knowledge base is on.
+// Its whole job is the two failure modes that make a "search my notes" feature
+// untrustworthy: answering from a preview snippet, and answering from memory
+// while claiming the notes said it.
+const VAULT_INSTRUCTION =
+  "You can also look things up in the user's other notes in this vault.\n" +
+  "V1. When the user refers to something that is not in the open document — an earlier meeting, a " +
+  "decision, a person, a project, \"the other X\", \"what did I write about …\", \"when did we agree …\" — " +
+  "call search_vault yourself before answering or before asking the user to repeat, paste or describe it. " +
+  "This applies just as much to edit requests as to questions: \"attach the other poem here\", \"continue " +
+  "from what I wrote about X\", \"use the notes from that meeting\" all name something you can look up, so " +
+  "search for it first — only ask the user to supply it themselves once a search (and a retry with " +
+  "different words) has come back empty. Do not answer, or ask the user to hand you the material, from " +
+  "memory: you have no knowledge of this user's notes beyond what the tools return.\n" +
+  "V2. search_vault is a keyword search. Query with the distinctive words the note itself would contain, " +
+  "not with the user's sentence. If nothing comes back, try again with other words (a synonym, a name, a " +
+  "shorter query) before you conclude there is nothing.\n" +
+  "V3. The snippets are previews and are often cut mid-sentence. Before you state anything as fact, or " +
+  "quote, call read_note for that result and read the actual passage. Never present a snippet as a quote.\n" +
+  "V4. Name the note you took an answer from, in your reply, the way a person would (\"in Projekte/Kunde " +
+  "A.md you noted …\"). The user sees the sources listed under your answer as well, but a claim whose " +
+  "source is not visible in the sentence itself is one they cannot check.\n" +
+  "V5. When the notes do not contain the answer, say so plainly. Do not fill the gap with general " +
+  "knowledge and do not imply it came from their notes.";
+
 function buildChatSystemPrompt(
   request: AiChatRequest,
   thinkingMode: AiThinkingMode,
@@ -1386,8 +1557,16 @@ function buildChatSystemPrompt(
       : "";
 
   const agentSection = toolsEnabled ? AGENT_INSTRUCTION : "";
+  const vaultSection = toolsEnabled && request.vaultSearchEnabled ? VAULT_INSTRUCTION : "";
 
-  return [baseInstruction, MARKDOWN_OUTPUT_INSTRUCTION, agentSection, thinkingInstruction, documentSection]
+  return [
+    baseInstruction,
+    MARKDOWN_OUTPUT_INSTRUCTION,
+    agentSection,
+    vaultSection,
+    thinkingInstruction,
+    documentSection
+  ]
     .filter(Boolean)
     .join("\n\n");
 }
@@ -1561,7 +1740,7 @@ export async function generateAiChatStep(
       model: settings.model,
       system: buildChatSystemPrompt(request, settings.thinkingMode, true),
       max_tokens: resolveMaxOutputTokens(settings.contextLength),
-      tools: offeredTools(AGENT_TOOLS_ANTHROPIC, request.toolNames),
+      tools: requestTools(AGENT_TOOLS_ANTHROPIC, VAULT_TOOLS_ANTHROPIC, request),
       messages: toAnthropicMessages(request)
     };
 
@@ -1595,7 +1774,7 @@ export async function generateAiChatStep(
       model: settings.model,
       stream: false,
       messages: toOpenAiCompatMessages(request, settings.thinkingMode, true),
-      tools: offeredTools(AGENT_TOOLS_OPENAI, request.toolNames),
+      tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, request),
       options: { num_ctx: settings.contextLength, num_predict: resolveMaxOutputTokens(settings.contextLength) }
     };
 
@@ -1625,7 +1804,7 @@ export async function generateAiChatStep(
   const body: Record<string, unknown> = {
     model: settings.model,
     messages: toOpenAiCompatMessages(request, settings.thinkingMode, false),
-    tools: offeredTools(AGENT_TOOLS_OPENAI, request.toolNames),
+    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, request),
     tool_choice: "auto",
     temperature: 0.2,
     max_tokens: resolveMaxOutputTokens(settings.contextLength),
@@ -1638,7 +1817,7 @@ export async function generateAiChatStep(
 
   const payload = (await postJson(
     new URL("/v1/chat/completions", settings.apiUrl).toString(),
-    body,
+    withOpenAiParamCompat(settings, body),
     buildOpenAiCompatibleAuthHeaders(settings),
     signal
   )) as {
@@ -1718,7 +1897,7 @@ async function streamOpenAiCompatibleChat(
 
   return streamJsonLines(
     new URL("/v1/chat/completions", settings.apiUrl).toString(),
-    requestBody,
+    withOpenAiParamCompat(settings, requestBody),
     handlers,
     (payload) => {
       const choices = payload.choices as Array<{
@@ -1945,7 +2124,7 @@ export async function generateOcrMarkdown(
 
     const payload = await postJson(
       new URL("/v1/chat/completions", settings.apiUrl).toString(),
-      requestBody,
+      withOpenAiParamCompat(settings, requestBody),
       buildOpenAiCompatibleAuthHeaders(settings),
       signal
     );

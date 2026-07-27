@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Eye, EyeOff, RefreshCw } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { resolveResource } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
 
 import { Button } from "@/components/ui/button";
 import { AssistantsSettings } from "@/components/AssistantsSettings";
+import { RagSettings } from "@/components/RagSettings";
 import { VersioningSettings } from "@/components/VersioningSettings";
 import type { Assistant } from "@/store/useAssistantsStore";
+import { useRagSettingsStore } from "@/store/useRagSettingsStore";
 
 import {
   fetchAvailableModels,
@@ -25,14 +27,19 @@ import {
   getFontScale
 } from "@/lib/fonts";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
-import { AI_PROVIDERS, type AiProvider, type AiSettings } from "@/store/useAiSettingsStore";
+import {
+  AI_PROVIDERS,
+  loadApiKeyForProvider,
+  type AiProvider,
+  type AiSettings
+} from "@/store/useAiSettingsStore";
 import { persistLanguage, type SupportedLanguage } from "@/i18n";
 import { type Theme, useThemeStore } from "@/store/useThemeStore";
 import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
 import { isWindowsPlatform } from "@/lib/platform";
 import { useAppVersion } from "@/hooks/useAppVersion";
 
-export type SettingsTab = "general" | "fonts" | "ai" | "assistants" | "versioning";
+export type SettingsTab = "general" | "fonts" | "ai" | "assistants" | "rag" | "versioning";
 
 /**
  * Document font for editor and export alike. The preview renders the actual
@@ -157,6 +164,8 @@ export function SettingsDialog({
   );
   const appVersion = useAppVersion();
 
+  const ragEnabled = useRagSettingsStore((state) => state.config.enabled);
+
   const [provider, setProvider] = useState(settings.provider);
   const [apiUrl, setApiUrl] = useState(settings.apiUrl);
   const [apiKey, setApiKey] = useState(settings.apiKey);
@@ -169,6 +178,7 @@ export function SettingsDialog({
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelsError, setModelsError] = useState<string | null>(null);
   const modelsRequestIdRef = useRef(0);
+  const apiKeyRequestIdRef = useRef(0);
 
   const loadModels = async (providerToUse: AiProvider, apiUrlToUse: string, apiKeyToUse: string) => {
     const requestId = ++modelsRequestIdRef.current;
@@ -254,7 +264,7 @@ export function SettingsDialog({
   return (
     <div className="ai-dialog" role="presentation" onClick={onClose}>
       <div
-        className="ai-dialog__panel"
+        className="ai-dialog__panel ai-dialog__panel--settings"
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
@@ -312,6 +322,17 @@ export function SettingsDialog({
             onClick={() => setActiveTab("assistants")}
           >
             {t("settingsDialog.tabAssistants")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="settings-tab-rag"
+            aria-selected={activeTab === "rag"}
+            aria-controls="settings-panel-rag"
+            className={activeTab === "rag" ? "ai-dialog__tab ai-dialog__tab--active" : "ai-dialog__tab"}
+            onClick={() => setActiveTab("rag")}
+          >
+            {t("settingsDialog.tabRag")}
           </button>
           <button
             type="button"
@@ -398,6 +419,10 @@ export function SettingsDialog({
           <div id="settings-panel-versioning" role="tabpanel" aria-labelledby="settings-tab-versioning">
             <VersioningSettings />
           </div>
+        ) : activeTab === "rag" ? (
+          <div id="settings-panel-rag" role="tabpanel" aria-labelledby="settings-tab-rag">
+            <RagSettings pendingProvider={provider} />
+          </div>
         ) : activeTab === "assistants" ? (
           <div id="settings-panel-assistants" role="tabpanel" aria-labelledby="settings-tab-assistants">
             <AssistantsSettings onEditRequest={onAssistantEditRequest} />
@@ -417,11 +442,27 @@ export function SettingsDialog({
                     // field itself is left untouched so briefly checking out another
                     // provider doesn't discard an already-set model (see Toolbar.tsx
                     // for the fix against mixed model lists from multiple providers).
+                    // The API key, unlike the model, is stored per provider (see
+                    // useAiSettingsStore) — leaving the previous provider's key
+                    // showing here would risk it being saved under the new
+                    // provider on Save, so it's cleared until the new provider's
+                    // own stored key (if any) has loaded.
+                    const requestId = ++apiKeyRequestIdRef.current;
+
                     setProvider(nextProvider);
                     setApiUrl(nextApiUrl);
+                    setApiKey("");
                     setAvailableModels([]);
                     setModelsError(null);
-                    void loadModels(nextProvider, nextApiUrl, apiKey);
+
+                    void loadApiKeyForProvider(nextProvider).then((storedApiKey) => {
+                      if (apiKeyRequestIdRef.current !== requestId) {
+                        return;
+                      }
+
+                      setApiKey(storedApiKey);
+                      void loadModels(nextProvider, nextApiUrl, storedApiKey);
+                    });
                   }}
                 >
                   {AI_PROVIDERS.map((providerOption) => (
@@ -470,9 +511,14 @@ export function SettingsDialog({
               ) : null}
 
               {isCloudProvider(provider) ? (
-                <p className="ai-dialog__field--full ai-dialog__notice">
-                  {t("settingsDialog.cloudProviderNotice", { provider: PROVIDER_DISPLAY_NAME[provider] })}
-                </p>
+                <div className="ai-dialog__field--full ai-dialog__notice" role="note">
+                  <AlertTriangle className="ai-dialog__notice-icon" aria-hidden="true" />
+                  <p>
+                    {t(ragEnabled ? "settingsDialog.cloudProviderNoticeRag" : "settingsDialog.cloudProviderNotice", {
+                      provider: PROVIDER_DISPLAY_NAME[provider]
+                    })}
+                  </p>
+                </div>
               ) : null}
 
               <label className="ai-dialog__field">

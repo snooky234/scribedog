@@ -7,9 +7,16 @@ import {
   FLAG_SUGGESTION_TOOL_NAME,
   generateAiChatStep,
   type AiChatMessage,
-  type ChatUserAction
+  type ChatUserAction,
+  type VaultSourceRef
 } from "@/lib/aiClient";
 import { beginChatTurn, executeTool, pendingProposalTurnNote } from "@/lib/chat/agentTools";
+import {
+  inlineAttachedFiles,
+  MAX_ATTACHED_FILES,
+  type AttachedChatFile
+} from "@/lib/chat/attachedFiles";
+import { isKnowledgeBaseReady } from "@/lib/ragSearch";
 import { detectPendingSuggestion } from "@/lib/chat/pendingSuggestion";
 import { selectMessagesForModel } from "@/lib/chat/contextWindow";
 import { attachImageData } from "@/lib/chat/imageAttachments";
@@ -44,7 +51,24 @@ type ChatState = {
   // carries it as context. Empty when nothing is selected, when the user
   // detached it from the chip, or when no document is open.
   editorSelection: string;
+  // Whether the agent may look things up in the knowledge base *in this chat*.
+  // Deliberately session state rather than a stored setting: the durable
+  // consent gate is the "Wissensbasis aktivieren" checkbox plus the folder
+  // selection, and this only lets the user keep a single conversation out of
+  // their notes without having to go and revoke that consent.
+  useKnowledgeBase: boolean;
+  // Files the user dragged onto the panel. They belong to the current chat, not
+  // to the vault, and outrank the knowledge base — see
+  // src/lib/chat/attachedFiles.ts. Never persisted: the content would be
+  // written into chat-sessions.json once per turn, and the turn itself already
+  // records which files it was asked with.
+  attachedFiles: AttachedChatFile[];
 
+  setUseKnowledgeBase: (value: boolean) => void;
+  // Answers with how many of the offered files were actually taken on, so the
+  // panel can tell the user when the limit swallowed the rest.
+  attachFiles: (files: AttachedChatFile[]) => number;
+  removeAttachedFile: (id: string) => void;
   setEditorSelection: (text: string) => void;
   openPanel: () => void;
   closePanel: () => void;
@@ -139,6 +163,40 @@ export const useChatStore = create<ChatState>((set, get) => ({
   streamingThinking: "",
   error: null,
   editorSelection: "",
+  useKnowledgeBase: true,
+  attachedFiles: [],
+
+  setUseKnowledgeBase: (value) => set({ useKnowledgeBase: value }),
+
+  attachFiles: (files) => {
+    const current = get().attachedFiles;
+    // The same note dropped twice is one attachment, not two copies of the same
+    // text in the context. A file from the OS has no path to compare, so its
+    // name has to do — two same-named files from different folders are rarer
+    // than the same file dropped again.
+    const seen = new Set(current.map((file) => (file.path || file.name).toLowerCase()));
+    const added: AttachedChatFile[] = [];
+
+    for (const file of files) {
+      const key = (file.path || file.name).toLowerCase();
+
+      if (seen.has(key) || current.length + added.length >= MAX_ATTACHED_FILES) {
+        continue;
+      }
+
+      seen.add(key);
+      added.push(file);
+    }
+
+    if (added.length > 0) {
+      set({ attachedFiles: [...current, ...added] });
+    }
+
+    return added.length;
+  },
+
+  removeAttachedFile: (id) =>
+    set((state) => ({ attachedFiles: state.attachedFiles.filter((file) => file.id !== id) })),
 
   // Pushed on every editor selection change, so the no-op case (typing, with
   // nothing selected before or after) must not re-render the panel.
@@ -163,7 +221,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       activeSessionId: null,
       streamingText: "",
       streamingThinking: "",
-      error: null
+      error: null,
+      // The attachments belong to the chat they were dropped into; a fresh one
+      // starts without them (same reasoning everywhere the session changes
+      // below).
+      attachedFiles: []
     });
   },
   closePanel: () => set({ isOpen: false }),
@@ -175,10 +237,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
   showOverview: () => set({ view: "overview", error: null }),
-  openSession: (id) => set({ activeSessionId: id, view: "chat", error: null }),
+  openSession: (id) => set({ activeSessionId: id, view: "chat", error: null, attachedFiles: [] }),
   newSession: () => {
     get().cancel();
-    set({ activeSessionId: null, view: "chat", streamingText: "", streamingThinking: "", error: null });
+    set({
+      activeSessionId: null,
+      view: "chat",
+      streamingText: "",
+      streamingThinking: "",
+      error: null,
+      attachedFiles: []
+    });
   },
   deleteSession: (id) => {
     set((state) => {
@@ -204,7 +273,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
         view: "chat",
         streamingText: "",
         streamingThinking: "",
-        error: null
+        error: null,
+        attachedFiles: []
       });
       return;
     }
@@ -218,7 +288,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       view: "chat",
       streamingText: "",
       streamingThinking: "",
-      error: null
+      error: null,
+      attachedFiles: []
     });
   },
   sendMessage: async (text, action) => {
@@ -243,11 +314,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // passage that happens to be selected.
     const selection = action ? "" : clampSelection(get().editorSelection);
 
+    // Only the names travel with the turn: what the model gets to read is
+    // assembled per request from the live attachment list, so detaching a file
+    // takes effect immediately instead of being frozen into the history.
+    const attachedFileNames = get().attachedFiles.map((file) => file.path || file.name);
+
     const userMessage: AiChatMessage = {
       role: "user",
       content,
       ...(action ? { action } : {}),
-      ...(selection ? { selection } : {})
+      ...(selection ? { selection } : {}),
+      ...(attachedFileNames.length > 0 ? { attachedFileNames } : {})
     };
 
     // Resolve the target session, creating one on the first message.
@@ -340,6 +417,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // flag: the one case where it never got the chance to (see
       // detectPendingSuggestion). Resolved once the turn is otherwise finished.
       let unflaggedReply: { index: number; text: string } | null = null;
+      // Notes the knowledge base tools surfaced during this turn, deduplicated.
+      // Collected across all steps: the model typically searches in one step
+      // and reads in the next, and both are sources of the eventual answer.
+      const turnSources: VaultSourceRef[] = [];
 
       while (iterations < MAX_ITERATIONS) {
         iterations += 1;
@@ -357,9 +438,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         const modelMessages = withPendingProposalNote(
           selectMessagesForModel(
-            // Expanded before trimming: the selection note becomes part of the
-            // content and is charged against the budget along with it.
-            inlineSelectionContext(current.messages),
+            // Expanded before trimming: the selection and attachment notes
+            // become part of the content and are charged against the budget
+            // along with it. Re-read from the store per iteration like the
+            // history itself, so a file detached mid-turn is gone from the next
+            // step's request.
+            inlineAttachedFiles(
+              inlineSelectionContext(current.messages),
+              get().attachedFiles,
+              aiSettings.contextLength
+            ),
             systemEstimate,
             aiSettings.contextLength
           )
@@ -371,13 +459,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
           // disk here, for this request only (see attachImageData).
           {
             messages: await attachImageData(modelMessages),
-            assistantInstruction: assistant.instruction
+            assistantInstruction: assistant.instruction,
+            // Re-read per step rather than captured before the loop: the user
+            // can switch the knowledge base off mid-turn, and the next step
+            // must not still be offered tools that read their notes.
+            vaultSearchEnabled: isKnowledgeBaseReady() && get().useKnowledgeBase
           },
           abortController.signal
         );
 
         if (step.toolCalls.length === 0) {
-          const index = appendMessage({ role: "assistant", content: step.text });
+          const index = appendMessage({
+            role: "assistant",
+            content: step.text,
+            // The notes this turn actually looked at, listed under the answer.
+            ...(turnSources.length > 0 ? { sources: turnSources } : {})
+          });
 
           if (!turnProposedEdit && step.text.trim()) {
             unflaggedReply = { index, text: step.text };
@@ -413,6 +510,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
           if (result.imagePath && !imagePaths.includes(result.imagePath)) {
             imagePaths.push(result.imagePath);
+          }
+
+          for (const source of result.sources ?? []) {
+            // A note read after being found appears in both tool results; the
+            // more precise entry (the one naming a section) wins, so the source
+            // list points at the passage rather than at the whole file.
+            const existing = turnSources.findIndex((entry) => entry.path === source.path);
+
+            if (existing === -1) {
+              turnSources.push(source);
+            } else if (source.headingPath && !turnSources[existing].headingPath) {
+              turnSources[existing] = source;
+            }
           }
         }
 

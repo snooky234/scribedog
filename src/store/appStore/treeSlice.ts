@@ -10,11 +10,12 @@ import {
   rewriteRelativeImagePaths,
   writeMarkdownFile
 } from "@/lib/fileSystem";
-import { getChildBasenamesByParent, isDescendantRelativePath } from "@/lib/fileTree";
+import { isDescendantRelativePath } from "@/lib/fileTree";
 import { writeManualOrder, writeSortMode, type SortMode } from "@/lib/vaultMeta";
 
 import { isDocumentDirty } from "./documents";
 import { toErrorMessage } from "./errors";
+import { currentChildBasenames, ensureManualOrderEntry } from "./manualOrder";
 import {
   getBasename,
   isPathInsideFolder,
@@ -103,29 +104,14 @@ export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
 
       // Lazily seed manual order for both parents from the current on-screen
       // order, so unrelated siblings don't visually reshuffle.
-      const childrenByParent = getChildBasenamesByParent(
-        filePaths.map((filePath) => ({
-          filePath,
-          relativePath: getRelativeDisplayPath(folderPath, filePath),
-          mtimeMs: 0
-        })),
-        emptyFolderPaths.map((path) => getRelativeDisplayPath(folderPath, path))
-      );
-
       let seededManualOrder = manualOrder;
 
       for (const parentRelativePath of new Set([sourceParentRelativePath, targetParentRelativePath])) {
-        if (seededManualOrder[parentRelativePath]) {
-          continue;
-        }
-
-        const currentChildren = childrenByParent.get(parentRelativePath) ?? [];
-        seededManualOrder = {
-          ...seededManualOrder,
-          [parentRelativePath]: [...currentChildren].sort((left, right) =>
-            left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" })
-          )
-        };
+        seededManualOrder = ensureManualOrderEntry(
+          seededManualOrder,
+          parentRelativePath,
+          currentChildBasenames(folderPath, filePaths, emptyFolderPaths, parentRelativePath)
+        );
       }
 
       let nextFilePaths = filePaths;

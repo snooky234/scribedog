@@ -31,6 +31,31 @@
   width: min(48rem, 100%);
 }
 
+/* Six tabs need the extra width to stay on one line; the roomier inset keeps
+   long body text off the panel edge. */
+.ai-dialog__panel--settings {
+  width: min(50rem, 100%);
+  padding-left: 1.9rem;
+  padding-right: 1.9rem;
+}
+
+.ai-dialog__panel--settings .ai-dialog__tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  /* Scrolling one axis makes the other scrollable too, and the tabs' -1px
+     bottom margin is already enough to trip a vertical scrollbar next to the
+     strip. Hide both bars — at every realistic dialog width the tabs fit. */
+  scrollbar-width: none;
+}
+
+.ai-dialog__panel--settings .ai-dialog__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.ai-dialog__panel--settings .ai-dialog__tab {
+  white-space: nowrap;
+}
+
 .ai-dialog__eyebrow {
   margin: 0;
   text-transform: uppercase;
@@ -356,14 +381,30 @@
 }
 
 .ai-dialog__notice {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
   margin: 0.2rem 0 0.4rem;
-  padding: 0.7rem 0.9rem;
-  border: 1px solid rgba(217, 119, 6, 0.35);
-  border-radius: 0.9rem;
-  background: rgba(217, 119, 6, 0.12);
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(var(--overlay-rgb), 0.14);
+  border-left: 3px solid var(--amber-fg);
+  border-radius: 0.5rem;
+  background: rgba(var(--warning-bg-rgb), 0.75);
+}
+
+.ai-dialog__notice p {
+  margin: 0;
   color: rgba(var(--text-rgb), 0.86);
   font-size: 0.82rem;
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+.ai-dialog__notice-icon {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.1rem;
+  color: var(--amber-fg);
 }
 
 .ai-dialog__switch {

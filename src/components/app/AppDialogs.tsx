@@ -58,6 +58,7 @@ type AppDialogsProps = {
   // Import
   importFileList: string[] | null;
   folderPath: string | null;
+  importTargetFolder: string | null;
   onImported: (createdFilePaths: string[]) => void;
   onCloseImport: () => void;
 
@@ -103,6 +104,7 @@ export function AppDialogs({
   onCloseExport,
   importFileList,
   folderPath,
+  importTargetFolder,
   onImported,
   onCloseImport,
   availableUpdate,
@@ -166,6 +168,7 @@ export function AppDialogs({
       <ImportDialog
         files={importFileList}
         vaultRoot={folderPath}
+        targetFolder={importTargetFolder}
         onImported={onImported}
         onClose={onCloseImport}
       />
