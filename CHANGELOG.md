@@ -3,6 +3,13 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.0] - 2026-07-28
+
+### Highlights
+- RAG: retrieval-augmented generation with document indexing and search
+- RAG: knowledge base folder controls and file attachments
+- Chat: handle links in AI-generated answers
+
 ## [0.7.1] - 2026-07-27
 
 ### Highlights
