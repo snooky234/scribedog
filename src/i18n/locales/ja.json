@@ -141,6 +141,7 @@
     "title": "設定",
     "tabsAriaLabel": "設定カテゴリ",
     "tabGeneral": "一般",
+    "tabShortcuts": "ショートカット",
     "tabFonts": "フォント",
     "tabAi": "AI 設定",
     "tabAssistants": "アシスタント",
@@ -322,7 +323,6 @@
   },
   "shortcutsDialog": {
     "title": "キーボードショートカット",
-    "description": "次のキーの組み合わせが使用できます。変更可能なショートカットはキーの組み合わせをクリックすると再割り当てできます。",
     "items": {
       "openFolder": "フォルダーを開く",
       "newFile": "新規ファイルを作成",
@@ -334,6 +334,7 @@
       "navigateBack": "前に開いていたファイルに戻る",
       "navigateForward": "履歴の次のファイルに進む",
       "toggleChat": "AI チャットの表示切り替え",
+      "newChat": "新しい AI チャットを開く",
       "aiEditDialog": "AI 編集ダイアログを開く",
       "aiVoiceDialog": "音声入力付きでAIダイアログを開く",
       "dictation": "エディターまたはチャットに音声入力する（開始/停止）",
@@ -374,7 +375,6 @@
       "moveListItemDown": "リスト項目を下へ移動",
       "toggleDetailsPanel": "詳細パネル（リンク・バックリンク・ファイル情報）の表示を切り替え"
     },
-    "customizeHint": "キーの組み合わせをクリックし、新しい組み合わせを押してください。",
     "recording": "キーを押してください …",
     "recordHint": "新しいキーの組み合わせを押してください（Ctrl または Alt を含める必要があります）。Esc で中止します。",
     "record": "「{{action}}」のキーの組み合わせを変更",
@@ -403,8 +403,8 @@
     "sortModeName": "名前 (A–Z)",
     "sortModeModified": "更新日時",
     "sortModeManual": "手動",
-    "shortcuts": "キーボードショートカット",
-    "shortcutsTitle": "キーボードショートカット（Ctrl+#）",
+    "openRecentFolder": "最近使用したフォルダー",
+    "browseForFolder": "参照…",
     "searchingFolder": "フォルダーを検索中…",
     "openFolderPrompt": "フォルダーを開くと、含まれるすべての Markdown ファイルが表示されます。",
     "noMarkdownFiles": "Markdown ファイルが見つかりません。`.md` ファイルを含むフォルダーを開いてください。",

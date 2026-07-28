@@ -2,6 +2,7 @@ import { dirname, join } from "@tauri-apps/api/path";
 
 import i18n from "@/i18n";
 import {
+  addRecentFolderPath,
   allowMarkdownFolderAccess,
   chooseMarkdownFolder,
   createUniqueMarkdownFolder,
@@ -9,6 +10,7 @@ import {
   getRelativeDisplayPath,
   listMarkdownFiles,
   markdownFolderExists,
+  removeRecentFolderPath,
   renameMarkdownFolder,
   setLastOpenedFolderPath,
   watchMarkdownFolder
@@ -66,6 +68,7 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
       });
 
       setLastOpenedFolderPath(folderPath);
+      addRecentFolderPath(folderPath);
       void watchMarkdownFolder(folderPath).catch(() => undefined);
 
       return true;
@@ -97,10 +100,16 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
       });
 
       setLastOpenedFolderPath(folderPath);
+      addRecentFolderPath(folderPath);
       void watchMarkdownFolder(folderPath).catch(() => undefined);
 
       return true;
     } catch (error) {
+      // The folder may have been moved/deleted since it was last opened — a
+      // stale recent-folders entry the user can never successfully pick again
+      // is worse than silently dropping it.
+      removeRecentFolderPath(folderPath);
+
       set({
         isLoading: false,
         folderError: toErrorMessage(error, i18n.t("store.folderLoadError"))

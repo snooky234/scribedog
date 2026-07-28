@@ -141,6 +141,7 @@
     "title": "设置",
     "tabsAriaLabel": "设置分类",
     "tabGeneral": "常规",
+    "tabShortcuts": "快捷键",
     "tabFonts": "字体",
     "tabAi": "AI 设置",
     "tabAssistants": "助手",
@@ -322,7 +323,6 @@
   },
   "shortcutsDialog": {
     "title": "键盘快捷键",
-    "description": "以下快捷键组合可供使用。可自定义的快捷键点击组合即可重新指定。",
     "items": {
       "openFolder": "打开文件夹",
       "newFile": "新建文件",
@@ -334,6 +334,7 @@
       "navigateBack": "返回上一个打开的文件",
       "navigateForward": "前进到历史记录中的下一个文件",
       "toggleChat": "切换 AI 聊天",
+      "newChat": "打开新的 AI 聊天",
       "aiEditDialog": "打开 AI 编辑对话框",
       "aiVoiceDialog": "打开带语音输入的 AI 对话框",
       "dictation": "向编辑器或聊天口述（开始/停止）",
@@ -374,7 +375,6 @@
       "moveListItemDown": "下移列表项",
       "toggleDetailsPanel": "显示/隐藏详情面板（链接、反向链接与文件信息）"
     },
-    "customizeHint": "点击某个快捷键组合，然后按下新的组合。",
     "recording": "请按键 …",
     "recordHint": "按下新的快捷键组合（必须包含 Ctrl 或 Alt），按 Esc 取消。",
     "record": "更改“{{action}}”的快捷键组合",
@@ -403,8 +403,8 @@
     "sortModeName": "名称 (A–Z)",
     "sortModeModified": "最近修改",
     "sortModeManual": "手动",
-    "shortcuts": "键盘快捷键",
-    "shortcutsTitle": "键盘快捷键（Ctrl+#）",
+    "openRecentFolder": "最近的文件夹",
+    "browseForFolder": "浏览…",
     "searchingFolder": "正在搜索文件夹……",
     "openFolderPrompt": "打开一个文件夹以查看其中包含的所有 Markdown 文件。",
     "noMarkdownFiles": "未找到 Markdown 文件。请打开包含 `.md` 文件的文件夹。",

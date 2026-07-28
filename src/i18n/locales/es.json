@@ -141,6 +141,7 @@
     "title": "Configuración",
     "tabsAriaLabel": "Categorías de configuración",
     "tabGeneral": "General",
+    "tabShortcuts": "Atajos",
     "tabFonts": "Fuentes",
     "tabAi": "Configuración de IA",
     "tabAssistants": "Asistentes",
@@ -322,7 +323,6 @@
   },
   "shortcutsDialog": {
     "title": "Atajos de teclado",
-    "description": "Estas combinaciones de teclas están disponibles. Los atajos personalizables se reasignan haciendo clic en la combinación.",
     "items": {
       "openFolder": "Abrir carpeta",
       "newFile": "Crear nuevo archivo",
@@ -334,6 +334,7 @@
       "navigateBack": "Volver al archivo abierto anteriormente",
       "navigateForward": "Avanzar al siguiente archivo del historial",
       "toggleChat": "Mostrar/ocultar el chat de IA",
+      "newChat": "Abrir un nuevo chat de IA",
       "aiEditDialog": "Abrir el cuadro de diálogo de edición con IA",
       "aiVoiceDialog": "Abrir el diálogo de IA con entrada de voz",
       "dictation": "Dictar en el editor o en el chat (iniciar/detener)",
@@ -374,7 +375,6 @@
       "moveListItemDown": "Bajar elemento de lista",
       "toggleDetailsPanel": "Mostrar/ocultar el panel de detalles (enlaces, retroenlaces e información del archivo)"
     },
-    "customizeHint": "Haz clic en una combinación y pulsa la nueva.",
     "recording": "Pulsa una tecla …",
     "recordHint": "Pulsa la nueva combinación (debe incluir Ctrl o Alt); Esc cancela.",
     "record": "Cambiar la combinación de «{{action}}»",
@@ -403,8 +403,8 @@
     "sortModeName": "Nombre (A–Z)",
     "sortModeModified": "Modificado recientemente",
     "sortModeManual": "Manual",
-    "shortcuts": "Atajos de teclado",
-    "shortcutsTitle": "Atajos de teclado (Ctrl+#)",
+    "openRecentFolder": "Carpetas recientes",
+    "browseForFolder": "Examinar…",
     "searchingFolder": "Buscando en la carpeta …",
     "openFolderPrompt": "Abre una carpeta para ver todos los archivos Markdown que contiene.",
     "noMarkdownFiles": "No se encontraron archivos Markdown. Abre una carpeta que contenga archivos `.md`.",

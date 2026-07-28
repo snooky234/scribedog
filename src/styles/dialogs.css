@@ -31,10 +31,10 @@
   width: min(48rem, 100%);
 }
 
-/* Six tabs need the extra width to stay on one line; the roomier inset keeps
+/* Seven tabs need the extra width to stay on one line; the roomier inset keeps
    long body text off the panel edge. */
 .ai-dialog__panel--settings {
-  width: min(50rem, 100%);
+  width: min(56rem, 100%);
   padding-left: 1.9rem;
   padding-right: 1.9rem;
 }
@@ -590,11 +590,21 @@
   }
 }
 
+.shortcuts-settings__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.1rem;
+}
+
 .shortcuts-hint {
   margin: 0 0 0.9rem;
   font-size: 0.85rem;
   color: rgba(var(--text-rgb),0.66);
   min-height: 1.2rem;
+}
+
+.shortcuts-hint:empty {
+  display: none;
 }
 
 .shortcuts-hint--error {
@@ -1014,7 +1024,7 @@
   margin: 0.3rem 0 0.7rem;
   font-size: 0.82rem;
   line-height: 1.45;
-  color: rgba(var(--muted-rgb),0.85);
+  color: rgba(var(--text-rgb),0.72);
 }
 
 .font-setting__options {

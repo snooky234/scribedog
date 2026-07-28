@@ -31,7 +31,7 @@ import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import { useWebviewZoom } from "@/hooks/useWebviewZoom";
 import { useWindowReveal } from "@/hooks/useWindowReveal";
 import { useZenMode } from "@/hooks/useZenMode";
-import { getRelativeDisplayPath } from "@/lib/fileSystem";
+import { getFolderBasename, getRecentFolderPaths, getRelativeDisplayPath } from "@/lib/fileSystem";
 import { clearVaultSearchCache } from "@/lib/ragSearch";
 import { findStepIndex } from "@/lib/navigationHistory";
 import { printMarkdown } from "@/lib/print";
@@ -60,7 +60,7 @@ import "./App.css";
 function App() {
   const { t } = useTranslation();
   const [pendingNavigation, setPendingNavigation] = useState<
-    { type: "file"; filePath: string } | { type: "folder" } | null
+    { type: "file"; filePath: string } | { type: "folder"; folderPath: string | null } | null
   >(null);
   // Set right before a back/forward step so the history effect below moves the
   // position instead of recording the target as a new entry. Cleared once it is
@@ -74,7 +74,6 @@ function App() {
   // Wrapped in an object so "create new assistant" (assistant: null) is
   // distinguishable from "no edit in progress" (whole value null).
   const [assistantEditTarget, setAssistantEditTarget] = useState<{ assistant: Assistant | null } | null>(null);
-  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [importFileList, setImportFileList] = useState<ImportSource[] | null>(null);
   const [importTargetFolder, setImportTargetFolder] = useState<string | null>(null);
   // What a dropped folder contributed beyond the importable files themselves.
@@ -248,17 +247,28 @@ function App() {
       ? folderPath
         ? getRelativeDisplayPath(folderPath, pendingNavigation.filePath)
         : pendingNavigation.filePath
-      : t("app.pendingTargetOtherFolder")
+      : (pendingNavigation.folderPath ? getFolderBasename(pendingNavigation.folderPath) : null) ??
+        t("app.pendingTargetOtherFolder")
     : null;
 
   const openFolderSafely = async () => {
     if (selectedFilePath && (isDirty || isAiActionPending)) {
-      setPendingNavigation({ type: "folder" });
+      setPendingNavigation({ type: "folder", folderPath: null });
       setIsUnsavedDialogOpen(true);
       return;
     }
 
     await openFolder();
+  };
+
+  const openRecentFolderSafely = async (targetFolderPath: string) => {
+    if (selectedFilePath && (isDirty || isAiActionPending)) {
+      setPendingNavigation({ type: "folder", folderPath: targetFolderPath });
+      setIsUnsavedDialogOpen(true);
+      return;
+    }
+
+    await openFolderAtPath(targetFolderPath);
   };
 
   const selectFilePathSafely = async (filePath: string) => {
@@ -478,6 +488,11 @@ function App() {
       return;
     }
 
+    if (nextNavigation.folderPath) {
+      await openFolderAtPath(nextNavigation.folderPath);
+      return;
+    }
+
     await openFolder();
   };
 
@@ -614,7 +629,10 @@ function App() {
     saveSelectedFile,
     openFolderSafely,
     createFile: handleCreateFile,
-    showShortcuts: () => setIsShortcutsOpen(true),
+    showShortcuts: () => {
+      setSettingsInitialTab("shortcuts");
+      setIsAiSettingsOpen(true);
+    },
     toggleZenMode,
     navigateBack: () => navigateHistory(backStepIndex),
     navigateForward: () => navigateHistory(forwardStepIndex),
@@ -656,6 +674,8 @@ function App() {
             fileMtimeMs={fileMtimeMs}
             emptyFolderMtimeMs={emptyFolderMtimeMs}
             onOpenFolder={openFolderSafely}
+            recentFolderPaths={getRecentFolderPaths()}
+            onOpenRecentFolder={(targetFolderPath) => void openRecentFolderSafely(targetFolderPath)}
             onCreateFile={() => void handleCreateFile()}
             onCreateFileRequest={(targetDirectory) => void handleCreateFile(targetDirectory)}
             onCreateFolder={() => void handleCreateFolder()}
@@ -677,7 +697,6 @@ function App() {
               setSettingsInitialTab("general");
               setIsAiSettingsOpen(true);
             }}
-            onShortcutsRequest={() => setIsShortcutsOpen(true)}
             onRequestEditorFocus={() => setEditorFocusRequestId((id) => id + 1)}
             sidebarFocusRequestId={sidebarFocusRequestId}
             onFileTreeSelectionChange={setFileTreeSelection}
@@ -808,8 +827,6 @@ function App() {
           setSettingsInitialTab("assistants");
           setIsAiSettingsOpen(true);
         }}
-        isShortcutsOpen={isShortcutsOpen}
-        onCloseShortcuts={() => setIsShortcutsOpen(false)}
         deleteTarget={deleteTarget}
         deleteTargetLabel={deleteTargetLabel}
         isDeleting={isDeleting}

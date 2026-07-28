@@ -25,6 +25,7 @@ export type ShortcutActionId =
   | "navigateBack"
   | "navigateForward"
   | "toggleChat"
+  | "newChat"
   | "toggleDetailsPanel"
   | "aiEditDialog"
   | "aiVoiceDialog"
@@ -192,6 +193,13 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     category: "ai",
     descriptionKey: "shortcutsDialog.items.toggleChat",
     defaultBinding: letter(CTRL_SHIFT, "A")
+  },
+  {
+    id: "newChat",
+    scope: "global",
+    category: "ai",
+    descriptionKey: "shortcutsDialog.items.newChat",
+    defaultBinding: letter(CTRL_SHIFT, "N")
   },
   {
     id: "toggleDetailsPanel",

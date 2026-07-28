@@ -141,6 +141,7 @@
     "title": "Impostazioni",
     "tabsAriaLabel": "Categorie di impostazioni",
     "tabGeneral": "Generale",
+    "tabShortcuts": "Scorciatoie",
     "tabFonts": "Caratteri",
     "tabAi": "Impostazioni IA",
     "tabAssistants": "Assistenti",
@@ -322,7 +323,6 @@
   },
   "shortcutsDialog": {
     "title": "Scorciatoie da tastiera",
-    "description": "Queste combinazioni di tasti sono disponibili. Le scorciatoie personalizzabili si riassegnano facendo clic sulla combinazione.",
     "items": {
       "openFolder": "Apri cartella",
       "newFile": "Crea nuovo file",
@@ -334,6 +334,7 @@
       "navigateBack": "Torna al file aperto in precedenza",
       "navigateForward": "Vai al file successivo nella cronologia",
       "toggleChat": "Mostra/nascondi chat IA",
+      "newChat": "Apri una nuova chat IA",
       "aiEditDialog": "Apri finestra di modifica IA",
       "aiVoiceDialog": "Apri la finestra IA con input vocale",
       "dictation": "Detta nell'editor o nella chat (avvia/interrompi)",
@@ -374,7 +375,6 @@
       "moveListItemDown": "Sposta l'elemento dell'elenco in basso",
       "toggleDetailsPanel": "Mostra/nascondi il pannello dei dettagli (collegamenti, backlink e info file)"
     },
-    "customizeHint": "Fai clic su una combinazione e premi quella nuova.",
     "recording": "Premi un tasto …",
     "recordHint": "Premi la nuova combinazione (deve includere Ctrl o Alt) — Esc annulla.",
     "record": "Cambia la combinazione di «{{action}}»",
@@ -403,8 +403,8 @@
     "sortModeName": "Nome (A–Z)",
     "sortModeModified": "Modificati di recente",
     "sortModeManual": "Manuale",
-    "shortcuts": "Scorciatoie da tastiera",
-    "shortcutsTitle": "Scorciatoie da tastiera (Ctrl+#)",
+    "openRecentFolder": "Cartelle recenti",
+    "browseForFolder": "Sfoglia…",
     "searchingFolder": "Ricerca nella cartella …",
     "openFolderPrompt": "Apri una cartella per vedere tutti i file Markdown che contiene.",
     "noMarkdownFiles": "Nessun file Markdown trovato. Apri una cartella contenente file `.md`.",

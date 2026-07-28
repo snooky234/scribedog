@@ -3,6 +3,12 @@
 .sidebar-panel {
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
+  /* Explicit `minmax(0, 1fr)` instead of the implicit `auto` column: an auto
+     track never shrinks below the min-content contribution of its items, so a
+     long vault path in the header would widen the whole column past the panel
+     and push the tree rows (and their hover/selection background) under the
+     rounded edge. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
   min-height: 0;
   padding: 1rem;
@@ -92,6 +98,16 @@
   opacity: 0.7;
 }
 
+.sidebar-panel__recent-folder-item {
+  max-width: 22rem;
+}
+
+.sidebar-panel__recent-folder-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 
 .sidebar-panel__message,
 .sidebar-panel__empty {
@@ -152,7 +168,7 @@
   display: grid;
   gap: 0.45rem;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 0.5rem;
   list-style: none;
 }
 

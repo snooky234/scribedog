@@ -15,11 +15,6 @@ import {
 import { findConflict, isCustomBinding, resolveBinding } from "@/lib/shortcuts/resolve";
 import { useShortcutsStore } from "@/store/useShortcutsStore";
 
-type ShortcutsDialogProps = {
-  open: boolean;
-  onClose: () => void;
-};
-
 type KeyToken = { mod: "ctrl" | "alt" | "shift" } | { special: "esc" | "enter" | "rightClick" } | { literal: string };
 
 /**
@@ -71,7 +66,12 @@ type RecordingError =
   | { kind: "needsModifier" }
   | { kind: "conflict"; conflictingAction: ShortcutActionId };
 
-export function ShortcutsDialog({ open, onClose }: ShortcutsDialogProps) {
+/**
+ * The "Shortcuts" settings tab. Like fonts, assistants and versioning, its
+ * bindings apply immediately through useShortcutsStore, without the AI
+ * settings' save button.
+ */
+export function ShortcutsSettings() {
   const { t } = useTranslation();
   const overrides = useShortcutsStore((state) => state.overrides);
   const saveError = useShortcutsStore((state) => state.saveError);
@@ -87,35 +87,12 @@ export function ShortcutsDialog({ open, onClose }: ShortcutsDialogProps) {
     setRecordingError(null);
   };
 
-  // Reopening the dialog must never resume a half-finished recording.
-  useEffect(() => {
-    if (!open) {
-      stopRecording();
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (!open || recordingId) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, recordingId, onClose]);
-
   // While recording, every keystroke belongs to the recorder — capture phase
   // plus stopImmediatePropagation keeps the app's own shortcuts (and the
-  // webview) from acting on the combo being assigned.
+  // settings dialog's own Escape-to-close handler) from acting on the combo
+  // being assigned.
   useEffect(() => {
-    if (!open || !recordingId) {
+    if (!recordingId) {
       return;
     }
 
@@ -154,11 +131,7 @@ export function ShortcutsDialog({ open, onClose }: ShortcutsDialogProps) {
     window.addEventListener("keydown", handleKeyDown, { capture: true });
 
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [open, recordingId, overrides, setBinding]);
-
-  if (!open) {
-    return null;
-  }
+  }, [recordingId, overrides, setBinding]);
 
   const hasCustomBindings = SHORTCUT_DEFINITIONS.some((definition) =>
     isCustomBinding(overrides, definition.id)
@@ -221,66 +194,52 @@ export function ShortcutsDialog({ open, onClose }: ShortcutsDialogProps) {
   };
 
   return (
-    <div className="ai-dialog" role="presentation" onClick={onClose}>
-      <div
-        className="ai-dialog__panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="shortcuts-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h3 id="shortcuts-title">{t("shortcutsDialog.title")}</h3>
-        <p className="ai-dialog__description">{t("shortcutsDialog.description")}</p>
+    <div className="shortcuts-settings">
+      <p className="shortcuts-hint" role="status">
+        {recordingError?.kind === "needsModifier"
+          ? t("shortcutsDialog.errorNeedsModifier")
+          : recordingError?.kind === "conflict"
+            ? t("shortcutsDialog.errorConflict", { action: conflictLabel })
+            : recordingId
+              ? t("shortcutsDialog.recordHint")
+              : null}
+      </p>
 
-        <p className="shortcuts-hint" role="status">
-          {recordingError?.kind === "needsModifier"
-            ? t("shortcutsDialog.errorNeedsModifier")
-            : recordingError?.kind === "conflict"
-              ? t("shortcutsDialog.errorConflict", { action: conflictLabel })
-              : recordingId
-                ? t("shortcutsDialog.recordHint")
-                : t("shortcutsDialog.customizeHint")}
+      {saveError ? (
+        <p className="shortcuts-hint shortcuts-hint--error">
+          {t("shortcutsDialog.saveError", { message: saveError })}
         </p>
+      ) : null}
 
-        {saveError ? (
-          <p className="shortcuts-hint shortcuts-hint--error">
-            {t("shortcutsDialog.saveError", { message: saveError })}
-          </p>
-        ) : null}
+      {SHORTCUT_CATEGORY_ORDER.map(renderCategory)}
 
-        {SHORTCUT_CATEGORY_ORDER.map(renderCategory)}
+      <section className="shortcuts-section">
+        <h4 className="shortcuts-section__title">{t("shortcutsDialog.categories.fixed")}</h4>
+        <ul className="shortcuts-list">
+          {FIXED_SHORTCUTS.map((shortcut) => (
+            <li key={shortcut.id} className="shortcuts-list__item">
+              <span className="shortcuts-list__label">{t(shortcut.descriptionKey)}</span>
+              <span className="shortcuts-list__keys-group">
+                <kbd className="shortcuts-list__keys">{formatKeyCombo(t, shortcut.keys)}</kbd>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        <section className="shortcuts-section">
-          <h4 className="shortcuts-section__title">{t("shortcutsDialog.categories.fixed")}</h4>
-          <ul className="shortcuts-list">
-            {FIXED_SHORTCUTS.map((shortcut) => (
-              <li key={shortcut.id} className="shortcuts-list__item">
-                <span className="shortcuts-list__label">{t(shortcut.descriptionKey)}</span>
-                <span className="shortcuts-list__keys-group">
-                  <kbd className="shortcuts-list__keys">{formatKeyCombo(t, shortcut.keys)}</kbd>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <div className="ai-dialog__actions">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!hasCustomBindings}
-            onClick={() => {
-              stopRecording();
-              void resetAllBindings();
-            }}
-          >
-            <RotateCcw aria-hidden="true" />
-            {t("shortcutsDialog.resetAll")}
-          </Button>
-          <Button type="button" onClick={onClose}>
-            {t("common.close")}
-          </Button>
-        </div>
+      <div className="shortcuts-settings__actions">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!hasCustomBindings}
+          onClick={() => {
+            stopRecording();
+            void resetAllBindings();
+          }}
+        >
+          <RotateCcw aria-hidden="true" />
+          {t("shortcutsDialog.resetAll")}
+        </Button>
       </div>
     </div>
   );

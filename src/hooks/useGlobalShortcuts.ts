@@ -94,6 +94,17 @@ export function useGlobalShortcuts({
         case "toggleChat":
           useChatStore.getState().togglePanel();
           return;
+        case "newChat": {
+          const chatStore = useChatStore.getState();
+
+          if (chatStore.isOpen) {
+            chatStore.newSession();
+          } else {
+            chatStore.openPanel();
+          }
+
+          return;
+        }
         case "toggleDetailsPanel": {
           // The panel shows details of the current file, so it only makes
           // sense with a document open.

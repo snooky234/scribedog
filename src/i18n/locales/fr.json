@@ -141,6 +141,7 @@
     "title": "Paramètres",
     "tabsAriaLabel": "Catégories de paramètres",
     "tabGeneral": "Général",
+    "tabShortcuts": "Raccourcis",
     "tabFonts": "Polices",
     "tabAi": "Paramètres IA",
     "tabAssistants": "Assistants",
@@ -322,7 +323,6 @@
   },
   "shortcutsDialog": {
     "title": "Raccourcis clavier",
-    "description": "Ces combinaisons de touches sont disponibles. Les raccourcis personnalisables se réattribuent en cliquant sur la combinaison.",
     "items": {
       "openFolder": "Ouvrir un dossier",
       "newFile": "Créer un nouveau fichier",
@@ -334,6 +334,7 @@
       "navigateBack": "Revenir au fichier précédemment ouvert",
       "navigateForward": "Aller au fichier suivant de l'historique",
       "toggleChat": "Afficher/masquer le chat IA",
+      "newChat": "Ouvrir un nouveau chat IA",
       "aiEditDialog": "Ouvrir la boîte de dialogue d'édition IA",
       "aiVoiceDialog": "Ouvrir le dialogue IA avec saisie vocale",
       "dictation": "Dicter dans l'éditeur ou le chat (démarrer/arrêter)",
@@ -374,7 +375,6 @@
       "moveListItemDown": "Déplacer l'élément de liste vers le bas",
       "toggleDetailsPanel": "Afficher/masquer le panneau de détails (liens, rétroliens et infos du fichier)"
     },
-    "customizeHint": "Cliquez sur une combinaison, puis appuyez sur la nouvelle.",
     "recording": "Appuyez sur une touche …",
     "recordHint": "Appuyez sur la nouvelle combinaison (elle doit contenir Ctrl ou Alt) — Échap annule.",
     "record": "Modifier la combinaison de « {{action}} »",
@@ -403,8 +403,8 @@
     "sortModeName": "Nom (A–Z)",
     "sortModeModified": "Modifié récemment",
     "sortModeManual": "Manuel",
-    "shortcuts": "Raccourcis clavier",
-    "shortcutsTitle": "Raccourcis clavier (Ctrl+#)",
+    "openRecentFolder": "Dossiers récents",
+    "browseForFolder": "Parcourir…",
     "searchingFolder": "Recherche dans le dossier …",
     "openFolderPrompt": "Ouvrez un dossier pour voir tous les fichiers Markdown qu'il contient.",
     "noMarkdownFiles": "Aucun fichier Markdown trouvé. Ouvrez un dossier contenant des fichiers `.md`.",

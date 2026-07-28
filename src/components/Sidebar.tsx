@@ -4,6 +4,7 @@ import {
   ArrowDownAZ,
   ArrowUpDown,
   BookOpen,
+  Check,
   Clock,
   Download,
   FileText,
@@ -11,7 +12,6 @@ import {
   FolderPlus,
   GripVertical,
   Import,
-  Keyboard,
   Plus,
   Settings2,
   Trash2
@@ -22,6 +22,7 @@ import type { ExportMode } from "@/components/ExportDialog";
 import { Button } from "@/components/ui/button";
 import {
   Menu,
+  MenuItem,
   MenuPopup,
   MenuPortal,
   MenuPositioner,
@@ -37,7 +38,7 @@ import {
   readDropPayload,
   type DropPayload
 } from "@/lib/dragDrop/droppedSources";
-import { formatFolderLabel } from "@/lib/fileSystem";
+import { formatFolderLabel, getFolderBasename } from "@/lib/fileSystem";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import type { MoveTreeEntryInput } from "@/store/useAppStore";
 import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportDropStore";
@@ -56,6 +57,8 @@ type SidebarProps = {
   fileMtimeMs: Record<string, number>;
   emptyFolderMtimeMs: Record<string, number>;
   onOpenFolder: () => void;
+  recentFolderPaths: string[];
+  onOpenRecentFolder: (folderPath: string) => void;
   onCreateFile: () => void;
   onCreateFileRequest: (targetDirectory: string) => void;
   onCreateFolder: () => void;
@@ -74,7 +77,6 @@ type SidebarProps = {
   onMoveEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
   onSetSortMode: (mode: SortMode) => void;
   onAiSettingsRequest: () => void;
-  onShortcutsRequest: () => void;
   onRequestEditorFocus: () => void;
   sidebarFocusRequestId: number;
   onFileTreeSelectionChange: (entries: BatchEntry[]) => void;
@@ -98,6 +100,8 @@ export function Sidebar({
   fileMtimeMs,
   emptyFolderMtimeMs,
   onOpenFolder,
+  recentFolderPaths,
+  onOpenRecentFolder,
   onCreateFile,
   onCreateFileRequest,
   onCreateFolder,
@@ -116,7 +120,6 @@ export function Sidebar({
   onMoveEntry,
   onSetSortMode,
   onAiSettingsRequest,
-  onShortcutsRequest,
   onRequestEditorFocus,
   sidebarFocusRequestId,
   onFileTreeSelectionChange,
@@ -322,39 +325,66 @@ export function Sidebar({
           >
             <Settings2 />
           </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onShortcutsRequest}
-            aria-label={t("sidebar.shortcuts")}
-            title={t("sidebar.shortcutsTitle")}
-          >
-            <Keyboard />
-          </Button>
         </div>
         <div className="sidebar-panel__folder-wrap">
-          <button
-            type="button"
-            className="sidebar-panel__folder"
-            onClick={onOpenFolder}
-            disabled={isLoading}
-            title={folderPath ?? t("sidebar.openFolder")}
-            aria-label={t("sidebar.openFolder")}
-            // The vault root is the natural target for "export the whole book",
-            // but it is not a row in the tree — so it carries its own menu.
-            onContextMenu={(event) => {
-              if (folderPath === null) {
-                return;
-              }
+          <Menu>
+            <MenuTrigger
+              render={
+                <button
+                  type="button"
+                  className="sidebar-panel__folder"
+                  disabled={isLoading}
+                  title={folderPath ?? t("sidebar.openFolder")}
+                  aria-label={t("sidebar.openRecentFolder")}
+                  // The vault root is the natural target for "export the whole
+                  // book", but it is not a row in the tree — so it carries its
+                  // own (unrelated) right-click menu alongside this one.
+                  onContextMenu={(event) => {
+                    if (folderPath === null) {
+                      return;
+                    }
 
-              event.preventDefault();
-              setRootContextMenu({ x: event.clientX, y: event.clientY });
-            }}
-          >
-            {folderLabel}
-          </button>
+                    event.preventDefault();
+                    setRootContextMenu({ x: event.clientX, y: event.clientY });
+                  }}
+                />
+              }
+            >
+              {folderLabel}
+            </MenuTrigger>
+            <MenuPortal>
+              <MenuPositioner align="start">
+                <MenuPopup>
+                  {recentFolderPaths.length > 0 ? (
+                    <>
+                      {recentFolderPaths.map((recentFolderPath) => (
+                        <MenuItem
+                          key={recentFolderPath}
+                          className="sidebar-panel__recent-folder-item"
+                          title={recentFolderPath}
+                          onClick={() => onOpenRecentFolder(recentFolderPath)}
+                        >
+                          {recentFolderPath === folderPath ? (
+                            <Check className="size-4" aria-hidden="true" />
+                          ) : (
+                            <span className="size-4" aria-hidden="true" />
+                          )}
+                          <span className="sidebar-panel__recent-folder-name">
+                            {getFolderBasename(recentFolderPath)}
+                          </span>
+                        </MenuItem>
+                      ))}
+                      <div className="editor-toolbar__menu-separator" role="separator" />
+                    </>
+                  ) : null}
+                  <MenuItem onClick={onOpenFolder}>
+                    <FolderOpen className="size-4" aria-hidden="true" />
+                    {t("sidebar.browseForFolder")}
+                  </MenuItem>
+                </MenuPopup>
+              </MenuPositioner>
+            </MenuPortal>
+          </Menu>
         </div>
       </div>
 

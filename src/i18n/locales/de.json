@@ -141,6 +141,7 @@
     "title": "Einstellungen",
     "tabsAriaLabel": "Einstellungskategorien",
     "tabGeneral": "Allgemein",
+    "tabShortcuts": "Tastenkürzel",
     "tabFonts": "Schriften",
     "tabAi": "KI-Einstellungen",
     "tabAssistants": "Assistenten",
@@ -322,7 +323,6 @@
   },
   "shortcutsDialog": {
     "title": "Tastenkürzel",
-    "description": "Diese Tastenkombinationen stehen zur Verfügung. Anpassbare Kürzel lassen sich per Klick auf die Tastenkombination neu belegen.",
     "items": {
       "openFolder": "Ordner öffnen",
       "newFile": "Neue Datei anlegen",
@@ -334,6 +334,7 @@
       "navigateBack": "Zurück zur vorher geöffneten Datei",
       "navigateForward": "Vorwärts zur nächsten Datei im Verlauf",
       "toggleChat": "KI-Chat ein-/ausblenden",
+      "newChat": "Neuen KI-Chat öffnen",
       "aiEditDialog": "KI-Bearbeiten-Dialog öffnen",
       "aiVoiceDialog": "KI-Dialog mit Spracheingabe öffnen",
       "dictation": "In Editor oder Chat diktieren (Start/Stopp)",
@@ -374,7 +375,6 @@
       "moveListItemDown": "Listenelement nach unten verschieben",
       "toggleDetailsPanel": "Detail-Panel (Links, Backlinks & Datei-Info) ein-/ausblenden"
     },
-    "customizeHint": "Auf eine Tastenkombination klicken und die neue Kombination drücken.",
     "recording": "Taste drücken …",
     "recordHint": "Neue Tastenkombination drücken (muss Strg oder Alt enthalten) — Esc bricht ab.",
     "record": "Tastenkombination für „{{action}}“ ändern",
@@ -403,8 +403,8 @@
     "sortModeName": "Name (A–Z)",
     "sortModeModified": "Zuletzt geändert",
     "sortModeManual": "Manuell",
-    "shortcuts": "Tastenkürzel",
-    "shortcutsTitle": "Tastenkürzel (Strg+#)",
+    "openRecentFolder": "Zuletzt geöffnete Ordner",
+    "browseForFolder": "Durchsuchen …",
     "searchingFolder": "Ordner wird durchsucht …",
     "openFolderPrompt": "Öffne einen Ordner, um alle darin enthaltenen Markdown-Dateien zu sehen.",
     "noMarkdownFiles": "Keine Markdown-Dateien gefunden. Öffne einen Ordner mit `.md` Dateien.",

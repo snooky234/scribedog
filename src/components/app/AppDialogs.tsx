@@ -6,7 +6,6 @@ import { ExportDialog, type ExportDialogTarget } from "@/components/ExportDialog
 import type { MarkdownFileRecord } from "@/lib/fileSystem";
 import { ImportDialog } from "@/components/ImportDialog";
 import { SettingsDialog, type SettingsTab } from "@/components/SettingsDialog";
-import { ShortcutsDialog } from "@/components/ShortcutsDialog";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { VersionDiffDialog, type VersionDiffTarget } from "@/components/VersionDiffDialog";
@@ -38,10 +37,6 @@ type AppDialogsProps = {
   // Assistant edit
   assistantEditTarget: { assistant: Assistant | null } | null;
   onCloseAssistantEdit: () => void;
-
-  // Shortcuts
-  isShortcutsOpen: boolean;
-  onCloseShortcuts: () => void;
 
   // Delete
   deleteTarget: DeleteTarget | null;
@@ -94,8 +89,6 @@ export function AppDialogs({
   onAssistantEditRequest,
   assistantEditTarget,
   onCloseAssistantEdit,
-  isShortcutsOpen,
-  onCloseShortcuts,
   deleteTarget,
   deleteTargetLabel,
   isDeleting,
@@ -150,8 +143,6 @@ export function AppDialogs({
         assistant={assistantEditTarget?.assistant ?? null}
         onClose={onCloseAssistantEdit}
       />
-
-      <ShortcutsDialog open={isShortcutsOpen} onClose={onCloseShortcuts} />
 
       <DeleteFileDialog
         open={deleteTarget !== null}

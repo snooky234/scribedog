@@ -7,6 +7,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { Button } from "@/components/ui/button";
 import { AssistantsSettings } from "@/components/AssistantsSettings";
 import { RagSettings } from "@/components/RagSettings";
+import { ShortcutsSettings } from "@/components/ShortcutsSettings";
 import { VersioningSettings } from "@/components/VersioningSettings";
 import type { Assistant } from "@/store/useAssistantsStore";
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
@@ -39,10 +40,10 @@ import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
 import { isWindowsPlatform } from "@/lib/platform";
 import { useAppVersion } from "@/hooks/useAppVersion";
 
-export type SettingsTab = "general" | "fonts" | "ai" | "assistants" | "rag" | "versioning";
+export type SettingsTab = "general" | "shortcuts" | "fonts" | "ai" | "assistants" | "rag" | "versioning";
 
 /** Tabs whose settings apply through their own store, without the Save button. */
-const SELF_SAVING_TABS: SettingsTab[] = ["fonts", "assistants", "rag", "versioning"];
+const SELF_SAVING_TABS: SettingsTab[] = ["shortcuts", "fonts", "assistants", "rag", "versioning"];
 
 /**
  * Document font for editor and export alike. The preview renders the actual
@@ -292,6 +293,19 @@ export function SettingsDialog({
           <button
             type="button"
             role="tab"
+            id="settings-tab-shortcuts"
+            aria-selected={activeTab === "shortcuts"}
+            aria-controls="settings-panel-shortcuts"
+            className={
+              activeTab === "shortcuts" ? "ai-dialog__tab ai-dialog__tab--active" : "ai-dialog__tab"
+            }
+            onClick={() => setActiveTab("shortcuts")}
+          >
+            {t("settingsDialog.tabShortcuts")}
+          </button>
+          <button
+            type="button"
+            role="tab"
             id="settings-tab-fonts"
             aria-selected={activeTab === "fonts"}
             aria-controls="settings-panel-fonts"
@@ -413,6 +427,10 @@ export function SettingsDialog({
                 {t("settingsDialog.openSourceLicenses")}
               </button>
             </p>
+          </div>
+        ) : activeTab === "shortcuts" ? (
+          <div id="settings-panel-shortcuts" role="tabpanel" aria-labelledby="settings-tab-shortcuts">
+            <ShortcutsSettings />
           </div>
         ) : activeTab === "fonts" ? (
           <div id="settings-panel-fonts" role="tabpanel" aria-labelledby="settings-tab-fonts">

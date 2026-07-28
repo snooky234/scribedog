@@ -48,6 +48,8 @@ export function guessImageMimeType(filePath: string): string {
 }
 
 const LAST_FOLDER_PATH_STORAGE_KEY = "scribedog:lastFolderPath";
+const RECENT_FOLDER_PATHS_STORAGE_KEY = "scribedog:recentFolderPaths";
+export const RECENT_FOLDER_PATHS_MAX = 8;
 
 type DirectoryEntry = {
   name: string;
@@ -282,12 +284,65 @@ export function clearLastOpenedFolderPath(): void {
   }
 }
 
+/** Most-recently-used first; capped at {@link RECENT_FOLDER_PATHS_MAX}. */
+export function getRecentFolderPaths(): string[] {
+  try {
+    const raw = window.localStorage.getItem(RECENT_FOLDER_PATHS_STORAGE_KEY);
+
+    if (!raw) {
+      return [];
+    }
+
+    const parsed: unknown = JSON.parse(raw);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((entry): entry is string => typeof entry === "string");
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentFolderPaths(folderPaths: string[]): void {
+  try {
+    window.localStorage.setItem(RECENT_FOLDER_PATHS_STORAGE_KEY, JSON.stringify(folderPaths));
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
+/** Moves the path to the front, dropping any prior (case-insensitive) duplicate. */
+export function addRecentFolderPath(folderPath: string): void {
+  const normalizedTarget = normalizeDisplayPath(folderPath).toLowerCase();
+  const deduped = getRecentFolderPaths().filter(
+    (existing) => normalizeDisplayPath(existing).toLowerCase() !== normalizedTarget
+  );
+
+  writeRecentFolderPaths([folderPath, ...deduped].slice(0, RECENT_FOLDER_PATHS_MAX));
+}
+
+export function removeRecentFolderPath(folderPath: string): void {
+  const normalizedTarget = normalizeDisplayPath(folderPath).toLowerCase();
+
+  writeRecentFolderPaths(
+    getRecentFolderPaths().filter(
+      (existing) => normalizeDisplayPath(existing).toLowerCase() !== normalizedTarget
+    )
+  );
+}
+
 export function formatFolderLabel(folderPath: string | null): string {
   if (!folderPath) {
     return i18n.t("fileSystem.noFolderOpen");
   }
 
   return normalizeDisplayPath(folderPath);
+}
+
+export function getFolderBasename(folderPath: string): string {
+  return normalizeDisplayPath(folderPath).split("/").pop() ?? folderPath;
 }
 
 function sanitizeImageFileName(fileName: string, mimeType: string): string {

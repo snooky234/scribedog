@@ -141,6 +141,7 @@
     "title": "Configurações",
     "tabsAriaLabel": "Categorias de configurações",
     "tabGeneral": "Geral",
+    "tabShortcuts": "Atalhos",
     "tabFonts": "Tipos de letra",
     "tabAi": "Configurações de IA",
     "tabAssistants": "Assistentes",
@@ -322,7 +323,6 @@
   },
   "shortcutsDialog": {
     "title": "Atalhos de teclado",
-    "description": "Estas combinações de teclas estão disponíveis. Os atalhos personalizáveis podem ser reatribuídos clicando na combinação.",
     "items": {
       "openFolder": "Abrir pasta",
       "newFile": "Criar novo arquivo",
@@ -334,6 +334,7 @@
       "navigateBack": "Voltar ao arquivo aberto anteriormente",
       "navigateForward": "Avançar para o próximo arquivo do histórico",
       "toggleChat": "Alternar chat de IA",
+      "newChat": "Abrir novo chat de IA",
       "aiEditDialog": "Abrir diálogo de edição com IA",
       "aiVoiceDialog": "Abrir o diálogo de IA com entrada de voz",
       "dictation": "Ditar no editor ou no chat (iniciar/parar)",
@@ -374,7 +375,6 @@
       "moveListItemDown": "Mover item de lista para baixo",
       "toggleDetailsPanel": "Mostrar/ocultar o painel de detalhes (links, backlinks e informações do arquivo)"
     },
-    "customizeHint": "Clique numa combinação e prima a nova.",
     "recording": "Prima uma tecla …",
     "recordHint": "Prima a nova combinação (tem de incluir Ctrl ou Alt) — Esc cancela.",
     "record": "Alterar a combinação de «{{action}}»",
@@ -403,8 +403,8 @@
     "sortModeName": "Nome (A–Z)",
     "sortModeModified": "Modificados recentemente",
     "sortModeManual": "Manual",
-    "shortcuts": "Atalhos de teclado",
-    "shortcutsTitle": "Atalhos de teclado (Ctrl+#)",
+    "openRecentFolder": "Pastas recentes",
+    "browseForFolder": "Procurar…",
     "searchingFolder": "Pesquisando pasta …",
     "openFolderPrompt": "Abra uma pasta para ver todos os arquivos Markdown que ela contém.",
     "noMarkdownFiles": "Nenhum arquivo Markdown encontrado. Abra uma pasta que contenha arquivos `.md`.",

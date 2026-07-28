@@ -141,6 +141,7 @@
     "title": "Settings",
     "tabsAriaLabel": "Settings categories",
     "tabGeneral": "General",
+    "tabShortcuts": "Shortcuts",
     "tabFonts": "Fonts",
     "tabAi": "AI settings",
     "tabAssistants": "Assistants",
@@ -322,7 +323,6 @@
   },
   "shortcutsDialog": {
     "title": "Keyboard shortcuts",
-    "description": "These key combinations are available. Customizable shortcuts can be reassigned by clicking the key combination.",
     "items": {
       "openFolder": "Open folder",
       "newFile": "Create new file",
@@ -334,6 +334,7 @@
       "navigateBack": "Back to the previously opened file",
       "navigateForward": "Forward to the next file in the history",
       "toggleChat": "Toggle AI chat",
+      "newChat": "Open new AI chat",
       "aiEditDialog": "Open AI edit dialog",
       "aiVoiceDialog": "Open AI dialog with voice input",
       "dictation": "Dictate into the editor or chat (start/stop)",
@@ -374,7 +375,6 @@
       "moveListItemDown": "Move list item down",
       "toggleDetailsPanel": "Toggle the details panel (links, backlinks & file info)"
     },
-    "customizeHint": "Click a key combination, then press the new one.",
     "recording": "Press a key …",
     "recordHint": "Press the new key combination (must include Ctrl or Alt) — Esc cancels.",
     "record": "Change the key combination for “{{action}}”",
@@ -403,8 +403,8 @@
     "sortModeName": "Name (A–Z)",
     "sortModeModified": "Recently modified",
     "sortModeManual": "Manual",
-    "shortcuts": "Keyboard shortcuts",
-    "shortcutsTitle": "Keyboard shortcuts (Ctrl+#)",
+    "openRecentFolder": "Recent folders",
+    "browseForFolder": "Browse…",
     "searchingFolder": "Searching folder …",
     "openFolderPrompt": "Open a folder to see all Markdown files it contains.",
     "noMarkdownFiles": "No Markdown files found. Open a folder containing `.md` files.",
