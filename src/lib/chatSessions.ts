@@ -70,6 +70,7 @@ function normalizeMessage(raw: unknown): AiChatMessage | null {
     selection?: unknown;
     suggestsEdit?: unknown;
     proposedEdit?: unknown;
+    retryable?: unknown;
   };
 
   if (typeof candidate.role !== "string" || !(CHAT_ROLES as string[]).includes(candidate.role)) {
@@ -89,7 +90,8 @@ function normalizeMessage(raw: unknown): AiChatMessage | null {
       role: "tool",
       toolCallId: candidate.toolCallId,
       toolName: candidate.toolName,
-      content: candidate.content
+      content: candidate.content,
+      ...(candidate.retryable === true ? { retryable: true } : {})
     };
   }
 

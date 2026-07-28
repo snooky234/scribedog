@@ -27,6 +27,11 @@ export function AssistantsSettings({ onEditRequest }: AssistantsSettingsProps) {
       ? t("assistants.defaultName")
       : assistant.name;
 
+  const displayDescription = (assistant: Assistant) =>
+    assistant.id === DEFAULT_ASSISTANT_ID && !assistant.description
+      ? t("assistants.defaultDescription")
+      : assistant.description;
+
   return (
     <div className="assistants">
       <ul className="assistants__list">
@@ -43,8 +48,8 @@ export function AssistantsSettings({ onEditRequest }: AssistantsSettingsProps) {
               </span>
               <span className="assistants__item-text">
                 <span className="assistants__item-name">{displayName(assistant)}</span>
-                {assistant.description ? (
-                  <span className="assistants__item-description">{assistant.description}</span>
+                {displayDescription(assistant) ? (
+                  <span className="assistants__item-description">{displayDescription(assistant)}</span>
                 ) : null}
               </span>
             </button>

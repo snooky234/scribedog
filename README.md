@@ -35,12 +35,12 @@ place to write it, with an AI assistant that respects one simple rule:
 - 🔗 **Linked notes** — link one note to another by dragging it in from the sidebar, from the link dialog, or by typing `[[`; a click opens the target, and an optional panel shows links and backlinks
 - 🤖 **AI built in, local by default** — rewrite or generate text with Ollama, Jan.ai, or LM Studio; cloud providers are strictly opt-in
 - 💬 **Agentic AI chat** — a side-panel chat that reads your document and proposes edits itself, each one reviewed before it touches the file; needs a capable (9B+) model, smaller models should stick to simple select-and-rewrite
-- 📚 **Knowledge base** — let the AI look things up across your own notes, not just the open file, and answer with the sources it used; opt-in and folder by folder
-- 📎 **Files as context** — drag notes from the sidebar (or any text file from your desktop) onto the chat and ask about them directly
+- 📚 **Knowledge base** — let the AI look things up across your own notes, not just the open file, and answer with the sources it used; searches by word or, opt-in, by meaning via an embedding model; folder by folder
+- 📎 **Files as context** — drag notes from the sidebar, or files straight from outside the app (text, Word, PDF, even images via OCR), onto the chat and ask about them directly
 - 🧩 **Custom assistants** — save your own system prompts ("translate to English", "make more formal", …) and switch between them right from the chat panel
 - 🕓 **Automatic version history** — every save can be snapshotted locally; browse, diff, and restore any previous version with one click
 - 🎙️ **Voice input, 100% offline** — dictate straight into your document or into the AI prompt; speech recognition runs locally via whisper.cpp, no cloud involved
-- 📥 **Import & export built in** — bring Word, PDF, and HTML files in as Markdown (even images, via AI-powered OCR) and export notes or whole folders to PDF, DOCX, ODT, or HTML
+- 📥 **Import & export built in** — bring Word, PDF, and HTML files in as Markdown (even images, via AI-powered OCR), by picking them or by dragging files or whole folders in from outside the app, and export notes or whole folders to PDF, DOCX, ODT, or HTML
 - 🔓 **100% open source** — MIT-licensed, every release built transparently from this repository by GitHub Actions
 - 🔒 **No telemetry** — no analytics, no account; the only automatic network call is an optional, disableable update check
 - ⚡ **Lightweight** — built with Tauri, starts instantly, files stay plain `.md`
@@ -69,7 +69,7 @@ notes — fluently, privately, and for free.
 |---|---|---|
 | 🤖 AI rewrite & insert | Rewrite, extend, or generate text in place, local or cloud model | `Ctrl+E` / right-click |
 | 💬 Agentic AI chat | Side-panel chat that reads your document and proposes edits via tool calls | `Ctrl+Shift+A` |
-| 📚 Knowledge base | The AI searches your whole folder of notes and answers from them, listing its sources | Settings → Knowledge base |
+| 📚 Knowledge base | The AI searches your whole folder of notes — by word or by meaning — and answers from them, listing its sources | Settings → Knowledge base |
 | 📎 Files as chat context | Drag notes or text files onto the chat panel and ask about their content | Drag & drop into chat |
 | ✅ AI spelling & grammar check | List of issues with suggested corrections, apply one by one or all at once | `Ctrl+Shift+X` / toolbar |
 | 🕓 Document versions | Automatic local snapshots on save; diff and restore any previous version | Version history popover |
@@ -113,7 +113,7 @@ notes — fluently, privately, and for free.
 - **Model recommendation:** reliable tool-calling is genuinely hard for small models. Local models from roughly **9B parameters** upward (e.g. Qwen 3.5 9B, Gemma 4 12B) or any of the supported cloud models handle the chat's agentic tools well. **Below that**, a model tends to call tools incorrectly or not at all — for those, use the simple **select text → `Ctrl+E`** rewrite instead; it asks nothing of the model beyond writing text and works reliably even on tiny models.
 
 ### 📚 Knowledge base — the AI answers from your own notes
-- Switch on the **knowledge base** in the *Knowledge base* settings tab and the AI chat stops being limited to the file you happen to have open: when you ask a question, ScribeDog **searches your notes for the words in it**, hands the model the passages that match, and the answer comes with a **list of the notes it came from** — one click opens the note, right at the section it was taken from
+- Switch on the **knowledge base** in the *Knowledge base* settings tab and the AI chat stops being limited to the file you happen to have open: when you ask a question, ScribeDog **searches your notes** — by word and, if you've turned it on, by meaning — hands the model the passages that match, and the answer comes with a **list of the notes it came from** — one click opens the note, right at the section it was taken from
 
   <img src="src/assets/scribe-dog-knowledge-base.png" alt="ScribeDog knowledge base answer with sources" width="300">
 
@@ -121,22 +121,23 @@ notes — fluently, privately, and for free.
   - *Work & projects* — "What did I agree with client A about the delivery date?" The answer sits in a meeting note you wrote three months ago and whose file name you've long forgotten; names like *client A* and terms like *delivery date* are exactly what the search is good at, and you get the answer without opening a single file.
   - *Writing a novel* — keep character sheets, place descriptions, and timeline notes in your vault and ask "What eye colour did I give Mara, and where does she first meet Jonas?" — the character names pull up the right sheets instead of you scrolling through your own story bible.
   - *Recipes, travel notes, learning journals* — ask about a dish, a place, or a term and the answer is pulled together from several notes at once, each one listed underneath.
-- **Ask with the words you'd expect to find in the note.** Today the search matches the *words* of your question — which makes it precise with names, terms, and project numbers, but it won't find a note that says the same thing in entirely different words. Searching by meaning as well is on the roadmap below
+- **Two ways to search, and you can use both at once.** *Search by words* (the default) matches the actual terms of your question — precise for names, terms, and project numbers — needs no setup, and runs fully on this device. *Search by meaning*, opt-in, additionally finds a passage that says the same thing in entirely different words: it uses a separate **embedding model** you connect once in the Knowledge base tab — locally via Ollama, Jan.ai, or LM Studio, or in the cloud via OpenAI or Mistral, bring your own key, same as the AI provider — and a short one-time (and then incremental) preparation step that reads your included notes. With both switched on, results from the two searches are merged so a passage found by both ranks above one that only a single search turned up
 - **You decide what it may read**, folder by folder: tick the folders that should be searchable and untick the private ones — a folder you create later inside an included one is included as well, which the settings tab spells out in plain words
-- **Off by default and per folder** — turning it on is a deliberate, informed choice: as long as it's off, the AI only ever sees the document you have open. The settings tab states clearly what is read and, with a cloud provider selected, that found passages leave your device
-- **The search itself runs entirely on your machine**, in the Rust backend — nothing is uploaded, indexed in the cloud, or stored permanently, and your notes are only ever read, never modified. Only the passages found for your specific question are sent on to the AI model you configured — which, with a local model like Ollama, means nothing leaves the computer at all
+- **Off by default and per folder** — turning it on is a deliberate, informed choice: as long as it's off, the AI only ever sees the document you have open. The settings tab states clearly what is read and, with a cloud provider selected (for chat or for the embedding model), that text leaves your device
+- **Search by words runs entirely on your machine**, in the Rust backend, and stores nothing — nothing is uploaded, indexed in the cloud, or kept permanently, and your notes are only ever read, never modified. **Search by meaning** reads your included notes in full once (and again whenever a file changes) to prepare them with the embedding service you configured — locally, or off your device with a cloud provider — and keeps the resulting data in the vault's hidden `.scribedog` folder; deleting the stored data, or that folder, removes it again. Either way, only the passages found for your specific question are sent on to the AI model you configured for chatting — which, with a local model like Ollama, means nothing leaves the computer at all
 - A **toggle right in the chat panel** turns the knowledge base off for a single conversation when you just want to talk about the open document
 
 ### 📎 Drag files into the chat — ask about exactly this file
-- **Drag one or more files onto the chat panel** — notes from the sidebar, or any text file straight from your desktop (`.md`, `.txt`, `.csv`, `.json`, `.log`, `.html`, …) — and they become the conversation's primary source: the chat answers from them first, before its own knowledge and before anything the knowledge base search turns up
+- **Drag one or more files onto the chat panel** — notes from the sidebar, or files straight from outside the app (`.md`, `.txt`, `.csv`, `.json`, `.log`, `.html`, …, plus `.docx` and `.pdf`, converted on the spot, and images via AI OCR if a vision-capable model is configured) — and they become the conversation's primary source: the chat answers from them first, before its own knowledge and before anything the knowledge base search turns up
 - **Where it's useful:**
   - *Compare and merge* — drag in two notes ("last year's concept" and "this year's draft") and ask what actually changed, or have them merged into one text.
-  - *A file that isn't in your vault at all* — drop a CSV export or a log file from your Downloads folder onto the chat and ask for a summary; no import, no copy-paste, and it works even with the knowledge base switched off.
+  - *A file that isn't in your vault at all* — drop a PDF, a CSV export, or a log file from your Downloads folder onto the chat and ask for a summary; no import, no copy-paste, and it works even with the knowledge base switched off.
 - Attached files show up as **chips above the input field** and can be removed individually with one click; of a very long file only the beginning is sent, and the chip says so
 
   <img src="src/assets/scribe-dog-file-as-context.png" alt="ScribeDog chat input with an attached file as context" width="350">
 
 - Works **independently of the knowledge base** — dragging a file in *is* the permission to read it, so no setting has to be enabled and the file doesn't have to live in your vault
+- **A whole folder isn't attached** — the chat only takes individual files; drop a folder onto the **sidebar** instead to import it, then attach or ask about the notes from there
 
 ### 🕓 Document versions — undo across saves
 - Turn on **version history** in the Versioning settings tab, and every save silently snapshots the file's previous content first — saves that don't actually change anything don't create a duplicate snapshot
@@ -200,6 +201,7 @@ notes — fluently, privately, and for free.
 
 ### 📥 Import your existing documents
 - **One-click import from the sidebar** — pick one or more files and each becomes a clean Markdown file in your vault
+- **Or just drag them in** — drop files, or **whole folders**, from Explorer/Finder straight onto the sidebar; drop on a specific folder in the tree to import there, or anywhere else for the vault root. A dropped folder is imported recursively with its subfolder structure mirrored, hidden folders (`.git`, …) are skipped, and files the importer can't convert are simply skipped rather than failing the whole batch (capped at 100 files per drop)
 - **Word (`.docx`), PDF, and HTML** are converted **entirely offline** — structure like headings, lists, emphasis, and tables is preserved as far as the source allows, and no AI or network connection is needed
 - **Embedded images** are extracted into the vault's `images/` folder and linked automatically, just like pasted images
 - **Images become text** — import screenshots, scans, or photos of pages (PNG, JPG, GIF, WebP) and your configured **vision-capable AI model** turns them into editable Markdown via OCR — locally, if that's where your model runs
@@ -359,7 +361,6 @@ ScribeDog aims to become the **private writing studio** for everyone who writes 
 without compromising on the local-first, open-source principles above.
 Ideas on the list for upcoming versions (subject to change, feedback welcome!):
 
-- 🔎 **Knowledge base: search by meaning** — find the right note even when you ask in different words than you wrote it in, on top of today's word-based search
 - 🎯 **Writing goals & statistics** — word-count targets, reading time, daily progress
 - ✒️ **Offline style & readability analysis** — highlight filler words, passive voice, and long sentences; optional local grammar checking (e.g. LanguageTool)
 - 💡 **AI autocomplete** — optional inline "ghost text" suggestions while you type, accepted with `Tab`

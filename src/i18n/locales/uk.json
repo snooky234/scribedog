@@ -193,7 +193,8 @@
     "fontSizePreviewText": "Подорож починається у вівторок у листопаді."
   },
   "assistants": {
-    "defaultName": "За замовчуванням",
+    "defaultName": "ScribeDog (За замовчуванням)",
+    "defaultDescription": "Ваш вірний супутник у написанні текстів.",
     "addAssistant": "Додати асистента",
     "editAssistant": "Редагувати асистента",
     "deleteAssistant": "Видалити асистента",

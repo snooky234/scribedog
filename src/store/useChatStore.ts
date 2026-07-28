@@ -672,7 +672,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
             role: "tool",
             toolCallId: call.id,
             toolName: call.name,
-            content: missingVision ? IMAGE_UNSUPPORTED_TOOL_RESULT : result.content
+            content: missingVision ? IMAGE_UNSUPPORTED_TOOL_RESULT : result.content,
+            // A missing vision model is not something the model can retry its
+            // way out of, whatever the tool itself reported.
+            ...(result.retryable && !missingVision ? { retryable: true } : {})
           });
 
           if (result.imagePath && !missingVision && !imagePaths.includes(result.imagePath)) {

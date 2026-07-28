@@ -29,7 +29,12 @@ import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog"
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import i18n from "@/i18n";
-import { FLAG_SUGGESTION_TOOL_NAME, type AiChatMessage, type VaultSourceRef } from "@/lib/aiClient";
+import {
+  EDITING_TOOL_NAMES,
+  FLAG_SUGGESTION_TOOL_NAME,
+  type AiChatMessage,
+  type VaultSourceRef
+} from "@/lib/aiClient";
 import {
   fileNameFromPath,
   MAX_ATTACHED_FILES,
@@ -201,6 +206,64 @@ function toolIcon(toolName: string, isError: boolean) {
   }
 
   return PencilLine;
+}
+
+/**
+ * The indices of the tool status lines the transcript leaves out.
+ *
+ * Finding a passage by its wording is guesswork the model gets wrong now and
+ * then and simply retries — and a red "Passage not found" for every attempt
+ * turned a turn that ended in four proposed changes into a wall of errors,
+ * which reads as if nothing had worked. So a retryable failure (see
+ * ToolResult.retryable in src/lib/chat/agentTools.ts) is only worth a line when
+ * the turn it belongs to proposed nothing at all: then it is the reason the
+ * user got no change, rather than a step on the way to one — and even then only
+ * the last of them is shown, because the earlier attempts failed for the same
+ * reason.
+ *
+ * Hard failures — nothing selected, no editor, an unreadable image — are never
+ * hidden: no retry fixes those, so the user has to see them.
+ *
+ * `answering` says the last turn is still running, where nothing is decided
+ * yet: its retryable failures stay hidden until it is over, so a line does not
+ * flash up in red and vanish again the moment the retry works.
+ */
+function hiddenToolStatuses(messages: AiChatMessage[], answering: boolean): Set<number> {
+  const hidden = new Set<number>();
+  let retryableInTurn: number[] = [];
+  let turnProposed = false;
+
+  const closeTurn = (running = false) => {
+    const keepLast = !turnProposed && !running && retryableInTurn.length > 0;
+
+    for (const index of keepLast ? retryableInTurn.slice(0, -1) : retryableInTurn) {
+      hidden.add(index);
+    }
+
+    retryableInTurn = [];
+    turnProposed = false;
+  };
+
+  messages.forEach((message, index) => {
+    if (message.role === "user") {
+      closeTurn();
+      return;
+    }
+
+    if (message.role !== "tool") {
+      return;
+    }
+
+    if (message.retryable) {
+      retryableInTurn.push(index);
+    } else if (EDITING_TOOL_NAMES.includes(message.toolName) && !message.content.startsWith("Error:")) {
+      turnProposed = true;
+    }
+  });
+
+  closeTurn(answering);
+
+  return hidden;
 }
 
 function ToolStatusLine({ toolName, isError }: { toolName: string; isError: boolean }) {
@@ -586,6 +649,7 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
 
   const messages = activeSession?.messages ?? [];
   const isEmptyChat = messages.length === 0 && !isAnswering;
+  const hiddenStatuses = useMemo(() => hiddenToolStatuses(messages, isAnswering), [messages, isAnswering]);
   const hasSessions = useChatStore((state) => state.sessions.length > 0);
 
   // Follow the conversation as it grows and as tokens stream in.
@@ -890,7 +954,7 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
             // A UI-only signal, not an editor action — the "In Text
             // einarbeiten" button on the assistant bubble above it already
             // communicates this, so a status line here would be redundant.
-            if (message.toolName === FLAG_SUGGESTION_TOOL_NAME) {
+            if (message.toolName === FLAG_SUGGESTION_TOOL_NAME || hiddenStatuses.has(index)) {
               return null;
             }
 

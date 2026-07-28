@@ -730,7 +730,13 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       }
 
       searchFrom = found.to;
-      found = searchFrom < doc.content.size ? findTextRange(doc, searchFrom, doc.content.size, oldText) : null;
+      // Exact matches only from here on: a *further* occurrence has to be the
+      // same passage again, and an approximate one would put the change on
+      // whatever else in the document happens to read similarly.
+      found =
+        searchFrom < doc.content.size
+          ? findTextRange(doc, searchFrom, doc.content.size, oldText, { fuzzy: false })
+          : null;
     }
 
     if (!found) {

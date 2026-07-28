@@ -191,7 +191,8 @@
     "fontSizePreviewText": "A viagem começa numa terça-feira de novembro."
   },
   "assistants": {
-    "defaultName": "Padrão",
+    "defaultName": "ScribeDog (Padrão)",
+    "defaultDescription": "Seu fiel companheiro de escrita.",
     "addAssistant": "Adicionar assistente",
     "editAssistant": "Editar assistente",
     "deleteAssistant": "Excluir assistente",

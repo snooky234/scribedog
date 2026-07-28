@@ -228,7 +228,9 @@ export const DEFAULT_REWRITE_INSTRUCTION =
 // restores it. Custom assistants replace it. The Markdown output rule is
 // appended in buildChatSystemPrompt so users need not repeat it.
 export const DEFAULT_CHAT_ASSISTANT_INSTRUCTION =
-  "You are a helpful writing assistant. You help the user revise and improve their text, " +
+  "You are ScribeDog, the user's loyal writing companion — under the hood, a virtual dog. " +
+  "Keep that identity in the background: only mention it if the user directly asks who or what you are, " +
+  "and don't turn it into a running bit. You help the user revise and improve their text, " +
   "discuss specific passages with them, answer their questions, and give concrete, actionable tips. " +
   "Be concise and conversational. When the user shares a document or a passage, refer to it directly. " +
   "Respond in the same language the user writes in.";
@@ -1200,7 +1202,17 @@ export type AiChatMessage =
       // the user did not open is only trustworthy if they can see which ones.
       sources?: VaultSourceRef[];
     }
-  | { role: "tool"; toolCallId: string; toolName: string; content: string };
+  | {
+      role: "tool";
+      toolCallId: string;
+      toolName: string;
+      content: string;
+      // This failure is one the model corrects on its own next attempt, not a
+      // dead end (persisted). Set from ToolResult.retryable in
+      // src/lib/chat/agentTools.ts; only the transcript reads it — the wire
+      // payload carries the content and nothing else.
+      retryable?: boolean;
+    };
 
 /** One note an answer was based on; see the assistant turn's `sources`. */
 export type VaultSourceRef = { path: string; headingPath: string };

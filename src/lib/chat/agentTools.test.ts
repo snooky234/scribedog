@@ -120,6 +120,52 @@ describe("set_image_width", () => {
   });
 });
 
+// Which failures the transcript is allowed to swallow. The model still reads
+// "Error:" either way — the flag only separates "it will fix this itself on the
+// next call" from "someone has to do something about this".
+describe("retryable failures", () => {
+  it("marks a passage the model quoted wrong", async () => {
+    proposePassageReplacement.mockReturnValueOnce("not-found");
+
+    const result = await executeTool("replace_passage", { old_text: "Hello", new_text: "Hi" });
+
+    expect(result.content.startsWith("Error:")).toBe(true);
+    expect(result.retryable).toBe(true);
+  });
+
+  it("marks an anchor that names nothing in the document", async () => {
+    proposeInsertion.mockReturnValueOnce("anchor-not-found");
+
+    const result = await executeTool("insert_at_cursor", { text: "Hi", after_text: "Hello" });
+
+    expect(result.retryable).toBe(true);
+  });
+
+  it("marks a path that is not an image in this document", async () => {
+    const result = await executeTool("set_image_width", { path: "images/other.png", width: 300 });
+
+    expect(result.retryable).toBe(true);
+  });
+
+  // Nothing selected is the user's state, not the model's mistake: retrying
+  // cannot change it, so this one stays visible.
+  it("leaves a failure the model cannot retry its way out of unmarked", async () => {
+    proposeInsertion.mockReturnValueOnce("failed");
+
+    const result = await executeTool("insert_at_cursor", { text: "Hi" });
+
+    expect(result.content.startsWith("Error:")).toBe(true);
+    expect(result.retryable).toBeUndefined();
+  });
+
+  it("leaves a proposal that worked unmarked", async () => {
+    const result = await executeTool("replace_passage", { old_text: "Hello", new_text: "Hi" });
+
+    expect(result.content.startsWith("OK:")).toBe(true);
+    expect(result.retryable).toBeUndefined();
+  });
+});
+
 describe("replace_passage on an image", () => {
   it("points at set_image_width instead of searching for image markdown", async () => {
     const result = await executeTool("replace_passage", {

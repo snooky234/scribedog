@@ -80,7 +80,13 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
           : assistant.name
         : ""
     );
-    setDescription(assistant?.description ?? "");
+    setDescription(
+      assistant
+        ? assistant.id === DEFAULT_ASSISTANT_ID && !assistant.description
+          ? t("assistants.defaultDescription")
+          : assistant.description
+        : ""
+    );
     setInstruction(assistant?.instruction ?? "");
   }, [open, assistant, t]);
 
@@ -117,7 +123,9 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
       // The default assistant keeps its empty stored name so the localized
       // label stays language-aware.
       name: isEditingDefault ? "" : name.trim(),
-      description: description.trim(),
+      // Same rule as the name: the default assistant keeps its stored
+      // description empty so the localized text stays language-aware.
+      description: isEditingDefault ? "" : description.trim(),
       instruction: instruction.trim()
     };
 
@@ -170,6 +178,7 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
               <input
                 type="text"
                 value={description}
+                disabled={isEditingDefault}
                 placeholder={t("assistants.descriptionPlaceholder")}
                 onChange={(event) => setDescription(event.target.value)}
               />

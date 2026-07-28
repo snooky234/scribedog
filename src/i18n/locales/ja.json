@@ -191,7 +191,8 @@
     "fontSizePreviewText": "旅は十一月の火曜日にはじまる。"
   },
   "assistants": {
-    "defaultName": "デフォルト",
+    "defaultName": "ScribeDog (デフォルト)",
+    "defaultDescription": "あなたの忠実な執筆パートナーです。",
     "addAssistant": "アシスタントを追加",
     "editAssistant": "アシスタントを編集",
     "deleteAssistant": "アシスタントを削除",

@@ -191,7 +191,8 @@
     "fontSizePreviewText": "The journey begins on a Tuesday in November."
   },
   "assistants": {
-    "defaultName": "Default",
+    "defaultName": "ScribeDog (Default)",
+    "defaultDescription": "Your loyal writing companion.",
     "addAssistant": "Add assistant",
     "editAssistant": "Edit assistant",
     "deleteAssistant": "Delete assistant",

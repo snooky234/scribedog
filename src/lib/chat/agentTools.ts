@@ -204,7 +204,20 @@ function settleProposals(accept: boolean): ToolResult {
 // result came from is not something the model should have to repeat back, so
 // the store collects it off the tool results and hangs it on the assistant turn
 // the chat renders.
-export type ToolResult = { content: string; imagePath?: string; sources?: VaultSourceRef[] };
+//
+// `retryable` marks the failures the model routinely fixes by itself inside the
+// same turn — a passage it quoted slightly wrong, a path it guessed, a change
+// it proposed twice. Every one of those tool results already says how to
+// correct it, and the attempt that follows usually works, so the transcript
+// treats them as steps on the way rather than as something that went wrong (see
+// hiddenToolStatuses in src/components/chat/ChatPanel.tsx). It says nothing
+// about the wording handed to the model, which stays an unambiguous "Error:".
+export type ToolResult = {
+  content: string;
+  imagePath?: string;
+  sources?: VaultSourceRef[];
+  retryable?: boolean;
+};
 
 // Upper bound on what read_note hands back in one call. A long note would
 // otherwise eat the whole context window in a single tool result and push the
@@ -299,7 +312,8 @@ async function runReadNote(args: Record<string, unknown>): Promise<ToolResult> {
     return {
       content:
         `Error: "${path}" is not a note the knowledge base covers. Use a path exactly as search_vault ` +
-        "reported it, and do not guess paths — run search_vault again if you need one."
+        "reported it, and do not guess paths — run search_vault again if you need one.",
+      retryable: true
     };
   }
 
@@ -346,11 +360,14 @@ function matchImageSource(sources: string[], rawPath: unknown): string | undefin
   );
 }
 
-function unknownImageError(sources: string[]): string {
-  return (
-    "Error: that path is not an image in this document. Available images: " +
-    `${sources.map((source) => normalizeImageSrc(source)).join(", ")}.`
-  );
+function unknownImageError(sources: string[]): ToolResult {
+  return {
+    content:
+      "Error: that path is not an image in this document. Available images: " +
+      `${sources.map((source) => normalizeImageSrc(source)).join(", ")}.`,
+    // The answer names every image there is, so the next call gets it right.
+    retryable: true
+  };
 }
 
 async function resolveImageArgument(rawPath: unknown): Promise<ToolResult> {
@@ -363,7 +380,7 @@ async function resolveImageArgument(rawPath: unknown): Promise<ToolResult> {
   const match = matchImageSource(sources, rawPath);
 
   if (!match) {
-    return { content: unknownImageError(sources) };
+    return unknownImageError(sources);
   }
 
   if (!(await resolveDocumentImagePath(match))) {
@@ -435,7 +452,7 @@ function resizeImage(args: Record<string, unknown>): ToolResult {
   const match = matchImageSource(sources, args.path);
 
   if (!match) {
-    return { content: unknownImageError(sources) };
+    return unknownImageError(sources);
   }
 
   const request = parseSizeArguments(args.width, args.scale);
@@ -522,8 +539,25 @@ const OUTCOME_MESSAGES: Record<ProposalOutcome, string> = {
   failed: "Error: could not propose the change."
 };
 
-function outcomeMessage(outcome: ProposalOutcome, overrides: Partial<Record<ProposalOutcome, string>> = {}): string {
-  return overrides[outcome] ?? OUTCOME_MESSAGES[outcome];
+// Everything but a flat "failed" is something the model put right on its next
+// attempt — see ToolResult.retryable. "failed" is not in here because it means
+// the editor itself refused the change (nothing selected, no editor): retrying
+// cannot help, and the user is the one who has to do something about it.
+const RETRYABLE_OUTCOMES: readonly ProposalOutcome[] = [
+  "duplicate",
+  "image-duplicate",
+  "anchor-not-found",
+  "not-found"
+];
+
+function proposalResult(
+  outcome: ProposalOutcome,
+  overrides: Partial<Record<ProposalOutcome, string>> = {}
+): ToolResult {
+  return {
+    content: overrides[outcome] ?? OUTCOME_MESSAGES[outcome],
+    ...(RETRYABLE_OUTCOMES.includes(outcome) ? { retryable: true } : {})
+  };
 }
 
 /**
@@ -622,23 +656,19 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
     case "discard_proposals":
       return settleProposals(false);
     case "replace_selection":
-      return {
-        content: outcomeMessage(bridge.proposeSelectionReplacement(asString(args.new_text)), {
-          proposed:
-            "OK: change proposed for the selection. The user sees it inline and will accept or discard it. " +
-            "It is NOT part of the document yet — do not verify it with get_document.",
-          failed: "Error: nothing is selected."
-        })
-      };
+      return proposalResult(bridge.proposeSelectionReplacement(asString(args.new_text)), {
+        proposed:
+          "OK: change proposed for the selection. The user sees it inline and will accept or discard it. " +
+          "It is NOT part of the document yet — do not verify it with get_document.",
+        failed: "Error: nothing is selected."
+      });
     case "insert_at_cursor":
-      return {
-        content: outcomeMessage(bridge.proposeInsertion(asString(args.text), insertAnchorArgument(args)), {
-          proposed:
-            "OK: insertion proposed. The user sees it inline and will accept or discard it. It is NOT part " +
-            "of the document yet — do not call get_document to verify it, and do not propose it again.",
-          failed: "Error: could not propose an insertion."
-        })
-      };
+      return proposalResult(bridge.proposeInsertion(asString(args.text), insertAnchorArgument(args)), {
+        proposed:
+          "OK: insertion proposed. The user sees it inline and will accept or discard it. It is NOT part " +
+          "of the document yet — do not call get_document to verify it, and do not propose it again.",
+        failed: "Error: could not propose an insertion."
+      });
     case "replace_passage": {
       const oldText = asString(args.old_text);
 
@@ -650,14 +680,12 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
         };
       }
 
-      return {
-        content: outcomeMessage(bridge.proposePassageReplacement(oldText, asString(args.new_text)), {
-          proposed:
-            "OK: change proposed for that passage. The user sees it inline and will accept or discard it. " +
-            "It is NOT part of the document yet — do not call get_document to verify it, and do not propose " +
-            "it again."
-        })
-      };
+      return proposalResult(bridge.proposePassageReplacement(oldText, asString(args.new_text)), {
+        proposed:
+          "OK: change proposed for that passage. The user sees it inline and will accept or discard it. " +
+          "It is NOT part of the document yet — do not call get_document to verify it, and do not propose " +
+          "it again."
+      });
     }
     case FLAG_SUGGESTION_TOOL_NAME:
       return {

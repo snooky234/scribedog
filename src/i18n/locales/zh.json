@@ -191,7 +191,8 @@
     "fontSizePreviewText": "旅程始于十一月的一个星期二。"
   },
   "assistants": {
-    "defaultName": "默认",
+    "defaultName": "ScribeDog (默认)",
+    "defaultDescription": "你忠实的写作伙伴。",
     "addAssistant": "添加助手",
     "editAssistant": "编辑助手",
     "deleteAssistant": "删除助手",

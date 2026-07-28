@@ -191,7 +191,8 @@
     "fontSizePreviewText": "Der Aufbruch beginnt an einem Dienstag im November."
   },
   "assistants": {
-    "defaultName": "Standard",
+    "defaultName": "ScribeDog (Standard)",
+    "defaultDescription": "Dein treuer Begleiter beim Schreiben.",
     "addAssistant": "Assistent hinzufügen",
     "editAssistant": "Assistent bearbeiten",
     "deleteAssistant": "Assistent löschen",
