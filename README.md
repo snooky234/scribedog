@@ -133,6 +133,9 @@ notes — fluently, privately, and for free.
   - *Compare and merge* — drag in two notes ("last year's concept" and "this year's draft") and ask what actually changed, or have them merged into one text.
   - *A file that isn't in your vault at all* — drop a CSV export or a log file from your Downloads folder onto the chat and ask for a summary; no import, no copy-paste, and it works even with the knowledge base switched off.
 - Attached files show up as **chips above the input field** and can be removed individually with one click; of a very long file only the beginning is sent, and the chip says so
+
+  <img src="src/assets/scribe-dog-file-as-context.png" alt="ScribeDog chat input with an attached file as context" width="350">
+
 - Works **independently of the knowledge base** — dragging a file in *is* the permission to read it, so no setting has to be enabled and the file doesn't have to live in your vault
 
 ### 🕓 Document versions — undo across saves
