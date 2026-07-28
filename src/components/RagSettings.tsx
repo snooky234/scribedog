@@ -3,14 +3,17 @@ import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { RagConnectionSettings } from "@/components/rag/RagConnectionSettings";
 import { RagExplainerDialog } from "@/components/rag/RagExplainerDialog";
 import { RagFolderTree } from "@/components/rag/RagFolderTree";
+import { RagIndexPanel } from "@/components/rag/RagIndexPanel";
 import { isCloudProvider, PROVIDER_DISPLAY_NAME } from "@/lib/aiClient";
 import { getRelativeDisplayPath } from "@/lib/fileSystem";
 import { buildRagFolderTree, collectFolderPaths, countIncludedFiles } from "@/lib/ragConfig";
 import { clearVaultSearchCache } from "@/lib/ragSearch";
 import { useAiSettingsStore, type AiProvider } from "@/store/useAiSettingsStore";
 import { useAppStore } from "@/store/useAppStore";
+import { useRagEmbeddingStore, type RagSearchMode } from "@/store/useRagEmbeddingStore";
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
 
 /**
@@ -51,6 +54,11 @@ export function RagSettings({ pendingProvider }: RagSettingsProps) {
   const setEnabled = useRagSettingsStore((state) => state.setEnabled);
   const toggleFolder = useRagSettingsStore((state) => state.toggleFolder);
   const pruneToExistingFolders = useRagSettingsStore((state) => state.pruneToExistingFolders);
+
+  const searchMode = useRagEmbeddingStore((state) => state.searchMode);
+  const setSearchMode = useRagEmbeddingStore((state) => state.setSearchMode);
+  const embeddingSettings = useRagEmbeddingStore((state) => state.settings);
+  const isSemantic = searchMode === "semantic";
 
   const [isExplainerOpen, setIsExplainerOpen] = useState(false);
 
@@ -99,15 +107,28 @@ export function RagSettings({ pendingProvider }: RagSettingsProps) {
           {t("ragSettings.learnMore")}
         </Button>
 
-        {isCloudProvider(aiProvider) ? (
+        {/* Meaning search sends whole files rather than found passages, and to
+            its own service — so the notice has to follow both connections, not
+            just the chat's. */}
+        {isCloudProvider(aiProvider) || (isSemantic && isCloudProvider(embeddingSettings.provider)) ? (
           <div className="rag-settings__warning" role="note">
             <AlertTriangle className="rag-settings__warning-icon" aria-hidden="true" />
             <div>
               <strong>{t("ragSettings.warningTitle")}</strong>
-              <p className="rag-settings__warning-cloud">
-                {t("ragSettings.warningCloud", { provider: PROVIDER_DISPLAY_NAME[aiProvider] })}
-              </p>
+              {isCloudProvider(aiProvider) ? (
+                <p className="rag-settings__warning-cloud">
+                  {t("ragSettings.warningCloud", { provider: PROVIDER_DISPLAY_NAME[aiProvider] })}
+                </p>
+              ) : null}
+              {isSemantic && isCloudProvider(embeddingSettings.provider) ? (
+                <p className="rag-settings__warning-cloud">
+                  {t("ragSettings.warningCloudEmbedding", {
+                    provider: PROVIDER_DISPLAY_NAME[embeddingSettings.provider]
+                  })}
+                </p>
+              ) : null}
               <p>{t("ragSettings.warningBody")}</p>
+              {isSemantic ? <p>{t("ragSettings.warningSemantic")}</p> : null}
               <p>{t("ragSettings.warningInherit")}</p>
             </div>
           </div>
@@ -144,6 +165,43 @@ export function RagSettings({ pendingProvider }: RagSettingsProps) {
             ? t("ragSettings.includedCount", { count: includedCount })
             : t("ragSettings.disabledHint")}
         </p>
+
+        {/* How the lookup works, below the consent decision rather than above
+            it: what is read is the question the user has first, and it is the
+            same question for both search modes. */}
+        <div className="rag-settings__mode">
+          <span className="rag-settings__section-title">{t("ragSettings.mode.title")}</span>
+
+          <div role="radiogroup" aria-label={t("ragSettings.mode.title")} className="rag-settings__mode-options">
+            {(["keyword", "semantic"] as RagSearchMode[]).map((mode) => (
+              <label key={mode} className="rag-settings__mode-option">
+                <input
+                  type="radio"
+                  name="rag-search-mode"
+                  value={mode}
+                  checked={searchMode === mode}
+                  onChange={() => setSearchMode(mode)}
+                />
+                <span>
+                  <strong>{t(`ragSettings.mode.${mode}`)}</strong>
+                  <span className="rag-settings__mode-hint">{t(`ragSettings.mode.${mode}Hint`)}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {isSemantic ? (
+          <>
+            <RagConnectionSettings includedFileCount={includedCount} />
+            <RagIndexPanel
+              isKnowledgeBaseEnabled={config.enabled}
+              hasModel={Boolean(embeddingSettings.model.trim())}
+              includedFileCount={includedCount}
+              serviceName={PROVIDER_DISPLAY_NAME[embeddingSettings.provider]}
+            />
+          </>
+        ) : null}
       </div>
 
       {isExplainerOpen ? <RagExplainerDialog onClose={() => setIsExplainerOpen(false)} /> : null}

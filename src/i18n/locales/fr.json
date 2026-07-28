@@ -252,7 +252,53 @@
       "dataTitle": "Qu'advient-il de mes textes ?",
       "dataBody": "Seuls les passages trouvés pour votre question sont transmis à l'IA, et non l'ensemble de votre dossier. Leur destination dépend de ce que vous avez réglé dans « Paramètres IA » : avec un service sur votre propre appareil (comme Ollama), rien ne quitte l'ordinateur. Avec un fournisseur sur internet, les passages trouvés y sont transmis. Rien de tout cela ne se produit sans que vous activiez la base de connaissances — et rien n'est jamais envoyé à ScribeDog lui-même.",
       "undoTitle": "Comment revenir en arrière ?",
-      "undoBody": "Désactivez simplement l'interrupteur ci-dessus. L'IA ne voit alors immédiatement plus que le document ouvert. Vous pouvez aussi exclure durablement certains dossiers en décochant leur case : les dossiers privés restent ainsi à l'écart pendant que le reste demeure consultable. Vos notes elles-mêmes ne sont jamais modifiées ni supprimées."
+      "undoBody": "Désactivez simplement l'interrupteur ci-dessus. L'IA ne voit alors immédiatement plus que le document ouvert. Vous pouvez aussi exclure durablement certains dossiers en décochant leur case : les dossiers privés restent ainsi à l'écart pendant que le reste demeure consultable. Vos notes elles-mêmes ne sont jamais modifiées ni supprimées.",
+      "howBodySemantic": "ScribeDog découpe vos notes en passages et fait calculer pour chacun une sorte de résumé, ce qui permet de chercher par le sens et non seulement par les mots exacts (le terme technique est « embeddings »). Ces résumés se trouvent dans un fichier du dossier .scribedog, à l'intérieur de votre propre dossier. Les mots de votre question sont également recherchés, et les deux résultats sont fusionnés.",
+      "dataBodySemantic": "Pour la préparation, tous les fichiers des dossiers cochés sont envoyés intégralement au service configuré pour la base de connaissances ; ensuite, seuls les fichiers modifiés le sont. Lors des réponses, les passages trouvés sont en plus envoyés à l'IA. Avec un service sur votre propre appareil (comme Ollama), rien ne quitte l'ordinateur ; avec un fournisseur sur Internet, si. Rien de tout cela n'a lieu tant que vous n'activez pas la base de connaissances — et rien n'est jamais envoyé à ScribeDog lui-même, ni pour l'entraînement.",
+      "undoBodySemantic": "Désactivez l'interrupteur ci-dessus : l'IA ne voit alors plus que le document ouvert. « Supprimer les données enregistrées » efface aussi le fichier préparé ; il se trouve dans le dossier .scribedog à l'intérieur de votre propre dossier, et supprimer ce dossier supprime tout. Vos notes elles-mêmes ne sont jamais modifiées ni supprimées."
+    },
+    "warningCloudEmbedding": "Attention : {{provider}} ne fonctionne pas sur cet appareil. La préparation envoie donc vos notes hors de votre ordinateur.",
+    "warningSemantic": "Pour la recherche par sens, vos notes sont lues intégralement une fois et envoyées au service configuré ci-dessous — pas seulement les passages qui correspondent à une question. Cela se répète dès que vous modifiez un fichier.",
+    "buildFailed": "Les notes n'ont pas pu être préparées.",
+    "deleteFailed": "Les données enregistrées n'ont pas pu être supprimées.",
+    "mode": {
+      "title": "Comment la recherche fonctionne",
+      "keyword": "Rechercher par mots",
+      "keywordHint": "Trouve les passages qui contiennent réellement les mots de votre question. Aucune préparation ni connexion supplémentaire n'est nécessaire — la recherche s'effectue entièrement sur votre appareil.",
+      "semantic": "Rechercher par sens",
+      "semanticHint": "Trouve le bon passage même si vous le formulez autrement que votre note. Vos notes doivent pour cela être préparées une fois : elles sont lues intégralement et envoyées à un service que vous configurez ci-dessous. La recherche par mots reste active en parallèle."
+    },
+    "connection": {
+      "title": "Connexion pour la recherche par sens",
+      "hint": "Cette connexion est indépendante de vos paramètres d'IA : vous pouvez rendre vos notes consultables sur cet appareil tout en discutant avec un service sur Internet — ou l'inverse.",
+      "providerHint": "Anthropic ne figure pas ici, car ce fournisseur ne le propose pas.",
+      "model": "Modèle qui rend vos notes consultables",
+      "modelUnset": "Aucun modèle sélectionné",
+      "modelPlaceholder": "par ex. nomic-embed-text",
+      "modelHint": "Il doit s'agir d'un modèle prévu pour cela (comme nomic-embed-text ou mxbai-embed-large). Un modèle de discussion ordinaire ne fonctionne pas ici.",
+      "save": "Appliquer la connexion",
+      "unsaved": "Pas encore appliqué."
+    },
+    "index": {
+      "title": "Notes préparées",
+      "otherModel": "Les données enregistrées proviennent d'un autre modèle et ne sont pas utilisées. Reconstruisez-les pour que la recherche par sens fonctionne à nouveau.",
+      "none": "Rien n'est encore préparé pour ce dossier. En attendant, seule la recherche par mots est utilisée.",
+      "ready": "Tous les fichiers pris en compte sont préparés ({{ready}}).",
+      "partial": "{{ready}} préparés, {{pending}} pas encore.",
+      "building": "Préparation… {{done}} sur {{total}}",
+      "needsEnabled": "Activez la base de connaissances ci-dessus pour préparer vos notes.",
+      "needsModel": "Choisissez un modèle ci-dessus pour préparer vos notes.",
+      "prepare": "Préparer les notes",
+      "update": "Mettre à jour",
+      "delete": "Supprimer les données enregistrées"
+    },
+    "rebuild": {
+      "title": "Votre base de connaissances doit être reconstruite",
+      "body": "Vous avez changé le modèle qui rend vos notes consultables. Ce que ScribeDog a enregistré jusqu'ici ne peut pas être utilisé par le nouveau modèle — cela sera supprimé puis recréé.",
+      "transfer": "Tous les fichiers des dossiers cochés seront à nouveau lus intégralement et envoyés à {{service}}.",
+      "notesUnchanged": "Vos notes elles-mêmes ne changent pas.",
+      "count": "Fichiers concernés : {{files}}",
+      "confirm": "Reconstruire"
     }
   },
   "versioningSettings": {
@@ -575,7 +621,9 @@
     "apiKeyRequired": "Veuillez saisir une clé API dans les paramètres IA.",
     "modelRequired": "Veuillez indiquer un modèle dans les paramètres IA.",
     "noUsableText": "L'IA n'a renvoyé aucun texte utilisable.",
-    "invalidCheckResponse": "La réponse de l'IA n'a pas pu être lue comme une liste de problèmes d'orthographe/de grammaire."
+    "invalidCheckResponse": "La réponse de l'IA n'a pas pu être lue comme une liste de problèmes d'orthographe/de grammaire.",
+    "embeddingsMalformed": "Le service n'a renvoyé aucune réponse exploitable pour la recherche par sens.",
+    "embeddingsUnsupported": "{{provider}} ne propose pas la recherche par sens. Choisissez un autre service."
   },
   "store": {
     "folderLoadError": "Le dossier n'a pas pu être chargé.",

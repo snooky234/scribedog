@@ -295,7 +295,13 @@ pub fn run() {
             voice::cancel_voice_recording,
             rag::rag_search_text,
             rag::rag_read_note,
-            rag::rag_clear_cache
+            rag::rag_clear_cache,
+            rag::rag_index_status,
+            rag::rag_file_chunks,
+            rag::rag_store_file_vectors,
+            rag::rag_prune_index,
+            rag::rag_clear_index,
+            rag::rag_search_vectors
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

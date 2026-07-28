@@ -56,6 +56,21 @@ export function isCloudProvider(provider: AiProvider): boolean {
   return CLOUD_PROVIDERS.has(provider);
 }
 
+/**
+ * Providers that can turn text into vectors, for the knowledge base's meaning
+ * search.
+ *
+ * Anthropic is missing on purpose rather than by oversight: it has no
+ * embeddings API at all. Offering it and letting the request fail would send
+ * the user hunting for a wrong URL or a wrong key — the settings tab says
+ * plainly that this provider cannot do it (see DOCS/wissensbasis-plan.md, K).
+ */
+export const EMBEDDING_PROVIDERS: AiProvider[] = ["ollama", "jan", "lmstudio", "openai", "mistral"];
+
+export function supportsEmbeddings(provider: AiProvider): boolean {
+  return EMBEDDING_PROVIDERS.includes(provider);
+}
+
 export function isLocalApiUrl(apiUrl: string): boolean {
   try {
     const url = new URL(apiUrl);
@@ -2143,4 +2158,108 @@ export async function generateOcrMarkdown(
   }
 
   return cleanedResponse;
+}
+
+/**
+ * The knowledge base's own connection (see DOCS/wissensbasis-plan.md, J): a
+ * different service than the chat may use, so that notes can be made
+ * searchable locally while the chat runs in the cloud, or the other way round.
+ */
+export type EmbeddingSettings = {
+  provider: AiProvider;
+  apiUrl: string;
+  apiKey: string;
+  model: string;
+};
+
+function parseEmbeddingVectors(payload: unknown, expectedCount: number): number[][] {
+  const isVector = (value: unknown): value is number[] =>
+    Array.isArray(value) && value.length > 0 && value.every((entry) => typeof entry === "number" && Number.isFinite(entry));
+
+  const container = typeof payload === "object" && payload !== null ? (payload as Record<string, unknown>) : {};
+
+  // Ollama answers { embeddings: [[…]] }; every OpenAI-compatible endpoint
+  // answers { data: [{ index, embedding }] } — and the index matters, because
+  // the order of that array is not promised to match the input.
+  let vectors: number[][] = [];
+
+  if (Array.isArray(container.embeddings)) {
+    vectors = container.embeddings.filter(isVector);
+  } else if (Array.isArray(container.data)) {
+    const entries = container.data
+      .map((entry, position) => {
+        const record = typeof entry === "object" && entry !== null ? (entry as Record<string, unknown>) : {};
+        const index = typeof record.index === "number" ? record.index : position;
+
+        return { index, embedding: record.embedding };
+      })
+      .filter((entry): entry is { index: number; embedding: number[] } => isVector(entry.embedding))
+      .sort((a, b) => a.index - b.index);
+
+    vectors = entries.map((entry) => entry.embedding);
+  }
+
+  // A short answer would silently shift every following passage's vector onto
+  // the wrong text, and nothing downstream could ever notice. Refuse instead.
+  if (vectors.length !== expectedCount) {
+    throw new Error(i18n.t("aiClient.embeddingsMalformed"));
+  }
+
+  const dimensions = vectors[0]?.length ?? 0;
+
+  if (vectors.some((vector) => vector.length !== dimensions)) {
+    throw new Error(i18n.t("aiClient.embeddingsMalformed"));
+  }
+
+  return vectors;
+}
+
+/**
+ * Turns passages into vectors, one request per batch.
+ *
+ * Routed through this file rather than through Rust for one reason:
+ * assertValidEndpoint below is the same guard the chat gets — cloud means
+ * HTTPS plus a key, local means localhost. A second endpoint check somewhere
+ * else is the likeliest place for this feature to grow a security hole.
+ */
+export async function embedTexts(
+  settings: EmbeddingSettings,
+  texts: string[],
+  signal?: AbortSignal
+): Promise<number[][]> {
+  assertValidEndpoint(settings.provider, settings.apiUrl, settings.apiKey);
+
+  if (!settings.model.trim()) {
+    throw new Error(i18n.t("aiClient.modelRequired"));
+  }
+
+  if (!supportsEmbeddings(settings.provider)) {
+    throw new Error(i18n.t("aiClient.embeddingsUnsupported", { provider: PROVIDER_DISPLAY_NAME[settings.provider] }));
+  }
+
+  if (texts.length === 0) {
+    return [];
+  }
+
+  if (settings.provider === "ollama") {
+    const payload = await postJson(
+      new URL("/api/embed", settings.apiUrl).toString(),
+      { model: settings.model, input: texts },
+      undefined,
+      signal
+    );
+
+    return parseEmbeddingVectors(payload, texts.length);
+  }
+
+  const payload = await postJson(
+    new URL("/v1/embeddings", settings.apiUrl).toString(),
+    { model: settings.model, input: texts },
+    // Local providers never get an auth header — a leftover cloud key must not
+    // travel to the local server (same rule as fetchAvailableModelsInternal).
+    isCloudProvider(settings.provider) ? bearerAuthHeaders(settings.apiKey) : {},
+    signal
+  );
+
+  return parseEmbeddingVectors(payload, texts.length);
 }

@@ -8,7 +8,7 @@
 import { EDITING_TOOL_NAMES, FLAG_SUGGESTION_TOOL_NAME, type VaultSourceRef } from "@/lib/aiClient";
 import { normalizeImageSrc, resolveDocumentImagePath } from "@/lib/chat/imageAttachments";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
-import { readNote, searchVault } from "@/lib/ragSearch";
+import { isSemanticSearchActive, readNote, searchVault } from "@/lib/ragSearch";
 
 // What set_image_width did, so the tool result can name the resulting size.
 // width === null means the image was reset to its natural size.
@@ -214,11 +214,17 @@ async function runVaultSearch(args: Record<string, unknown>): Promise<ToolResult
   }
 
   if (hits.length === 0) {
+    // Which retry advice is right depends on how the vault is searched:
+    // rewording helps a keyword search, and hurts if the search already
+    // matches by meaning — there the answer really is "it isn't in there".
     return {
-      content:
-        `No passage found for "${query}". This is a keyword search, so try again with different words — a ` +
-        "name, a project title, a single distinctive term — before telling the user there is nothing. If a " +
-        "second search also finds nothing, say plainly that their notes do not cover it."
+      content: isSemanticSearchActive()
+        ? `No passage found for "${query}". This search matches by meaning as well as by wording, so a ` +
+          "rephrasing of the same question will not help. One more attempt with a concrete name or title is " +
+          "worth it; after that, say plainly that their notes do not cover it."
+        : `No passage found for "${query}". This is a keyword search, so try again with different words — a ` +
+          "name, a project title, a single distinctive term — before telling the user there is nothing. If a " +
+          "second search also finds nothing, say plainly that their notes do not cover it."
     };
   }
 

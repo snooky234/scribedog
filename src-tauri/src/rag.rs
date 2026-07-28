@@ -8,8 +8,11 @@
 //! selection the single place where inclusion is decided and keeps the two
 //! implementations from drifting apart.
 //!
-//! Stage 1 of DOCS/wissensbasis-plan.md: keyword search only. Vector storage
-//! and cosine search are stage 2 and land beside this.
+//! Two search paths live here. Keyword search (BM25) needs nothing but the
+//! files themselves. Meaning search compares the vectors of a passage against
+//! the vector of the question — those vectors are produced by an embedding
+//! service the frontend talks to (never this module: see the Rust/TypeScript
+//! split in DOCS/wissensbasis-plan.md) and stored in one flat file per vault.
 
 use std::{
     collections::HashMap,
@@ -82,6 +85,9 @@ struct CachedFile {
 #[derive(Default)]
 pub struct RagState {
     files: Mutex<HashMap<PathBuf, CachedFile>>,
+    /// The vectors of the vault currently open, mirrored from
+    /// .scribedog/rag-index.bin (see VectorIndex).
+    index: Mutex<VectorIndex>,
 }
 
 /// Splits text into lowercased alphanumeric runs.
@@ -570,6 +576,667 @@ pub fn rag_clear_cache(state: tauri::State<'_, RagState>) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Meaning search: stored vectors and cosine similarity
+// ---------------------------------------------------------------------------
+
+/// Metadata folder of a vault, mirroring VAULT_META_DIR_NAME in
+/// src/lib/fileSystem.ts.
+const VAULT_META_DIR: &str = ".scribedog";
+
+/// The stored vectors of one vault. Flat file rather than a vector database:
+/// a large vault is a few thousand passages, and brute-force cosine over that
+/// takes about a millisecond — see DOCS/wissensbasis-plan.md.
+const INDEX_FILE_NAME: &str = "rag-index.bin";
+const INDEX_MAGIC: &[u8] = b"SDRAGIX1";
+
+/// Bumped when the layout below changes. A file written by another version is
+/// discarded rather than guessed at.
+const INDEX_FORMAT_VERSION: u32 = 1;
+
+/// Sanity bounds for a file that may have been truncated or corrupted. No
+/// embedding model has more dimensions than this, and no vault has more
+/// passages in one file.
+const MAX_DIMENSIONS: usize = 8_192;
+const MAX_CHUNKS_PER_FILE: usize = 100_000;
+
+/// How many files may be stored before the index is written back to disk on
+/// its own. A full rebuild would otherwise rewrite the whole file once per
+/// note, which for a large vault is hundreds of megabytes of pointless writes;
+/// leaving it entirely to an explicit flush would lose the work of a crash.
+const AUTOSAVE_EVERY_FILES: usize = 25;
+
+/// Which model produced the stored vectors.
+///
+/// Vectors from two different models are not comparable at all, so this is not
+/// informational: on a mismatch everything stored is worthless and gets
+/// rebuilt (with the user's consent — the frontend asks first, see
+/// RagRebuildDialog). There is deliberately no silent fallback.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct IndexHeader {
+    pub provider: String,
+    pub model: String,
+    pub dimensions: u32,
+    pub version: u32,
+}
+
+#[derive(Clone)]
+struct IndexedFile {
+    /// Signature the file had when it was embedded. A passage whose file has
+    /// changed since is skipped: its vector describes text that is no longer
+    /// there, and answering from it would be worse than not answering.
+    mtime_ms: u64,
+    size: u64,
+    /// One vector per passage, in the order split_markdown produces them.
+    vectors: Vec<Vec<f32>>,
+    /// Precomputed lengths, so a search is one dot product per passage.
+    norms: Vec<f32>,
+}
+
+impl IndexedFile {
+    fn new(mtime_ms: u64, size: u64, vectors: Vec<Vec<f32>>) -> Self {
+        let norms = vectors.iter().map(|vector| vector_norm(vector)).collect();
+
+        Self {
+            mtime_ms,
+            size,
+            vectors,
+            norms,
+        }
+    }
+}
+
+/// The in-memory copy of one vault's stored vectors.
+///
+/// Held per vault: opening another folder replaces it wholesale, so vectors of
+/// the vault the user just closed can never answer a search in the new one.
+#[derive(Default)]
+struct VectorIndex {
+    /// Vault this belongs to. Empty means nothing is loaded yet.
+    root: String,
+    header: Option<IndexHeader>,
+    /// Vault-relative path -> its passages' vectors.
+    files: HashMap<String, IndexedFile>,
+    /// Changes not yet written to disk.
+    unsaved: usize,
+}
+
+fn vector_norm(vector: &[f32]) -> f32 {
+    vector.iter().map(|value| value * value).sum::<f32>().sqrt()
+}
+
+fn cosine_similarity(a: &[f32], a_norm: f32, b: &[f32], b_norm: f32) -> f32 {
+    if a.len() != b.len() || a_norm == 0.0 || b_norm == 0.0 {
+        return 0.0;
+    }
+
+    let dot: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
+
+    dot / (a_norm * b_norm)
+}
+
+fn index_file_path(root: &str) -> PathBuf {
+    Path::new(root).join(VAULT_META_DIR).join(INDEX_FILE_NAME)
+}
+
+fn push_u32(buffer: &mut Vec<u8>, value: u32) {
+    buffer.extend_from_slice(&value.to_le_bytes());
+}
+
+fn push_u64(buffer: &mut Vec<u8>, value: u64) {
+    buffer.extend_from_slice(&value.to_le_bytes());
+}
+
+fn push_string(buffer: &mut Vec<u8>, value: &str) {
+    push_u32(buffer, value.len() as u32);
+    buffer.extend_from_slice(value.as_bytes());
+}
+
+/// Reads the flat layout back, refusing anything that does not add up rather
+/// than trusting lengths from a file that may have been truncated.
+struct ByteReader<'a> {
+    data: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> ByteReader<'a> {
+    fn new(data: &'a [u8]) -> Self {
+        Self { data, offset: 0 }
+    }
+
+    fn take(&mut self, count: usize) -> Option<&'a [u8]> {
+        let end = self.offset.checked_add(count)?;
+        let slice = self.data.get(self.offset..end)?;
+        self.offset = end;
+
+        Some(slice)
+    }
+
+    fn u32(&mut self) -> Option<u32> {
+        Some(u32::from_le_bytes(self.take(4)?.try_into().ok()?))
+    }
+
+    fn u64(&mut self) -> Option<u64> {
+        Some(u64::from_le_bytes(self.take(8)?.try_into().ok()?))
+    }
+
+    fn string(&mut self) -> Option<String> {
+        let length = self.u32()? as usize;
+
+        String::from_utf8(self.take(length)?.to_vec()).ok()
+    }
+
+    fn vector(&mut self, dimensions: usize) -> Option<Vec<f32>> {
+        let bytes = self.take(dimensions.checked_mul(4)?)?;
+
+        Some(
+            bytes
+                .chunks_exact(4)
+                .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
+                .collect(),
+        )
+    }
+}
+
+fn serialize_index(index: &VectorIndex) -> Option<Vec<u8>> {
+    let header = index.header.as_ref()?;
+    let header_json = serde_json::to_string(header).ok()?;
+
+    let mut buffer = Vec::new();
+    buffer.extend_from_slice(INDEX_MAGIC);
+    push_string(&mut buffer, &header_json);
+    push_u32(&mut buffer, index.files.len() as u32);
+
+    for (path, file) in &index.files {
+        push_string(&mut buffer, path);
+        push_u64(&mut buffer, file.mtime_ms);
+        push_u64(&mut buffer, file.size);
+        push_u32(&mut buffer, file.vectors.len() as u32);
+
+        for vector in &file.vectors {
+            for value in vector {
+                buffer.extend_from_slice(&value.to_le_bytes());
+            }
+        }
+    }
+
+    Some(buffer)
+}
+
+fn deserialize_index(root: &str, data: &[u8]) -> Option<VectorIndex> {
+    let mut reader = ByteReader::new(data);
+
+    if reader.take(INDEX_MAGIC.len())? != INDEX_MAGIC {
+        return None;
+    }
+
+    let header: IndexHeader = serde_json::from_str(&reader.string()?).ok()?;
+
+    if header.version != INDEX_FORMAT_VERSION {
+        return None;
+    }
+
+    let dimensions = header.dimensions as usize;
+
+    if dimensions == 0 || dimensions > MAX_DIMENSIONS {
+        return None;
+    }
+
+    let file_count = reader.u32()? as usize;
+    let mut files = HashMap::with_capacity(file_count);
+
+    for _ in 0..file_count {
+        let path = reader.string()?;
+        let mtime_ms = reader.u64()?;
+        let size = reader.u64()?;
+        let chunk_count = reader.u32()? as usize;
+
+        if chunk_count > MAX_CHUNKS_PER_FILE {
+            return None;
+        }
+
+        let mut vectors = Vec::with_capacity(chunk_count);
+
+        for _ in 0..chunk_count {
+            vectors.push(reader.vector(dimensions)?);
+        }
+
+        files.insert(path, IndexedFile::new(mtime_ms, size, vectors));
+    }
+
+    Some(VectorIndex {
+        root: root.to_string(),
+        header: Some(header),
+        files,
+        unsaved: 0,
+    })
+}
+
+fn write_index(index: &mut VectorIndex) -> Result<(), String> {
+    let Some(buffer) = serialize_index(index) else {
+        return Ok(());
+    };
+
+    let path = index_file_path(&index.root);
+
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+
+    std::fs::write(&path, buffer).map_err(|error| error.to_string())?;
+    index.unsaved = 0;
+
+    Ok(())
+}
+
+/// Runs `action` against the vectors of `root`, loading them from disk first if
+/// this is a different vault than the one currently held (or the first access).
+///
+/// A file that cannot be read or does not parse yields an empty index, not an
+/// error: the answer to "nothing usable is stored" is the same as to "nothing
+/// is stored", and the frontend's status call reports it as work to be done.
+fn with_index<T>(state: &RagState, root: &str, action: impl FnOnce(&mut VectorIndex) -> T) -> T {
+    let mut index = match state.index.lock() {
+        Ok(index) => index,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+
+    if index.root != root {
+        *index = std::fs::read(index_file_path(root))
+            .ok()
+            .and_then(|data| deserialize_index(root, &data))
+            .unwrap_or_else(|| VectorIndex {
+                root: root.to_string(),
+                ..VectorIndex::default()
+            });
+    }
+
+    action(&mut index)
+}
+
+/// Whether the stored vectors were made by the model that is configured now.
+fn header_matches(header: Option<&IndexHeader>, provider: &str, model: &str) -> bool {
+    header.is_some_and(|header| header.provider == provider && header.model == model)
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexScopeRequest {
+    pub root: String,
+    /// Vault-relative paths of every file the folder selection includes.
+    pub files: Vec<String>,
+    pub provider: String,
+    pub model: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexStatus {
+    pub provider: Option<String>,
+    pub model: Option<String>,
+    /// Files with usable, up-to-date vectors.
+    pub ready_files: usize,
+    pub ready_chunks: usize,
+    /// In-scope files that still need to be embedded — new, changed, or all of
+    /// them when the stored vectors are from a different model.
+    pub pending_files: Vec<String>,
+    /// Stored files the selection no longer covers. They are dropped on the
+    /// next prune; counted here so the tab can say the stored data is stale.
+    pub obsolete_files: usize,
+    /// False when something is stored but from another model, which is what
+    /// triggers the rebuild prompt.
+    pub matches_settings: bool,
+}
+
+/// What is stored for this vault, and what is missing for the current scope.
+#[tauri::command]
+pub fn rag_index_status(state: tauri::State<'_, RagState>, request: IndexScopeRequest) -> IndexStatus {
+    with_index(&state, &request.root, |index| {
+        let matches = header_matches(index.header.as_ref(), &request.provider, &request.model);
+
+        let mut ready_files = 0;
+        let mut ready_chunks = 0;
+        let mut pending_files = Vec::new();
+
+        for relative_path in &request.files {
+            if !is_safe_relative_path(relative_path) {
+                continue;
+            }
+
+            let normalized = normalize_relative_path(relative_path);
+            let path = Path::new(&request.root).join(&normalized);
+            let signature = file_signature(&path);
+
+            let stored = if matches { index.files.get(&normalized) } else { None };
+
+            match (stored, signature) {
+                (Some(stored), Some((mtime_ms, size)))
+                    if stored.mtime_ms == mtime_ms && stored.size == size =>
+                {
+                    ready_files += 1;
+                    ready_chunks += stored.vectors.len();
+                }
+                _ => pending_files.push(normalized),
+            }
+        }
+
+        let in_scope: std::collections::HashSet<String> = request
+            .files
+            .iter()
+            .map(|path| normalize_relative_path(path))
+            .collect();
+
+        IndexStatus {
+            provider: index.header.as_ref().map(|header| header.provider.clone()),
+            model: index.header.as_ref().map(|header| header.model.clone()),
+            ready_files,
+            ready_chunks,
+            pending_files,
+            obsolete_files: index
+                .files
+                .keys()
+                .filter(|path| !in_scope.contains(*path))
+                .count(),
+            matches_settings: matches || index.header.is_none(),
+        }
+    })
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileChunksRequest {
+    pub root: String,
+    pub files: Vec<String>,
+    pub path: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileChunks {
+    pub path: String,
+    pub mtime_ms: u64,
+    pub size: u64,
+    /// The passages as they go to the embedding service, heading trail and all.
+    pub texts: Vec<String>,
+}
+
+/// The passages of one in-scope file, ready to be embedded.
+///
+/// The heading trail is prepended exactly as it is for keyword search: a
+/// passage under "Kunde A > Liefertermin" is about the delivery date even when
+/// its own sentences never say so, and the vector has no other way to learn it.
+#[tauri::command]
+pub fn rag_file_chunks(
+    state: tauri::State<'_, RagState>,
+    request: FileChunksRequest,
+) -> Result<FileChunks, String> {
+    let Some(path) = resolve_allowed_path(&request.root, &request.path, &request.files) else {
+        return Err("not-allowed".to_string());
+    };
+
+    let Some((mtime_ms, size)) = file_signature(&path) else {
+        return Err("unreadable".to_string());
+    };
+
+    let texts = chunks_for_file(&state, &path)
+        .into_iter()
+        .map(|chunk| {
+            if chunk.heading_path.is_empty() {
+                chunk.text
+            } else {
+                format!("{}\n{}", chunk.heading_path, chunk.text)
+            }
+        })
+        .collect();
+
+    Ok(FileChunks {
+        path: normalize_relative_path(&request.path),
+        mtime_ms,
+        size,
+        texts,
+    })
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StoreVectorsRequest {
+    pub root: String,
+    pub provider: String,
+    pub model: String,
+    pub path: String,
+    pub mtime_ms: u64,
+    pub size: u64,
+    pub vectors: Vec<Vec<f32>>,
+    /// Write to disk now, rather than waiting for the autosave. The frontend
+    /// sets this on the last file of a run and when the user cancels.
+    #[serde(default)]
+    pub flush: bool,
+}
+
+/// Stores one file's vectors.
+///
+/// If the request names a different model than what is stored, everything
+/// stored is dropped here rather than mixed: comparing vectors from two models
+/// produces confident nonsense. The user has already been asked at this point —
+/// this is the last line of defence, not the prompt.
+#[tauri::command]
+pub fn rag_store_file_vectors(
+    state: tauri::State<'_, RagState>,
+    request: StoreVectorsRequest,
+) -> Result<(), String> {
+    if !is_safe_relative_path(&request.path) {
+        return Err("not-allowed".to_string());
+    }
+
+    let dimensions = request.vectors.first().map(|vector| vector.len()).unwrap_or(0);
+
+    if dimensions > MAX_DIMENSIONS
+        || request
+            .vectors
+            .iter()
+            .any(|vector| vector.len() != dimensions)
+    {
+        return Err("inconsistent-dimensions".to_string());
+    }
+
+    with_index(&state, &request.root, |index| {
+        if !header_matches(index.header.as_ref(), &request.provider, &request.model) {
+            index.files.clear();
+            index.header = None;
+        }
+
+        // A file that split into nothing (empty note) carries no vectors and
+        // must not decide the index's dimensions.
+        if index.header.is_none() && dimensions > 0 {
+            index.header = Some(IndexHeader {
+                provider: request.provider.clone(),
+                model: request.model.clone(),
+                dimensions: dimensions as u32,
+                version: INDEX_FORMAT_VERSION,
+            });
+        }
+
+        if let Some(header) = index.header.as_ref() {
+            if dimensions > 0 && header.dimensions as usize != dimensions {
+                return Err("inconsistent-dimensions".to_string());
+            }
+        }
+
+        index.files.insert(
+            normalize_relative_path(&request.path),
+            IndexedFile::new(request.mtime_ms, request.size, request.vectors),
+        );
+        index.unsaved += 1;
+
+        if request.flush || index.unsaved >= AUTOSAVE_EVERY_FILES {
+            write_index(index)?;
+        }
+
+        Ok(())
+    })
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PruneRequest {
+    pub root: String,
+    pub files: Vec<String>,
+}
+
+/// Drops the vectors of files the selection no longer covers — a note the user
+/// deleted, or a folder they just unticked. Nothing about that folder may
+/// survive in the stored data, which is what the settings tab promises.
+#[tauri::command]
+pub fn rag_prune_index(
+    state: tauri::State<'_, RagState>,
+    request: PruneRequest,
+) -> Result<(), String> {
+    with_index(&state, &request.root, |index| {
+        let in_scope: std::collections::HashSet<String> = request
+            .files
+            .iter()
+            .map(|path| normalize_relative_path(path))
+            .collect();
+
+        let before = index.files.len();
+        index.files.retain(|path, _| in_scope.contains(path));
+
+        if index.files.len() != before || index.unsaved > 0 {
+            write_index(index)?;
+        }
+
+        Ok(())
+    })
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RootRequest {
+    pub root: String,
+}
+
+/// Forgets everything stored for this vault, in memory and on disk. The notes
+/// themselves are never touched — see the "how do I get rid of this" section of
+/// the explainer dialog.
+#[tauri::command]
+pub fn rag_clear_index(state: tauri::State<'_, RagState>, request: RootRequest) -> Result<(), String> {
+    with_index(&state, &request.root, |index| {
+        index.files.clear();
+        index.header = None;
+        index.unsaved = 0;
+    });
+
+    match std::fs::remove_file(index_file_path(&request.root)) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VectorSearchRequest {
+    pub root: String,
+    pub files: Vec<String>,
+    pub provider: String,
+    pub model: String,
+    /// The question, already embedded by the frontend.
+    pub vector: Vec<f32>,
+    pub limit: usize,
+}
+
+/// Brute-force cosine over the stored vectors of the in-scope files.
+///
+/// Returns nothing at all when the stored vectors are from another model:
+/// those distances are meaningless, and a plausible-looking wrong passage is
+/// worse here than no passage — keyword search still answers in that case.
+#[tauri::command]
+pub fn rag_search_vectors(
+    state: tauri::State<'_, RagState>,
+    request: VectorSearchRequest,
+) -> Vec<SearchHit> {
+    let query_norm = vector_norm(&request.vector);
+
+    if request.vector.is_empty() || query_norm == 0.0 {
+        return Vec::new();
+    }
+
+    // Scoring only needs the index; building the snippets afterwards needs the
+    // files. Collecting the winners first keeps the index lock short and reads
+    // at most `limit` files instead of all of them.
+    let scored = with_index(&state, &request.root, |index| {
+        if !header_matches(index.header.as_ref(), &request.provider, &request.model) {
+            return Vec::new();
+        }
+
+        let mut scored: Vec<(f32, String, usize)> = Vec::new();
+
+        for relative_path in &request.files {
+            if !is_safe_relative_path(relative_path) {
+                continue;
+            }
+
+            let normalized = normalize_relative_path(relative_path);
+
+            let Some(stored) = index.files.get(&normalized) else {
+                continue;
+            };
+
+            // A note edited since it was embedded describes text that no longer
+            // exists. Keyword search covers it until the next rebuild.
+            let path = Path::new(&request.root).join(&normalized);
+
+            match file_signature(&path) {
+                Some((mtime_ms, size)) if mtime_ms == stored.mtime_ms && size == stored.size => {}
+                _ => continue,
+            }
+
+            for (position, vector) in stored.vectors.iter().enumerate() {
+                let score = cosine_similarity(
+                    &request.vector,
+                    query_norm,
+                    vector,
+                    stored.norms.get(position).copied().unwrap_or(0.0),
+                );
+
+                if score > 0.0 {
+                    scored.push((score, normalized.clone(), position));
+                }
+            }
+        }
+
+        scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+        scored.truncate(request.limit.clamp(1, 20));
+
+        scored
+    });
+
+    if scored.is_empty() {
+        return Vec::new();
+    }
+
+    let budget = (SNIPPET_BUDGET_CHARS / scored.len()).max(SNIPPET_CHARS);
+
+    scored
+        .into_iter()
+        .filter_map(|(score, relative_path, position)| {
+            let path = Path::new(&request.root).join(&relative_path);
+            let chunks = chunks_for_file(&state, &path);
+            let chunk = chunks.get(position)?;
+
+            Some(SearchHit {
+                path: relative_path,
+                heading_path: chunk.heading_path.clone(),
+                // No query terms to centre the preview on — a vector match is
+                // about the passage as a whole, so it starts at its beginning.
+                snippet: build_snippet(chunk, &[], budget),
+                truncated: chunk.text.chars().count() > budget,
+                score,
+            })
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -651,5 +1318,71 @@ mod tests {
         // …but the passage text itself stays clean, so the snippet does not
         // repeat the heading back to the user.
         assert!(!chunks[0].text.contains("Liefertermin"));
+    }
+
+    fn sample_index() -> VectorIndex {
+        let mut files = HashMap::new();
+        files.insert(
+            "Projekte/Kunde A.md".to_string(),
+            IndexedFile::new(1_700_000_000_000, 512, vec![vec![0.5, -0.25, 1.0], vec![0.0, 1.0, 0.0]]),
+        );
+
+        VectorIndex {
+            root: "C:/vault".to_string(),
+            header: Some(IndexHeader {
+                provider: "ollama".to_string(),
+                model: "nomic-embed-text".to_string(),
+                dimensions: 3,
+                version: INDEX_FORMAT_VERSION,
+            }),
+            files,
+            unsaved: 0,
+        }
+    }
+
+    #[test]
+    fn stored_vectors_survive_a_round_trip() {
+        let index = sample_index();
+        let bytes = serialize_index(&index).expect("serializable");
+        let restored = deserialize_index("C:/vault", &bytes).expect("readable");
+
+        let file = restored.files.get("Projekte/Kunde A.md").expect("file kept");
+
+        assert_eq!(restored.header, index.header);
+        assert_eq!(file.mtime_ms, 1_700_000_000_000);
+        assert_eq!(file.vectors, vec![vec![0.5, -0.25, 1.0], vec![0.0, 1.0, 0.0]]);
+    }
+
+    #[test]
+    fn a_truncated_index_file_is_rejected_rather_than_half_read() {
+        let bytes = serialize_index(&sample_index()).expect("serializable");
+
+        assert!(deserialize_index("C:/vault", &bytes[..bytes.len() - 5]).is_none());
+        assert!(deserialize_index("C:/vault", b"not an index").is_none());
+    }
+
+    #[test]
+    fn vectors_from_another_model_are_never_used() {
+        let header = sample_index().header;
+
+        assert!(header_matches(header.as_ref(), "ollama", "nomic-embed-text"));
+        // Same provider, other model — the distances would be meaningless.
+        assert!(!header_matches(header.as_ref(), "ollama", "mxbai-embed-large"));
+        assert!(!header_matches(None, "ollama", "nomic-embed-text"));
+    }
+
+    #[test]
+    fn cosine_ranks_the_closer_passage_first() {
+        let query = vec![1.0, 0.0, 0.0];
+        let query_norm = vector_norm(&query);
+        let near = vec![0.9, 0.1, 0.0];
+        let far = vec![0.0, 1.0, 0.0];
+
+        let near_score = cosine_similarity(&query, query_norm, &near, vector_norm(&near));
+        let far_score = cosine_similarity(&query, query_norm, &far, vector_norm(&far));
+
+        assert!(near_score > far_score);
+        // A zero vector cannot be compared to anything and must not score.
+        assert_eq!(cosine_similarity(&query, query_norm, &[0.0, 0.0, 0.0], 0.0), 0.0);
     }
 }

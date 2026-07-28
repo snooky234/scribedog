@@ -252,7 +252,53 @@
       "dataTitle": "What happens to my texts?",
       "dataBody": "Only the passages found for your question go to the AI — not your entire folder. Where they go depends on what you set under “AI settings”: with a service on your own device (such as Ollama) nothing leaves the computer. With a provider on the internet, the passages found are transmitted there. None of this happens unless you switch the knowledge base on — and nothing is ever sent to ScribeDog itself.",
       "undoTitle": "How do I undo this?",
-      "undoBody": "Just switch the toggle above off. The AI can then immediately only see the document you have open. You can also exclude individual folders permanently by unticking them — private folders stay out that way while the rest remains searchable. Your notes themselves are never changed or deleted by any of this."
+      "undoBody": "Just switch the toggle above off. The AI can then immediately only see the document you have open. You can also exclude individual folders permanently by unticking them — private folders stay out that way while the rest remains searchable. Your notes themselves are never changed or deleted by any of this.",
+      "howBodySemantic": "ScribeDog splits your notes into passages and has a kind of summary computed for each one, which makes it possible to search by meaning rather than only by exact words (the technical term is embeddings). Those summaries sit in a file in the .scribedog folder inside your own folder. The words of your question are searched for as well, and both results are merged.",
+      "dataBodySemantic": "To prepare them, all files in the ticked folders are sent in full to the service you configured for the knowledge base; after that, only changed files are. When answering, the passages found are also sent to the AI. With a service on your own device (such as Ollama) nothing leaves the computer; with a provider on the internet it does. None of this happens unless you switch the knowledge base on — and nothing is ever sent to ScribeDog itself, not for training either.",
+      "undoBodySemantic": "Switch the toggle above off and the AI immediately sees nothing but the open document. \"Delete stored data\" also removes the prepared file; it sits in the .scribedog folder inside your own folder, and deleting that folder removes all of it. Your notes themselves are never changed or deleted."
+    },
+    "warningCloudEmbedding": "Careful: {{provider}} does not run on this device. Preparing your notes therefore sends them off your computer.",
+    "warningSemantic": "For meaning search your notes are read in full once and sent to the service configured below — not just the passages that match a question. This happens again whenever you change a file.",
+    "buildFailed": "Your notes could not be prepared.",
+    "deleteFailed": "The stored data could not be deleted.",
+    "mode": {
+      "title": "How the search works",
+      "keyword": "Search by words",
+      "keywordHint": "Finds passages that actually contain the words from your question. Needs no preparation and no extra connection — the search runs entirely on your device.",
+      "semantic": "Search by meaning",
+      "semanticHint": "Also finds the right passage when you word your question differently than your note. Your notes have to be prepared once for this: they are read in full and sent to a service you configure below. Words are still searched for as well."
+    },
+    "connection": {
+      "title": "Connection for meaning search",
+      "hint": "This connection is independent of your AI settings: you can make your notes searchable on this device and still chat with a service on the internet — or the other way round.",
+      "providerHint": "Anthropic is missing here because that provider does not offer this.",
+      "model": "Model that makes your notes searchable",
+      "modelUnset": "No model selected",
+      "modelPlaceholder": "e.g. nomic-embed-text",
+      "modelHint": "It has to be a model made for this purpose (such as nomic-embed-text or mxbai-embed-large). An ordinary chat model will not work here.",
+      "save": "Apply connection",
+      "unsaved": "Not applied yet."
+    },
+    "index": {
+      "title": "Prepared notes",
+      "otherModel": "What is stored came from a different model and is not being used. Rebuild it so meaning search works again.",
+      "none": "Nothing has been prepared for this folder yet. Until then, only words are searched for.",
+      "ready": "All included files are prepared ({{ready}}).",
+      "partial": "{{ready}} prepared, {{pending}} not yet.",
+      "building": "Preparing … {{done}} of {{total}}",
+      "needsEnabled": "Switch the knowledge base on above to prepare your notes.",
+      "needsModel": "Choose a model above to prepare your notes.",
+      "prepare": "Prepare notes",
+      "update": "Update",
+      "delete": "Delete stored data"
+    },
+    "rebuild": {
+      "title": "Your knowledge base has to be rebuilt",
+      "body": "You changed the model that makes your notes searchable. What ScribeDog has stored about your notes so far cannot be used by the new model — it will be deleted and created again.",
+      "transfer": "All files in the ticked folders will be read in full once more and sent to {{service}}.",
+      "notesUnchanged": "Your notes themselves do not change.",
+      "count": "Files affected: {{files}}",
+      "confirm": "Rebuild"
     }
   },
   "versioningSettings": {
@@ -575,7 +621,9 @@
     "apiKeyRequired": "Please enter an API key in the AI settings.",
     "modelRequired": "Please specify a model in the AI settings.",
     "noUsableText": "The AI did not return any usable text.",
-    "invalidCheckResponse": "The AI response could not be read as a list of spelling/grammar issues."
+    "invalidCheckResponse": "The AI response could not be read as a list of spelling/grammar issues.",
+    "embeddingsMalformed": "The service did not return anything usable for meaning search.",
+    "embeddingsUnsupported": "{{provider}} does not offer meaning search. Choose a different service."
   },
   "store": {
     "folderLoadError": "The folder could not be loaded.",

@@ -19,6 +19,7 @@ import { useDeleteTarget } from "@/hooks/useDeleteTarget";
 import { useExportTarget } from "@/hooks/useExportTarget";
 import { useFolderWatcher } from "@/hooks/useFolderWatcher";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
+import { useRagIndexAutoUpdate } from "@/hooks/useRagIndexAutoUpdate";
 import {
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH,
@@ -41,6 +42,7 @@ import { useAppStore } from "@/store/useAppStore";
 import type { Assistant } from "@/store/useAssistantsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { useChatStore } from "@/store/useChatStore";
+import { useRagEmbeddingStore } from "@/store/useRagEmbeddingStore";
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useNavigationHistoryStore } from "@/store/useNavigationHistoryStore";
@@ -134,6 +136,7 @@ function App() {
   const chatView = useChatStore((state) => state.view);
   const setChatFolder = useChatStore((state) => state.setFolder);
   const loadRagSettings = useRagSettingsStore((state) => state.loadForFolder);
+  const loadRagEmbeddingSettings = useRagEmbeddingStore((state) => state.load);
 
   const dirtyFilePaths = useMemo(
     () =>
@@ -456,6 +459,14 @@ function App() {
     void loadAiSettings();
   }, [loadAiSettings]);
 
+  // The knowledge base's own connection is app-wide like the AI settings, and
+  // has to be in memory before the first lookup: its API key comes from the OS
+  // credential store, and a search that starts before it arrives would fall
+  // back to keyword search without saying why.
+  useEffect(() => {
+    void loadRagEmbeddingSettings();
+  }, [loadRagEmbeddingSettings]);
+
   // Custom key bindings are app-wide (shortcuts.json in the app config dir),
   // so they are loaded once at startup rather than per opened folder.
   useEffect(() => {
@@ -531,6 +542,7 @@ function App() {
 
   useStartupFolder(openFolderAtPath);
   useFolderWatcher(refreshFolderFiles);
+  useRagIndexAutoUpdate();
   useGlobalShortcuts({
     selectedFilePath,
     saveSelectedFile,

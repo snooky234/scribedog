@@ -10,7 +10,7 @@
 // tab's warning has to say so out loud.
 
 import { join } from "@tauri-apps/api/path";
-import { exists, mkdir, readTextFile, remove, writeTextFile } from "@tauri-apps/plugin-fs";
+import { exists, mkdir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 
 import { VAULT_META_DIR_NAME } from "@/lib/fileSystem";
 
@@ -315,20 +315,8 @@ export function countIncludedFiles(
   );
 }
 
-/**
- * Removes everything the knowledge base has stored for this vault. Separate
- * from the Rust index writer so the settings tab can offer "delete what was
- * stored" without the index module having to be loaded or even built yet.
- */
-export async function deleteRagIndexFile(folderPath: string): Promise<void> {
-  try {
-    const indexPath = await join(folderPath, VAULT_META_DIR_NAME, "rag-index.json");
-
-    if (await exists(indexPath)) {
-      await remove(indexPath);
-    }
-  } catch {
-    // Nothing stored, or the vault is gone — either way there is nothing left
-    // to delete, which is the outcome the caller asked for.
-  }
-}
+// Deleting what the knowledge base stored is not here: the stored vectors are
+// written and cached by Rust (see rag_clear_index in src-tauri/src/rag.rs), and
+// removing the file behind that cache's back would leave the vectors of a
+// deleted index still answering searches until the vault is reopened.
+// src/store/useRagIndexStore.ts owns that action.

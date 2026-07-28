@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useRagEmbeddingStore } from "@/store/useRagEmbeddingStore";
 
 /**
  * The "Mehr erfahren" dialog of the knowledge base tab.
@@ -16,6 +17,13 @@ import { Button } from "@/components/ui/button";
  */
 export function RagExplainerDialog({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  // Two of the four sections answer differently depending on the search mode:
+  // keyword search runs entirely on this device and stores nothing, meaning
+  // search reads every note once and sends it away. Giving the keyword user the
+  // meaning-search answer would overstate what happens to their texts, and the
+  // other way round would understate it.
+  const isSemantic = useRagEmbeddingStore((state) => state.searchMode) === "semantic";
+  const suffix = isSemantic ? "Semantic" : "";
 
   // The settings dialog closes itself on Escape via a window listener. While
   // this one is up, Escape has to dismiss it instead — captured before the
@@ -53,7 +61,13 @@ export function RagExplainerDialog({ onClose }: { onClose: () => void }) {
         {sections.map((section) => (
           <section key={section} className="rag-explainer__section">
             <h4>{t(`ragSettings.explainer.${section}Title`)}</h4>
-            <p>{t(`ragSettings.explainer.${section}Body`)}</p>
+            <p>
+              {t(
+                section === "how" || section === "data" || section === "undo"
+                  ? `ragSettings.explainer.${section}Body${suffix}`
+                  : `ragSettings.explainer.${section}Body`
+              )}
+            </p>
           </section>
         ))}
 

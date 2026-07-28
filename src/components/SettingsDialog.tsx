@@ -41,6 +41,9 @@ import { useAppVersion } from "@/hooks/useAppVersion";
 
 export type SettingsTab = "general" | "fonts" | "ai" | "assistants" | "rag" | "versioning";
 
+/** Tabs whose settings apply through their own store, without the Save button. */
+const SELF_SAVING_TABS: SettingsTab[] = ["fonts", "assistants", "rag", "versioning"];
+
 /**
  * Document font for editor and export alike. The preview renders the actual
  * face — which is the point of the box: a font name tells the user nothing,
@@ -589,18 +592,17 @@ export function SettingsDialog({
           </div>
         )}
 
-        {/* Fonts, assistants and versioning save themselves immediately via
-            their own stores, so the AI-settings footer would only mislead on
-            those tabs. */}
+        {/* Fonts, assistants, versioning and the knowledge base save themselves
+            immediately via their own stores, so the AI-settings footer would
+            only mislead on those tabs — on the knowledge base tab it would even
+            look like the button that applies its connection. */}
         <div className="ai-dialog__actions">
           <Button type="button" variant="outline" onClick={onClose}>
-            {activeTab === "fonts" || activeTab === "assistants" || activeTab === "versioning"
-              ? t("common.close")
-              : t("common.cancel")}
+            {SELF_SAVING_TABS.includes(activeTab) ? t("common.close") : t("common.cancel")}
           </Button>
           <Button
             type="button"
-            hidden={activeTab === "fonts" || activeTab === "assistants" || activeTab === "versioning"}
+            hidden={SELF_SAVING_TABS.includes(activeTab)}
             onClick={() => {
               onSave({
                 provider,

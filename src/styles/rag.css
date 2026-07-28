@@ -82,6 +82,100 @@
   font-size: 0.82rem;
 }
 
+.rag-settings__error {
+  margin: 0;
+  color: rgba(248, 113, 113, 0.9);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+/* Search mode, connection and what has been prepared. Each is a block of its
+   own with a rule above it: they belong to one decision chain (how to search →
+   with which service → prepared how far) and would otherwise read as three
+   unrelated settings dropped below the folder tree. */
+
+.rag-settings__mode,
+.rag-settings__connection,
+.rag-settings__index {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+  border-top: 1px solid rgba(var(--overlay-rgb), 0.12);
+  padding-top: 0.9rem;
+}
+
+.rag-settings__section-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.rag-settings__mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.rag-settings__mode-option {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.rag-settings__mode-option input {
+  margin-top: 0.15rem;
+  flex: none;
+}
+
+.rag-settings__mode-option > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.rag-settings__mode-option strong {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.rag-settings__mode-hint {
+  color: rgba(var(--muted-rgb), 1);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.rag-settings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rag-settings__connection .ai-dialog__grid,
+.rag-settings__connection .rag-settings__hint {
+  width: 100%;
+}
+
+.rag-rebuild {
+  max-width: 30rem;
+  text-align: left;
+}
+
+.rag-rebuild p {
+  margin: 0 0 0.6rem;
+  color: rgba(var(--text-rgb), 0.86);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.rag-rebuild__count {
+  color: rgba(var(--muted-rgb), 1);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Folder picker */
 
 .rag-tree {

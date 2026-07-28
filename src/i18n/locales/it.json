@@ -252,7 +252,53 @@
       "dataTitle": "Cosa succede ai miei testi?",
       "dataBody": "All'IA arrivano solo i passaggi trovati per la tua domanda, non l'intera cartella. Dove finiscono dipende da ciò che hai impostato in «Impostazioni IA»: con un servizio sul tuo dispositivo (come Ollama) nulla lascia il computer. Con un fornitore su internet, i passaggi trovati vengono trasmessi lì. Niente di tutto ciò accade senza che tu attivi la base di conoscenza — e a ScribeDog stesso non viene mai inviato nulla.",
       "undoTitle": "Come lo disattivo?",
-      "undoBody": "Basta disattivare l'interruttore qui sopra. L'IA torna subito a vedere soltanto il documento che hai aperto. Puoi anche escludere singole cartelle in modo permanente togliendo la spunta: le cartelle private restano così fuori mentre il resto rimane consultabile. Le tue note non vengono mai modificate né cancellate."
+      "undoBody": "Basta disattivare l'interruttore qui sopra. L'IA torna subito a vedere soltanto il documento che hai aperto. Puoi anche escludere singole cartelle in modo permanente togliendo la spunta: le cartelle private restano così fuori mentre il resto rimane consultabile. Le tue note non vengono mai modificate né cancellate.",
+      "howBodySemantic": "ScribeDog divide le tue note in passaggi e fa calcolare per ciascuno una specie di riassunto, con cui si può cercare per significato e non solo per parole esatte (il termine tecnico è «embedding»). Questi riassunti si trovano in un file nella cartella .scribedog all'interno della tua cartella. Le parole della tua domanda vengono cercate comunque, e i due risultati vengono uniti.",
+      "dataBodySemantic": "Per la preparazione tutti i file delle cartelle selezionate vengono inviati per intero al servizio impostato per la base di conoscenza; in seguito solo i file modificati. Nel rispondere, i passaggi trovati vengono inoltre inviati all'IA. Con un servizio sul tuo dispositivo (come Ollama) nulla lascia il computer, con un fornitore su internet sì. Niente di tutto questo accade finché non attivi la base di conoscenza, e a ScribeDog non viene mai inviato nulla, nemmeno per l'addestramento.",
+      "undoBodySemantic": "Disattiva l'interruttore qui sopra: l'IA vedrà di nuovo soltanto il documento aperto. Con «Elimina i dati salvati» sparisce anche il file preparato; si trova nella cartella .scribedog all'interno della tua cartella, e chi elimina quella cartella si libera di tutto. Le tue note non vengono mai modificate né eliminate."
+    },
+    "warningCloudEmbedding": "Attenzione: {{provider}} non funziona su questo dispositivo. Durante la preparazione le tue note escono quindi dal computer.",
+    "warningSemantic": "Per la ricerca per significato le tue note vengono lette una volta per intero e inviate al servizio impostato qui sotto, non solo i passaggi che corrispondono a una domanda. Questo si ripete ogni volta che modifichi un file.",
+    "buildFailed": "Non è stato possibile preparare le note.",
+    "deleteFailed": "Non è stato possibile eliminare i dati salvati.",
+    "mode": {
+      "title": "Come si cerca",
+      "keyword": "Cercare per parole",
+      "keywordHint": "Trova i passaggi in cui compaiono davvero le parole della tua domanda. Non richiede preparazione né una connessione aggiuntiva: la ricerca avviene interamente sul tuo dispositivo.",
+      "semantic": "Cercare per significato",
+      "semanticHint": "Trova il passaggio giusto anche se lo formuli diversamente dalla tua nota. Per questo le note devono essere preparate una volta: vengono lette per intero e inviate a un servizio che imposti qui sotto. La ricerca per parole resta comunque attiva."
+    },
+    "connection": {
+      "title": "Connessione per la ricerca per significato",
+      "hint": "Questa connessione è indipendente dalle impostazioni dell'IA: puoi rendere le tue note consultabili su questo dispositivo e chattare comunque con un servizio su internet, o viceversa.",
+      "providerHint": "Anthropic non compare qui perché quel fornitore non lo offre.",
+      "model": "Modello che rende consultabili le tue note",
+      "modelUnset": "Nessun modello selezionato",
+      "modelPlaceholder": "es. nomic-embed-text",
+      "modelHint": "Deve essere un modello pensato per questo scopo (come nomic-embed-text o mxbai-embed-large). Un normale modello di chat qui non funziona.",
+      "save": "Applica connessione",
+      "unsaved": "Non ancora applicata."
+    },
+    "index": {
+      "title": "Note preparate",
+      "otherModel": "I dati salvati provengono da un altro modello e non vengono usati. Ricostruiscili perché la ricerca per significato torni a funzionare.",
+      "none": "Per questa cartella non è ancora stato preparato nulla. Fino ad allora si cerca solo per parole.",
+      "ready": "Tutti i file inclusi sono preparati ({{ready}}).",
+      "partial": "{{ready}} preparati, {{pending}} non ancora.",
+      "building": "Preparazione… {{done}} di {{total}}",
+      "needsEnabled": "Attiva la base di conoscenza qui sopra per preparare le tue note.",
+      "needsModel": "Scegli un modello qui sopra per preparare le tue note.",
+      "prepare": "Prepara le note",
+      "update": "Aggiorna",
+      "delete": "Elimina i dati salvati"
+    },
+    "rebuild": {
+      "title": "La tua base di conoscenza deve essere ricostruita",
+      "body": "Hai cambiato il modello che rende consultabili le tue note. Ciò che ScribeDog ha salvato finora non può essere usato dal nuovo modello: verrà eliminato e ricreato.",
+      "transfer": "Tutti i file nelle cartelle selezionate verranno letti di nuovo per intero e inviati a {{service}}.",
+      "notesUnchanged": "Le tue note non cambiano.",
+      "count": "File interessati: {{files}}",
+      "confirm": "Ricostruisci"
     }
   },
   "versioningSettings": {
@@ -575,7 +621,9 @@
     "apiKeyRequired": "Inserisci una chiave API nelle impostazioni IA.",
     "modelRequired": "Specifica un modello nelle impostazioni IA.",
     "noUsableText": "L'IA non ha restituito alcun testo utilizzabile.",
-    "invalidCheckResponse": "Non è stato possibile leggere la risposta dell'IA come elenco di problemi di ortografia/grammatica."
+    "invalidCheckResponse": "Non è stato possibile leggere la risposta dell'IA come elenco di problemi di ortografia/grammatica.",
+    "embeddingsMalformed": "Il servizio non ha restituito una risposta utilizzabile per la ricerca per significato.",
+    "embeddingsUnsupported": "{{provider}} non offre la ricerca per significato. Scegli un altro servizio."
   },
   "store": {
     "folderLoadError": "Impossibile caricare la cartella.",

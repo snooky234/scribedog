@@ -252,7 +252,53 @@
       "dataTitle": "Was passiert mit meinen Texten?",
       "dataBody": "An die KI gehen nur die Textstellen, die zu deiner Frage gefunden wurden — nicht dein gesamter Ordner. Wohin sie gehen, hängt davon ab, was du unter „KI-Einstellungen“ eingestellt hast: Bei einem Dienst auf deinem eigenen Gerät (etwa Ollama) verlässt nichts den Computer. Bei einem Anbieter im Internet werden die gefundenen Textstellen dorthin übertragen. Ohne dass du die Wissensbasis einschaltest, passiert nichts davon — und an ScribeDog selbst wird zu keinem Zeitpunkt etwas gesendet.",
       "undoTitle": "Wie werde ich das wieder los?",
-      "undoBody": "Schalte den Regler oben einfach aus. Die KI kann dann sofort nur noch das Dokument sehen, das du gerade geöffnet hast. Du kannst auch einzelne Ordner dauerhaft ausschließen, indem du ihren Haken entfernst — private Ordner bleiben so außen vor, während der Rest weiter durchsuchbar ist. Deine Notizen selbst werden dabei nie verändert oder gelöscht."
+      "undoBody": "Schalte den Regler oben einfach aus. Die KI kann dann sofort nur noch das Dokument sehen, das du gerade geöffnet hast. Du kannst auch einzelne Ordner dauerhaft ausschließen, indem du ihren Haken entfernst — private Ordner bleiben so außen vor, während der Rest weiter durchsuchbar ist. Deine Notizen selbst werden dabei nie verändert oder gelöscht.",
+      "howBodySemantic": "ScribeDog zerlegt deine Notizen in Abschnitte und lässt zu jedem Abschnitt eine Art Inhaltsangabe berechnen, mit der sich nach Bedeutung suchen lässt und nicht nur nach exakten Wörtern (Fachbegriff: Embeddings). Diese Inhaltsangaben liegen als Datei im Ordner .scribedog in deinem eigenen Ordner. Nach den Wörtern deiner Frage wird zusätzlich gesucht, und beide Ergebnisse werden zusammengeführt.",
+      "dataBodySemantic": "Zum Vorbereiten werden alle Dateien der markierten Ordner vollständig an den Dienst gesendet, den du für die Wissensbasis eingestellt hast; danach nur noch geänderte Dateien. Beim Beantworten gehen zusätzlich die gefundenen Textstellen an die KI. Bei einem Dienst auf deinem eigenen Gerät (etwa Ollama) verlässt dabei nichts den Computer, bei einem Anbieter im Internet schon. Ohne dass du die Wissensbasis einschaltest, passiert nichts davon — und an ScribeDog selbst wird zu keinem Zeitpunkt etwas gesendet, auch nicht zum Trainieren.",
+      "undoBodySemantic": "Schalte den Regler oben aus, dann sieht die KI sofort nur noch das geöffnete Dokument. Mit „Gespeichertes löschen“ verschwindet auch die vorbereitete Datei; sie liegt im Ordner .scribedog in deinem eigenen Ordner, und wer diesen Ordner löscht, ist alles davon los. Deine Notizen selbst werden dabei nie verändert oder gelöscht."
+    },
+    "warningCloudEmbedding": "Achtung: {{provider}} läuft nicht auf diesem Gerät. Beim Vorbereiten verlassen deine Notizen damit deinen Computer.",
+    "warningSemantic": "Für die Suche nach Bedeutung werden deine Notizen einmal vollständig gelesen und an den unten eingestellten Dienst gesendet — nicht nur die Stellen, die zu einer Frage passen. Das wiederholt sich, sobald du eine Datei änderst.",
+    "buildFailed": "Die Notizen konnten nicht vorbereitet werden.",
+    "deleteFailed": "Das Gespeicherte konnte nicht gelöscht werden.",
+    "mode": {
+      "title": "Wie gesucht wird",
+      "keyword": "Nach Wörtern suchen",
+      "keywordHint": "Findet Stellen, an denen die Wörter aus deiner Frage wirklich vorkommen. Das braucht keine Vorbereitung und keine zusätzliche Verbindung — die Suche läuft vollständig auf deinem Gerät.",
+      "semantic": "Nach Bedeutung suchen",
+      "semanticHint": "Findet passende Stellen auch dann, wenn du sie anders formulierst als deine Notiz. Dafür müssen deine Notizen einmal vorbereitet werden: Sie werden dabei vollständig gelesen und an einen Dienst gesendet, den du unten einstellst. Nach Wörtern wird weiterhin zusätzlich gesucht."
+    },
+    "connection": {
+      "title": "Verbindung für die Bedeutungssuche",
+      "hint": "Diese Verbindung ist unabhängig von deinen KI-Einstellungen: Du kannst deine Notizen auf diesem Gerät durchsuchbar machen und trotzdem mit einem Dienst im Internet chatten — oder umgekehrt.",
+      "providerHint": "Anthropic fehlt hier, weil dieser Anbieter so etwas nicht anbietet.",
+      "model": "Modell, das deine Notizen durchsuchbar macht",
+      "modelUnset": "Kein Modell ausgewählt",
+      "modelPlaceholder": "z. B. nomic-embed-text",
+      "modelHint": "Es muss ein Modell sein, das dafür gemacht ist (etwa nomic-embed-text oder mxbai-embed-large). Ein normales Chat-Modell funktioniert hier nicht.",
+      "save": "Verbindung übernehmen",
+      "unsaved": "Noch nicht übernommen."
+    },
+    "index": {
+      "title": "Vorbereitete Notizen",
+      "otherModel": "Das Gespeicherte stammt von einem anderen Modell und wird nicht verwendet. Baue es neu auf, damit die Suche nach Bedeutung wieder greift.",
+      "none": "Für diesen Ordner ist noch nichts vorbereitet. Bis dahin wird nur nach Wörtern gesucht.",
+      "ready": "Alle einbezogenen Dateien sind vorbereitet ({{ready}}).",
+      "partial": "{{ready}} vorbereitet, {{pending}} noch nicht.",
+      "building": "Wird vorbereitet … {{done}} von {{total}}",
+      "needsEnabled": "Schalte die Wissensbasis oben ein, um deine Notizen vorzubereiten.",
+      "needsModel": "Wähle oben ein Modell aus, um deine Notizen vorzubereiten.",
+      "prepare": "Notizen vorbereiten",
+      "update": "Aktualisieren",
+      "delete": "Gespeichertes löschen"
+    },
+    "rebuild": {
+      "title": "Deine Wissensbasis muss neu aufgebaut werden",
+      "body": "Du hast das Modell gewechselt, das deine Notizen durchsuchbar macht. Was ScribeDog bisher über deine Notizen gespeichert hat, kann das neue Modell nicht verwenden — es wird gelöscht und neu erstellt.",
+      "transfer": "Dabei werden alle Dateien in den markierten Ordnern noch einmal vollständig gelesen und an {{service}} gesendet.",
+      "notesUnchanged": "Deine Notizen selbst ändern sich dabei nicht.",
+      "count": "Betroffene Dateien: {{files}}",
+      "confirm": "Neu aufbauen"
     }
   },
   "versioningSettings": {
@@ -575,7 +621,9 @@
     "apiKeyRequired": "Bitte einen API-Key in den KI-Einstellungen angeben.",
     "modelRequired": "Bitte ein Modell in den KI-Einstellungen angeben.",
     "noUsableText": "Die KI hat keinen verwertbaren Text geliefert.",
-    "invalidCheckResponse": "Die KI-Antwort konnte nicht als Liste von Rechtschreib-/Grammatikproblemen gelesen werden."
+    "invalidCheckResponse": "Die KI-Antwort konnte nicht als Liste von Rechtschreib-/Grammatikproblemen gelesen werden.",
+    "embeddingsMalformed": "Der Dienst hat keine verwertbare Antwort für die Bedeutungssuche geliefert.",
+    "embeddingsUnsupported": "{{provider}} bietet keine Bedeutungssuche an. Wähle einen anderen Dienst."
   },
   "store": {
     "folderLoadError": "Der Ordner konnte nicht geladen werden.",

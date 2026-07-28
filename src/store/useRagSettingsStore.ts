@@ -2,7 +2,6 @@ import { create } from "zustand";
 
 import {
   DEFAULT_RAG_CONFIG,
-  deleteRagIndexFile,
   pruneSelection,
   readRagConfig,
   setFolderIncluded,
@@ -18,9 +17,10 @@ import {
  * vault's .scribedog/rag.json and is reloaded whenever a folder is opened.
  * Loading a second vault must never carry the first one's consent over.
  *
- * The connection fields for the embedding model are deliberately absent — that
- * is stage 2 of DOCS/wissensbasis-plan.md. Stage 1 searches by keyword and
- * therefore has nothing to send anywhere.
+ * The connection to the embedding service is deliberately *not* here: which
+ * service turns text into vectors is a machine-level setup that the user does
+ * once, not a property of these notes (see useRagEmbeddingStore), and what has
+ * been prepared for this vault lives in useRagIndexStore.
  */
 type RagSettingsState = {
   config: RagConfig;
@@ -34,8 +34,6 @@ type RagSettingsState = {
   toggleFolder: (folderPath: string, included: boolean) => void;
   /** Drops overrides for folders that no longer exist in the vault. */
   pruneToExistingFolders: (folderPaths: readonly string[]) => void;
-  /** Forgets everything stored for this vault, leaving the notes untouched. */
-  deleteStoredData: () => Promise<void>;
 };
 
 export const useRagSettingsStore = create<RagSettingsState>((set, get) => {
@@ -115,14 +113,6 @@ export const useRagSettingsStore = create<RagSettingsState>((set, get) => {
       const config = { enabled: current.enabled, ...selection };
       set({ config });
       persist(config);
-    },
-
-    deleteStoredData: async () => {
-      const { loadedFolderPath } = get();
-
-      if (loadedFolderPath) {
-        await deleteRagIndexFile(loadedFolderPath);
-      }
     }
   };
 });

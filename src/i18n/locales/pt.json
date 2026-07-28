@@ -252,7 +252,53 @@
       "dataTitle": "O que acontece aos meus textos?",
       "dataBody": "Para a IA vão apenas os excertos encontrados para a sua pergunta, não a sua pasta inteira. O destino depende do que configurou em «Definições de IA»: com um serviço no seu próprio dispositivo (como o Ollama), nada sai do computador. Com um fornecedor na internet, os excertos encontrados são transmitidos para lá. Nada disto acontece sem que ative a base de conhecimento — e ao próprio ScribeDog nunca é enviado o que quer que seja.",
       "undoTitle": "Como reverto isto?",
-      "undoBody": "Basta desligar o interruptor acima. A IA passa imediatamente a ver apenas o documento que tem aberto. Também pode excluir pastas individuais de forma permanente retirando o visto — assim as pastas privadas ficam de fora enquanto o resto continua pesquisável. As suas notas nunca são alteradas nem eliminadas por isto."
+      "undoBody": "Basta desligar o interruptor acima. A IA passa imediatamente a ver apenas o documento que tem aberto. Também pode excluir pastas individuais de forma permanente retirando o visto — assim as pastas privadas ficam de fora enquanto o resto continua pesquisável. As suas notas nunca são alteradas nem eliminadas por isto.",
+      "howBodySemantic": "O ScribeDog divide as tuas notas em passagens e manda calcular para cada uma uma espécie de resumo, com o qual é possível pesquisar por significado e não apenas por palavras exatas (o termo técnico é «embeddings»). Esses resumos ficam num ficheiro na pasta .scribedog dentro da tua própria pasta. As palavras da tua pergunta continuam a ser pesquisadas, e os dois resultados são combinados.",
+      "dataBodySemantic": "Para a preparação, todos os ficheiros das pastas marcadas são enviados na íntegra para o serviço que configuraste para a base de conhecimento; depois, apenas os ficheiros alterados. Ao responder, as passagens encontradas são ainda enviadas para a IA. Com um serviço no teu próprio dispositivo (como o Ollama), nada sai do computador; com um fornecedor na internet, sai. Nada disto acontece enquanto não ligares a base de conhecimento — e ao próprio ScribeDog nunca é enviado nada, também não para treino.",
+      "undoBodySemantic": "Desliga o interruptor acima e a IA volta a ver apenas o documento aberto. Com «Eliminar dados guardados» desaparece também o ficheiro preparado; está na pasta .scribedog dentro da tua própria pasta, e quem apagar essa pasta fica livre de tudo. As tuas notas em si nunca são alteradas nem eliminadas."
+    },
+    "warningCloudEmbedding": "Atenção: {{provider}} não é executado neste dispositivo. Ao preparar, as tuas notas saem do computador.",
+    "warningSemantic": "Para a pesquisa por significado, as tuas notas são lidas uma vez na íntegra e enviadas para o serviço configurado abaixo — não apenas as passagens que correspondem a uma pergunta. Isto repete-se sempre que alteras um ficheiro.",
+    "buildFailed": "Não foi possível preparar as notas.",
+    "deleteFailed": "Não foi possível eliminar os dados guardados.",
+    "mode": {
+      "title": "Como se pesquisa",
+      "keyword": "Pesquisar por palavras",
+      "keywordHint": "Encontra passagens onde as palavras da tua pergunta ocorrem mesmo. Não precisa de preparação nem de uma ligação adicional — a pesquisa corre inteiramente no teu dispositivo.",
+      "semantic": "Pesquisar por significado",
+      "semanticHint": "Encontra a passagem certa mesmo quando a formulas de outra forma que a tua nota. Para isso, as notas têm de ser preparadas uma vez: são lidas na íntegra e enviadas para um serviço que configuras abaixo. A pesquisa por palavras continua a ser feita em paralelo."
+    },
+    "connection": {
+      "title": "Ligação para a pesquisa por significado",
+      "hint": "Esta ligação é independente das definições de IA: podes tornar as tuas notas pesquisáveis neste dispositivo e mesmo assim conversar com um serviço na internet — ou o contrário.",
+      "providerHint": "A Anthropic não aparece aqui porque esse fornecedor não oferece isto.",
+      "model": "Modelo que torna as tuas notas pesquisáveis",
+      "modelUnset": "Nenhum modelo selecionado",
+      "modelPlaceholder": "p. ex. nomic-embed-text",
+      "modelHint": "Tem de ser um modelo feito para isto (como nomic-embed-text ou mxbai-embed-large). Um modelo de conversa normal não funciona aqui.",
+      "save": "Aplicar ligação",
+      "unsaved": "Ainda não aplicada."
+    },
+    "index": {
+      "title": "Notas preparadas",
+      "otherModel": "O que está guardado veio de outro modelo e não está a ser usado. Reconstrói-o para que a pesquisa por significado volte a funcionar.",
+      "none": "Ainda não foi preparado nada para esta pasta. Até lá, apenas se pesquisa por palavras.",
+      "ready": "Todos os ficheiros incluídos estão preparados ({{ready}}).",
+      "partial": "{{ready}} preparados, {{pending}} ainda não.",
+      "building": "A preparar… {{done}} de {{total}}",
+      "needsEnabled": "Ativa a base de conhecimento acima para preparar as tuas notas.",
+      "needsModel": "Escolhe um modelo acima para preparar as tuas notas.",
+      "prepare": "Preparar notas",
+      "update": "Atualizar",
+      "delete": "Eliminar dados guardados"
+    },
+    "rebuild": {
+      "title": "A tua base de conhecimento tem de ser reconstruída",
+      "body": "Mudaste o modelo que torna as tuas notas pesquisáveis. O que o ScribeDog guardou até agora não pode ser usado pelo novo modelo — será eliminado e criado de novo.",
+      "transfer": "Todos os ficheiros nas pastas marcadas serão lidos outra vez na íntegra e enviados para {{service}}.",
+      "notesUnchanged": "As tuas notas em si não mudam.",
+      "count": "Ficheiros afetados: {{files}}",
+      "confirm": "Reconstruir"
     }
   },
   "versioningSettings": {
@@ -575,7 +621,9 @@
     "apiKeyRequired": "Informe uma chave de API nas configurações de IA.",
     "modelRequired": "Especifique um modelo nas configurações de IA.",
     "noUsableText": "A IA não retornou nenhum texto utilizável.",
-    "invalidCheckResponse": "Não foi possível ler a resposta da IA como uma lista de problemas ortográficos/gramaticais."
+    "invalidCheckResponse": "Não foi possível ler a resposta da IA como uma lista de problemas ortográficos/gramaticais.",
+    "embeddingsMalformed": "O serviço não devolveu uma resposta utilizável para a pesquisa por significado.",
+    "embeddingsUnsupported": "{{provider}} não oferece pesquisa por significado. Escolhe outro serviço."
   },
   "store": {
     "folderLoadError": "Não foi possível carregar a pasta.",
