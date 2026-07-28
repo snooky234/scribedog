@@ -139,6 +139,21 @@ export function resolveFileLinkTarget(
   return vaultFilePaths.find((filePath) => toPathKey(filePath) === targetKey) ?? null;
 }
 
+/**
+ * `resolveFileLinkTarget` for an href that does not sit inside a note: a chat
+ * answer names notes relative to the vault root, so there is no linking file
+ * to resolve against.
+ */
+export function resolveVaultRelativeFileLink(
+  href: string,
+  folderPath: string,
+  vaultFilePaths: string[]
+): string | null {
+  // The trailing separator stands in for the linking file whose folder
+  // resolveFileLinkTarget strips off — here that folder is the vault root.
+  return resolveFileLinkTarget(href, `${toPosixPath(folderPath)}/`, vaultFilePaths);
+}
+
 /** Reads the dragged vault notes back out of a drop event's data transfer. */
 export function getDraggedVaultFilePaths(dataTransfer: DataTransfer | null): string[] {
   const payload = dataTransfer?.getData(FILE_LINK_DRAG_MIME);

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { join } from "@tauri-apps/api/path";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
@@ -37,7 +38,12 @@ import {
   type AttachedChatFile
 } from "@/lib/chat/attachedFiles";
 import { renderChatMarkdown } from "@/lib/chat/renderMarkdown";
-import { FILE_LINK_DRAG_MIME, getDraggedVaultFilePaths } from "@/lib/editor/fileLinks";
+import {
+  FILE_LINK_DRAG_MIME,
+  getDraggedVaultFilePaths,
+  isFileLinkHref,
+  resolveVaultRelativeFileLink
+} from "@/lib/editor/fileLinks";
 import { isKnowledgeBaseReady } from "@/lib/ragSearch";
 import { formatBinding } from "@/lib/shortcuts/binding";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
@@ -197,6 +203,44 @@ function AssistantMessage({
   onApplyToDocument: (markdown: string) => void;
 }) {
   const { t } = useTranslation();
+  const folderPath = useAppStore((state) => state.folderPath);
+  const vaultFilePaths = useAppStore((state) => state.filePaths);
+  const selectFilePath = useAppStore((state) => state.selectFilePath);
+
+  // Every link in an answer is model-generated text, so a click must never be
+  // left to the webview: following it there would replace the whole app with
+  // that page. A note named in the answer opens in the editor, an http(s) or
+  // mailto link goes to the system browser, anything else is dropped.
+  const handleAnswerClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null;
+    const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+
+    if (!anchor) {
+      return;
+    }
+
+    event.preventDefault();
+
+    // The raw attribute, not the DOM property: that one would already have
+    // resolved a relative note path against the app's own base URL.
+    const rawHref = anchor.getAttribute("href") ?? "";
+
+    if (isFileLinkHref(rawHref)) {
+      const targetFilePath = folderPath
+        ? resolveVaultRelativeFileLink(rawHref, folderPath, vaultFilePaths)
+        : null;
+
+      if (targetFilePath) {
+        void selectFilePath(targetFilePath);
+      }
+
+      return;
+    }
+
+    if (/^(?:https?|mailto):/i.test(rawHref)) {
+      void openUrl(rawHref);
+    }
+  };
 
   // A turn that only carries tool calls has nothing to show: each call already
   // gets one status line from its tool-result message below, which is the only
@@ -210,6 +254,7 @@ function AssistantMessage({
     <div className="chat-message chat-message--assistant">
       <div
         className="chat-message__bubble chat-message__bubble--markdown"
+        onClick={handleAnswerClick}
         dangerouslySetInnerHTML={{ __html: renderChatMarkdown(message.content) }}
       />
 
