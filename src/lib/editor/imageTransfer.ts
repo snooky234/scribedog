@@ -9,6 +9,15 @@ export function getImageFilesFromDataTransfer(dataTransfer: DataTransfer | null)
   return Array.from(dataTransfer.files).filter((file) => file.type.startsWith("image/"));
 }
 
+/** Files a drop offered that are not images — documents belong in the vault. */
+export function getNonImageFilesFromDataTransfer(dataTransfer: DataTransfer | null): File[] {
+  if (!dataTransfer) {
+    return [];
+  }
+
+  return Array.from(dataTransfer.files).filter((file) => !file.type.startsWith("image/"));
+}
+
 export function getImageFilesFromClipboard(clipboardData: DataTransfer | null): File[] {
   if (!clipboardData) {
     return [];

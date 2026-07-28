@@ -114,7 +114,11 @@
     "errorConvert": "Konvertierung fehlgeschlagen: {{message}}",
     "errorWrite": "Datei konnte nicht geschrieben werden: {{message}}",
     "errorOcrNoModel": "Kein KI-Modell konfiguriert. Bitte in den KI-Einstellungen ein Modell mit Bildunterstützung laden, um Bilder zu importieren.",
-    "errorOcrProvider": "Bild konnte nicht transkribiert werden — das konfigurierte Modell unterstützt möglicherweise keine Bilder. ({{message}})"
+    "errorOcrProvider": "Bild konnte nicht transkribiert werden — das konfigurierte Modell unterstützt möglicherweise keine Bilder. ({{message}})",
+    "nothingSupported": "Keine unterstützten Dateien dabei.",
+    "limitReached": "Es werden höchstens {{max}} Dateien pro Vorgang importiert.",
+    "skippedFiles": "{{files}} nicht unterstützte Dateien übersprungen.",
+    "errorTooLarge": "Die Datei ist zu groß."
   },
   "linkDialog": {
     "eyebrow": "Link",
@@ -402,7 +406,8 @@
     "shortcutsTitle": "Tastenkürzel (Strg+#)",
     "searchingFolder": "Ordner wird durchsucht …",
     "openFolderPrompt": "Öffne einen Ordner, um alle darin enthaltenen Markdown-Dateien zu sehen.",
-    "noMarkdownFiles": "Keine Markdown-Dateien gefunden. Öffne einen Ordner mit `.md` Dateien."
+    "noMarkdownFiles": "Keine Markdown-Dateien gefunden. Öffne einen Ordner mit `.md` Dateien.",
+    "dropImportHint": "Dateien oder Ordner ablegen – sie werden als Notizen importiert"
   },
   "fileTree": {
     "treeLabel": "Dateibaum",
@@ -589,7 +594,8 @@
     "aiTipConnection": "Tipp: Prüfe, ob Ollama oder Jan.ai läuft und die API-URL erreichbar ist.",
     "aiTipGeneric": "Tipp: Prüfe die KI-Einstellungen und versuche es erneut.",
     "aiThinking": "Denkt nach …",
-    "aiGenerating": "KI schreibt …"
+    "aiGenerating": "KI schreibt …",
+    "dropDocumentHint": "Dokumente werden nicht in den Text eingefügt – zieh sie in die Dateiliste, um sie als Notiz zu importieren."
   },
   "aiDiffWidget": {
     "resultLabel": "KI-Ergebnis",
@@ -710,7 +716,7 @@
     "attachmentsLabel": "Angehängte Dateien",
     "attachmentDetach": "{{name}} entfernen",
     "attachmentTruncated": "Die Datei ist lang – es wird nur ihr Anfang mitgesendet.",
-    "attachmentRejected": "Nicht lesbar: {{files}}. Anhängen lassen sich nur Textdateien (z. B. .md, .txt, .csv).",
+    "attachmentRejected": "Nicht lesbar: {{files}}. Anhängen lassen sich Text-, PDF- und Word-Dateien.",
     "attachmentLimit": "Höchstens {{max}} Dateien pro Chat.",
     "dropFilesHint": "Dateien ablegen – sie werden zur vorrangigen Wissensbasis dieses Chats",
     "emptyAttachHint": "Tipp: Dateien hierher ziehen – der Chat antwortet dann vorrangig aus ihnen.",
@@ -720,6 +726,7 @@
     "toolResizedImage": "Bildgröße geändert",
     "toolProposedSelection": "Änderung für die Auswahl vorgeschlagen",
     "toolProposedInsert": "Einfügung vorgeschlagen",
+    "proposedFromReply": "Text im Dokument vorgeschlagen",
     "toolProposedPassage": "Änderung im Text vorgeschlagen",
     "toolAcceptedProposals": "Vorschläge übernommen",
     "toolDiscardedProposals": "Vorschläge verworfen",
@@ -728,6 +735,15 @@
     "toolReadNoteFailed": "Notiz konnte nicht gelesen werden",
     "sourcesLabel": "Quellen",
     "agentWorking": "Der Agent arbeitet …",
+    "activityThinking": "Denkt nach …",
+    "activityGathering": "Sammelt Informationen …",
+    "activityPondering": "Nimmt Witterung auf …",
+    "activityComposing": "Formuliert die Antwort …",
+    "activityReadingDocument": "Liest das Dokument …",
+    "activityViewingImage": "Sieht sich das Bild an …",
+    "activitySearchingVault": "Stöbert in deinen Notizen …",
+    "activityReadingNote": "Liest eine Notiz …",
+    "activityEditing": "Bereitet die Änderung vor …",
     "otherSessionBusy": "Ein anderer Chat wird gerade beantwortet.",
     "agentStopped": "Nach mehreren Schritten ohne abschließende Antwort gestoppt.",
     "toolReadImageFailed": "Bild konnte nicht gelesen werden",
@@ -736,7 +752,10 @@
     "toolProposeInsertFailed": "Vorschlag zum Einfügen fehlgeschlagen",
     "toolProposePassageFailed": "Textstelle nicht gefunden",
     "toolSettleProposalsFailed": "Keine offenen Vorschläge",
-    "toolActionFailed": "Aktion fehlgeschlagen"
+    "toolActionFailed": "Aktion fehlgeschlagen",
+    "attachmentFolder": "Ordner lassen sich nicht anhängen – zieh sie in die Dateiliste, um sie zu importieren.",
+    "attachmentOcrNoModel": "Für Bilder wird ein KI-Modell mit Bildunterstützung benötigt – bitte in den KI-Einstellungen konfigurieren.",
+    "attachmentReading": "Dateien werden gelesen …"
   },
   "manuscript": {
     "chapterLabelTemplate": "Kapitel {number}",

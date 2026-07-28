@@ -32,9 +32,15 @@ import {
 } from "@/components/ui/menu";
 import { FileTree, type BatchEntry, type PendingFolderRename } from "@/components/FileTree";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  carriesExternalFiles,
+  readDropPayload,
+  type DropPayload
+} from "@/lib/dragDrop/droppedSources";
 import { formatFolderLabel } from "@/lib/fileSystem";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import type { MoveTreeEntryInput } from "@/store/useAppStore";
+import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportDropStore";
 
 type SidebarProps = {
   folderPath: string | null;
@@ -73,6 +79,9 @@ type SidebarProps = {
   sidebarFocusRequestId: number;
   onFileTreeSelectionChange: (entries: BatchEntry[]) => void;
   fileTreeSelectionCount: number;
+  // Files dragged in from outside the app, with the vault-relative folder they
+  // were dropped on ("" is the vault root).
+  onFilesDropped: (payload: DropPayload, targetDirectory: string) => void;
 };
 
 export function Sidebar({
@@ -111,11 +120,62 @@ export function Sidebar({
   onRequestEditorFocus,
   sidebarFocusRequestId,
   onFileTreeSelectionChange,
-  fileTreeSelectionCount
+  fileTreeSelectionCount,
+  onFilesDropped
 }: SidebarProps) {
   const { t } = useTranslation();
   const folderLabel = formatFolderLabel(folderPath);
   const [rootContextMenu, setRootContextMenu] = useState<{ x: number; y: number } | null>(null);
+  // Files dragged in from outside the app land as imported notes. Drags that
+  // start inside the tree (reordering, or dragging a note into the editor) are
+  // none of this handler's business and are left to bubble untouched.
+  const importTargetDirectory = useImportDropStore((state) => state.targetDirectory);
+  const setImportTargetDirectory = useImportDropStore((state) => state.setTargetDirectory);
+  const isDropTarget = importTargetDirectory !== null;
+
+  const handleFileDragOver = (event: React.DragEvent<HTMLElement>) => {
+    if (folderPath === null || !carriesExternalFiles(event.dataTransfer)) {
+      return;
+    }
+
+    // Without this the webview handles the drop itself and navigates away from
+    // the app to the dropped file.
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+
+    // The row under the pointer decides the target folder; a file row hands the
+    // drop to the folder it lives in, and bare panel space to the vault root.
+    const target = event.target instanceof Element ? event.target : null;
+    const directory =
+      target?.closest(`[${DROP_DIRECTORY_ATTRIBUTE}]`)?.getAttribute(DROP_DIRECTORY_ATTRIBUTE) ?? "";
+
+    setImportTargetDirectory(directory);
+  };
+
+  const handleFileDragLeave = (event: React.DragEvent<HTMLElement>) => {
+    // Crossing from one child of the panel into the next fires dragleave on the
+    // one being left; only a pointer that really left the panel ends the state.
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) {
+      return;
+    }
+
+    setImportTargetDirectory(null);
+  };
+
+  const handleFileDrop = (event: React.DragEvent<HTMLElement>) => {
+    if (folderPath === null || !carriesExternalFiles(event.dataTransfer)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const directory = importTargetDirectory ?? "";
+
+    setImportTargetDirectory(null);
+    // The transfer is emptied as soon as this handler returns, so what was
+    // dropped is taken out of it here and only walked afterwards.
+    onFilesDropped(readDropPayload(event.dataTransfer), directory);
+  };
 
   // Same dismissal rules as the tree's own menu (useTreeContextMenu): any
   // click, a competing right-click, a scroll or Escape closes it.
@@ -145,7 +205,20 @@ export function Sidebar({
   }, [rootContextMenu]);
 
   return (
-    <aside className="sidebar-panel" aria-label={t("sidebar.filesLabel")}>
+    <aside
+      className={`sidebar-panel${isDropTarget ? " sidebar-panel--drop-target" : ""}`}
+      aria-label={t("sidebar.filesLabel")}
+      onDragOver={handleFileDragOver}
+      onDragLeave={handleFileDragLeave}
+      onDrop={handleFileDrop}
+    >
+      {isDropTarget ? (
+        <div className="sidebar-panel__dropzone" aria-hidden="true">
+          <Import className="size-5" />
+          <span>{t("sidebar.dropImportHint")}</span>
+        </div>
+      ) : null}
+
       <div className="sidebar-panel__header">
         <div className="sidebar-panel__actions">
           <Button

@@ -123,6 +123,14 @@
   outline-offset: -2px;
 }
 
+/* The folder an OS drop would import into. Same shape as --drop-into, dashed
+   to tell the two apart: that one moves a note, this one creates new ones. */
+.file-tree__row--drop-import {
+  background: rgba(var(--surface-active-rgb), 0.96);
+  outline: 2px dashed var(--blue-fg);
+  outline-offset: -2px;
+}
+
 .file-tree__rename-input {
   min-width: 0;
   flex: 1;

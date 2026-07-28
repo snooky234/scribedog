@@ -114,7 +114,11 @@
     "errorConvert": "Conversion failed: {{message}}",
     "errorWrite": "File could not be written: {{message}}",
     "errorOcrNoModel": "No AI model is configured. Load a vision-capable model in the AI settings to import images.",
-    "errorOcrProvider": "The image could not be transcribed — the configured model may not support images. ({{message}})"
+    "errorOcrProvider": "The image could not be transcribed — the configured model may not support images. ({{message}})",
+    "nothingSupported": "No supported files in this drop.",
+    "limitReached": "At most {{max}} files are imported at once.",
+    "skippedFiles": "{{files}} unsupported files skipped.",
+    "errorTooLarge": "The file is too large."
   },
   "linkDialog": {
     "eyebrow": "Link",
@@ -402,7 +406,8 @@
     "shortcutsTitle": "Keyboard shortcuts (Ctrl+#)",
     "searchingFolder": "Searching folder …",
     "openFolderPrompt": "Open a folder to see all Markdown files it contains.",
-    "noMarkdownFiles": "No Markdown files found. Open a folder containing `.md` files."
+    "noMarkdownFiles": "No Markdown files found. Open a folder containing `.md` files.",
+    "dropImportHint": "Drop files or folders — they are imported as notes"
   },
   "fileTree": {
     "treeLabel": "File tree",
@@ -589,7 +594,8 @@
     "aiTipConnection": "Tip: Check whether Ollama or Jan.ai is running and the API URL is reachable.",
     "aiTipGeneric": "Tip: Check the AI settings and try again.",
     "aiThinking": "Thinking …",
-    "aiGenerating": "AI is writing …"
+    "aiGenerating": "AI is writing …",
+    "dropDocumentHint": "Documents are not inserted into the text — drop them on the file list to import them as a note."
   },
   "aiDiffWidget": {
     "resultLabel": "AI result",
@@ -710,7 +716,7 @@
     "attachmentsLabel": "Attached files",
     "attachmentDetach": "Remove {{name}}",
     "attachmentTruncated": "The file is long — only its beginning is sent.",
-    "attachmentRejected": "Could not read: {{files}}. Only text files (e.g. .md, .txt, .csv) can be attached.",
+    "attachmentRejected": "Could not read: {{files}}. Text, PDF and Word files can be attached.",
     "attachmentLimit": "At most {{max}} files per chat.",
     "dropFilesHint": "Drop files — they become this chat's primary knowledge base",
     "emptyAttachHint": "Tip: drag files in here — the chat then answers from them first.",
@@ -720,6 +726,7 @@
     "toolResizedImage": "Resized the image",
     "toolProposedSelection": "Change proposed for the selection",
     "toolProposedInsert": "Insertion proposed",
+    "proposedFromReply": "Text proposed in the document",
     "toolProposedPassage": "Change proposed in the text",
     "toolAcceptedProposals": "Proposals accepted",
     "toolDiscardedProposals": "Proposals discarded",
@@ -728,6 +735,15 @@
     "toolReadNoteFailed": "Note could not be read",
     "sourcesLabel": "Sources",
     "agentWorking": "The agent is working…",
+    "activityThinking": "Thinking…",
+    "activityGathering": "Gathering information…",
+    "activityPondering": "Catching a scent…",
+    "activityComposing": "Composing the answer…",
+    "activityReadingDocument": "Reading the document…",
+    "activityViewingImage": "Looking at the image…",
+    "activitySearchingVault": "Sniffing through your notes…",
+    "activityReadingNote": "Reading a note…",
+    "activityEditing": "Preparing the change…",
     "otherSessionBusy": "Another chat is being answered right now.",
     "agentStopped": "Stopped after several steps without a final answer.",
     "toolReadImageFailed": "Could not read the image",
@@ -736,7 +752,10 @@
     "toolProposeInsertFailed": "Proposing an insertion failed",
     "toolProposePassageFailed": "Passage not found",
     "toolSettleProposalsFailed": "No open proposals",
-    "toolActionFailed": "Action failed"
+    "toolActionFailed": "Action failed",
+    "attachmentFolder": "Folders cannot be attached — drop them on the file list to import them.",
+    "attachmentOcrNoModel": "Images need a vision-capable AI model — configure one in the AI settings.",
+    "attachmentReading": "Reading files…"
   },
   "manuscript": {
     "chapterLabelTemplate": "Chapter {number}",

@@ -3,19 +3,28 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle2, CircleAlert, CircleSlash, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { MAX_DROPPED_FILES } from "@/lib/dragDrop/droppedSources";
 import {
   importFiles,
   type ImportItemResult,
-  type ImportProgress
+  type ImportProgress,
+  type ImportSource
 } from "@/lib/import/importer";
 
 type ImportDialogProps = {
-  // The selected source files; null keeps the dialog closed.
-  files: string[] | null;
+  // The selected source files; null keeps the dialog closed. An empty list
+  // still opens it — that is a drop that contained nothing importable, which
+  // needs saying rather than looking like the drop was never registered.
+  files: ImportSource[] | null;
   vaultRoot: string | null;
   // Folder the new notes are written into; falls back to vaultRoot when null
   // (no specific folder selected in the tree).
   targetFolder: string | null;
+  // Files a dropped folder contained that no converter handles, and whether
+  // MAX_DROPPED_FILES cut the batch short. Both are zero/false for a pick made
+  // through the file dialog, which cannot select unsupported files.
+  skippedCount?: number;
+  limitReached?: boolean;
   onImported: (createdFilePaths: string[]) => void;
   onClose: () => void;
 };
@@ -40,7 +49,15 @@ function statusIcon(item: ImportItemResult) {
   return <span className="import-dialog__icon" aria-hidden="true" />;
 }
 
-export function ImportDialog({ files, vaultRoot, targetFolder, onImported, onClose }: ImportDialogProps) {
+export function ImportDialog({
+  files,
+  vaultRoot,
+  targetFolder,
+  skippedCount = 0,
+  limitReached = false,
+  onImported,
+  onClose
+}: ImportDialogProps) {
   const { t } = useTranslation();
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -48,7 +65,7 @@ export function ImportDialog({ files, vaultRoot, targetFolder, onImported, onClo
   const runIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const isOpen = files !== null && files.length > 0;
+  const isOpen = files !== null;
 
   useEffect(() => {
     if (!files || files.length === 0 || !vaultRoot) {
@@ -147,7 +164,9 @@ export function ImportDialog({ files, vaultRoot, targetFolder, onImported, onClo
         <h3 id="import-dialog-title">{t("importDialog.title")}</h3>
 
         <p className="unsaved-dialog__description" role="status">
-          {isRunning && wasCancelled
+          {items.length === 0 && !isRunning
+            ? t("importDialog.nothingSupported")
+            : isRunning && wasCancelled
             ? t("importDialog.cancelling")
             : isRunning && progress
               ? t("importDialog.progress", {
@@ -161,12 +180,20 @@ export function ImportDialog({ files, vaultRoot, targetFolder, onImported, onClo
                   : t("importDialog.doneSummary", { doneCount, errorCount })}
         </p>
 
+        {limitReached || skippedCount > 0 ? (
+          <p className="import-dialog__notice">
+            {limitReached ? t("importDialog.limitReached", { max: MAX_DROPPED_FILES }) : null}
+            {limitReached && skippedCount > 0 ? " " : null}
+            {skippedCount > 0 ? t("importDialog.skippedFiles", { files: skippedCount }) : null}
+          </p>
+        ) : null}
+
         <ul className="import-dialog__list">
           {items.map((item) => (
-            <li key={item.sourcePath} className="import-dialog__item">
+            <li key={item.id} className="import-dialog__item">
               {statusIcon(item)}
-              <span className="import-dialog__name" title={item.sourcePath}>
-                {item.sourceName}
+              <span className="import-dialog__name" title={item.label}>
+                {item.label}
               </span>
               {item.status === "error" && item.errorKey ? (
                 <span className="import-dialog__error" role="alert">

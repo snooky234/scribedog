@@ -1,5 +1,3 @@
-import { readFile } from "@tauri-apps/plugin-fs";
-
 import {
   getRelativeImageMarkdownPath,
   saveImageToFolder
@@ -30,20 +28,30 @@ function base64ToBytes(base64: string): Uint8Array {
  * Converts a DOCX file to markdown. Embedded images are written into the
  * vault's root-level "images/" folder and referenced relative to the target
  * markdown file, matching how pasted editor images behave.
+ *
+ * Called without the vault arguments the images are dropped instead — that is
+ * the chat's mode, where nothing may be written to disk and an image would only
+ * cost context. Note that leaving mammoth's `convertImage` at its default is
+ * not an option there: it inlines every image as a base64 data URI.
  */
 export async function convertDocxToMarkdown(
-  sourcePath: string,
-  vaultRoot: string,
-  targetFilePath: string,
-  imageBaseName: string
+  fileBytes: Uint8Array,
+  vaultRoot?: string,
+  targetFilePath?: string,
+  imageBaseName?: string
 ): Promise<string> {
   const mammoth = await import("mammoth/mammoth.browser");
-  const fileBytes = await readFile(sourcePath);
+  const embedImages =
+    vaultRoot !== undefined && targetFilePath !== undefined && imageBaseName !== undefined;
 
   const result = await mammoth.convertToHtml(
     { arrayBuffer: fileBytes.buffer as ArrayBuffer },
     {
       convertImage: mammoth.images.imgElement(async (image) => {
+        if (!embedImages) {
+          return { src: "" };
+        }
+
         const base64 = await image.read("base64");
         const mimeType = image.contentType || "image/png";
         const extension = EXTENSION_BY_MIME[mimeType] ?? "png";
@@ -61,5 +69,7 @@ export async function convertDocxToMarkdown(
     }
   );
 
-  return convertHtmlToMarkdown(result.value);
+  const html = embedImages ? result.value : result.value.replace(/<img[^>]*>/gi, "");
+
+  return convertHtmlToMarkdown(html);
 }

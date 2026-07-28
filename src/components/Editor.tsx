@@ -42,7 +42,11 @@ import {
 } from "@/lib/editor/fileLinks";
 import { extractErrorMessage } from "@/lib/editor/errorMessages";
 import { hasAnchorableContent, resolveInsertAnchor } from "@/lib/editor/insertAnchor";
-import { getImageFilesFromClipboard, getImageFilesFromDataTransfer } from "@/lib/editor/imageTransfer";
+import {
+  getImageFilesFromClipboard,
+  getImageFilesFromDataTransfer,
+  getNonImageFilesFromDataTransfer
+} from "@/lib/editor/imageTransfer";
 import { moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { getEditorMarkdown, getSelectionMarkdown } from "@/lib/editor/markdownStorage";
@@ -63,6 +67,10 @@ import { useChatStore } from "@/store/useChatStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
 import { useShortcutsStore } from "@/store/useShortcutsStore";
+
+// What the editor embeds as an image — the toolbar's file filter and the drop
+// handler share this list, so both accept exactly the same files.
+const EDITOR_IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"];
 
 type EditorProps = {
   markdown: string;
@@ -357,6 +365,16 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     await insertImagePayloads(payloads, insertPos);
   };
 
+  const readImagePayload = async (path: string): Promise<ImagePayload> => {
+    await allowFileAccess(path);
+
+    return {
+      fileName: path.replace(/\\/g, "/").split("/").pop() ?? "image",
+      mimeType: guessImageMimeType(path),
+      data: await readFile(path)
+    };
+  };
+
   // Toolbar image button: pick one or more image files via the native file
   // dialog, opened at the currently open vault (falling back to the last
   // opened folder), then insert them like a paste/drop.
@@ -386,7 +404,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         filters: [
           {
             name: t("editor.imageDialogFilter"),
-            extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"]
+            extensions: EDITOR_IMAGE_EXTENSIONS
           }
         ]
       });
@@ -408,11 +426,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
     for (const path of paths) {
       try {
-        await allowFileAccess(path);
-        const data = await readFile(path);
-        const fileName = path.replace(/\\/g, "/").split("/").pop() ?? "image";
-
-        payloads.push({ fileName, mimeType: guessImageMimeType(path), data });
+        payloads.push(await readImagePayload(path));
       } catch (error) {
         ai.setAiStatus({
           kind: "error",
@@ -800,8 +814,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return coordinates?.pos ?? view.state.selection.from;
         };
 
-        // Notes dragged out of the sidebar become links, files dragged in from
-        // the OS become images.
+        // Notes dragged out of the sidebar become links, images dragged in from
+        // outside the app are embedded.
         const draggedFilePaths = getDraggedVaultFilePaths(event.dataTransfer);
 
         if (draggedFilePaths.length > 0) {
@@ -812,13 +826,25 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
         const files = getImageFilesFromDataTransfer(event.dataTransfer);
 
+        // Documents are deliberately not converted into the open text: they
+        // belong in the vault as their own note, so the drop is refused with a
+        // pointer to the file list rather than pasting a PDF into a sentence.
+        if (getNonImageFilesFromDataTransfer(event.dataTransfer).length > 0) {
+          event.preventDefault();
+          ai.setAiStatus({ kind: "error", message: t("editor.dropDocumentHint") });
+
+          if (files.length === 0) {
+            return true;
+          }
+        }
+
         if (files.length === 0) {
           return false;
         }
 
         event.preventDefault();
-
         void insertImageFiles(files, droppedAt());
+
         return true;
       },
       handlePaste: (view, event) => {

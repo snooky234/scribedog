@@ -34,9 +34,17 @@ function resolveTheme(theme: Theme): ResolvedTheme {
   return theme === "system" ? getSystemTheme() : theme;
 }
 
+// Mirrors the colours public/theme-boot.js paints before the bundle loads —
+// keep both in sync with the --body-bg-end tokens.
+const ROOT_BACKGROUNDS: Record<ResolvedTheme, string> = {
+  light: "#f2f4f7",
+  dark: "#090a0c"
+};
+
 function applyResolvedTheme(resolvedTheme: ResolvedTheme): void {
   document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
   document.documentElement.style.colorScheme = resolvedTheme;
+  document.documentElement.style.backgroundColor = ROOT_BACKGROUNDS[resolvedTheme];
 }
 
 type ThemeState = {

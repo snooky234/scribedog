@@ -29,6 +29,7 @@ import { useStartupFolder } from "@/hooks/useStartupFolder";
 import { useTitleRename } from "@/hooks/useTitleRename";
 import { useUpdateCheck } from "@/hooks/useUpdateCheck";
 import { useWebviewZoom } from "@/hooks/useWebviewZoom";
+import { useWindowReveal } from "@/hooks/useWindowReveal";
 import { useZenMode } from "@/hooks/useZenMode";
 import { getRelativeDisplayPath } from "@/lib/fileSystem";
 import { clearVaultSearchCache } from "@/lib/ragSearch";
@@ -36,7 +37,13 @@ import { findStepIndex } from "@/lib/navigationHistory";
 import { printMarkdown } from "@/lib/print";
 import type { FileVersion } from "@/lib/fileVersions";
 import type { VersionDiffTarget } from "@/components/VersionDiffDialog";
-import { IMPORT_FILE_EXTENSIONS } from "@/lib/import/importer";
+import {
+  carriesExternalFiles,
+  collectDroppedSources,
+  type DropPayload
+} from "@/lib/dragDrop/droppedSources";
+import { sourceFromPath } from "@/lib/import/convert";
+import { IMPORT_FILE_EXTENSIONS, type ImportSource } from "@/lib/import/importer";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
 import type { Assistant } from "@/store/useAssistantsStore";
@@ -68,8 +75,11 @@ function App() {
   // distinguishable from "no edit in progress" (whole value null).
   const [assistantEditTarget, setAssistantEditTarget] = useState<{ assistant: Assistant | null } | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const [importFileList, setImportFileList] = useState<string[] | null>(null);
+  const [importFileList, setImportFileList] = useState<ImportSource[] | null>(null);
   const [importTargetFolder, setImportTargetFolder] = useState<string | null>(null);
+  // What a dropped folder contributed beyond the importable files themselves.
+  const [importSkippedCount, setImportSkippedCount] = useState(0);
+  const [importLimitReached, setImportLimitReached] = useState(false);
   const [importInsertAfterBasename, setImportInsertAfterBasename] = useState<string | null | undefined>(
     undefined
   );
@@ -174,6 +184,7 @@ function App() {
   });
 
   useWebviewZoom();
+  useWindowReveal();
 
   const { availableUpdate, dismissUpdate } = useUpdateCheck();
 
@@ -394,8 +405,34 @@ function App() {
       const { targetDirectory, insertAfterBasename } = await resolveNewEntryTarget();
       setImportTargetFolder(targetDirectory);
       setImportInsertAfterBasename(insertAfterBasename);
-      setImportFileList(selectedPaths);
+      setImportSkippedCount(0);
+      setImportLimitReached(false);
+      setImportFileList(selectedPaths.map((path) => ({ source: sourceFromPath(path) })));
     }
+  };
+
+  /**
+   * Files and folders dragged onto the file tree from outside the app. The
+   * folder they were dropped on decides where they land — dropping next to
+   * nothing in particular targets the vault root.
+   */
+  const handleFilesDropped = (payload: DropPayload, targetDirectory: string) => {
+    if (!folderPath) {
+      return;
+    }
+
+    void (async () => {
+      const collected = await collectDroppedSources(payload);
+      const segments = targetDirectory.split("/").filter(Boolean);
+
+      setImportTargetFolder(segments.length > 0 ? await join(folderPath, ...segments) : folderPath);
+      // Imported notes go to the end of their folder rather than next to a row
+      // that only happened to be under the pointer.
+      setImportInsertAfterBasename(null);
+      setImportSkippedCount(collected.skipped);
+      setImportLimitReached(collected.limitReached);
+      setImportFileList(collected.sources);
+    })();
   };
 
   const handleImported = (createdFilePaths: string[]) => {
@@ -511,6 +548,35 @@ function App() {
     return () => registerEditorToolBridge(null);
   }, []);
 
+  // Safety net for files dropped anywhere no handler claims them: without it
+  // the webview follows the drop and navigates the whole app away to the file,
+  // which looks exactly like a crash. Handlers that took the drop have called
+  // preventDefault by the time this window-level listener runs.
+  useEffect(() => {
+    const swallowDrop = (event: DragEvent) => {
+      // Only drags from outside can navigate the app away, and leaving in-app
+      // drags strictly untouched keeps this from interfering with the editor's
+      // and the file tree's own drag handling.
+      if (event.defaultPrevented || !carriesExternalFiles(event.dataTransfer)) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (event.type === "dragover" && event.dataTransfer) {
+        event.dataTransfer.dropEffect = "none";
+      }
+    };
+
+    window.addEventListener("dragover", swallowDrop);
+    window.addEventListener("drop", swallowDrop);
+
+    return () => {
+      window.removeEventListener("dragover", swallowDrop);
+      window.removeEventListener("drop", swallowDrop);
+    };
+  }, []);
+
   const handleVersionDiffRequest = (version: FileVersion) => {
     setVersionDiffTarget({ version, fileLabel: selectedFileLabel ?? "" });
   };
@@ -616,6 +682,7 @@ function App() {
             sidebarFocusRequestId={sidebarFocusRequestId}
             onFileTreeSelectionChange={setFileTreeSelection}
             fileTreeSelectionCount={fileTreeSelection.length}
+            onFilesDropped={handleFilesDropped}
           />
 
           <div
@@ -755,6 +822,8 @@ function App() {
         importFileList={importFileList}
         folderPath={folderPath}
         importTargetFolder={importTargetFolder}
+        importSkippedCount={importSkippedCount}
+        importLimitReached={importLimitReached}
         onImported={handleImported}
         onCloseImport={() => setImportFileList(null)}
         availableUpdate={availableUpdate}

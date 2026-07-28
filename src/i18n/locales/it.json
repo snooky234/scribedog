@@ -114,7 +114,11 @@
     "errorConvert": "Conversione non riuscita: {{message}}",
     "errorWrite": "Impossibile scrivere il file: {{message}}",
     "errorOcrNoModel": "Nessun modello IA configurato. Carica un modello con supporto per le immagini nelle impostazioni IA per importare immagini.",
-    "errorOcrProvider": "Impossibile trascrivere l'immagine — il modello configurato potrebbe non supportare le immagini. ({{message}})"
+    "errorOcrProvider": "Impossibile trascrivere l'immagine — il modello configurato potrebbe non supportare le immagini. ({{message}})",
+    "nothingSupported": "Nessun file supportato.",
+    "limitReached": "Vengono importati al massimo {{max}} file per volta.",
+    "skippedFiles": "{{files}} file non supportati ignorati.",
+    "errorTooLarge": "Il file è troppo grande."
   },
   "linkDialog": {
     "eyebrow": "Collegamento",
@@ -402,7 +406,8 @@
     "shortcutsTitle": "Scorciatoie da tastiera (Ctrl+#)",
     "searchingFolder": "Ricerca nella cartella …",
     "openFolderPrompt": "Apri una cartella per vedere tutti i file Markdown che contiene.",
-    "noMarkdownFiles": "Nessun file Markdown trovato. Apri una cartella contenente file `.md`."
+    "noMarkdownFiles": "Nessun file Markdown trovato. Apri una cartella contenente file `.md`.",
+    "dropImportHint": "Rilascia file o cartelle: vengono importati come note"
   },
   "fileTree": {
     "treeLabel": "Struttura dei file",
@@ -589,7 +594,8 @@
     "aiTipConnection": "Suggerimento: verifica che Ollama o Jan.ai siano in esecuzione e che l'URL API sia raggiungibile.",
     "aiTipGeneric": "Suggerimento: controlla le impostazioni IA e riprova.",
     "aiThinking": "Sto ragionando …",
-    "aiGenerating": "L'IA sta scrivendo …"
+    "aiGenerating": "L'IA sta scrivendo …",
+    "dropDocumentHint": "I documenti non vengono inseriti nel testo: rilasciali sull'elenco dei file per importarli come nota."
   },
   "aiDiffWidget": {
     "resultLabel": "Risultato dell'IA",
@@ -710,7 +716,7 @@
     "attachmentsLabel": "File allegati",
     "attachmentDetach": "Rimuovi {{name}}",
     "attachmentTruncated": "Il file è lungo: viene inviato solo il suo inizio.",
-    "attachmentRejected": "Impossibile leggere: {{files}}. Si possono allegare solo file di testo (ad es. .md, .txt, .csv).",
+    "attachmentRejected": "Impossibile leggere: {{files}}. Si possono allegare file di testo, PDF e Word.",
     "attachmentLimit": "Al massimo {{max}} file per chat.",
     "dropFilesHint": "Rilascia i file: diventano la base di conoscenza prioritaria di questa chat",
     "emptyAttachHint": "Suggerimento: trascina qui dei file, la chat risponderà prima di tutto da essi.",
@@ -720,6 +726,7 @@
     "toolResizedImage": "Immagine ridimensionata",
     "toolProposedSelection": "Modifica proposta per la selezione",
     "toolProposedInsert": "Inserimento proposto",
+    "proposedFromReply": "Testo proposto nel documento",
     "toolProposedPassage": "Modifica proposta nel testo",
     "toolAcceptedProposals": "Proposte applicate",
     "toolDiscardedProposals": "Proposte scartate",
@@ -728,6 +735,15 @@
     "toolReadNoteFailed": "Impossibile leggere la nota",
     "sourcesLabel": "Fonti",
     "agentWorking": "L'agente sta lavorando…",
+    "activityThinking": "Sta pensando…",
+    "activityGathering": "Raccoglie informazioni…",
+    "activityPondering": "Fiuta una pista…",
+    "activityComposing": "Formula la risposta…",
+    "activityReadingDocument": "Legge il documento…",
+    "activityViewingImage": "Osserva l'immagine…",
+    "activitySearchingVault": "Annusa tra le tue note…",
+    "activityReadingNote": "Legge una nota…",
+    "activityEditing": "Prepara la modifica…",
     "otherSessionBusy": "Un'altra chat sta ricevendo una risposta in questo momento.",
     "agentStopped": "Interrotto dopo diversi passaggi senza una risposta finale.",
     "toolReadImageFailed": "Impossibile leggere l'immagine",
@@ -736,7 +752,10 @@
     "toolProposeInsertFailed": "Proposta di inserimento non riuscita",
     "toolProposePassageFailed": "Passaggio non trovato",
     "toolSettleProposalsFailed": "Nessuna proposta in sospeso",
-    "toolActionFailed": "Azione non riuscita"
+    "toolActionFailed": "Azione non riuscita",
+    "attachmentFolder": "Le cartelle non possono essere allegate: rilasciale sull'elenco dei file per importarle.",
+    "attachmentOcrNoModel": "Le immagini richiedono un modello IA con supporto visivo: configuralo nelle impostazioni IA.",
+    "attachmentReading": "Lettura dei file…"
   },
   "manuscript": {
     "chapterLabelTemplate": "Capitolo {number}",

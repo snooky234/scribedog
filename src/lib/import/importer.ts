@@ -1,31 +1,48 @@
 import { join } from "@tauri-apps/api/path";
-import { exists } from "@tauri-apps/plugin-fs";
+import { exists, mkdir } from "@tauri-apps/plugin-fs";
 
-import { allowFileAccess, writeMarkdownFile } from "@/lib/fileSystem";
+import { writeMarkdownFile } from "@/lib/fileSystem";
 import { snapshotFileVersion } from "@/store/appStore/versioning";
+import {
+  CONVERTIBLE_EXTENSIONS,
+  SourceTooLargeError,
+  classifyExtension,
+  convertToMarkdown,
+  extensionOf,
+  type ConvertSource
+} from "./convert";
 
-export const IMPORT_DOCUMENT_EXTENSIONS = ["docx", "pdf"] as const;
-export const IMPORT_IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp"] as const;
-
-export const IMPORT_FILE_EXTENSIONS = [
-  ...IMPORT_DOCUMENT_EXTENSIONS,
-  "doc",
-  ...IMPORT_IMAGE_EXTENSIONS
-];
+// What the file dialog offers. The conversion itself is decided in convert.ts,
+// which is also what the drag-and-drop path filters against.
+export const IMPORT_FILE_EXTENSIONS = [...CONVERTIBLE_EXTENSIONS, "doc"];
 
 export type ImportItemStatus = "pending" | "converting" | "done" | "error" | "cancelled";
 
 export type ImportErrorKey =
   | "errorLegacyDoc"
   | "errorUnsupported"
+  | "errorTooLarge"
   | "errorConvert"
   | "errorWrite"
   | "errorOcrNoModel"
   | "errorOcrProvider";
 
+/**
+ * One file to import. `relativeDirectory` is the folder structure to recreate
+ * below the import target — set when a whole folder was dropped, so a nested
+ * PDF lands in a matching subfolder instead of being flattened into the target.
+ */
+export type ImportSource = {
+  source: ConvertSource;
+  relativeDirectory?: string;
+};
+
 export type ImportItemResult = {
-  sourcePath: string;
+  /** Stable per batch, so two files of the same name stay distinguishable. */
+  id: string;
   sourceName: string;
+  /** What the dialog shows: the name, prefixed by its folder inside a drop. */
+  label: string;
   status: ImportItemStatus;
   createdFilePath?: string;
   errorKey?: ImportErrorKey;
@@ -38,21 +55,10 @@ export type ImportProgress = {
   total: number;
 };
 
-function getFileName(path: string): string {
-  return path.replace(/\\/g, "/").replace(/\/+$/, "").split("/").pop() ?? path;
-}
-
-function splitExtension(fileName: string): { base: string; extension: string } {
+function baseNameOf(fileName: string): string {
   const lastDot = fileName.lastIndexOf(".");
 
-  if (lastDot <= 0) {
-    return { base: fileName, extension: "" };
-  }
-
-  return {
-    base: fileName.slice(0, lastDot),
-    extension: fileName.slice(lastDot + 1).toLowerCase()
-  };
+  return lastDot <= 0 ? fileName : fileName.slice(0, lastDot);
 }
 
 // Same "name", "name 2", "name 3" … pattern the store uses for new files.
@@ -78,54 +84,54 @@ function sanitizeBaseName(name: string): string {
   return sanitized || "import";
 }
 
-async function convertSourceToMarkdown(
-  extension: string,
-  sourcePath: string,
-  vaultRoot: string,
-  targetFilePath: string,
-  imageBaseName: string,
-  signal?: AbortSignal
+// Applied per segment so a dropped folder's own name cannot smuggle a "..",
+// an absolute path or a reserved character into the vault.
+async function resolveTargetDirectory(
+  targetDirectory: string,
+  relativeDirectory: string | undefined
 ): Promise<string> {
-  if (extension === "docx") {
-    const { convertDocxToMarkdown } = await import("./docxImporter");
-    return convertDocxToMarkdown(sourcePath, vaultRoot, targetFilePath, imageBaseName);
+  const segments = (relativeDirectory ?? "")
+    .replace(/\\/g, "/")
+    .split("/")
+    .filter((segment) => segment !== "" && segment !== "." && segment !== "..")
+    .map(sanitizeBaseName);
+
+  if (segments.length === 0) {
+    return targetDirectory;
   }
 
-  if (extension === "pdf") {
-    const { convertPdfToMarkdown } = await import("./pdfImporter");
-    return convertPdfToMarkdown(sourcePath, vaultRoot, targetFilePath, imageBaseName, signal);
-  }
+  const directory = await join(targetDirectory, ...segments);
 
-  const { convertImageToMarkdown } = await import("./imageImporter");
-  return convertImageToMarkdown(sourcePath, signal);
-}
+  await mkdir(directory, { recursive: true });
 
-function isImageExtension(extension: string): boolean {
-  return (IMPORT_IMAGE_EXTENSIONS as readonly string[]).includes(extension);
+  return directory;
 }
 
 function classifyError(extension: string): ImportErrorKey {
-  return isImageExtension(extension) ? "errorOcrProvider" : "errorConvert";
+  return classifyExtension(extension) === "image" ? "errorOcrProvider" : "errorConvert";
 }
 
 /**
- * Imports each selected file as one markdown file into targetDirectory
- * (defaults to the vault root when the caller has no more specific folder
- * selected). vaultRoot stays the actual vault root throughout — it is what
- * anchors the shared images/ folder and the version history, regardless of
- * which subfolder the new note lands in. Every file is handled independently:
- * a failing file is reported per item and never aborts the rest of the batch.
+ * Imports each source as one markdown file into targetDirectory (defaults to
+ * the vault root when the caller has no more specific folder selected).
+ * vaultRoot stays the actual vault root throughout — it is what anchors the
+ * shared images/ folder and the version history, regardless of which subfolder
+ * the new note lands in. Every file is handled independently: a failing file is
+ * reported per item and never aborts the rest of the batch.
  */
 export async function importFiles(
-  sourcePaths: string[],
+  sources: readonly ImportSource[],
   vaultRoot: string,
   targetDirectory: string,
   onProgress: (progress: ImportProgress) => void,
   signal?: AbortSignal
 ): Promise<ImportItemResult[]> {
-  const items: ImportItemResult[] = sourcePaths.map((sourcePath) => ({
-    sourcePath,
-    sourceName: getFileName(sourcePath),
+  const items: ImportItemResult[] = sources.map((entry, index) => ({
+    id: `${index}-${entry.source.name}`,
+    sourceName: entry.source.name,
+    label: entry.relativeDirectory
+      ? `${entry.relativeDirectory}/${entry.source.name}`
+      : entry.source.name,
     status: "pending"
   }));
 
@@ -137,34 +143,32 @@ export async function importFiles(
 
   reportProgress();
 
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
     if (signal?.aborted) {
       item.status = "cancelled";
       continue;
     }
 
-    const { base, extension } = splitExtension(item.sourceName);
+    const extension = extensionOf(item.sourceName);
+    const kind = classifyExtension(extension);
 
     item.status = "converting";
     reportProgress();
 
     try {
-      if (extension === "doc") {
+      if (kind === "legacyDoc") {
         item.status = "error";
         item.errorKey = "errorLegacyDoc";
         continue;
       }
 
-      if (
-        !(IMPORT_DOCUMENT_EXTENSIONS as readonly string[]).includes(extension) &&
-        !isImageExtension(extension)
-      ) {
+      if (kind === "unsupported") {
         item.status = "error";
         item.errorKey = "errorUnsupported";
         continue;
       }
 
-      if (isImageExtension(extension)) {
+      if (kind === "image") {
         const { isAiOcrConfigured } = await import("./imageImporter");
 
         if (!isAiOcrConfigured()) {
@@ -174,17 +178,16 @@ export async function importFiles(
         }
       }
 
-      await allowFileAccess(item.sourcePath).catch(() => undefined);
+      const baseName = sanitizeBaseName(baseNameOf(item.sourceName));
+      const directory = await resolveTargetDirectory(
+        targetDirectory,
+        sources[index].relativeDirectory
+      );
+      const targetFilePath = await resolveUniqueMarkdownPath(directory, baseName);
 
-      const baseName = sanitizeBaseName(base);
-      const targetFilePath = await resolveUniqueMarkdownPath(targetDirectory, baseName);
-
-      const markdown = await convertSourceToMarkdown(
-        extension,
-        item.sourcePath,
-        vaultRoot,
-        targetFilePath,
-        baseName,
+      const markdown = await convertToMarkdown(
+        sources[index].source,
+        { embedImages: true, vaultRoot, targetFilePath, imageBaseName: baseName },
         signal
       );
 
@@ -206,7 +209,8 @@ export async function importFiles(
         item.status = "cancelled";
       } else {
         item.status = "error";
-        item.errorKey = classifyError(extension);
+        item.errorKey =
+          error instanceof SourceTooLargeError ? "errorTooLarge" : classifyError(extension);
         item.errorDetail = error instanceof Error ? error.message : String(error);
       }
     } finally {

@@ -12,6 +12,7 @@ import { UpdateNotification } from "@/components/UpdateNotification";
 import { VersionDiffDialog, type VersionDiffTarget } from "@/components/VersionDiffDialog";
 import type { DeleteTarget } from "@/hooks/useDeleteTarget";
 import type { FileVersion } from "@/lib/fileVersions";
+import type { ImportSource } from "@/lib/import/importer";
 import type { AiSettings } from "@/store/useAiSettingsStore";
 import type { Assistant } from "@/store/useAssistantsStore";
 
@@ -56,9 +57,11 @@ type AppDialogsProps = {
   onCloseExport: () => void;
 
   // Import
-  importFileList: string[] | null;
+  importFileList: ImportSource[] | null;
   folderPath: string | null;
   importTargetFolder: string | null;
+  importSkippedCount: number;
+  importLimitReached: boolean;
   onImported: (createdFilePaths: string[]) => void;
   onCloseImport: () => void;
 
@@ -105,6 +108,8 @@ export function AppDialogs({
   importFileList,
   folderPath,
   importTargetFolder,
+  importSkippedCount,
+  importLimitReached,
   onImported,
   onCloseImport,
   availableUpdate,
@@ -169,6 +174,8 @@ export function AppDialogs({
         files={importFileList}
         vaultRoot={folderPath}
         targetFolder={importTargetFolder}
+        skippedCount={importSkippedCount}
+        limitReached={importLimitReached}
         onImported={onImported}
         onClose={onCloseImport}
       />

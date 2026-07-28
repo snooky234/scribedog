@@ -7,6 +7,37 @@
   min-height: 0;
   padding: 1rem;
   overflow: hidden;
+  /* Anchor for the drop overlay below. */
+  position: relative;
+}
+
+.sidebar-panel--drop-target {
+  outline: 1px solid var(--blue-fg);
+  outline-offset: -1px;
+  border-radius: 0.75rem;
+}
+
+/* Sits above the tree while files are dragged in from the OS, but only as a
+   band at the bottom: the rows underneath stay visible and readable, because
+   which folder the pointer is over is exactly what decides where the import
+   lands (see lib/dragDrop/osFileDrop.ts). */
+.sidebar-panel__dropzone {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(var(--surface-rgb), 0.95);
+  color: var(--blue-fg);
+  font-size: 0.8rem;
+  text-align: center;
+  pointer-events: none;
 }
 
 .sidebar-panel__header {

@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>ScribeDog</title>
+    <style>
+      /* Fallback in case theme-boot.js cannot run — keeps the very first frame
+         from being white on a dark desktop. */
+      html {
+        background-color: #f2f4f7;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html {
+          background-color: #090a0c;
+        }
+      }
+    </style>
+    <script src="/theme-boot.js"></script>
   </head>
 
   <body>

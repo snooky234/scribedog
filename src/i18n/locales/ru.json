@@ -116,7 +116,11 @@
     "errorConvert": "Ошибка преобразования: {{message}}",
     "errorWrite": "Не удалось записать файл: {{message}}",
     "errorOcrNoModel": "Модель ИИ не настроена. Загрузите модель с поддержкой изображений в настройках ИИ, чтобы импортировать изображения.",
-    "errorOcrProvider": "Не удалось распознать изображение — настроенная модель, возможно, не поддерживает изображения. ({{message}})"
+    "errorOcrProvider": "Не удалось распознать изображение — настроенная модель, возможно, не поддерживает изображения. ({{message}})",
+    "nothingSupported": "Поддерживаемых файлов нет.",
+    "limitReached": "За один раз импортируется не более {{max}} файлов.",
+    "skippedFiles": "Пропущено неподдерживаемых файлов: {{files}}.",
+    "errorTooLarge": "Файл слишком большой."
   },
   "linkDialog": {
     "eyebrow": "Ссылка",
@@ -412,7 +416,8 @@
     "shortcutsTitle": "Горячие клавиши (Ctrl+#)",
     "searchingFolder": "Поиск в папке …",
     "openFolderPrompt": "Откройте папку, чтобы увидеть все содержащиеся в ней файлы Markdown.",
-    "noMarkdownFiles": "Файлы Markdown не найдены. Откройте папку с файлами `.md`."
+    "noMarkdownFiles": "Файлы Markdown не найдены. Откройте папку с файлами `.md`.",
+    "dropImportHint": "Перетащите файлы или папки — они будут импортированы как заметки"
   },
   "fileTree": {
     "treeLabel": "Дерево файлов",
@@ -599,7 +604,8 @@
     "aiTipConnection": "Совет: проверьте, запущен ли Ollama или Jan.ai и доступен ли URL API.",
     "aiTipGeneric": "Совет: проверьте настройки ИИ и попробуйте снова.",
     "aiThinking": "Обдумывание …",
-    "aiGenerating": "ИИ печатает …"
+    "aiGenerating": "ИИ печатает …",
+    "dropDocumentHint": "Документы не вставляются в текст — перетащите их в список файлов, чтобы импортировать как заметку."
   },
   "aiDiffWidget": {
     "resultLabel": "Результат ИИ",
@@ -720,7 +726,7 @@
     "attachmentsLabel": "Прикреплённые файлы",
     "attachmentDetach": "Убрать {{name}}",
     "attachmentTruncated": "Файл длинный — отправляется только его начало.",
-    "attachmentRejected": "Не удалось прочитать: {{files}}. Прикреплять можно только текстовые файлы (например, .md, .txt, .csv).",
+    "attachmentRejected": "Не удалось прочитать: {{files}}. Прикрепить можно текстовые файлы, PDF и Word.",
     "attachmentLimit": "Не более {{max}} файлов на чат.",
     "dropFilesHint": "Отпустите файлы — они станут приоритетной базой знаний этого чата",
     "emptyAttachHint": "Совет: перетащите сюда файлы — чат будет отвечать в первую очередь по ним.",
@@ -730,6 +736,7 @@
     "toolResizedImage": "Размер изображения изменён",
     "toolProposedSelection": "Предложено изменение для выделения",
     "toolProposedInsert": "Предложена вставка",
+    "proposedFromReply": "Текст предложен в документе",
     "toolProposedPassage": "Предложено изменение в тексте",
     "toolAcceptedProposals": "Предложения применены",
     "toolDiscardedProposals": "Предложения отклонены",
@@ -738,6 +745,15 @@
     "toolReadNoteFailed": "Не удалось прочитать заметку",
     "sourcesLabel": "Источники",
     "agentWorking": "Агент работает…",
+    "activityThinking": "Думает…",
+    "activityGathering": "Собирает информацию…",
+    "activityPondering": "Берёт след…",
+    "activityComposing": "Формулирует ответ…",
+    "activityReadingDocument": "Читает документ…",
+    "activityViewingImage": "Смотрит на изображение…",
+    "activitySearchingVault": "Ищет в ваших заметках…",
+    "activityReadingNote": "Читает заметку…",
+    "activityEditing": "Готовит изменение…",
     "otherSessionBusy": "Сейчас формируется ответ в другом чате.",
     "agentStopped": "Остановлено после нескольких шагов без окончательного ответа.",
     "toolReadImageFailed": "Не удалось прочитать изображение",
@@ -746,7 +762,10 @@
     "toolProposeInsertFailed": "Не удалось предложить вставку",
     "toolProposePassageFailed": "Фрагмент не найден",
     "toolSettleProposalsFailed": "Нет открытых предложений",
-    "toolActionFailed": "Действие не выполнено"
+    "toolActionFailed": "Действие не выполнено",
+    "attachmentFolder": "Папки нельзя прикрепить — перетащите их в список файлов, чтобы импортировать.",
+    "attachmentOcrNoModel": "Для изображений нужна модель ИИ с поддержкой изображений — настройте её в параметрах ИИ.",
+    "attachmentReading": "Чтение файлов…"
   },
   "manuscript": {
     "chapterLabelTemplate": "Глава {number}",

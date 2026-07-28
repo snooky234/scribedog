@@ -151,6 +151,30 @@ function blockedByOpenReview(): string | null {
   );
 }
 
+/**
+ * Puts text the model wrote into the chat into the document as a proposal
+ * after all — the recovery path behind resolveUnflaggedReply (see
+ * src/lib/chat/pendingSuggestion.ts). Answers whether a proposal was opened.
+ *
+ * Deliberately not routed through executeTool: this runs after the turn has
+ * ended, so there is no model left to read a tool result, and the caller needs
+ * the outcome as a value rather than as English prose. The one thing it does
+ * share with the editing tools is their guard — a proposal stacked on top of a
+ * review the user has not settled is exactly what beginChatTurn exists to
+ * prevent, and here the fallback (the "apply" button) is a fine second best.
+ */
+export function proposeComposedText(text: string): boolean {
+  if (!bridge || !text.trim() || blockedByOpenReview()) {
+    return false;
+  }
+
+  // No anchor: the step that produced this text never saw the document, so any
+  // position it might name would be a guess. The caret is where the user is
+  // working, and in the case this exists for — a note whose first content was
+  // just written — it is the only position there is.
+  return bridge.proposeInsertion(normalizeEscapedCheckboxes(text)) === "proposed";
+}
+
 function settleProposals(accept: boolean): ToolResult {
   const count = accept ? (bridge?.acceptPendingProposals() ?? 0) : (bridge?.discardPendingProposals() ?? 0);
 

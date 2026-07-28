@@ -18,6 +18,13 @@ import { readTextFile } from "@tauri-apps/plugin-fs";
 
 import type { AiChatMessage } from "@/lib/aiClient";
 import { getRelativeDisplayPath } from "@/lib/fileSystem";
+import {
+  SourceTooLargeError,
+  classifyExtension,
+  convertToMarkdown,
+  extensionOf,
+  sourceFromFile
+} from "@/lib/import/convert";
 
 export type AttachedChatFile = {
   // Stable per attachment so the chip's remove button addresses one entry even
@@ -25,7 +32,7 @@ export type AttachedChatFile = {
   id: string;
   name: string;
   // Vault-relative for a note dragged out of the sidebar, "" for a file dropped
-  // in from the OS — a dropped File exposes no path in the webview. Only used
+  // in from outside — a dropped File exposes no path in the webview. Only used
   // to tell the model where the text came from.
   path: string;
   // Already clamped to MAX_FILE_CHARS when it was read; `truncated` says so.
@@ -42,7 +49,9 @@ const MAX_FILE_CHARS = 40_000;
 
 // Refused before reading: a file this large is not a note, and decoding it as
 // text would freeze the UI for seconds before the content is thrown away anyway.
-const MAX_FILE_BYTES = 5 * 1024 * 1024;
+// Documents get more room than plain text (a PDF carries fonts and images that
+// never reach the model) — convert.ts caps the text formats far lower.
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
 // Upper bound on what all attachments together contribute to one request, even
 // with a huge context window. Beyond this the conversation itself starts losing
@@ -54,9 +63,9 @@ const MAX_TOTAL_CHARS = 40_000;
 // recent history still fit beside them on a small local model.
 const CONTEXT_SHARE = 0.3;
 
-// Extensions read as text. Anything else is refused rather than guessed at: a
-// binary decoded as UTF-8 produces pages of replacement characters, which is
-// both useless to the model and expensive in context.
+// Extensions read as text — the notes the file tree deals in. Files dropped
+// from outside go through the converters instead (see readDroppedAttachment),
+// which covers PDF and DOCX too.
 const TEXT_EXTENSIONS = [
   "md",
   "markdown",
@@ -129,22 +138,59 @@ export async function readVaultAttachment(
   }
 }
 
+export type DroppedAttachmentError =
+  | "unsupported"
+  | "legacyDoc"
+  | "ocrNoModel"
+  | "tooLarge"
+  | "failed";
+
+export type DroppedAttachmentResult =
+  | { ok: true; attachment: AttachedChatFile }
+  | { ok: false; reason: DroppedAttachmentError };
+
 /**
- * Reads a file dropped in from the OS. The webview hands over the content, not
- * a path (that is why `path` stays empty), which also means this needs no
- * filesystem permission at all — the drop *is* the user handing the file over.
+ * Reads a file dragged in from outside the app as chat context, converting it
+ * to markdown on the way — the same converters the file tree's import uses,
+ * only without embedding images: nothing is written to disk here, and an image
+ * in a PDF costs seconds of decoding for text the model never sees.
+ *
+ * Needs no filesystem permission at all: the drop *is* the user handing the
+ * file over, and the webview passes its content along with it.
  */
-export async function readDroppedFile(file: File): Promise<AttachedChatFile | null> {
-  if (!isAttachableFileName(file.name) || file.size > MAX_FILE_BYTES) {
-    return null;
+export async function readDroppedAttachment(file: File): Promise<DroppedAttachmentResult> {
+  const kind = classifyExtension(extensionOf(file.name));
+
+  if (kind === "legacyDoc") {
+    return { ok: false, reason: "legacyDoc" };
+  }
+
+  if (kind === "unsupported") {
+    return { ok: false, reason: "unsupported" };
+  }
+
+  if (kind === "image") {
+    const { isAiOcrConfigured } = await import("@/lib/import/imageImporter");
+
+    if (!isAiOcrConfigured()) {
+      return { ok: false, reason: "ocrNoModel" };
+    }
+  }
+
+  if (file.size > MAX_FILE_BYTES) {
+    return { ok: false, reason: "tooLarge" };
   }
 
   try {
-    const { content, truncated } = clampContent(await file.text());
+    const markdown = await convertToMarkdown(sourceFromFile(file), { embedImages: false });
+    const { content, truncated } = clampContent(markdown);
 
-    return { id: createId(), name: file.name, path: "", content, truncated };
-  } catch {
-    return null;
+    return {
+      ok: true,
+      attachment: { id: createId(), name: file.name, path: "", content, truncated }
+    };
+  } catch (error) {
+    return { ok: false, reason: error instanceof SourceTooLargeError ? "tooLarge" : "failed" };
   }
 }
 

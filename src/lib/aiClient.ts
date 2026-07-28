@@ -562,6 +562,120 @@ export async function fetchAvailableModels(
   return Array.from(new Set(models));
 }
 
+/**
+ * Feeds a response body to `onLine`, one text line at a time.
+ *
+ * Both wire formats this module reads are line-based — OpenAI-compatible SSE
+ * ("data: {...}") and Ollama's newline-delimited JSON — and both need the same
+ * carry-over buffer, because a chunk boundary lands mid-line often enough that
+ * parsing chunks directly drops tokens. Kept in one place so the streaming
+ * paths cannot drift apart in how they cut the stream up.
+ */
+async function forEachStreamLine(response: Response, onLine: (line: string) => void): Promise<void> {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        onLine(line);
+      }
+    }
+
+    // A stream that ends without a trailing newline leaves its last line in the
+    // buffer — for Ollama that is the payload carrying done:true.
+    if (buffer.trim()) {
+      onLine(buffer);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/**
+ * Splits a token stream into answer text and reasoning text as it arrives.
+ *
+ * Both deltas are derived from the full accumulated text each time instead of
+ * being stripped per chunk: a `<think>` tag routinely straddles a chunk
+ * boundary, and a per-chunk strip would let the two halves through as answer
+ * text. Providers that report reasoning in a field of their own bypass this and
+ * go straight to onThinking.
+ */
+function createThinkingSplitter(handlers: {
+  onChunk: (chunk: string) => void;
+  onThinking?: (chunk: string) => void;
+}) {
+  let fullContent = "";
+  let emittedAnswer = "";
+  let emittedThinking = "";
+
+  return {
+    push(content: string) {
+      fullContent += content;
+
+      const split = splitThinkingTags(fullContent);
+
+      if (split.thinking.length > emittedThinking.length) {
+        handlers.onThinking?.(split.thinking.slice(emittedThinking.length));
+        emittedThinking = split.thinking;
+      }
+
+      // Only trim if a thinking block was actually removed — otherwise
+      // legitimate leading spaces between word chunks would be lost.
+      const answer = split.thinking ? split.answer.trimStart() : split.answer;
+
+      if (answer.length > emittedAnswer.length) {
+        handlers.onChunk(answer.slice(emittedAnswer.length));
+        emittedAnswer = answer;
+      }
+    },
+    raw(): string {
+      return fullContent;
+    },
+    answer(): string {
+      return stripThinkingBlocks(fullContent);
+    }
+  };
+}
+
+// The JSON payload of one stream line, or null for the lines that carry none
+// (SSE event names, keep-alives, the "[DONE]" sentinel, a truncated tail).
+function parseStreamLinePayload(line: string): Record<string, unknown> | null {
+  const trimmedLine = line.trim();
+
+  if (!trimmedLine) {
+    return null;
+  }
+
+  const raw = trimmedLine.startsWith("data: ")
+    ? trimmedLine.slice("data: ".length).trim()
+    : trimmedLine.startsWith("{")
+      ? trimmedLine
+      : "";
+
+  if (!raw || raw === "[DONE]") {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 async function streamJsonLines(
   url: string,
   body: Record<string, unknown>,
@@ -585,17 +699,15 @@ async function streamJsonLines(
     throw new Error(i18n.t("aiClient.endpointStatus", { status: response.status }));
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let fullContent = "";
-  let emittedAnswer = "";
-  let emittedThinking = "";
+  const splitter = createThinkingSplitter(handlers);
 
-  // Answer/thinking deltas are derived from the full accumulated text each
-  // time (instead of stripped per chunk) so <think> tags split across chunk
-  // boundaries are handled correctly.
-  const handleParsedPayload = (parsed: Record<string, unknown>) => {
+  await forEachStreamLine(response, (line) => {
+    const parsed = parseStreamLinePayload(line);
+
+    if (!parsed) {
+      return;
+    }
+
     const { content, thinking } = extractChunk(parsed);
 
     if (thinking) {
@@ -603,87 +715,16 @@ async function streamJsonLines(
     }
 
     if (content) {
-      fullContent += content;
-
-      const split = splitThinkingTags(fullContent);
-
-      if (split.thinking.length > emittedThinking.length) {
-        handlers.onThinking?.(split.thinking.slice(emittedThinking.length));
-        emittedThinking = split.thinking;
-      }
-
-      // Only trim if a thinking block was actually removed — otherwise
-      // legitimate leading spaces between word chunks would be lost.
-      const answer = split.thinking ? split.answer.trimStart() : split.answer;
-
-      if (answer.length > emittedAnswer.length) {
-        handlers.onChunk(answer.slice(emittedAnswer.length));
-        emittedAnswer = answer;
-      }
+      splitter.push(content);
     }
 
     if (parsed.done === true) {
-      const finalContent = extractDoneContent(parsed) ?? fullContent;
+      const finalContent = extractDoneContent(parsed) ?? splitter.raw();
       handlers.onFinal?.(stripThinkingBlocks(finalContent));
     }
-  };
+  });
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        break;
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split(/\r?\n/);
-      buffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        const trimmedLine = line.trim();
-
-        if (!trimmedLine) {
-          continue;
-        }
-
-        if (trimmedLine.startsWith("data: ")) {
-          const rawData = trimmedLine.slice(6).trim();
-
-          if (rawData === "[DONE]") {
-            continue;
-          }
-
-          let parsed: Record<string, unknown>;
-
-          try {
-            parsed = JSON.parse(rawData) as Record<string, unknown>;
-          } catch {
-            continue;
-          }
-
-          handleParsedPayload(parsed);
-        }
-
-        if (trimmedLine.startsWith("{")) {
-          let parsed: Record<string, unknown>;
-
-          try {
-            parsed = JSON.parse(trimmedLine) as Record<string, unknown>;
-          } catch {
-            continue;
-          }
-
-          handleParsedPayload(parsed);
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  return stripThinkingBlocks(fullContent);
+  return splitter.answer();
 }
 
 async function requestOllama(
@@ -971,65 +1012,45 @@ async function consumeAnthropicStream(
     throw new Error(i18n.t("aiClient.endpointStatus", { status: response.status }));
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let fullContent = "";
   let currentEventType = "";
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        break;
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split(/\r?\n/);
-      buffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        if (line.startsWith("event: ")) {
-          currentEventType = line.slice("event: ".length).trim();
-          continue;
-        }
-
-        if (!line.startsWith("data: ")) {
-          continue;
-        }
-
-        let parsed: Record<string, unknown>;
-
-        try {
-          parsed = JSON.parse(line.slice("data: ".length)) as Record<string, unknown>;
-        } catch {
-          continue;
-        }
-
-        if (currentEventType === "error") {
-          const errorPayload = parsed.error as { message?: string } | undefined;
-          throw new Error(errorPayload?.message ?? i18n.t("aiClient.invalidResponse"));
-        }
-
-        if (currentEventType !== "content_block_delta") {
-          continue;
-        }
-
-        const delta = parsed.delta as { type?: string; text?: string; thinking?: string } | undefined;
-
-        if (delta?.type === "text_delta" && delta.text) {
-          fullContent += delta.text;
-          handlers.onChunk(delta.text);
-        } else if (delta?.type === "thinking_delta" && delta.thinking) {
-          handlers.onThinking?.(delta.thinking);
-        }
-      }
+  await forEachStreamLine(response, (line) => {
+    if (line.startsWith("event: ")) {
+      currentEventType = line.slice("event: ".length).trim();
+      return;
     }
-  } finally {
-    reader.releaseLock();
-  }
+
+    if (!line.startsWith("data: ")) {
+      return;
+    }
+
+    let parsed: Record<string, unknown>;
+
+    try {
+      parsed = JSON.parse(line.slice("data: ".length)) as Record<string, unknown>;
+    } catch {
+      return;
+    }
+
+    if (currentEventType === "error") {
+      const errorPayload = parsed.error as { message?: string } | undefined;
+      throw new Error(errorPayload?.message ?? i18n.t("aiClient.invalidResponse"));
+    }
+
+    if (currentEventType !== "content_block_delta") {
+      return;
+    }
+
+    const delta = parsed.delta as { type?: string; text?: string; thinking?: string } | undefined;
+
+    if (delta?.type === "text_delta" && delta.text) {
+      fullContent += delta.text;
+      handlers.onChunk(delta.text);
+    } else if (delta?.type === "thinking_delta" && delta.thinking) {
+      handlers.onThinking?.(delta.thinking);
+    }
+  });
 
   return stripThinkingBlocks(fullContent);
 }
@@ -1168,6 +1189,11 @@ export type AiChatMessage =
       // either inside the turn or from the follow-up question the store asks
       // when a turn ends without one. See FLAG_SUGGESTION_TOOL_NAME.
       suggestsEdit?: boolean;
+      // This reply's text was text the user had asked to have written, and the
+      // model left it in the chat — so the store put it into the document as a
+      // proposal after the fact (persisted). The transcript shows a status line
+      // saying so instead of an "apply" button; see resolveUnflaggedReply.
+      proposedEdit?: boolean;
       // Notes from the vault this answer drew on, collected from the knowledge
       // base tool calls of the same turn (persisted). The transcript lists them
       // as clickable sources under the reply — an answer assembled from files
@@ -1211,12 +1237,17 @@ export type AiChatRequest = {
 // which only appears on a message whose toolCalls include this name.
 export const FLAG_SUGGESTION_TOOL_NAME = "flag_pending_suggestion";
 
+// The tool that puts new text into the document. Named because the recovery
+// step in src/lib/chat/pendingSuggestion.ts offers exactly this one to get text
+// the model wrote into the chat into the document after all.
+export const INSERT_TOOL_NAME = "insert_at_cursor";
+
 // The tools that open a red/green proposal in the editor. A turn that called one
 // of these has already given the user something to accept, which is what makes
 // the flag above redundant for it.
 export const EDITING_TOOL_NAMES: readonly string[] = [
   "replace_selection",
-  "insert_at_cursor",
+  INSERT_TOOL_NAME,
   "replace_passage"
 ];
 
@@ -1291,7 +1322,7 @@ const AGENT_TOOL_SPECS = [
   {
     name: "insert_at_cursor",
     description:
-      "Propose inserting new Markdown text into the document. Only use this when there is genuinely nothing to change, i.e. the text is new content rather than a revision of an existing passage. ALWAYS pass after_text when the user says where the text belongs — without it the text lands at the user's cursor, which is almost never the place they meant. Write only the new text: never repeat a heading, paragraph or image that is already in the document, it would then appear twice. The change is shown to the user for review, not applied directly.",
+      "Propose inserting new Markdown text into the document. Only use this when there is genuinely nothing to change, i.e. the text is new content rather than a revision of an existing passage. This is how you deliver anything the user asked you to write, draft or continue, including the first content of a still empty document — such text belongs in the document, never in your reply alone. ALWAYS pass after_text when the user says where the text belongs — without it the text lands at the user's cursor, which is almost never the place they meant. Write only the new text: never repeat a heading, paragraph or image that is already in the document, it would then appear twice. The change is shown to the user for review, not applied directly.",
     parameters: {
       type: "object",
       properties: {
@@ -1487,6 +1518,14 @@ const AGENT_INSTRUCTION =
   "only when you genuinely need the surrounding context.\n" +
   "2. Decide what the user actually wants for THIS text. Requests like \"shorten\", \"add examples\", " +
   "\"make it friendlier\" mean revising the existing passages, not writing a separate new block.\n" +
+  "2a. A request to WRITE something — \"write me an introduction\", \"draft a section about X\", " +
+  "\"continue this\", \"add a paragraph on Y\" — is a request to write it INTO the document. Deliver the " +
+  "text with insert_at_cursor (or replace_passage when it takes the place of an existing passage), and " +
+  "never write it out in your reply instead: text that only exists in the chat is text the user has to " +
+  "copy over by hand, which is exactly the work they asked you to do for them. An empty document is the " +
+  "normal case for this, not an obstacle — call insert_at_cursor with the complete text and no " +
+  "after_text. The only time such a request stays in the chat is when the user explicitly asked for it " +
+  "there (\"just show me\", \"don't change anything yet\").\n" +
   "3. Propose the changes with replace_passage (or replace_selection when the user is working on a " +
   "selection). Work passage by passage: change only what the request affects, keep the rest of the " +
   "wording, and call the tool once per affected passage — several proposals in one turn are normal " +
@@ -1597,10 +1636,10 @@ function chatMessages(request: AiChatRequest, systemContent: string) {
 // --- Agent tool-calling wire mapping ----------------------------------------
 //
 // Translates the tagged AiChatMessage union into each provider family's wire
-// format. Deliberately non-streaming (see generateAiChatStep) — tool_calls
-// arguments arrive fragmented across many SSE chunks when streamed, which is
-// the single biggest source of tool-parsing bugs across providers, so the
-// agent loop avoids streaming entirely.
+// format. The same mapping serves the streaming and non-streaming step (see
+// streamAiChatStep and generateAiChatStep): only the response side differs
+// between them, and the fragmented tool_calls the streaming side has to put
+// back together are handled there, in createToolCallBuffer.
 
 // Images ride along on user turns, and the two OpenAI-ish families disagree on
 // how: Ollama takes a flat `images: [base64]` alongside the text, while
@@ -1712,9 +1751,9 @@ export function toAnthropicMessages(request: AiChatRequest) {
       }
 
       out.push({ role: "assistant", content: content.length ? content : message.content });
-    } else if (message.images?.length) {
+    } else {
       const blocks: unknown[] = [
-        ...message.images.map((image) => ({
+        ...(message.images ?? []).map((image) => ({
           type: "image",
           source: { type: "base64", media_type: image.mimeType, data: image.base64 }
         })),
@@ -1724,25 +1763,153 @@ export function toAnthropicMessages(request: AiChatRequest) {
 
       // An image turn follows the tool results that produced it, and Anthropic
       // rejects two consecutive user turns — so merge into the open user turn
-      // holding those tool_result blocks instead of pushing a second one.
+      // holding those tool_result blocks instead of pushing a second one. Same
+      // for a turn whose image was dropped again (see stripChatImages): the
+      // position in the history is what forces the merge, not the image.
       if (last && last.role === "user" && Array.isArray(last.content)) {
         (last.content as unknown[]).push(...blocks);
-      } else {
+      } else if (message.images?.length) {
         out.push({ role: "user", content: blocks });
+      } else {
+        out.push({ role: "user", content: message.content });
       }
-    } else {
-      out.push({ role: "user", content: message.content });
     }
   }
 
   return out;
 }
 
-export type AiChatStep = { text: string; toolCalls: ToolCall[] };
+export type AiChatStep = {
+  text: string;
+  toolCalls: ToolCall[];
+  // The step only got an answer after its images were dropped: the model has no
+  // vision. Tells the agent loop to stop attaching images for the rest of the
+  // conversation instead of paying for the same rejection once per step — see
+  // sendMessage in src/store/useChatStore.ts.
+  imagesDropped?: boolean;
+};
+
+// --- Models without vision ---------------------------------------------------
+//
+// A model that cannot take an image does not skip it: llama.cpp answers "image
+// input is not supported - hint: … provide the mmproj", Ollama and LM Studio
+// reject the request just as flatly. That kills the whole turn over one picture
+// in the document, which is not what the user asked about — so the request is
+// retried without the image and the model is told, in the history, that it
+// cannot see it.
+
+// Replaces an image in the history when it cannot be sent. Model-facing English
+// like the tool results, and deliberately blunt about not inventing a
+// description: a turn saying "here is the image you requested" with no image
+// attached is exactly the setup a model happily hallucinates from.
+export const IMAGE_UNSUPPORTED_NOTE =
+  "[The image could not be shown: this model cannot process images. Do not describe the picture and do " +
+  "not guess what it shows — say plainly that you cannot see images, then answer from the document's text.]";
+
+// What get_image reports once the model is known to have no vision, instead of
+// promising an image that the next request would only be rejected for. The
+// "Error:" prefix is what the chat panel renders as the failed-tool line.
+export const IMAGE_UNSUPPORTED_TOOL_RESULT =
+  "Error: this model cannot process images, so the picture cannot be shown to you. Tell the user their " +
+  "model has no vision support, and answer from the document's text instead.";
+
+// Matched against the endpoint's own error text, which differs per backend —
+// hence the spread of wordings rather than one exact string.
+const IMAGE_UNSUPPORTED_PATTERNS = [
+  // llama.cpp / LM Studio, with and without the mmproj hint.
+  /image input is not supported/i,
+  /mmproj/i,
+  // Ollama, LM Studio: "model does not support images".
+  /(does not|doesn't|do not|don't|cannot|can't|unable to) support (image|vision|multimodal)/i,
+  // OpenAI ("image_url is only supported by certain models"), Anthropic
+  // ("image content blocks are not supported by this model"), Mistral.
+  /(image|image_url|vision|multimodal)[^\n]{0,60}(not supported|only supported by|unsupported)/i,
+  // Ollama rejecting the `images` field outright.
+  /invalid input:? *images/i
+];
+
+/** Whether an endpoint error says the model cannot take the images we sent. */
+export function isImageUnsupportedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+
+  return IMAGE_UNSUPPORTED_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+export function hasChatImages(messages: AiChatMessage[]): boolean {
+  return messages.some((message) => message.role === "user" && Boolean(message.images?.length));
+}
+
+/**
+ * The same history with every image taken out and IMAGE_UNSUPPORTED_NOTE put in
+ * its place. Keyed on imagePaths as well as on the resolved payload, so a
+ * caller that never attached the images in the first place (because the model
+ * is already known to have none) produces the identical history.
+ */
+export function stripChatImages(messages: AiChatMessage[]): AiChatMessage[] {
+  return messages.map((message) => {
+    if (message.role !== "user" || !(message.images?.length || message.imagePaths?.length)) {
+      return message;
+    }
+
+    return {
+      ...message,
+      content: `${message.content}\n\n${IMAGE_UNSUPPORTED_NOTE}`,
+      images: undefined
+    };
+  });
+}
+
+// The request body of one agent step, per provider family. Pulled out of
+// generateAiChatStep so the streaming variant below sends byte-for-byte the
+// same request with `stream` flipped: a tool the streaming path did not offer,
+// or a context length it forgot to pass, would show up as the agent behaving
+// differently depending on which path answered.
+function anthropicChatStepBody(settings: AiSettings, request: AiChatRequest): Record<string, unknown> {
+  return {
+    model: settings.model,
+    system: buildChatSystemPrompt(request, settings.thinkingMode, true),
+    max_tokens: resolveMaxOutputTokens(settings.contextLength),
+    tools: requestTools(AGENT_TOOLS_ANTHROPIC, VAULT_TOOLS_ANTHROPIC, request),
+    messages: toAnthropicMessages(request)
+  };
+}
+
+function ollamaChatStepBody(settings: AiSettings, request: AiChatRequest): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model: settings.model,
+    messages: toOpenAiCompatMessages(request, settings.thinkingMode, true),
+    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, request),
+    options: { num_ctx: settings.contextLength, num_predict: resolveMaxOutputTokens(settings.contextLength) }
+  };
+
+  if (settings.thinkingMode === "off") {
+    body.think = false;
+  }
+
+  return body;
+}
+
+function openAiCompatibleChatStepBody(settings: AiSettings, request: AiChatRequest): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model: settings.model,
+    messages: toOpenAiCompatMessages(request, settings.thinkingMode, false),
+    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, request),
+    tool_choice: "auto",
+    temperature: 0.2,
+    max_tokens: resolveMaxOutputTokens(settings.contextLength)
+  };
+
+  if (supportsThinkingExtension(settings.provider) && settings.thinkingMode === "off") {
+    body.chat_template_kwargs = { enable_thinking: false };
+  }
+
+  return withOpenAiParamCompat(settings, body);
+}
 
 // Non-streaming per-turn agent step: sends the tool specs, executes at most
-// one round trip, and returns either tool calls to run or final text. See the
-// module comment above toOpenAiCompatMessages for why this stays non-streaming.
+// one round trip, and returns either tool calls to run or final text. Kept
+// alongside streamAiChatStep as the fallback for an endpoint whose streaming
+// tool calls cannot be trusted — see streamAiChatStep's comment.
 export async function generateAiChatStep(
   settings: AiSettings,
   request: AiChatRequest,
@@ -1755,17 +1922,9 @@ export async function generateAiChatStep(
   }
 
   if (settings.provider === "anthropic") {
-    const body = {
-      model: settings.model,
-      system: buildChatSystemPrompt(request, settings.thinkingMode, true),
-      max_tokens: resolveMaxOutputTokens(settings.contextLength),
-      tools: requestTools(AGENT_TOOLS_ANTHROPIC, VAULT_TOOLS_ANTHROPIC, request),
-      messages: toAnthropicMessages(request)
-    };
-
     const payload = (await postJson(
       new URL("/v1/messages", settings.apiUrl).toString(),
-      body,
+      anthropicChatStepBody(settings, request),
       anthropicAuthHeaders(settings.apiKey),
       signal
     )) as { content?: Array<Record<string, unknown>> };
@@ -1789,19 +1948,12 @@ export async function generateAiChatStep(
   }
 
   if (settings.provider === "ollama") {
-    const body: Record<string, unknown> = {
-      model: settings.model,
-      stream: false,
-      messages: toOpenAiCompatMessages(request, settings.thinkingMode, true),
-      tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, request),
-      options: { num_ctx: settings.contextLength, num_predict: resolveMaxOutputTokens(settings.contextLength) }
-    };
-
-    if (settings.thinkingMode === "off") {
-      body.think = false;
-    }
-
-    const payload = (await postJson(new URL("/api/chat", settings.apiUrl).toString(), body, undefined, signal)) as {
+    const payload = (await postJson(
+      new URL("/api/chat", settings.apiUrl).toString(),
+      { ...ollamaChatStepBody(settings, request), stream: false },
+      undefined,
+      signal
+    )) as {
       message?: {
         content?: string;
         tool_calls?: Array<{ id?: string; function: { name: string; arguments: unknown } }>;
@@ -1820,23 +1972,9 @@ export async function generateAiChatStep(
   }
 
   // OpenAI-compatible (OpenAI, Mistral, Jan, LM Studio)
-  const body: Record<string, unknown> = {
-    model: settings.model,
-    messages: toOpenAiCompatMessages(request, settings.thinkingMode, false),
-    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, request),
-    tool_choice: "auto",
-    temperature: 0.2,
-    max_tokens: resolveMaxOutputTokens(settings.contextLength),
-    stream: false
-  };
-
-  if (supportsThinkingExtension(settings.provider) && settings.thinkingMode === "off") {
-    body.chat_template_kwargs = { enable_thinking: false };
-  }
-
   const payload = (await postJson(
     new URL("/v1/chat/completions", settings.apiUrl).toString(),
-    withOpenAiParamCompat(settings, body),
+    { ...openAiCompatibleChatStepBody(settings, request), stream: false },
     buildOpenAiCompatibleAuthHeaders(settings),
     signal
   )) as {
@@ -1853,6 +1991,431 @@ export async function generateAiChatStep(
   }));
 
   return { text: stripThinkingBlocks(message?.content ?? ""), toolCalls };
+}
+
+export type AiChatStepHandlers = {
+  onText: (chunk: string) => void;
+  onThinking: (chunk: string) => void;
+  // Fires once per tool call, as soon as its *name* is known — well before its
+  // arguments have finished streaming. What the chat turns into "searching your
+  // notes …" while the model is still writing the call.
+  onToolCall: (name: string) => void;
+};
+
+type StreamedToolCall = { id: string; name: string; args: unknown };
+
+/**
+ * Reassembles tool calls that arrive in pieces.
+ *
+ * All three provider families stream a call as a name first and its arguments
+ * as a run of JSON fragments afterwards, keyed by the call's position in the
+ * turn — that index is the only thing tying a fragment to the call it belongs
+ * to, which is why it, and not arrival order, is what the slots are keyed by.
+ */
+function createToolCallBuffer(onToolCall: (name: string) => void) {
+  const calls = new Map<number, StreamedToolCall>();
+  const announced = new Set<number>();
+
+  const slot = (index: number): StreamedToolCall => {
+    const existing = calls.get(index);
+
+    if (existing) {
+      return existing;
+    }
+
+    const created: StreamedToolCall = { id: "", name: "", args: undefined };
+    calls.set(index, created);
+
+    return created;
+  };
+
+  return {
+    open(index: number, id: string | undefined, name: string | undefined) {
+      const call = slot(index);
+
+      if (id) {
+        call.id = id;
+      }
+
+      if (name && !call.name) {
+        call.name = name;
+      }
+
+      if (call.name && !announced.has(index)) {
+        announced.add(index);
+        onToolCall(call.name);
+      }
+    },
+    // OpenAI and Anthropic both fragment the argument JSON across chunks.
+    appendArguments(index: number, fragment: string) {
+      const call = slot(index);
+      call.args = `${typeof call.args === "string" ? call.args : ""}${fragment}`;
+    },
+    // Ollama sends the arguments as one finished object instead.
+    setArguments(index: number, value: unknown) {
+      slot(index).args = value;
+    },
+    toToolCalls(): ToolCall[] {
+      return Array.from(calls.entries())
+        .sort(([left], [right]) => left - right)
+        // A call whose name never arrived cannot be executed; dropping it beats
+        // sending the agent loop after a tool called "".
+        .filter(([, call]) => call.name)
+        .map(([index, call]) => ({
+          // Ollama sends no id, and a history whose tool result names no call is
+          // rejected by OpenAI and Anthropic alike — so one is made up here.
+          id: call.id || `call_${Date.now()}_${index}`,
+          name: call.name,
+          arguments: safeParseJson(call.args)
+        }));
+    }
+  };
+}
+
+/**
+ * POSTs a streaming request and hands its lines to `onLine`.
+ *
+ * The deadline is an *idle* one, re-armed on every line that arrives: unlike
+ * postJson's, which caps the whole request, this one has to let a long answer
+ * run for as long as tokens keep coming while still catching an endpoint that
+ * accepted the request and then went quiet.
+ */
+async function consumeChatStepStream(
+  url: string,
+  body: Record<string, unknown>,
+  extraHeaders: Record<string, string> | undefined,
+  signal: AbortSignal | undefined,
+  onLine: (line: string) => void
+): Promise<void> {
+  const controller = new AbortController();
+  const forwardAbort = () => controller.abort();
+  let stalled = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const armDeadline = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      stalled = true;
+      controller.abort();
+    }, REQUEST_TIMEOUT_MS);
+  };
+
+  signal?.addEventListener("abort", forwardAbort);
+  armDeadline();
+
+  try {
+    const response = await tauriFetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...extraHeaders },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(await extractResponseErrorMessage(response));
+    }
+
+    if (!response.body) {
+      throw new Error(i18n.t("aiClient.invalidResponse"));
+    }
+
+    await forEachStreamLine(response, (line) => {
+      armDeadline();
+      onLine(line);
+    });
+  } catch (error) {
+    if (stalled) {
+      throw new Error(i18n.t("aiClient.requestTimeout", { seconds: Math.round(REQUEST_TIMEOUT_MS / 1000) }));
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", forwardAbort);
+  }
+}
+
+async function streamAnthropicChatStep(
+  settings: AiSettings,
+  request: AiChatRequest,
+  handlers: AiChatStepHandlers,
+  signal?: AbortSignal
+): Promise<AiChatStep> {
+  const splitter = createThinkingSplitter({ onChunk: handlers.onText, onThinking: handlers.onThinking });
+  const tools = createToolCallBuffer(handlers.onToolCall);
+  let currentEventType = "";
+
+  await consumeChatStepStream(
+    new URL("/v1/messages", settings.apiUrl).toString(),
+    { ...anthropicChatStepBody(settings, request), stream: true },
+    anthropicAuthHeaders(settings.apiKey),
+    signal,
+    (line) => {
+      if (line.startsWith("event: ")) {
+        currentEventType = line.slice("event: ".length).trim();
+        return;
+      }
+
+      if (!line.startsWith("data: ")) {
+        return;
+      }
+
+      let parsed: Record<string, unknown>;
+
+      try {
+        parsed = JSON.parse(line.slice("data: ".length)) as Record<string, unknown>;
+      } catch {
+        return;
+      }
+
+      if (currentEventType === "error") {
+        const errorPayload = parsed.error as { message?: string } | undefined;
+        throw new Error(errorPayload?.message ?? i18n.t("aiClient.invalidResponse"));
+      }
+
+      // Anthropic numbers the content blocks of a turn, and a tool call's
+      // arguments come in under the index of the block that opened it.
+      const index = typeof parsed.index === "number" ? parsed.index : 0;
+
+      if (currentEventType === "content_block_start") {
+        const block = parsed.content_block as { type?: string; id?: string; name?: string } | undefined;
+
+        if (block?.type === "tool_use") {
+          tools.open(index, block.id, block.name);
+        }
+
+        return;
+      }
+
+      if (currentEventType !== "content_block_delta") {
+        return;
+      }
+
+      const delta = parsed.delta as
+        | { type?: string; text?: string; thinking?: string; partial_json?: string }
+        | undefined;
+
+      if (delta?.type === "text_delta" && delta.text) {
+        splitter.push(delta.text);
+      } else if (delta?.type === "thinking_delta" && delta.thinking) {
+        handlers.onThinking(delta.thinking);
+      } else if (delta?.type === "input_json_delta" && typeof delta.partial_json === "string") {
+        tools.appendArguments(index, delta.partial_json);
+      }
+    }
+  );
+
+  return { text: splitter.answer(), toolCalls: tools.toToolCalls() };
+}
+
+async function streamOllamaChatStep(
+  settings: AiSettings,
+  request: AiChatRequest,
+  handlers: AiChatStepHandlers,
+  signal?: AbortSignal
+): Promise<AiChatStep> {
+  const splitter = createThinkingSplitter({ onChunk: handlers.onText, onThinking: handlers.onThinking });
+  const tools = createToolCallBuffer(handlers.onToolCall);
+  // Ollama sends whole tool calls and numbers none of them, so the buffer's
+  // slots are handed out in arrival order.
+  let nextIndex = 0;
+
+  await consumeChatStepStream(
+    new URL("/api/chat", settings.apiUrl).toString(),
+    { ...ollamaChatStepBody(settings, request), stream: true },
+    undefined,
+    signal,
+    (line) => {
+      const parsed = parseStreamLinePayload(line);
+
+      if (!parsed) {
+        return;
+      }
+
+      const message = parsed.message as
+        | {
+            content?: string;
+            thinking?: string;
+            tool_calls?: Array<{ id?: string; function?: { name?: string; arguments?: unknown } }>;
+          }
+        | undefined;
+
+      if (message?.thinking) {
+        handlers.onThinking(message.thinking);
+      }
+
+      if (message?.content) {
+        splitter.push(message.content);
+      }
+
+      for (const call of message?.tool_calls ?? []) {
+        const index = nextIndex;
+        nextIndex += 1;
+
+        tools.open(index, call.id, call.function?.name);
+        tools.setArguments(index, call.function?.arguments);
+      }
+    }
+  );
+
+  return { text: splitter.answer(), toolCalls: tools.toToolCalls() };
+}
+
+async function streamOpenAiCompatibleChatStep(
+  settings: AiSettings,
+  request: AiChatRequest,
+  handlers: AiChatStepHandlers,
+  signal?: AbortSignal
+): Promise<AiChatStep> {
+  const splitter = createThinkingSplitter({ onChunk: handlers.onText, onThinking: handlers.onThinking });
+  const tools = createToolCallBuffer(handlers.onToolCall);
+
+  await consumeChatStepStream(
+    new URL("/v1/chat/completions", settings.apiUrl).toString(),
+    { ...openAiCompatibleChatStepBody(settings, request), stream: true },
+    buildOpenAiCompatibleAuthHeaders(settings),
+    signal,
+    (line) => {
+      const parsed = parseStreamLinePayload(line);
+
+      if (!parsed) {
+        return;
+      }
+
+      const choice = (
+        parsed.choices as
+          | Array<{
+              delta?: Record<string, unknown>;
+              message?: Record<string, unknown>;
+            }>
+          | undefined
+      )?.[0];
+
+      // Some local backends answer a streaming request with whole `message`
+      // objects rather than deltas; both carry the same fields, so either does.
+      const delta = (choice?.delta ?? choice?.message) as
+        | {
+            content?: string | null;
+            reasoning_content?: string | null;
+            reasoning?: string | null;
+            tool_calls?: Array<{
+              index?: number;
+              id?: string;
+              function?: { name?: string; arguments?: unknown };
+            }>;
+          }
+        | undefined;
+
+      const thinking = delta?.reasoning_content ?? delta?.reasoning;
+
+      if (thinking) {
+        handlers.onThinking(thinking);
+      }
+
+      if (delta?.content) {
+        splitter.push(delta.content);
+      }
+
+      (delta?.tool_calls ?? []).forEach((call, position) => {
+        // Parallel calls are told apart by `index`; the fallback covers the
+        // whole-message case above, where the array position is the index.
+        const index = typeof call.index === "number" ? call.index : position;
+
+        tools.open(index, call.id, call.function?.name);
+
+        const args = call.function?.arguments;
+
+        if (typeof args === "string") {
+          tools.appendArguments(index, args);
+        } else if (args !== undefined) {
+          tools.setArguments(index, args);
+        }
+      });
+    }
+  );
+
+  return { text: splitter.answer(), toolCalls: tools.toToolCalls() };
+}
+
+/**
+ * Streaming per-turn agent step: same request as generateAiChatStep, with the
+ * answer reported token by token and each tool call announced the moment its
+ * name arrives.
+ *
+ * Streaming exists here for the waiting, not for the wire: an agent step can
+ * take half a minute on a local model, and the whole of it used to be a row of
+ * dots. The result is identical to the non-streaming step — the loop in
+ * useChatStore acts on the returned step, never on what was streamed.
+ *
+ * A step that yields neither text nor tool calls is retried without streaming.
+ * Some OpenAI-compatible backends accept `stream: true` together with `tools`
+ * and then send empty deltas, which as a silent empty answer would look like
+ * the model had nothing to say.
+ *
+ * A step carrying images that the model turns out not to accept is retried
+ * without them (see IMAGE_UNSUPPORTED_NOTE): one picture in the document must
+ * not cost the user the whole answer.
+ */
+export async function streamAiChatStep(
+  settings: AiSettings,
+  request: AiChatRequest,
+  handlers: AiChatStepHandlers,
+  signal?: AbortSignal
+): Promise<AiChatStep> {
+  assertValidEndpoint(settings.provider, settings.apiUrl, settings.apiKey);
+
+  if (!settings.model.trim()) {
+    throw new Error(i18n.t("aiClient.modelRequired"));
+  }
+
+  const runStep = async (
+    stepRequest: AiChatRequest,
+    stepHandlers: AiChatStepHandlers
+  ): Promise<AiChatStep> => {
+    const step =
+      settings.provider === "anthropic"
+        ? await streamAnthropicChatStep(settings, stepRequest, stepHandlers, signal)
+        : settings.provider === "ollama"
+          ? await streamOllamaChatStep(settings, stepRequest, stepHandlers, signal)
+          : await streamOpenAiCompatibleChatStep(settings, stepRequest, stepHandlers, signal);
+
+    if (!step.text.trim() && step.toolCalls.length === 0 && !signal?.aborted) {
+      return generateAiChatStep(settings, stepRequest, signal);
+    }
+
+    return step;
+  };
+
+  if (!hasChatImages(request.messages)) {
+    return runStep(request, handlers);
+  }
+
+  // Only a request that produced nothing may be retried: a model that streamed
+  // half an answer and then failed would have that half written twice.
+  let streamedAnything = false;
+  const watched: AiChatStepHandlers = {
+    onText: (chunk) => {
+      streamedAnything = true;
+      handlers.onText(chunk);
+    },
+    onThinking: (chunk) => {
+      streamedAnything = true;
+      handlers.onThinking(chunk);
+    },
+    onToolCall: handlers.onToolCall
+  };
+
+  try {
+    return await runStep(request, watched);
+  } catch (error) {
+    if (streamedAnything || signal?.aborted || !isImageUnsupportedError(error)) {
+      throw error;
+    }
+
+    const step = await runStep({ ...request, messages: stripChatImages(request.messages) }, handlers);
+
+    return { ...step, imagesDropped: true };
+  }
 }
 
 async function streamOllamaChat(

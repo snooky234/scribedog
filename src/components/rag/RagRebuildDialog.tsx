@@ -60,7 +60,9 @@ export function RagRebuildDialog({
         <p>{t("ragSettings.rebuild.body")}</p>
         <p>{t("ragSettings.rebuild.transfer", { service: serviceName })}</p>
         <p>{t("ragSettings.rebuild.notesUnchanged")}</p>
-        <p className="rag-rebuild__count">{t("ragSettings.rebuild.count", { count: fileCount })}</p>
+        {/* "files", not "count": a variable named count would additionally send
+            i18next looking for plural forms of this key that no locale has. */}
+        <p className="rag-rebuild__count">{t("ragSettings.rebuild.count", { files: fileCount })}</p>
 
         <div className="unsaved-dialog__actions">
           <Button type="button" variant="outline" onClick={onCancel}>

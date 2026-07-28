@@ -94,7 +94,7 @@ export function RagIndexPanel({
             ? t("ragSettings.index.none")
             : pendingCount > 0
               ? t("ragSettings.index.partial", { ready: readyCount, pending: pendingCount })
-              : t("ragSettings.index.ready", { count: readyCount })}
+              : t("ragSettings.index.ready", { ready: readyCount })}
       </p>
 
       {error ? <p className="rag-settings__error">{error}</p> : null}

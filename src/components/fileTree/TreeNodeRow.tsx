@@ -8,9 +8,11 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
+import { carriesExternalFiles } from "@/lib/dragDrop/droppedSources";
 import { FILE_LINK_DRAG_MIME } from "@/lib/editor/fileLinks";
 import { getNodeMtimeMs, type FileTreeNode } from "@/lib/fileTree";
 import type { SortMode } from "@/lib/vaultMeta";
+import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportDropStore";
 import { useSearchStore } from "@/store/useSearchStore";
 
 import {
@@ -81,6 +83,17 @@ export function TreeNodeRow({
   const searchMatchCount = useSearchStore((state) =>
     node.kind === "file" ? state.fileMatchCounts[node.filePath] ?? 0 : 0
   );
+  // Where a drop from outside the app imports to: a folder takes the drop
+  // itself, a file hands it to the folder it lives in. Only folders light up
+  // for it — every file in the root would otherwise highlight for the same
+  // target. The drop itself is handled by the panel (see Sidebar.tsx).
+  const dropDirectory =
+    node.kind === "folder"
+      ? node.relativePath
+      : node.relativePath.split("/").slice(0, -1).join("/");
+  const isImportDropTarget = useImportDropStore(
+    (state) => node.kind === "folder" && state.targetDirectory === node.relativePath
+  );
   const paddingLeft = `${INDENT_BASE_REM + depth * INDENT_STEP_REM}rem`;
   const key = getNodeKey(node);
   // Roving tabindex: only the active row is reachable via Tab, all others are
@@ -124,6 +137,13 @@ export function TreeNodeRow({
   const dropTargetHandlers = isReorderEnabled
     ? {
         onDragOver: (event: React.DragEvent<HTMLButtonElement>) => {
+          // Files from outside the app are an import, not a move: the event is
+          // left alone so it reaches the panel's own handler, which marks the
+          // target folder and takes the drop.
+          if (carriesExternalFiles(event.dataTransfer)) {
+            return;
+          }
+
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
 
@@ -144,6 +164,10 @@ export function TreeNodeRow({
           onRowDropIndicatorChange(key, null);
         },
         onDrop: (event: React.DragEvent<HTMLButtonElement>) => {
+          if (carriesExternalFiles(event.dataTransfer)) {
+            return;
+          }
+
           event.preventDefault();
           event.stopPropagation();
           onRowDrop(node, activeDropPosition ?? "below");
@@ -203,10 +227,12 @@ export function TreeNodeRow({
               isDragSource && "file-tree__row--drag-source",
               activeDropPosition === "above" && "file-tree__row--drop-above",
               activeDropPosition === "below" && "file-tree__row--drop-below",
-              activeDropPosition === "into" && "file-tree__row--drop-into"
+              activeDropPosition === "into" && "file-tree__row--drop-into",
+              isImportDropTarget && "file-tree__row--drop-import"
             )}
             style={{ paddingLeft }}
             title={node.relativePath}
+            {...{ [DROP_DIRECTORY_ATTRIBUTE]: dropDirectory }}
             tabIndex={tabIndex}
             ref={(element) => registerItemRef(key, element)}
             onClick={(event) => onRowClick(node, event)}
@@ -315,6 +341,7 @@ export function TreeNodeRow({
           )}
           style={{ paddingLeft }}
           title={node.relativePath}
+          {...{ [DROP_DIRECTORY_ATTRIBUTE]: dropDirectory }}
           tabIndex={tabIndex}
           ref={(element) => registerItemRef(key, element)}
           onClick={(event) => onRowClick(node, event)}

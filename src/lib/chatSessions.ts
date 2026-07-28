@@ -69,6 +69,7 @@ function normalizeMessage(raw: unknown): AiChatMessage | null {
     action?: unknown;
     selection?: unknown;
     suggestsEdit?: unknown;
+    proposedEdit?: unknown;
   };
 
   if (typeof candidate.role !== "string" || !(CHAT_ROLES as string[]).includes(candidate.role)) {
@@ -101,13 +102,14 @@ function normalizeMessage(raw: unknown): AiChatMessage | null {
       ? candidate.toolCalls.map(normalizeToolCall).filter((call): call is ToolCall => call !== null)
       : undefined;
 
-    // A session written before the flag existed simply has no flag — its
-    // replies reopen without an "apply" button, which is the safe default.
+    // A session written before the flags existed simply has none — its replies
+    // reopen without an "apply" button, which is the safe default.
     return {
       role: "assistant",
       content: candidate.content,
       ...(toolCalls && toolCalls.length > 0 ? { toolCalls } : {}),
-      ...(candidate.suggestsEdit === true ? { suggestsEdit: true } : {})
+      ...(candidate.suggestsEdit === true ? { suggestsEdit: true } : {}),
+      ...(candidate.proposedEdit === true ? { proposedEdit: true } : {})
     };
   }
 

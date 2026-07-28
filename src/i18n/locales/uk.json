@@ -116,7 +116,11 @@
     "errorConvert": "Помилка перетворення: {{message}}",
     "errorWrite": "Не вдалося записати файл: {{message}}",
     "errorOcrNoModel": "Модель ШІ не налаштована. Завантажте модель із підтримкою зображень у налаштуваннях ШІ, щоб імпортувати зображення.",
-    "errorOcrProvider": "Не вдалося розпізнати зображення — налаштована модель, можливо, не підтримує зображення. ({{message}})"
+    "errorOcrProvider": "Не вдалося розпізнати зображення — налаштована модель, можливо, не підтримує зображення. ({{message}})",
+    "nothingSupported": "Підтримуваних файлів немає.",
+    "limitReached": "За один раз імпортується не більше {{max}} файлів.",
+    "skippedFiles": "Пропущено непідтримуваних файлів: {{files}}.",
+    "errorTooLarge": "Файл завеликий."
   },
   "linkDialog": {
     "eyebrow": "Посилання",
@@ -412,7 +416,8 @@
     "shortcutsTitle": "Клавіатурні скорочення (Ctrl+#)",
     "searchingFolder": "Пошук у папці …",
     "openFolderPrompt": "Відкрийте папку, щоб побачити всі файли Markdown, які вона містить.",
-    "noMarkdownFiles": "Файлів Markdown не знайдено. Відкрийте папку з файлами `.md`."
+    "noMarkdownFiles": "Файлів Markdown не знайдено. Відкрийте папку з файлами `.md`.",
+    "dropImportHint": "Перетягніть файли або теки — вони будуть імпортовані як нотатки"
   },
   "fileTree": {
     "treeLabel": "Дерево файлів",
@@ -599,7 +604,8 @@
     "aiTipConnection": "Порада: перевірте, чи запущено Ollama або Jan.ai і чи доступна URL-адреса API.",
     "aiTipGeneric": "Порада: перевірте налаштування ШІ та спробуйте ще раз.",
     "aiThinking": "Міркує …",
-    "aiGenerating": "ШІ пише …"
+    "aiGenerating": "ШІ пише …",
+    "dropDocumentHint": "Документи не вставляються в текст — перетягніть їх у список файлів, щоб імпортувати як нотатку."
   },
   "aiDiffWidget": {
     "resultLabel": "Результат ШІ",
@@ -720,7 +726,7 @@
     "attachmentsLabel": "Прикріплені файли",
     "attachmentDetach": "Прибрати {{name}}",
     "attachmentTruncated": "Файл довгий — надсилається лише його початок.",
-    "attachmentRejected": "Не вдалося прочитати: {{files}}. Прикріплювати можна лише текстові файли (наприклад, .md, .txt, .csv).",
+    "attachmentRejected": "Не вдалося прочитати: {{files}}. Прикріпити можна текстові файли, PDF і Word.",
     "attachmentLimit": "Не більше ніж {{max}} файлів на чат.",
     "dropFilesHint": "Відпустіть файли — вони стануть пріоритетною базою знань цього чату",
     "emptyAttachHint": "Порада: перетягніть сюди файли — чат відповідатиме насамперед за ними.",
@@ -730,6 +736,7 @@
     "toolResizedImage": "Розмір зображення змінено",
     "toolProposedSelection": "Запропоновано зміну для виділення",
     "toolProposedInsert": "Запропоновано вставлення",
+    "proposedFromReply": "Текст запропоновано в документі",
     "toolProposedPassage": "Запропоновано зміну в тексті",
     "toolAcceptedProposals": "Пропозиції застосовано",
     "toolDiscardedProposals": "Пропозиції відхилено",
@@ -738,6 +745,15 @@
     "toolReadNoteFailed": "Не вдалося прочитати нотатку",
     "sourcesLabel": "Джерела",
     "agentWorking": "Агент працює…",
+    "activityThinking": "Думає…",
+    "activityGathering": "Збирає інформацію…",
+    "activityPondering": "Бере слід…",
+    "activityComposing": "Формулює відповідь…",
+    "activityReadingDocument": "Читає документ…",
+    "activityViewingImage": "Дивиться на зображення…",
+    "activitySearchingVault": "Шукає у ваших нотатках…",
+    "activityReadingNote": "Читає нотатку…",
+    "activityEditing": "Готує зміну…",
     "otherSessionBusy": "Зараз формується відповідь в іншому чаті.",
     "agentStopped": "Зупинено після кількох кроків без остаточної відповіді.",
     "toolReadImageFailed": "Не вдалося прочитати зображення",
@@ -746,7 +762,10 @@
     "toolProposeInsertFailed": "Не вдалося запропонувати вставлення",
     "toolProposePassageFailed": "Фрагмент не знайдено",
     "toolSettleProposalsFailed": "Немає відкритих пропозицій",
-    "toolActionFailed": "Дію не виконано"
+    "toolActionFailed": "Дію не виконано",
+    "attachmentFolder": "Теки не можна прикріпити — перетягніть їх у список файлів, щоб імпортувати.",
+    "attachmentOcrNoModel": "Для зображень потрібна модель ШІ з підтримкою зображень — налаштуйте її в параметрах ШІ.",
+    "attachmentReading": "Читання файлів…"
   },
   "manuscript": {
     "chapterLabelTemplate": "Розділ {number}",

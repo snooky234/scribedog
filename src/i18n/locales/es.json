@@ -114,7 +114,11 @@
     "errorConvert": "Error de conversión: {{message}}",
     "errorWrite": "No se pudo escribir el archivo: {{message}}",
     "errorOcrNoModel": "No hay ningún modelo de IA configurado. Carga un modelo con capacidad de visión en los ajustes de IA para importar imágenes.",
-    "errorOcrProvider": "No se pudo transcribir la imagen — puede que el modelo configurado no admita imágenes. ({{message}})"
+    "errorOcrProvider": "No se pudo transcribir la imagen — puede que el modelo configurado no admita imágenes. ({{message}})",
+    "nothingSupported": "No hay archivos compatibles.",
+    "limitReached": "Se importan como máximo {{max}} archivos a la vez.",
+    "skippedFiles": "Se omitieron {{files}} archivos no compatibles.",
+    "errorTooLarge": "El archivo es demasiado grande."
   },
   "linkDialog": {
     "eyebrow": "Enlace",
@@ -402,7 +406,8 @@
     "shortcutsTitle": "Atajos de teclado (Ctrl+#)",
     "searchingFolder": "Buscando en la carpeta …",
     "openFolderPrompt": "Abre una carpeta para ver todos los archivos Markdown que contiene.",
-    "noMarkdownFiles": "No se encontraron archivos Markdown. Abre una carpeta que contenga archivos `.md`."
+    "noMarkdownFiles": "No se encontraron archivos Markdown. Abre una carpeta que contenga archivos `.md`.",
+    "dropImportHint": "Suelta archivos o carpetas: se importan como notas"
   },
   "fileTree": {
     "treeLabel": "Árbol de archivos",
@@ -589,7 +594,8 @@
     "aiTipConnection": "Consejo: Comprueba si Ollama o Jan.ai se está ejecutando y si la URL de la API es accesible.",
     "aiTipGeneric": "Consejo: Revisa la configuración de IA e inténtalo de nuevo.",
     "aiThinking": "Pensando …",
-    "aiGenerating": "La IA está escribiendo …"
+    "aiGenerating": "La IA está escribiendo …",
+    "dropDocumentHint": "Los documentos no se insertan en el texto: suéltalos en la lista de archivos para importarlos como nota."
   },
   "aiDiffWidget": {
     "resultLabel": "Resultado de la IA",
@@ -710,7 +716,7 @@
     "attachmentsLabel": "Archivos adjuntos",
     "attachmentDetach": "Quitar {{name}}",
     "attachmentTruncated": "El archivo es largo: solo se envía su comienzo.",
-    "attachmentRejected": "No se pudo leer: {{files}}. Solo se pueden adjuntar archivos de texto (p. ej. .md, .txt, .csv).",
+    "attachmentRejected": "No se pudo leer: {{files}}. Se pueden adjuntar archivos de texto, PDF y Word.",
     "attachmentLimit": "Como máximo {{max}} archivos por chat.",
     "dropFilesHint": "Suelta los archivos: serán la base de conocimiento prioritaria de este chat",
     "emptyAttachHint": "Consejo: arrastra archivos aquí; el chat responderá primero a partir de ellos.",
@@ -720,6 +726,7 @@
     "toolResizedImage": "Imagen redimensionada",
     "toolProposedSelection": "Cambio propuesto para la selección",
     "toolProposedInsert": "Inserción propuesta",
+    "proposedFromReply": "Texto propuesto en el documento",
     "toolProposedPassage": "Cambio propuesto en el texto",
     "toolAcceptedProposals": "Propuestas aplicadas",
     "toolDiscardedProposals": "Propuestas descartadas",
@@ -728,6 +735,15 @@
     "toolReadNoteFailed": "No se pudo leer la nota",
     "sourcesLabel": "Fuentes",
     "agentWorking": "El agente está trabajando…",
+    "activityThinking": "Pensando…",
+    "activityGathering": "Reuniendo información…",
+    "activityPondering": "Olfateando una pista…",
+    "activityComposing": "Redactando la respuesta…",
+    "activityReadingDocument": "Leyendo el documento…",
+    "activityViewingImage": "Mirando la imagen…",
+    "activitySearchingVault": "Husmeando en tus notas…",
+    "activityReadingNote": "Leyendo una nota…",
+    "activityEditing": "Preparando el cambio…",
     "otherSessionBusy": "Se está respondiendo a otro chat en este momento.",
     "agentStopped": "Detenido tras varios pasos sin una respuesta final.",
     "toolReadImageFailed": "No se pudo leer la imagen",
@@ -736,7 +752,10 @@
     "toolProposeInsertFailed": "No se pudo proponer la inserción",
     "toolProposePassageFailed": "Pasaje no encontrado",
     "toolSettleProposalsFailed": "No hay propuestas abiertas",
-    "toolActionFailed": "La acción falló"
+    "toolActionFailed": "La acción falló",
+    "attachmentFolder": "Las carpetas no se pueden adjuntar: suéltalas en la lista de archivos para importarlas.",
+    "attachmentOcrNoModel": "Las imágenes necesitan un modelo de IA con visión: configúralo en los ajustes de IA.",
+    "attachmentReading": "Leyendo archivos…"
   },
   "manuscript": {
     "chapterLabelTemplate": "Capítulo {number}",

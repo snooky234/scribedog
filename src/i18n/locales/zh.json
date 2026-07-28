@@ -114,7 +114,11 @@
     "errorConvert": "转换失败：{{message}}",
     "errorWrite": "无法写入文件：{{message}}",
     "errorOcrNoModel": "尚未配置 AI 模型。请在 AI 设置中加载支持图像的模型以导入图片。",
-    "errorOcrProvider": "无法转录图片 — 配置的模型可能不支持图像。（{{message}}）"
+    "errorOcrProvider": "无法转录图片 — 配置的模型可能不支持图像。（{{message}}）",
+    "nothingSupported": "没有支持的文件。",
+    "limitReached": "每次最多导入 {{max}} 个文件。",
+    "skippedFiles": "已跳过 {{files}} 个不支持的文件。",
+    "errorTooLarge": "文件太大。"
   },
   "linkDialog": {
     "eyebrow": "链接",
@@ -402,7 +406,8 @@
     "shortcutsTitle": "键盘快捷键（Ctrl+#）",
     "searchingFolder": "正在搜索文件夹……",
     "openFolderPrompt": "打开一个文件夹以查看其中包含的所有 Markdown 文件。",
-    "noMarkdownFiles": "未找到 Markdown 文件。请打开包含 `.md` 文件的文件夹。"
+    "noMarkdownFiles": "未找到 Markdown 文件。请打开包含 `.md` 文件的文件夹。",
+    "dropImportHint": "拖入文件或文件夹，将作为笔记导入"
   },
   "fileTree": {
     "treeLabel": "文件树",
@@ -589,7 +594,8 @@
     "aiTipConnection": "提示：请检查 Ollama 或 Jan.ai 是否正在运行，以及 API 地址是否可访问。",
     "aiTipGeneric": "提示：请检查 AI 设置并重试。",
     "aiThinking": "思考中……",
-    "aiGenerating": "AI 正在生成……"
+    "aiGenerating": "AI 正在生成……",
+    "dropDocumentHint": "文档不会插入正文，拖到文件列表即可作为笔记导入。"
   },
   "aiDiffWidget": {
     "resultLabel": "AI 结果",
@@ -710,7 +716,7 @@
     "attachmentsLabel": "已附加的文件",
     "attachmentDetach": "移除 {{name}}",
     "attachmentTruncated": "文件较长，仅发送其开头部分。",
-    "attachmentRejected": "无法读取：{{files}}。只能附加文本文件（如 .md、.txt、.csv）。",
+    "attachmentRejected": "无法读取：{{files}}。可附加文本、PDF 和 Word 文件。",
     "attachmentLimit": "每个对话最多 {{max}} 个文件。",
     "dropFilesHint": "放下文件 — 它们将成为此对话的优先知识库",
     "emptyAttachHint": "提示：把文件拖到这里，对话会优先根据它们回答。",
@@ -720,6 +726,7 @@
     "toolResizedImage": "已调整图片大小",
     "toolProposedSelection": "已为所选内容提出修改建议",
     "toolProposedInsert": "已提出插入建议",
+    "proposedFromReply": "已在文档中提出文本建议",
     "toolProposedPassage": "已在正文中提出修改建议",
     "toolAcceptedProposals": "已采纳建议",
     "toolDiscardedProposals": "已放弃建议",
@@ -728,6 +735,15 @@
     "toolReadNoteFailed": "无法读取笔记",
     "sourcesLabel": "来源",
     "agentWorking": "智能体正在处理…",
+    "activityThinking": "正在思考…",
+    "activityGathering": "正在收集信息…",
+    "activityPondering": "正在嗅探线索…",
+    "activityComposing": "正在组织回答…",
+    "activityReadingDocument": "正在阅读文档…",
+    "activityViewingImage": "正在查看图片…",
+    "activitySearchingVault": "正在搜索你的笔记…",
+    "activityReadingNote": "正在阅读笔记…",
+    "activityEditing": "正在准备修改…",
     "otherSessionBusy": "正在回答另一个会话。",
     "agentStopped": "经过多个步骤仍未给出最终回答，已停止。",
     "toolReadImageFailed": "无法读取图片",
@@ -736,7 +752,10 @@
     "toolProposeInsertFailed": "提出插入建议失败",
     "toolProposePassageFailed": "未找到该段落",
     "toolSettleProposalsFailed": "没有待处理的建议",
-    "toolActionFailed": "操作失败"
+    "toolActionFailed": "操作失败",
+    "attachmentFolder": "无法附加文件夹，拖到文件列表即可导入。",
+    "attachmentOcrNoModel": "图片需要支持视觉的 AI 模型，请在 AI 设置中配置。",
+    "attachmentReading": "正在读取文件…"
   },
   "manuscript": {
     "chapterLabelTemplate": "第 {number} 章",

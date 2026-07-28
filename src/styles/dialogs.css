@@ -865,6 +865,14 @@
   overflow-wrap: anywhere;
 }
 
+/* What a dropped folder contributed beyond the files being imported: files no
+   converter handles, and the cap on one batch. */
+.import-dialog__notice {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: rgba(var(--muted-rgb), 0.95);
+}
+
 .import-dialog__list {
   margin-top: 1rem;
   max-height: 16rem;

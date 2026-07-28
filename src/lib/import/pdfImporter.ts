@@ -1,5 +1,3 @@
-import { readFile } from "@tauri-apps/plugin-fs";
-
 import {
   getRelativeImageMarkdownPath,
   saveImageToFolder
@@ -194,13 +192,17 @@ async function extractPlacedImage(
  * pipe tables, and embedded raster images extracted into the vault's
  * "images/" folder at their displayed size and position. Layout
  * reconstruction is deliberately best effort.
+ *
+ * Called without the vault arguments the image pass is skipped entirely — that
+ * is the chat's mode, where nothing may be written to disk and decoding every
+ * raster image would cost seconds for text the model never sees.
  */
 export async function convertPdfToMarkdown(
-  sourcePath: string,
-  vaultRoot: string,
-  targetFilePath: string,
-  imageBaseName: string,
-  signal?: AbortSignal
+  fileBytes: Uint8Array,
+  signal?: AbortSignal,
+  vaultRoot?: string,
+  targetFilePath?: string,
+  imageBaseName?: string
 ): Promise<string> {
   const pdfjs = await import("pdfjs-dist");
   const { default: workerUrl } = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
@@ -221,7 +223,6 @@ export async function convertPdfToMarkdown(
     eoFillStroke: pdfjs.OPS.eoFillStroke
   };
 
-  const fileBytes = await readFile(sourcePath);
   const pdfDocument = await pdfjs.getDocument({ data: fileBytes }).promise;
 
   try {
@@ -299,17 +300,19 @@ export async function convertPdfToMarkdown(
 
       blocks.push(...linesToBlocks(collectPageLines(freeItems), checkboxes));
 
-      for (const placement of placedImages) {
-        const markdown = await extractPlacedImage(
-          page,
-          placement,
-          vaultRoot,
-          targetFilePath,
-          imageBaseName
-        );
+      if (vaultRoot !== undefined && targetFilePath !== undefined && imageBaseName !== undefined) {
+        for (const placement of placedImages) {
+          const markdown = await extractPlacedImage(
+            page,
+            placement,
+            vaultRoot,
+            targetFilePath,
+            imageBaseName
+          );
 
-        if (markdown) {
-          blocks.push({ y: placement.yTop, markdown, kind: "image" });
+          if (markdown) {
+            blocks.push({ y: placement.yTop, markdown, kind: "image" });
+          }
         }
       }
 

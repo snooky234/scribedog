@@ -33,10 +33,15 @@ import { FLAG_SUGGESTION_TOOL_NAME, type AiChatMessage, type VaultSourceRef } fr
 import {
   fileNameFromPath,
   MAX_ATTACHED_FILES,
-  readDroppedFile,
+  readDroppedAttachment,
   readVaultAttachment,
   type AttachedChatFile
 } from "@/lib/chat/attachedFiles";
+import {
+  carriesExternalFiles,
+  readDropPayload,
+  type DropPayload
+} from "@/lib/dragDrop/droppedSources";
 import { renderChatMarkdown } from "@/lib/chat/renderMarkdown";
 import {
   FILE_LINK_DRAG_MIME,
@@ -94,6 +99,73 @@ const TOOL_ERROR_LABEL_KEYS: Record<string, string> = {
   discard_proposals: "chat.toolSettleProposalsFailed",
   read_note: "chat.toolReadNoteFailed"
 };
+
+// What the agent is doing right now, per tool — present tense, unlike the
+// past-tense TOOL_LABEL_KEYS above, which record what it *did*. A tool with no
+// entry here falls back to the idle wording rather than inventing a sentence
+// about itself.
+const TOOL_ACTIVITY_KEYS: Record<string, string> = {
+  get_document: "chat.activityReadingDocument",
+  get_selection: "chat.activityReadingDocument",
+  get_image: "chat.activityViewingImage",
+  set_image_width: "chat.activityEditing",
+  replace_selection: "chat.activityEditing",
+  insert_at_cursor: "chat.activityEditing",
+  replace_passage: "chat.activityEditing",
+  accept_proposals: "chat.activityEditing",
+  discard_proposals: "chat.activityEditing",
+  search_vault: "chat.activitySearchingVault",
+  read_note: "chat.activityReadingNote"
+};
+
+// Shown, one after another, while nothing more specific is known — a model
+// thinking for twenty seconds with no tool in sight. They say nothing the app
+// actually knows, and are meant to read that way: filler that moves, rather
+// than a claim about what the model is doing.
+const IDLE_ACTIVITY_KEYS = [
+  "chat.activityThinking",
+  "chat.activityGathering",
+  "chat.activityPondering",
+  "chat.activityComposing"
+];
+
+const IDLE_ACTIVITY_INTERVAL_MS = 2600;
+
+/**
+ * The line that replaces the answer while there is none yet.
+ *
+ * Pulsing rather than a spinner, and worded rather than three dots: the wait
+ * for a local model is long enough that "nothing is happening" and "something
+ * is happening" have to be distinguishable at a glance.
+ */
+function AgentActivity({ activityTool }: { activityTool: string | null }) {
+  const { t } = useTranslation();
+  const [idleIndex, setIdleIndex] = useState(0);
+  const activityKey = activityTool ? TOOL_ACTIVITY_KEYS[activityTool] : undefined;
+
+  // Only the idle wording rotates; a named tool keeps its line for as long as
+  // it runs, because that one is telling the truth.
+  useEffect(() => {
+    if (activityKey) {
+      return;
+    }
+
+    const timer = setInterval(
+      () => setIdleIndex((previous) => (previous + 1) % IDLE_ACTIVITY_KEYS.length),
+      IDLE_ACTIVITY_INTERVAL_MS
+    );
+
+    return () => clearInterval(timer);
+  }, [activityKey]);
+
+  const label = t(activityKey ?? IDLE_ACTIVITY_KEYS[idleIndex]);
+
+  return (
+    <span className="chat-message__activity" role="status">
+      {label}
+    </span>
+  );
+}
 
 function toolIcon(toolName: string, isError: boolean) {
   if (isError) {
@@ -258,6 +330,17 @@ function AssistantMessage({
         dangerouslySetInnerHTML={{ __html: renderChatMarkdown(message.content) }}
       />
 
+      {/* The reply was text the user had asked to have written, and it went
+          into the document as a proposal once the turn had ended — without a
+          word here the red/green block would appear in the editor with nothing
+          in the chat accounting for it. */}
+      {message.proposedEdit ? (
+        <div className="chat-tool-status">
+          <TextCursorInput className="size-3.5" />
+          <span>{t("chat.proposedFromReply")}</span>
+        </div>
+      ) : null}
+
       {/* Not a raw paste of the answer at the caret: this asks the agent to
           work the suggestion into the existing text, which lands as reviewable
           red/green proposals in the document. */}
@@ -356,15 +439,16 @@ function RecentSessions() {
 
 /**
  * Whether a drag is one this panel takes: notes dragged out of the file tree
- * (the sidebar writes FILE_LINK_DRAG_MIME) or files dragged in from the OS.
+ * (the sidebar writes FILE_LINK_DRAG_MIME) or files dragged in from outside.
  *
  * Decided from `types` rather than from the data itself, which the browser only
  * hands out on drop — during a drag all a handler may know is what kinds of
  * payload are on offer.
  */
 function carriesAttachableFiles(dataTransfer: DataTransfer | null): boolean {
-  return Array.from(dataTransfer?.types ?? []).some(
-    (type) => type === "Files" || type === FILE_LINK_DRAG_MIME
+  return (
+    carriesExternalFiles(dataTransfer) ||
+    Array.from(dataTransfer?.types ?? []).includes(FILE_LINK_DRAG_MIME)
   );
 }
 
@@ -418,6 +502,9 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   // files a drop could not take on.
   const [isDropTarget, setIsDropTarget] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
+  // Converting a PDF takes seconds, so the drop hint stays up and says so
+  // instead of leaving the panel looking like nothing happened.
+  const [isAttaching, setIsAttaching] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
@@ -465,6 +552,7 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   );
   const streamingText = useChatStore((state) => state.streamingText);
   const streamingThinking = useChatStore((state) => state.streamingThinking);
+  const streamingActivity = useChatStore((state) => state.streamingActivity);
   const error = useChatStore((state) => state.error);
   const loadedFolderPath = useChatStore((state) => state.loadedFolderPath);
   const editorSelection = useChatStore((state) => state.editorSelection);
@@ -574,35 +662,17 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
     return () => window.removeEventListener("keydown", handleDictationKeys);
   }, []);
 
-  // Reads everything a drop offered and hands it to the store. Files that
-  // cannot serve as context at all (a binary, an unreadable file) are named
-  // back to the user rather than silently dropped — a dragged file that simply
-  // vanishes looks like the whole feature did not work.
-  const takeDroppedFiles = async (vaultPaths: string[], droppedFiles: File[]) => {
-    const attachments: AttachedChatFile[] = [];
-    const rejected: string[] = [];
-
-    for (const path of vaultPaths) {
-      const attachment = await readVaultAttachment(vaultFolderPath, path);
-
-      if (attachment) {
-        attachments.push(attachment);
-      } else {
-        rejected.push(fileNameFromPath(path));
-      }
-    }
-
-    for (const file of droppedFiles) {
-      const attachment = await readDroppedFile(file);
-
-      if (attachment) {
-        attachments.push(attachment);
-      } else {
-        rejected.push(file.name);
-      }
-    }
-
+  // Hands what a drop yielded to the store. Files that cannot serve as context
+  // at all (a binary, an unreadable file) are named back to the user rather
+  // than silently dropped — a dragged file that simply vanishes looks like the
+  // whole feature did not work.
+  const commitAttachments = (attachments: AttachedChatFile[], rejected: string[], notice?: string) => {
     const added = attachFiles(attachments);
+
+    if (notice) {
+      setAttachError(notice);
+      return;
+    }
 
     if (rejected.length > 0) {
       setAttachError(t("chat.attachmentRejected", { files: rejected.join(", ") }));
@@ -616,6 +686,62 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
         ? t("chat.attachmentLimit", { max: MAX_ATTACHED_FILES })
         : null
     );
+  };
+
+  // Notes dragged out of the file tree. Files coming from the OS take the
+  // native route below instead — they never reach a React drag event.
+  const takeVaultPaths = async (vaultPaths: string[]) => {
+    const attachments: AttachedChatFile[] = [];
+    const rejected: string[] = [];
+
+    for (const path of vaultPaths) {
+      const attachment = await readVaultAttachment(vaultFolderPath, path);
+
+      if (attachment) {
+        attachments.push(attachment);
+      } else {
+        rejected.push(fileNameFromPath(path));
+      }
+    }
+
+    commitAttachments(attachments, rejected);
+  };
+
+  // Files dragged in from outside the app: converted to markdown first, so a
+  // PDF or a Word document is as usable as context as a note is.
+  const takeDroppedFiles = async (payload: DropPayload) => {
+    const attachments: AttachedChatFile[] = [];
+    const rejected: string[] = [];
+    // A folder and a missing model are worth their own sentence: the first has
+    // a place to go, the second is one setting away from working.
+    const folderNames = new Set(
+      payload.entries.filter((entry) => entry.isDirectory).map((entry) => entry.name)
+    );
+    let notice = folderNames.size > 0 ? t("chat.attachmentFolder") : undefined;
+
+    setIsAttaching(true);
+
+    try {
+      for (const file of payload.files) {
+        if (folderNames.has(file.name)) {
+          continue;
+        }
+
+        const result = await readDroppedAttachment(file);
+
+        if (result.ok) {
+          attachments.push(result.attachment);
+        } else if (result.reason === "ocrNoModel") {
+          notice = t("chat.attachmentOcrNoModel");
+        } else {
+          rejected.push(file.name);
+        }
+      }
+    } finally {
+      setIsAttaching(false);
+    }
+
+    commitAttachments(attachments, rejected, notice);
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLElement>) => {
@@ -648,9 +774,20 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
     event.preventDefault();
     setIsDropTarget(false);
 
-    // The data transfer is emptied as soon as this handler returns, so both
-    // lists are taken out of it here and only read afterwards.
-    void takeDroppedFiles(getDraggedVaultFilePaths(event.dataTransfer), Array.from(event.dataTransfer.files));
+    // The transfer is emptied as soon as this handler returns, so both payloads
+    // are taken out of it here and only read afterwards.
+    const vaultPaths = getDraggedVaultFilePaths(event.dataTransfer);
+    const payload = carriesExternalFiles(event.dataTransfer)
+      ? readDropPayload(event.dataTransfer)
+      : null;
+
+    if (vaultPaths.length > 0) {
+      void takeVaultPaths(vaultPaths);
+    }
+
+    if (payload) {
+      void takeDroppedFiles(payload);
+    }
   };
 
   const handleSend = () => {
@@ -700,10 +837,10 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
     >
       {/* Dropping files anywhere on the panel attaches them, so the hint covers
           the whole panel rather than marking one small target. */}
-      {isDropTarget ? (
+      {isDropTarget || isAttaching ? (
         <div className="chat-panel__dropzone" aria-hidden="true">
-          <Paperclip className="size-5" />
-          <span>{t("chat.dropFilesHint")}</span>
+          {isAttaching ? <Loader2 className="size-5 animate-spin" /> : <Paperclip className="size-5" />}
+          <span>{isAttaching ? t("chat.attachmentReading") : t("chat.dropFilesHint")}</span>
         </div>
       ) : null}
 
@@ -838,17 +975,20 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
             {streamingThinking ? (
               <div className="chat-message__thinking">{streamingThinking}</div>
             ) : null}
-            <div className="chat-message__bubble">
-              {streamingText || (
-                <span className="chat-message__cursor" role="status" aria-label={t("chat.agentWorking")}>
-                  <span className="chat-thinking-dots" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
-                  </span>
-                </span>
-              )}
-            </div>
+            {streamingText ? (
+              // Rendered as markdown while it streams, the same way the
+              // finished message is: text that arrives as its own syntax and
+              // then reflows into headings and lists once the turn ends reads
+              // as two different answers.
+              <div
+                className="chat-message__bubble chat-message__bubble--markdown"
+                dangerouslySetInnerHTML={{ __html: renderChatMarkdown(streamingText) }}
+              />
+            ) : (
+              <div className="chat-message__bubble">
+                <AgentActivity activityTool={streamingActivity} />
+              </div>
+            )}
           </div>
         ) : null}
 

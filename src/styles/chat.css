@@ -378,10 +378,33 @@
   word-break: break-word;
 }
 
-.chat-message__cursor {
-  display: inline-flex;
-  align-items: center;
-  color: rgba(var(--text-rgb), 0.4);
+/* The narrated wait: what the agent is doing right now, in place of the answer
+   that isn't there yet. Pulsing rather than static — a sentence that sits
+   perfectly still for twenty seconds reads as a stalled app, which is exactly
+   what the line exists to disprove. */
+.chat-message__activity {
+  display: inline-block;
+  color: rgba(var(--text-rgb), 0.5);
+  font-size: 0.85rem;
+  font-style: italic;
+  animation: chat-activity-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes chat-activity-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-message__activity {
+    animation: none;
+    opacity: 0.75;
+  }
 }
 
 .chat-thinking-dots {

@@ -4,7 +4,7 @@ mod voice;
 use std::{path::PathBuf, sync::Mutex};
 
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_fs::FsExt;
 
 const FOLDER_FILES_CHANGED_EVENT: &str = "scribedog-folder-files-changed";
@@ -280,6 +280,20 @@ pub fn run() {
     }
 
     builder
+        .setup(|app| {
+            // The window is created hidden so the light default webview
+            // background can never flash before the themed UI paints; the
+            // frontend reveals it. This is the safety net that shows it anyway
+            // if the frontend never gets that far.
+            if let Some(window) = app.get_webview_window("main") {
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    let _ = window.show();
+                });
+            }
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_startup_folder_path,
             allow_folder_scope,

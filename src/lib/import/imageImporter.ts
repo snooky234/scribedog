@@ -1,5 +1,3 @@
-import { readFile } from "@tauri-apps/plugin-fs";
-
 import { generateOcrMarkdown } from "@/lib/aiClient";
 import { guessImageMimeType } from "@/lib/fileSystem";
 import { encodeImageForVision } from "@/lib/imageEncoding";
@@ -11,17 +9,18 @@ export function isAiOcrConfigured(): boolean {
 }
 
 /**
- * Transcribes a standalone image file to markdown through the configured AI
- * model. Vision support is not checked upfront — a provider error is thrown
- * and surfaced per file by the import dialog.
+ * Transcribes a standalone image to markdown through the configured AI model.
+ * Vision support is not checked upfront — a provider error is thrown and
+ * surfaced per file by the import dialog. `fileName` only serves to derive the
+ * MIME type.
  */
 export async function convertImageToMarkdown(
-  sourcePath: string,
+  bytes: Uint8Array,
+  fileName: string,
   signal?: AbortSignal
 ): Promise<string> {
   const { settings } = useAiSettingsStore.getState();
-  const bytes = await readFile(sourcePath);
-  const { base64, mimeType } = await encodeImageForVision(bytes, guessImageMimeType(sourcePath));
+  const { base64, mimeType } = await encodeImageForVision(bytes, guessImageMimeType(fileName));
 
   return generateOcrMarkdown(settings, base64, mimeType, signal);
 }

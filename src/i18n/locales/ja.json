@@ -114,7 +114,11 @@
     "errorConvert": "変換に失敗しました: {{message}}",
     "errorWrite": "ファイルを書き込めませんでした: {{message}}",
     "errorOcrNoModel": "AI モデルが設定されていません。画像をインポートするには、AI 設定で画像対応モデルを読み込んでください。",
-    "errorOcrProvider": "画像を文字起こしできませんでした — 設定されたモデルが画像に対応していない可能性があります。({{message}})"
+    "errorOcrProvider": "画像を文字起こしできませんでした — 設定されたモデルが画像に対応していない可能性があります。({{message}})",
+    "nothingSupported": "対応しているファイルがありません。",
+    "limitReached": "一度にインポートできるのは最大 {{max}} 件です。",
+    "skippedFiles": "対応していないファイルを {{files}} 件スキップしました。",
+    "errorTooLarge": "ファイルが大きすぎます。"
   },
   "linkDialog": {
     "eyebrow": "リンク",
@@ -402,7 +406,8 @@
     "shortcutsTitle": "キーボードショートカット（Ctrl+#）",
     "searchingFolder": "フォルダーを検索中…",
     "openFolderPrompt": "フォルダーを開くと、含まれるすべての Markdown ファイルが表示されます。",
-    "noMarkdownFiles": "Markdown ファイルが見つかりません。`.md` ファイルを含むフォルダーを開いてください。"
+    "noMarkdownFiles": "Markdown ファイルが見つかりません。`.md` ファイルを含むフォルダーを開いてください。",
+    "dropImportHint": "ファイルやフォルダーをドロップするとノートとしてインポートされます"
   },
   "fileTree": {
     "treeLabel": "ファイルツリー",
@@ -589,7 +594,8 @@
     "aiTipConnection": "ヒント：Ollama または Jan.ai が実行中で、API URL にアクセスできるか確認してください。",
     "aiTipGeneric": "ヒント：AI 設定を確認して、もう一度お試しください。",
     "aiThinking": "考え中…",
-    "aiGenerating": "AI が生成中…"
+    "aiGenerating": "AI が生成中…",
+    "dropDocumentHint": "ドキュメントは本文に挿入されません。ファイル一覧にドロップするとノートとしてインポートされます。"
   },
   "aiDiffWidget": {
     "resultLabel": "AI の結果",
@@ -710,7 +716,7 @@
     "attachmentsLabel": "添付ファイル",
     "attachmentDetach": "{{name}} を外す",
     "attachmentTruncated": "ファイルが長いため、先頭部分のみ送信されます。",
-    "attachmentRejected": "読み取れません: {{files}}。テキストファイル（.md、.txt、.csv など）のみ添付できます。",
+    "attachmentRejected": "読み込めません: {{files}}。添付できるのはテキスト、PDF、Word ファイルです。",
     "attachmentLimit": "1 つのチャットにつき最大 {{max}} 件のファイルです。",
     "dropFilesHint": "ファイルをドロップ — このチャットの優先的な知識ベースになります",
     "emptyAttachHint": "ヒント: ファイルをここにドラッグすると、チャットはまずその内容から回答します。",
@@ -720,6 +726,7 @@
     "toolResizedImage": "画像のサイズを変更しました",
     "toolProposedSelection": "選択範囲の変更を提案しました",
     "toolProposedInsert": "挿入を提案しました",
+    "proposedFromReply": "テキストをドキュメントに提案しました",
     "toolProposedPassage": "本文の変更を提案しました",
     "toolAcceptedProposals": "提案を適用しました",
     "toolDiscardedProposals": "提案を破棄しました",
@@ -728,6 +735,15 @@
     "toolReadNoteFailed": "ノートを読み込めませんでした",
     "sourcesLabel": "出典",
     "agentWorking": "エージェントが作業中…",
+    "activityThinking": "考えています…",
+    "activityGathering": "情報を集めています…",
+    "activityPondering": "手がかりを嗅ぎつけています…",
+    "activityComposing": "回答をまとめています…",
+    "activityReadingDocument": "ドキュメントを読んでいます…",
+    "activityViewingImage": "画像を見ています…",
+    "activitySearchingVault": "ノートを検索しています…",
+    "activityReadingNote": "ノートを読んでいます…",
+    "activityEditing": "変更を準備しています…",
     "otherSessionBusy": "現在、別のチャットに回答中です。",
     "agentStopped": "最終的な回答が得られないまま、複数のステップの後に停止しました。",
     "toolReadImageFailed": "画像を読み取れませんでした",
@@ -736,7 +752,10 @@
     "toolProposeInsertFailed": "挿入の提案に失敗しました",
     "toolProposePassageFailed": "該当箇所が見つかりません",
     "toolSettleProposalsFailed": "保留中の提案はありません",
-    "toolActionFailed": "操作に失敗しました"
+    "toolActionFailed": "操作に失敗しました",
+    "attachmentFolder": "フォルダーは添付できません。ファイル一覧にドロップするとインポートできます。",
+    "attachmentOcrNoModel": "画像には画像対応の AI モデルが必要です。AI 設定で構成してください。",
+    "attachmentReading": "ファイルを読み込んでいます…"
   },
   "manuscript": {
     "chapterLabelTemplate": "第 {number} 章",

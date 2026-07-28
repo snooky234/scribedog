@@ -5,19 +5,26 @@ import {
   DEFAULT_CHAT_ASSISTANT_INSTRUCTION,
   EDITING_TOOL_NAMES,
   FLAG_SUGGESTION_TOOL_NAME,
-  generateAiChatStep,
+  IMAGE_UNSUPPORTED_TOOL_RESULT,
+  streamAiChatStep,
+  stripChatImages,
   type AiChatMessage,
   type ChatUserAction,
   type VaultSourceRef
 } from "@/lib/aiClient";
-import { beginChatTurn, executeTool, pendingProposalTurnNote } from "@/lib/chat/agentTools";
+import {
+  beginChatTurn,
+  executeTool,
+  pendingProposalTurnNote,
+  proposeComposedText
+} from "@/lib/chat/agentTools";
 import {
   inlineAttachedFiles,
   MAX_ATTACHED_FILES,
   type AttachedChatFile
 } from "@/lib/chat/attachedFiles";
 import { isKnowledgeBaseReady } from "@/lib/ragSearch";
-import { detectPendingSuggestion } from "@/lib/chat/pendingSuggestion";
+import { resolveUnflaggedReply } from "@/lib/chat/pendingSuggestion";
 import { selectMessagesForModel } from "@/lib/chat/contextWindow";
 import { attachImageData } from "@/lib/chat/imageAttachments";
 import { clampSelection, inlineSelectionContext } from "@/lib/chat/selectionContext";
@@ -28,7 +35,7 @@ import {
   type ChatSession
 } from "@/lib/chatSessions";
 import { formatAiError } from "@/lib/editor/errorMessages";
-import { useAiSettingsStore } from "@/store/useAiSettingsStore";
+import { useAiSettingsStore, type AiSettings } from "@/store/useAiSettingsStore";
 import { getSelectedAssistant, useAssistantsStore } from "@/store/useAssistantsStore";
 
 type ChatView = "chat" | "overview";
@@ -51,6 +58,12 @@ type ChatState = {
   streamingSessionId: string | null;
   streamingText: string;
   streamingThinking: string;
+  // What the agent is busy with right now, as the wire name of the tool it is
+  // calling (see TOOL_ACTIVITY_KEYS in ChatPanel for the wording each maps to),
+  // or null while it is just thinking. Set from the moment a tool's name
+  // arrives in the stream until its result is in, so the wait is narrated
+  // rather than spent on a row of dots.
+  streamingActivity: string | null;
   error: string | null;
   // The passage currently selected in the editor, mirrored here by the editor on
   // every selection change: the composer shows it as a chip, and the next turn
@@ -95,9 +108,42 @@ type ChatState = {
 // the store so the non-serializable controller never triggers a re-render.
 let activeAbortController: AbortController | null = null;
 
+// The "nothing is being answered" half of the state, reset as one wherever a
+// turn ends or the panel moves to another chat: spread over half a dozen call
+// sites, a field forgotten in one of them is a live indicator left on screen
+// for a turn that finished.
+const IDLE_STREAM_VIEW: {
+  streamingSessionId: string | null;
+  streamingText: string;
+  streamingThinking: string;
+  streamingActivity: string | null;
+} = {
+  streamingSessionId: null,
+  streamingText: "",
+  streamingThinking: "",
+  streamingActivity: null
+};
+
+// Tokens arrive faster than a panel needs to repaint, and every store write
+// re-renders the whole transcript and re-runs its scroll effect. Collecting
+// them into one write per interval reads as continuous typing all the same.
+const STREAM_FLUSH_MS = 60;
+
 // Hard cap on tool-call round trips per send, guarding against a model that
 // keeps calling tools without ever settling on a final answer.
 const MAX_ITERATIONS = 8;
+
+// Endpoint/model combinations that have already rejected a request for carrying
+// an image (see streamAiChatStep's retry). Remembered for the app's lifetime so
+// the rejection is paid once, not once per turn: every later send skips the
+// images outright and tells the model up front that it cannot see any. Keyed by
+// endpoint *and* model — switching to a vision model is a different key, and
+// pulling an mmproj into the same model only costs a restart to take effect.
+const noVisionModels = new Set<string>();
+
+function visionKey(settings: AiSettings): string {
+  return `${settings.provider}|${settings.apiUrl}|${settings.model}`;
+}
 
 function createId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -165,9 +211,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sessions: [],
   loadedFolderPath: null,
   isStreaming: false,
-  streamingSessionId: null,
-  streamingText: "",
-  streamingThinking: "",
+  ...IDLE_STREAM_VIEW,
   error: null,
   editorSelection: "",
   useKnowledgeBase: true,
@@ -226,9 +270,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isOpen: true,
       view: "chat",
       activeSessionId: null,
-      streamingSessionId: null,
-      streamingText: "",
-      streamingThinking: "",
+      ...IDLE_STREAM_VIEW,
       error: null,
       // The attachments belong to the chat they were dropped into; a fresh one
       // starts without them (same reasoning everywhere the session changes
@@ -251,9 +293,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({
       activeSessionId: null,
       view: "chat",
-      streamingSessionId: null,
-      streamingText: "",
-      streamingThinking: "",
+      ...IDLE_STREAM_VIEW,
       error: null,
       attachedFiles: []
     });
@@ -280,9 +320,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         sessions: [],
         activeSessionId: null,
         view: "chat",
-        streamingSessionId: null,
-        streamingText: "",
-        streamingThinking: "",
+        ...IDLE_STREAM_VIEW,
         error: null,
         attachedFiles: []
       });
@@ -296,9 +334,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       sessions,
       activeSessionId: null,
       view: "chat",
-      streamingSessionId: null,
-      streamingText: "",
-      streamingThinking: "",
+      ...IDLE_STREAM_VIEW,
       error: null,
       attachedFiles: []
     });
@@ -361,9 +397,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       activeSessionId: session.id,
       view: "chat",
       isStreaming: true,
+      ...IDLE_STREAM_VIEW,
       streamingSessionId: session.id,
-      streamingText: "",
-      streamingThinking: "",
       error: null
     }));
 
@@ -393,6 +428,58 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const abortController = new AbortController();
     activeAbortController = abortController;
 
+    // Tokens land here first and reach the store in batches (see
+    // STREAM_FLUSH_MS). Plain locals rather than store fields: what is on
+    // screen and what has arrived since the last repaint are two different
+    // things, and only the first belongs in a re-rendering state.
+    let pendingText = "";
+    let pendingThinking = "";
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushStream = () => {
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+
+      if (!pendingText && !pendingThinking) {
+        return;
+      }
+
+      const text = pendingText;
+      const thinking = pendingThinking;
+      pendingText = "";
+      pendingThinking = "";
+
+      set((state) => ({
+        streamingText: state.streamingText + text,
+        streamingThinking: state.streamingThinking + thinking,
+        // The answer starting to arrive is what ends the activity line: from
+        // here on the text itself says what is happening.
+        ...(text ? { streamingActivity: null } : {})
+      }));
+    };
+
+    const scheduleFlush = () => {
+      if (!flushTimer) {
+        flushTimer = setTimeout(flushStream, STREAM_FLUSH_MS);
+      }
+    };
+
+    // Between two steps the live view has to go: the text just streamed is
+    // about to be appended as a message, and leaving it would show it twice —
+    // once as the finished bubble and once as the tail of a stream that ended.
+    const clearStreamView = () => {
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+      }
+
+      flushTimer = null;
+      pendingText = "";
+      pendingThinking = "";
+      set({ streamingText: "", streamingThinking: "" });
+    };
+
     // Answers with the position the message landed at, so a later step can go
     // back and amend it (see markSuggestsEdit).
     const appendMessage = (message: AiChatMessage): number => {
@@ -412,20 +499,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return index;
     };
 
-    // Puts the "apply to document" button on an assistant message after the
-    // fact. Addressed by position rather than "the last message": the follow-up
-    // question runs with the turn already finished, so the user may have sent
-    // the next one meanwhile.
-    const markSuggestsEdit = (index: number) => {
+    // Records on an assistant message, after the fact, what became of its text:
+    // the "apply to document" button, or the note that it was proposed into the
+    // document. Addressed by position rather than "the last message": the
+    // follow-up question runs with the turn already finished, so the user may
+    // have sent the next one meanwhile.
+    const markReplyOutcome = (index: number, outcome: { suggestsEdit: true } | { proposedEdit: true }) => {
       set((state) => ({
         sessions: state.sessions.map((entry) =>
           entry.id === session.id
             ? {
                 ...entry,
                 messages: entry.messages.map((message, at) =>
-                  at === index && message.role === "assistant"
-                    ? { ...message, suggestsEdit: true }
-                    : message
+                  at === index && message.role === "assistant" ? { ...message, ...outcome } : message
                 )
               }
             : entry
@@ -447,6 +533,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Collected across all steps: the model typically searches in one step
       // and reads in the next, and both are sources of the eventual answer.
       const turnSources: VaultSourceRef[] = [];
+      // Whether this model has been found to reject requests carrying an image.
+      // Starts true when an earlier turn already ran into it, and is set the
+      // moment a step only came back after its images were dropped.
+      let noVision = noVisionModels.has(visionKey(aiSettings));
 
       while (iterations < MAX_ITERATIONS) {
         iterations += 1;
@@ -479,12 +569,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
           )
         );
 
-        const step = await generateAiChatStep(
+        // A fresh step is the model thinking again, whatever tool the last one
+        // ran — the panel falls back to its idle wording until a call names
+        // something more specific.
+        set({ streamingActivity: null });
+
+        const step = await streamAiChatStep(
           aiSettings,
           // The history only stores image paths; the payloads are read from
           // disk here, for this request only (see attachImageData).
           {
-            messages: await attachImageData(modelMessages),
+            // A model already known to have no vision gets the note in place of
+            // the image right away — reading and encoding a payload it would
+            // only reject again is wasted work on both sides.
+            messages: noVision ? stripChatImages(modelMessages) : await attachImageData(modelMessages),
             assistantInstruction: assistant.instruction,
             // Re-read per step rather than captured before the loop: the user
             // can switch the knowledge base off mid-turn, and the next step
@@ -492,8 +590,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
             // with the caveat in currentUseKnowledgeBase).
             vaultSearchEnabled: isKnowledgeBaseReady() && currentUseKnowledgeBase()
           },
+          {
+            onText: (chunk) => {
+              pendingText += chunk;
+              scheduleFlush();
+            },
+            onThinking: (chunk) => {
+              pendingThinking += chunk;
+              scheduleFlush();
+            },
+            // Announced while the model is still writing the call's arguments,
+            // which is the part of a tool step that takes the longest.
+            onToolCall: (name) => {
+              flushStream();
+              set({ streamingActivity: name });
+            }
+          },
           abortController.signal
         );
+
+        // Everything below appends the step's own text as a message; the live
+        // copy has to be gone before it does.
+        clearStreamView();
+
+        // The step got through without its images: from here on the model is
+        // told it has no vision rather than being handed one again.
+        if (step.imagesDropped) {
+          noVision = true;
+          noVisionModels.add(visionKey(aiSettings));
+        }
 
         if (step.toolCalls.length === 0) {
           const index = appendMessage({
@@ -532,10 +657,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const imagePaths: string[] = [];
 
         for (const call of step.toolCalls) {
-          const result = await executeTool(call.name, call.arguments);
-          appendMessage({ role: "tool", toolCallId: call.id, toolName: call.name, content: result.content });
+          // Several calls in one step run one after the other, so the line
+          // follows along rather than staying on the first of them.
+          set({ streamingActivity: call.name });
 
-          if (result.imagePath && !imagePaths.includes(result.imagePath)) {
+          const result = await executeTool(call.name, call.arguments);
+          // get_image resolved a picture the model cannot be shown: it is told
+          // so where it asked, instead of being promised an image that the next
+          // request would only be rejected for. The panel renders this as the
+          // failed-tool line, which is what actually happened.
+          const missingVision = Boolean(result.imagePath) && noVision;
+
+          appendMessage({
+            role: "tool",
+            toolCallId: call.id,
+            toolName: call.name,
+            content: missingVision ? IMAGE_UNSUPPORTED_TOOL_RESULT : result.content
+          });
+
+          if (result.imagePath && !missingVision && !imagePaths.includes(result.imagePath)) {
             imagePaths.push(result.imagePath);
           }
 
@@ -587,47 +727,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
 
-      set({
-        isStreaming: false,
-        streamingSessionId: null,
-        streamingText: "",
-        streamingThinking: "",
-        error: null
-      });
+      set({ isStreaming: false, ...IDLE_STREAM_VIEW, error: null });
 
       // Deliberately after the turn is marked finished: this asks the model one
       // more question, and the reply it judges is already on screen. Leaving the
       // turn "running" for it would hold the composer for a request the user is
       // not waiting for — the button simply appears a moment later.
       if (unflaggedReply && !abortController.signal.aborted) {
-        const offersEdit = await detectPendingSuggestion(
+        const verdict = await resolveUnflaggedReply(
           aiSettings,
           content,
           unflaggedReply.text,
           abortController.signal
         );
 
-        if (offersEdit) {
-          markSuggestsEdit(unflaggedReply.index);
+        // Text the user asked to have written goes into the document, not onto
+        // a button that asks them to ask again. The proposal can still be
+        // refused — an unsettled review from an earlier turn blocks it — and
+        // then the button is the fallback, which is what it always was.
+        if (verdict.kind === "insert" && proposeComposedText(verdict.text)) {
+          markReplyOutcome(unflaggedReply.index, { proposedEdit: true });
+        } else if (verdict.kind !== "none") {
+          markReplyOutcome(unflaggedReply.index, { suggestsEdit: true });
         }
       }
     } catch (error) {
       if (abortController.signal.aborted) {
+        // What the user could already read stays in the chat. Without
+        // streaming there was nothing on screen to keep, but an answer that
+        // visibly wrote three paragraphs and then vanished on "stop" looks
+        // like the button discarded it rather than ended it.
+        flushStream();
+
+        const partialAnswer = get().streamingText.trim();
+
+        if (partialAnswer) {
+          appendMessage({ role: "assistant", content: partialAnswer });
+        }
+
         // Tool edits already applied are single undo steps and stay in the
         // document — only the loop itself needs to stop here.
-        set({
-          isStreaming: false,
-          streamingSessionId: null,
-          streamingText: "",
-          streamingThinking: "",
-          error: null
-        });
+        set({ isStreaming: false, ...IDLE_STREAM_VIEW, error: null });
       } else {
         set({
           isStreaming: false,
-          streamingSessionId: null,
-          streamingText: "",
-          streamingThinking: "",
+          ...IDLE_STREAM_VIEW,
           // Shown in the panel, which may well be sitting on a different chat by
           // now — but an error the user never sees is worse than one that
           // arrives in the wrong place, and openSession clears it on the next
@@ -636,6 +780,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
       }
     } finally {
+      // A pending flush firing after the turn has ended would write tokens back
+      // into the view that was just cleared — and an aborted turn always has
+      // one in flight.
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+
       activeAbortController = null;
       persist(get());
     }

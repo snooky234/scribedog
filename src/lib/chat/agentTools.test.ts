@@ -4,6 +4,7 @@ import {
   beginChatTurn,
   executeTool,
   pendingProposalTurnNote,
+  proposeComposedText,
   registerEditorToolBridge,
   type EditorToolBridge
 } from "./agentTools";
@@ -312,5 +313,47 @@ describe("several proposals in one turn", () => {
     await executeTool("replace_passage", { old_text: "World", new_text: "Earth" });
 
     expect(proposePassageReplacement).toHaveBeenCalledTimes(2);
+  });
+});
+
+// The recovery path for a turn that wrote the user's text into the chat instead
+// of into the document (see src/lib/chat/pendingSuggestion.ts). It runs after
+// the turn ended, so nothing downstream can react to a failure — the outcome has
+// to come back as a value, and the open-review guard still has to hold.
+describe("proposeComposedText", () => {
+  it("proposes the text at the caret, without an anchor", () => {
+    startTurn();
+
+    expect(proposeComposedText("# Reisebericht\n\nDer erste Tag …")).toBe(true);
+    expect(proposeInsertion).toHaveBeenCalledWith("# Reisebericht\n\nDer erste Tag …");
+  });
+
+  it("normalizes escaped checkboxes like the editing tools do", () => {
+    startTurn();
+
+    proposeComposedText("- \[ \] Zelt einpacken");
+
+    expect(proposeInsertion).toHaveBeenCalledWith("- [ ] Zelt einpacken");
+  });
+
+  it("refuses while an earlier turn's review is still open", () => {
+    startTurn(["A poem about a mouse"]);
+
+    expect(proposeComposedText("Ein neuer Absatz")).toBe(false);
+    expect(proposeInsertion).not.toHaveBeenCalled();
+  });
+
+  it("reports failure when the editor could not open a proposal", () => {
+    startTurn();
+    proposeInsertion.mockReturnValueOnce("duplicate");
+
+    expect(proposeComposedText("Ein neuer Absatz")).toBe(false);
+  });
+
+  it("ignores empty text", () => {
+    startTurn();
+
+    expect(proposeComposedText("   ")).toBe(false);
+    expect(proposeInsertion).not.toHaveBeenCalled();
   });
 });
