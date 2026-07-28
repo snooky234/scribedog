@@ -101,7 +101,7 @@ notes — fluently, privately, and for free.
 - Every AI edit is a single atomic change: one `Ctrl+Z` fully undoes it
 - **AI spelling & grammar check** — select a passage, press `Ctrl+Shift+X` (or use the toolbar button), and get a clear list of issues with suggested corrections and explanations; apply them one by one or all at once
 
-### 💬 AI chat — agentic editing (new)
+### 💬 AI chat — agentic editing
 - Press `Ctrl+Shift+A` (or the toolbar button) to open the **chat panel** — a resizable side panel with its own session history, separate from the quick select-and-rewrite flow above
 - This is more than a Q&A box: the chat is **agentic**. It can call tools on its own to read your document or current selection, insert text at the cursor, replace a specific passage, or resize an embedded image — deciding what a request actually needs instead of you spelling out every step
 - **Nothing changes your document silently** — every proposed edit goes through the exact same red/green **review widget** as the rest of ScribeDog's AI features: accept, discard, or ask for another version before anything is written
@@ -112,7 +112,7 @@ notes — fluently, privately, and for free.
 
 - **Model recommendation:** reliable tool-calling is genuinely hard for small models. Local models from roughly **9B parameters** upward (e.g. Qwen 3.5 9B, Gemma 4 12B) or any of the supported cloud models handle the chat's agentic tools well. **Below that**, a model tends to call tools incorrectly or not at all — for those, use the simple **select text → `Ctrl+E`** rewrite instead; it asks nothing of the model beyond writing text and works reliably even on tiny models.
 
-### 📚 Knowledge base — the AI answers from your own notes (new)
+### 📚 Knowledge base — the AI answers from your own notes
 - Switch on the **knowledge base** in the *Knowledge base* settings tab and the AI chat stops being limited to the file you happen to have open: when you ask a question, ScribeDog **searches your notes for the words in it**, hands the model the passages that match, and the answer comes with a **list of the notes it came from** — one click opens the note, right at the section it was taken from
 
   <img src="src/assets/scribe-dog-knowledge-base.png" alt="ScribeDog knowledge base answer with sources" width="300">
