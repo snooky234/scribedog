@@ -114,6 +114,9 @@ notes — fluently, privately, and for free.
 
 ### 📚 Knowledge base — the AI answers from your own notes (new)
 - Switch on the **knowledge base** in the *Knowledge base* settings tab and the AI chat stops being limited to the file you happen to have open: when you ask a question, ScribeDog **searches your notes for the words in it**, hands the model the passages that match, and the answer comes with a **list of the notes it came from** — one click opens the note, right at the section it was taken from
+
+  <img src="src/assets/scribe-dog-knowledge-base.png" alt="ScribeDog knowledge base answer with sources" width="300">
+
 - **Where it's useful:**
   - *Work & projects* — "What did I agree with client A about the delivery date?" The answer sits in a meeting note you wrote three months ago and whose file name you've long forgotten; names like *client A* and terms like *delivery date* are exactly what the search is good at, and you get the answer without opening a single file.
   - *Writing a novel* — keep character sheets, place descriptions, and timeline notes in your vault and ask "What eye colour did I give Mara, and where does she first meet Jonas?" — the character names pull up the right sheets instead of you scrolling through your own story bible.
