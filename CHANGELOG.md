@@ -3,6 +3,16 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.1] - 2026-07-29
+
+### Highlights
+- Add fuzzy/approximate text matching with punctuation tolerance
+- Add theme boot and enhance import/drag-drop UX
+- Add retrieval-augmented generation with indexing
+
+### Improvements
+- Consolidate shortcuts into settings dialog
+
 ## [0.8.0] - 2026-07-28
 
 ### Highlights
