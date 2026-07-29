@@ -25,7 +25,7 @@ type DocumentPanelProps = {
 
   isRenamingTitle: boolean;
   titleDraft: string;
-  titleInputRef: RefObject<HTMLInputElement>;
+  titleInputRef: RefObject<HTMLInputElement | null>;
   onTitleDraftChange: (value: string) => void;
   onCommitTitleRename: () => void;
   onCancelTitleRename: () => void;
@@ -39,7 +39,7 @@ type DocumentPanelProps = {
   fileError: string | null;
   saveError: string | null;
 
-  editorHandleRef: RefObject<EditorHandle>;
+  editorHandleRef: RefObject<EditorHandle | null>;
   editorFocusRequestId: number;
   onMarkdownChange: (markdown: string) => void;
   onCanonicalMarkdown: (filePath: string, markdown: string) => void;

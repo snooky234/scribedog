@@ -33,7 +33,7 @@ type TreeNodeRowProps = {
   activeKey: string | null;
   renamingTarget: RenamingTarget | null;
   renameDraft: string;
-  renameInputRef: React.RefObject<HTMLInputElement>;
+  renameInputRef: React.RefObject<HTMLInputElement | null>;
   sortMode: SortMode;
   dragSourceKeys: string[];
   dropIndicator: DropIndicator | null;
