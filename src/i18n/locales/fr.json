@@ -512,7 +512,8 @@
     "confirmGroupCount": "{{selected}} sur {{total}} sélectionnées",
     "confirmAction": "Remplacer ({{count}})",
     "resultSummary": "{{matches}} remplacements effectués dans {{files}} fichier(s)",
-    "fileMatchBadge": "Occurrences : {{count}}"
+    "fileMatchBadge": "Occurrences : {{count}}",
+    "folderMatchBadge": "Occurrences dans ce dossier : {{count}} – cliquez pour les afficher"
   },
   "detailsPanel": {
     "title": "Détails",

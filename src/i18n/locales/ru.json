@@ -522,7 +522,8 @@
     "confirmGroupCount": "Выбрано {{selected}} из {{total}}",
     "confirmAction": "Заменить ({{count}})",
     "resultSummary": "Выполнено замен: {{matches}} в файлах: {{files}}",
-    "fileMatchBadge": "Совпадений: {{count}}"
+    "fileMatchBadge": "Совпадений: {{count}}",
+    "folderMatchBadge": "Совпадений в этой папке: {{count}} — нажмите, чтобы показать"
   },
   "detailsPanel": {
     "title": "Сведения",

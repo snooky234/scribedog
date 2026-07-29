@@ -27,6 +27,12 @@ type TreeNodeRowProps = {
   node: FileTreeNode;
   depth: number;
   expandedFolderPaths: Set<string>;
+  /**
+   * Search hits per folder, summed over its subtree (see buildFolderMatchCounts).
+   * Passed down instead of read from the store, because a row cannot aggregate
+   * its own subtree without re-walking it on every render.
+   */
+  folderMatchCounts: Record<string, number>;
   selectedFilePath: string | null;
   selectedKeys: Set<string>;
   dirtyFilePaths: string[];
@@ -55,6 +61,7 @@ export function TreeNodeRow({
   node,
   depth,
   expandedFolderPaths,
+  folderMatchCounts,
   selectedFilePath,
   selectedKeys,
   dirtyFilePaths,
@@ -83,6 +90,13 @@ export function TreeNodeRow({
   const searchMatchCount = useSearchStore((state) =>
     node.kind === "file" ? state.fileMatchCounts[node.filePath] ?? 0 : 0
   );
+  // Same badge for folders, but cumulative over the subtree — and only shown
+  // while the folder is collapsed. Expanded, the per-file counts are visible
+  // anyway, and the identical hits stacked on every ancestor would read like a
+  // broken sum. The folder row deliberately gets no --search-match tint: every
+  // ancestor up to the root matches, which would wash out the whole sidebar.
+  const folderMatchCount =
+    node.kind === "folder" ? folderMatchCounts[node.relativePath] ?? 0 : 0;
   // Where a drop from outside the app imports to: a folder takes the drop
   // itself, a file hands it to the folder it lives in. Only folders light up
   // for it — every file in the root would otherwise highlight for the same
@@ -247,6 +261,15 @@ export function TreeNodeRow({
             </span>
             {isExpanded ? <FolderOpen aria-hidden="true" /> : <Folder aria-hidden="true" />}
             <span className="file-tree__name">{node.name}</span>
+            {!isExpanded && folderMatchCount > 0 ? (
+              <span
+                className="file-tree__search-badge file-tree__search-badge--folder"
+                title={t("findReplace.folderMatchBadge", { count: folderMatchCount })}
+                aria-label={t("findReplace.folderMatchBadge", { count: folderMatchCount })}
+              >
+                {folderMatchCount}
+              </span>
+            ) : null}
             {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
           </button>
         )}
@@ -259,6 +282,7 @@ export function TreeNodeRow({
                 node={child}
                 depth={depth + 1}
                 expandedFolderPaths={expandedFolderPaths}
+                folderMatchCounts={folderMatchCounts}
                 selectedFilePath={selectedFilePath}
                 selectedKeys={selectedKeys}
                 dirtyFilePaths={dirtyFilePaths}

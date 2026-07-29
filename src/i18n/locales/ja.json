@@ -512,7 +512,8 @@
     "confirmGroupCount": "{{total}} 件中 {{selected}} 件を選択",
     "confirmAction": "置換 ({{count}})",
     "resultSummary": "{{files}} 個のファイルで {{matches}} 件を置換しました",
-    "fileMatchBadge": "検索一致: {{count}}"
+    "fileMatchBadge": "検索一致: {{count}}",
+    "folderMatchBadge": "このフォルダー内の検索一致: {{count}} – クリックして表示"
   },
   "detailsPanel": {
     "title": "詳細",

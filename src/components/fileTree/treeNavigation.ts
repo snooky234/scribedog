@@ -109,6 +109,66 @@ export function getTopLevelSelection(
     );
 }
 
+// Search hits per folder, summed over its whole subtree, so a collapsed folder
+// can announce matches that are currently invisible. Folders without hits are
+// left out of the map. Computed once per (tree, counts) pair in FileTree — a
+// folder row walking its own subtree on every render would be quadratic and
+// would tie every row to the full counts object instead of a single number.
+export function buildFolderMatchCounts(
+  nodes: FileTreeNode[],
+  fileMatchCounts: Record<string, number>
+): Record<string, number> {
+  const result: Record<string, number> = {};
+
+  const visit = (list: FileTreeNode[]): number => {
+    let total = 0;
+
+    for (const node of list) {
+      if (node.kind === "file") {
+        total += fileMatchCounts[node.filePath] ?? 0;
+        continue;
+      }
+
+      const subtotal = visit(node.children);
+
+      if (subtotal > 0) {
+        result[node.relativePath] = subtotal;
+      }
+
+      total += subtotal;
+    }
+
+    return total;
+  };
+
+  visit(nodes);
+
+  return result;
+}
+
+// Every folder in this subtree (the node itself included) that carries search
+// hits. Expanding exactly these reveals all matches below the node while
+// leaving match-free branches folded.
+export function collectMatchingFolderPaths(
+  node: FileTreeNode,
+  folderMatchCounts: Record<string, number>
+): string[] {
+  const result: string[] = [];
+
+  const visit = (candidate: FileTreeNode) => {
+    if (candidate.kind !== "folder" || (folderMatchCounts[candidate.relativePath] ?? 0) === 0) {
+      return;
+    }
+
+    result.push(candidate.relativePath);
+    candidate.children.forEach(visit);
+  };
+
+  visit(node);
+
+  return result;
+}
+
 // Maps every node's key to its parent folder's relativePath and its index
 // among the currently displayed siblings, so a drag & drop can compute the
 // insertion point relative to the target row.

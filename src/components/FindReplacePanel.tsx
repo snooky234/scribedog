@@ -25,7 +25,13 @@ import { useAppStore } from "@/store/useAppStore";
 import { useSearchStore } from "@/store/useSearchStore";
 
 type FindReplacePanelProps = {
-  editor: TipTapEditor;
+  /**
+   * null when no editor is mounted (no file open, or the selected file is still
+   * loading/failed). The panel then runs vault-only: no in-document matches,
+   * no replace in the open document, navigation jumps straight into the first
+   * matching file — which mounts an editor and hands the search over to it.
+   */
+  editor: TipTapEditor | null;
   folderPath: string | null;
   filePath: string | null;
   onClose: () => void;
@@ -87,7 +93,7 @@ export function FindReplacePanel({
   );
 
   const docMatches = useMemo(() => {
-    if (!open) {
+    if (!open || !editor) {
       return [];
     }
 
@@ -101,7 +107,7 @@ export function FindReplacePanel({
   const clampedActiveIndex = docMatches.length === 0 ? 0 : Math.min(activeIndex, docMatches.length - 1);
 
   useEffect(() => {
-    if (!open) {
+    if (!open || !editor) {
       return;
     }
 
@@ -118,11 +124,24 @@ export function FindReplacePanel({
   // The plugin recomputes matches on document changes by itself, so only
   // query/options/active-match changes need to be pushed here.
   useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
     updateSearchHighlight(
       editor,
       open && query ? { query, options, activeIndex: clampedActiveIndex } : null
     );
   }, [editor, open, query, options, clampedActiveIndex]);
+
+  // Without an open document the "current file" half of the panel has nothing
+  // to work on, so the vault-wide search is the only meaningful mode and is
+  // switched on for the user instead of leaving them with a dead search box.
+  useEffect(() => {
+    if (open && !editor && !allFiles) {
+      setAllFiles(true);
+    }
+  }, [open, editor, allFiles, setAllFiles]);
 
   useEffect(() => {
     if (open) {
@@ -225,7 +244,7 @@ export function FindReplacePanel({
   // placed at the match's vertical position relative to the full document
   // height, so it lines up with where the scrollbar thumb has to go.
   useEffect(() => {
-    if (!open || docMatches.length === 0) {
+    if (!open || !editor || docMatches.length === 0) {
       setRulerMarks([]);
       return;
     }
@@ -269,7 +288,7 @@ export function FindReplacePanel({
   }, [editor, open, docMatches, clampedActiveIndex]);
 
   const goToMatch = (index: number) => {
-    if (docMatches.length === 0) {
+    if (!editor || docMatches.length === 0) {
       return;
     }
 
@@ -409,7 +428,7 @@ export function FindReplacePanel({
 
     // All replacements in the open document happen in one transaction, so a
     // single undo restores every one of them.
-    if (selectedDocMatches.length > 0) {
+    if (editor && selectedDocMatches.length > 0) {
       editor.commands.command(({ tr }) => {
         for (const match of [...selectedDocMatches].sort((left, right) => right.from - left.from)) {
           tr.insertText(replaceText, match.from, match.to);
@@ -494,7 +513,9 @@ export function FindReplacePanel({
             onKeyDown={handleSearchKeyDown}
           />
           <span className="find-panel__counter" aria-live="polite">
-            {query
+            {/* Counts the open document only — without one, the vault summary
+                below is the whole result. */}
+            {query && editor
               ? docMatches.length > 0
                 ? t("findReplace.matchCount", {
                     current: clampedActiveIndex + 1,
@@ -582,10 +603,14 @@ export function FindReplacePanel({
           >
             <WholeWord />
           </Toggle>
-          <label className="find-panel__all-files">
+          <label
+            className="find-panel__all-files"
+            title={editor ? undefined : t("findReplace.allFilesLocked")}
+          >
             <input
               type="checkbox"
               checked={allFiles}
+              disabled={!editor}
               onChange={(event) => setAllFiles(event.target.checked)}
             />
             {t("findReplace.allFiles")}
@@ -594,7 +619,8 @@ export function FindReplacePanel({
 
         {allFiles && query ? (
           <p className="find-panel__summary" aria-live="polite">
-            {t("findReplace.allFilesSummary", {
+            {/* "other files" only makes sense next to an open one. */}
+            {t(editor ? "findReplace.allFilesSummary" : "findReplace.allFilesSummaryStandalone", {
               matches: otherMatchCount,
               files: otherFileResults.length
             })}

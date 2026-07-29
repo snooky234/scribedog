@@ -58,5 +58,27 @@ export function useExpandedFolders(folderPath: string) {
     [folderPath]
   );
 
-  return { expandedFolderPaths, toggleFolder, expandAncestorsOf };
+  /** Expands a whole set of folders in one step (see FileTree's search reveal). */
+  const expandFolders = useCallback(
+    (relativePaths: string[]) => {
+      setExpandedFolderPaths((currentPaths) => {
+        if (relativePaths.every((relativePath) => currentPaths.has(relativePath))) {
+          return currentPaths;
+        }
+
+        const nextPaths = new Set(currentPaths);
+
+        for (const relativePath of relativePaths) {
+          nextPaths.add(relativePath);
+        }
+
+        setStoredExpandedFolderPaths(folderPath, nextPaths);
+
+        return nextPaths;
+      });
+    },
+    [folderPath]
+  );
+
+  return { expandedFolderPaths, toggleFolder, expandAncestorsOf, expandFolders };
 }

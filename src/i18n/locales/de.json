@@ -512,7 +512,8 @@
     "confirmGroupCount": "{{selected}} von {{total}} ausgewählt",
     "confirmAction": "Ersetzen ({{count}})",
     "resultSummary": "{{matches}} Ersetzungen in {{files}} Datei(en) vorgenommen",
-    "fileMatchBadge": "Suchtreffer: {{count}}"
+    "fileMatchBadge": "Suchtreffer: {{count}}",
+    "folderMatchBadge": "Suchtreffer in diesem Ordner: {{count}} – zum Anzeigen klicken"
   },
   "detailsPanel": {
     "title": "Details",

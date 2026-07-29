@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Editor, type EditorHandle } from "@/components/Editor";
+import { FindReplacePanel } from "@/components/FindReplacePanel";
 import { VersionsPopover } from "@/components/VersionsPopover";
 import type { FileVersion } from "@/lib/fileVersions";
 import { cn } from "@/lib/utils";
+import { useSearchStore } from "@/store/useSearchStore";
 import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
 
 type DocumentPanelProps = {

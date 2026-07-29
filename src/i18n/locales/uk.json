@@ -522,7 +522,8 @@
     "confirmGroupCount": "Вибрано {{selected}} з {{total}}",
     "confirmAction": "Замінити ({{count}})",
     "resultSummary": "Виконано замін: {{matches}} у файлах: {{files}}",
-    "fileMatchBadge": "Збігів: {{count}}"
+    "fileMatchBadge": "Збігів: {{count}}",
+    "folderMatchBadge": "Збігів у цій папці: {{count}} — натисніть, щоб показати"
   },
   "detailsPanel": {
     "title": "Відомості",

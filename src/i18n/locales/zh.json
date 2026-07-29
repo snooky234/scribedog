@@ -512,7 +512,8 @@
     "confirmGroupCount": "已选择 {{selected}} / {{total}} 项",
     "confirmAction": "替换（{{count}}）",
     "resultSummary": "已在 {{files}} 个文件中完成 {{matches}} 处替换",
-    "fileMatchBadge": "匹配项：{{count}}"
+    "fileMatchBadge": "匹配项：{{count}}",
+    "folderMatchBadge": "此文件夹中的匹配项：{{count}} – 点击显示"
   },
   "detailsPanel": {
     "title": "详情",
