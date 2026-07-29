@@ -590,6 +590,10 @@
   }
 }
 
+.shortcuts-settings {
+  margin-top: 1.4rem;
+}
+
 .shortcuts-settings__actions {
   display: flex;
   justify-content: flex-end;
