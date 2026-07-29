@@ -1,8 +1,8 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { Smile } from "lucide-react";
-import Picker from "@emoji-mart/react";
+import { Picker } from "emoji-mart";
 import emojiI18nDe from "@emoji-mart/data/i18n/de.json";
 import emojiI18nEn from "@emoji-mart/data/i18n/en.json";
 import emojiI18nFr from "@emoji-mart/data/i18n/fr.json";
@@ -72,6 +72,53 @@ type EmojiSelection = {
   native?: string;
   shortcodes?: string;
 };
+
+type EmojiMartPickerProps = {
+  language: SupportedLanguage;
+  onEmojiSelect: (emoji: EmojiSelection) => void;
+};
+
+// emoji-mart's Picker is a framework-agnostic custom element that appends
+// itself into the element passed as `parent`. Mounting it directly keeps us off
+// the @emoji-mart/react wrapper, which is unmaintained and declares no React 19
+// support. The picker is created once per mount — the popover unmounts on close,
+// so every open builds a fresh one — and the select handler is read through a
+// ref so a re-render (e.g. the overflow re-align) never tears it down.
+function EmojiMartPicker({ language, onEmojiSelect }: EmojiMartPickerProps) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const selectRef = useRef(onEmojiSelect);
+
+  useEffect(() => {
+    selectRef.current = onEmojiSelect;
+  }, [onEmojiSelect]);
+
+  useEffect(() => {
+    const host = hostRef.current;
+
+    if (!host) {
+      return;
+    }
+
+    new Picker({
+      parent: host,
+      data: EMOJI_DATA[language],
+      i18n: EMOJI_I18N[language],
+      locale: language,
+      theme: "dark",
+      set: "native",
+      autoFocus: true,
+      previewPosition: "none",
+      skinTonePosition: "search",
+      onEmojiSelect: (emoji: EmojiSelection) => selectRef.current(emoji),
+    });
+
+    return () => {
+      host.innerHTML = "";
+    };
+  }, [language]);
+
+  return <div ref={hostRef} />;
+}
 
 export function EmojiPicker({ editor, onSelect, trigger }: EmojiPickerProps) {
   const { t, i18n } = useTranslation();
@@ -144,17 +191,7 @@ export function EmojiPicker({ editor, onSelect, trigger }: EmojiPickerProps) {
               style={align === "right" ? { top: anchor.top, right: anchor.right } : { top: anchor.top, left: anchor.left }}
               onClick={(event) => event.stopPropagation()}
             >
-              <Picker
-                data={EMOJI_DATA[language]}
-                i18n={EMOJI_I18N[language]}
-                locale={language}
-                theme="dark"
-                set="native"
-                autoFocus
-                previewPosition="none"
-                skinTonePosition="search"
-                onEmojiSelect={insertEmoji}
-              />
+              <EmojiMartPicker language={language} onEmojiSelect={insertEmoji} />
             </div>,
             document.body
           )

@@ -502,6 +502,8 @@
     "matchCount": "{{current}} de {{total}}",
     "noMatches": "Nenhuma ocorrência",
     "allFilesSummary": "{{matches}} ocorrências em {{files}} outros arquivos",
+    "allFilesSummaryStandalone": "{{matches}} ocorrências em {{files}} arquivos",
+    "allFilesLocked": "Sem nenhum arquivo aberto, a busca abrange sempre a pasta inteira",
     "previousMatch": "Ocorrência anterior",
     "nextMatch": "Próxima ocorrência",
     "replaceButton": "Substituir…",
@@ -512,7 +514,8 @@
     "confirmGroupCount": "{{selected}} de {{total}} selecionadas",
     "confirmAction": "Substituir ({{count}})",
     "resultSummary": "{{matches}} substituições feitas em {{files}} arquivo(s)",
-    "fileMatchBadge": "Ocorrências: {{count}}"
+    "fileMatchBadge": "Ocorrências: {{count}}",
+    "folderMatchBadge": "Ocorrências nesta pasta: {{count}} – clique para exibir"
   },
   "detailsPanel": {
     "title": "Detalhes",

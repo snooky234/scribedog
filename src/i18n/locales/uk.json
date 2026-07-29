@@ -512,6 +512,8 @@
     "matchCount": "{{current}} з {{total}}",
     "noMatches": "Збігів немає",
     "allFilesSummary": "Збігів: {{matches}} в інших файлах: {{files}}",
+    "allFilesSummaryStandalone": "Збігів: {{matches}} у файлах: {{files}}",
+    "allFilesLocked": "Коли файл не відкрито, пошук завжди охоплює всю теку",
     "previousMatch": "Попередній збіг",
     "nextMatch": "Наступний збіг",
     "replaceButton": "Замінити…",
@@ -522,7 +524,8 @@
     "confirmGroupCount": "Вибрано {{selected}} з {{total}}",
     "confirmAction": "Замінити ({{count}})",
     "resultSummary": "Виконано замін: {{matches}} у файлах: {{files}}",
-    "fileMatchBadge": "Збігів: {{count}}"
+    "fileMatchBadge": "Збігів: {{count}}",
+    "folderMatchBadge": "Збігів у цій папці: {{count}} — натисніть, щоб показати"
   },
   "detailsPanel": {
     "title": "Відомості",

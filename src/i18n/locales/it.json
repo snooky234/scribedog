@@ -502,6 +502,8 @@
     "matchCount": "{{current}} di {{total}}",
     "noMatches": "Nessuna corrispondenza",
     "allFilesSummary": "{{matches}} corrispondenze in {{files}} altri file",
+    "allFilesSummaryStandalone": "{{matches}} corrispondenze in {{files}} file",
+    "allFilesLocked": "Senza file aperti la ricerca riguarda sempre l'intera cartella",
     "previousMatch": "Corrispondenza precedente",
     "nextMatch": "Corrispondenza successiva",
     "replaceButton": "Sostituisci…",
@@ -512,7 +514,8 @@
     "confirmGroupCount": "{{selected}} di {{total}} selezionate",
     "confirmAction": "Sostituisci ({{count}})",
     "resultSummary": "Eseguite {{matches}} sostituzioni in {{files}} file",
-    "fileMatchBadge": "Corrispondenze: {{count}}"
+    "fileMatchBadge": "Corrispondenze: {{count}}",
+    "folderMatchBadge": "Corrispondenze in questa cartella: {{count}} – fai clic per mostrarle"
   },
   "detailsPanel": {
     "title": "Dettagli",

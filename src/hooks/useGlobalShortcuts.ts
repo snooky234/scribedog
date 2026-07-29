@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import type { EditorHandle } from "@/components/Editor";
 import { couldBeShortcut } from "@/lib/shortcuts/binding";
 import { isRetiredDefault, matchShortcut } from "@/lib/shortcuts/resolve";
+import { useAppStore } from "@/store/useAppStore";
 import { useChatStore } from "@/store/useChatStore";
 import { ZOOM_STEP, useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
@@ -75,9 +76,10 @@ export function useGlobalShortcuts({
 
           return;
         case "findReplace":
-          // The panel lives inside the editor, so it only makes sense with a
-          // document open.
-          if (selectedFilePath) {
+          // Works without an open document (DocumentPanel then shows a
+          // vault-only panel), but not without a vault: there would be nothing
+          // to search.
+          if (useAppStore.getState().folderPath) {
             useSearchStore.getState().openPanel();
           }
 

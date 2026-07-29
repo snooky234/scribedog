@@ -502,6 +502,8 @@
     "matchCount": "{{current}} de {{total}}",
     "noMatches": "Sin coincidencias",
     "allFilesSummary": "{{matches}} coincidencias en {{files}} archivos más",
+    "allFilesSummaryStandalone": "{{matches}} coincidencias en {{files}} archivos",
+    "allFilesLocked": "Sin ningún archivo abierto, siempre se busca en toda la carpeta",
     "previousMatch": "Coincidencia anterior",
     "nextMatch": "Siguiente coincidencia",
     "replaceButton": "Reemplazar…",
@@ -512,7 +514,8 @@
     "confirmGroupCount": "{{selected}} de {{total}} seleccionadas",
     "confirmAction": "Reemplazar ({{count}})",
     "resultSummary": "Se realizaron {{matches}} reemplazos en {{files}} archivo(s)",
-    "fileMatchBadge": "Coincidencias: {{count}}"
+    "fileMatchBadge": "Coincidencias: {{count}}",
+    "folderMatchBadge": "Coincidencias en esta carpeta: {{count}} – haz clic para mostrarlas"
   },
   "detailsPanel": {
     "title": "Detalles",

@@ -49,6 +49,7 @@ import {
 } from "@/lib/editor/imageTransfer";
 import { moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
+import { normalizePastedSlice } from "@/lib/editor/pasteNormalize";
 import { getEditorMarkdown, getSelectionMarkdown } from "@/lib/editor/markdownStorage";
 import { findTextRange } from "@/lib/editor/textSearch";
 import {
@@ -853,6 +854,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
         return true;
       },
+      transformPasted: (slice) => normalizePastedSlice(slice),
       handlePaste: (view, event) => {
         const files = getImageFilesFromClipboard(event.clipboardData);
 

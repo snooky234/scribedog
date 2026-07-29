@@ -502,6 +502,8 @@
     "matchCount": "第 {{current}} 项，共 {{total}} 项",
     "noMatches": "无匹配项",
     "allFilesSummary": "在其他 {{files}} 个文件中有 {{matches}} 处匹配",
+    "allFilesSummaryStandalone": "在 {{files}} 个文件中找到 {{matches}} 处匹配",
+    "allFilesLocked": "未打开文件时始终搜索整个文件夹",
     "previousMatch": "上一个匹配项",
     "nextMatch": "下一个匹配项",
     "replaceButton": "替换…",
@@ -512,7 +514,8 @@
     "confirmGroupCount": "已选择 {{selected}} / {{total}} 项",
     "confirmAction": "替换（{{count}}）",
     "resultSummary": "已在 {{files}} 个文件中完成 {{matches}} 处替换",
-    "fileMatchBadge": "匹配项：{{count}}"
+    "fileMatchBadge": "匹配项：{{count}}",
+    "folderMatchBadge": "此文件夹中的匹配项：{{count}} – 点击显示"
   },
   "detailsPanel": {
     "title": "详情",

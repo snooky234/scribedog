@@ -502,6 +502,8 @@
     "matchCount": "{{current}} of {{total}}",
     "noMatches": "No matches",
     "allFilesSummary": "{{matches}} matches in {{files}} other files",
+    "allFilesSummaryStandalone": "{{matches}} matches in {{files}} files",
+    "allFilesLocked": "With no file open, the whole folder is always searched",
     "previousMatch": "Previous match",
     "nextMatch": "Next match",
     "replaceButton": "Replace…",
@@ -512,7 +514,8 @@
     "confirmGroupCount": "{{selected}} of {{total}} selected",
     "confirmAction": "Replace ({{count}})",
     "resultSummary": "Made {{matches}} replacements in {{files}} file(s)",
-    "fileMatchBadge": "Search matches: {{count}}"
+    "fileMatchBadge": "Search matches: {{count}}",
+    "folderMatchBadge": "Search matches in this folder: {{count}} – click to reveal"
   },
   "detailsPanel": {
     "title": "Details",

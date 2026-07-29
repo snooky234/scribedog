@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Editor, type EditorHandle } from "@/components/Editor";
+import { FindReplacePanel } from "@/components/FindReplacePanel";
 import { VersionsPopover } from "@/components/VersionsPopover";
 import type { FileVersion } from "@/lib/fileVersions";
 import { cn } from "@/lib/utils";
+import { useSearchStore } from "@/store/useSearchStore";
 import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
 
 type DocumentPanelProps = {
@@ -25,7 +27,7 @@ type DocumentPanelProps = {
 
   isRenamingTitle: boolean;
   titleDraft: string;
-  titleInputRef: RefObject<HTMLInputElement>;
+  titleInputRef: RefObject<HTMLInputElement | null>;
   onTitleDraftChange: (value: string) => void;
   onCommitTitleRename: () => void;
   onCancelTitleRename: () => void;
@@ -39,7 +41,7 @@ type DocumentPanelProps = {
   fileError: string | null;
   saveError: string | null;
 
-  editorHandleRef: RefObject<EditorHandle>;
+  editorHandleRef: RefObject<EditorHandle | null>;
   editorFocusRequestId: number;
   onMarkdownChange: (markdown: string) => void;
   onCanonicalMarkdown: (filePath: string, markdown: string) => void;
@@ -93,11 +95,36 @@ export function DocumentPanel({
 }: DocumentPanelProps) {
   const { t } = useTranslation();
   const versioningEnabled = useVersioningSettingsStore((state) => state.versioningEnabled);
+  const closeFindPanel = useSearchStore((state) => state.closePanel);
+
+  // Find & replace normally lives inside <Editor> (it needs the ProseMirror
+  // document). Whenever no editor is mounted — no file open, or the selected
+  // one still loading/failed — this standalone copy takes over so Ctrl+F is
+  // never a dead shortcut; it searches the vault and jumps into the first hit.
+  const isEditorMounted =
+    Boolean(selectedFilePath) &&
+    !fileError &&
+    !saveError &&
+    !isFileLoading &&
+    selectedFileContent !== null;
+  const standaloneFindPanel = isEditorMounted ? null : (
+    <FindReplacePanel
+      editor={null}
+      folderPath={folderPath}
+      // Kept even though there is no editor: it tells the panel a document
+      // exists but is only mid-load, which must not silently switch the user
+      // into all-files mode.
+      filePath={selectedFilePath}
+      onClose={closeFindPanel}
+      onRequestFileOpen={onRequestFileOpen}
+    />
+  );
 
   return (
     <section className="detail-panel" aria-label={t("app.documentAreaLabel")}>
       {selectedFilePath ? (
         <div className="detail-panel__card detail-panel__card--document">
+          {standaloneFindPanel}
           <div className="detail-panel__header">
             <div className="detail-panel__title">
               {/* Navigation across notes belongs to the document as a whole, so
@@ -251,6 +278,7 @@ export function DocumentPanel({
         </div>
       ) : (
         <div className="detail-panel__card detail-panel__card--empty">
+          {standaloneFindPanel}
           <p className="detail-panel__eyebrow">{t("app.emptyEyebrow")}</p>
           <h2>{t("app.emptyTitle")}</h2>
           {appVersion ? <p className="detail-panel__version">{t("app.version", { version: appVersion })}</p> : null}

@@ -8,6 +8,7 @@ import { getRelativeDisplayPath, type MarkdownFileRecord } from "@/lib/fileSyste
 import { buildFileTree, type FileTreeNode } from "@/lib/fileTree";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import type { MoveTreeEntryInput } from "@/store/useAppStore";
+import { useSearchStore } from "@/store/useSearchStore";
 
 import { ContextMenuSurface } from "./fileTree/ContextMenuSurface";
 import { TreeNodeRow } from "./fileTree/TreeNodeRow";
@@ -17,7 +18,9 @@ import { useTreeDragDrop } from "./fileTree/useTreeDragDrop";
 import { useTreeRename } from "./fileTree/useTreeRename";
 import { useTreeSelection } from "./fileTree/useTreeSelection";
 import {
+  buildFolderMatchCounts,
   buildNodeContextMap,
+  collectMatchingFolderPaths,
   computeRangeKeys,
   flattenVisibleNodes,
   getNodeKey,
@@ -83,8 +86,10 @@ export function FileTree({
   onSelectionChange
 }: FileTreeProps) {
   const { t } = useTranslation();
-  const { expandedFolderPaths, toggleFolder, expandAncestorsOf } = useExpandedFolders(folderPath);
+  const { expandedFolderPaths, toggleFolder, expandAncestorsOf, expandFolders } =
+    useExpandedFolders(folderPath);
   const { contextMenu, setContextMenu } = useTreeContextMenu();
+  const fileMatchCounts = useSearchStore((state) => state.fileMatchCounts);
   const lastHandledFolderRenameRequestIdRef = useRef<number | undefined>(undefined);
 
   const treeNodes = useMemo(() => {
@@ -111,6 +116,11 @@ export function FileTree({
   }, [folderPath, filePaths, emptyFolderPaths, fileMtimeMs, emptyFolderMtimeMs, sortMode, manualOrder]);
 
   const nodeContextByKey = useMemo(() => buildNodeContextMap(treeNodes), [treeNodes]);
+
+  const folderMatchCounts = useMemo(
+    () => buildFolderMatchCounts(treeNodes, fileMatchCounts),
+    [treeNodes, fileMatchCounts]
+  );
 
   const flatNodes = useMemo(
     () => flattenVisibleNodes(treeNodes, expandedFolderPaths),
@@ -227,7 +237,20 @@ export function FileTree({
     setRangeFocusKey(null);
 
     if (node.kind === "folder") {
-      toggleFolder(node.relativePath);
+      // While a project-wide search is running, opening a collapsed folder that
+      // carries hits unfolds its whole matching subtree at once — the badge only
+      // says "something below matches", so one click has to get the user there
+      // instead of one level per click. Collapsing stays a plain toggle.
+      const matchingFolderPaths =
+        expandedFolderPaths.has(node.relativePath) || !folderMatchCounts[node.relativePath]
+          ? []
+          : collectMatchingFolderPaths(node, folderMatchCounts);
+
+      if (matchingFolderPaths.length > 0) {
+        expandFolders(matchingFolderPaths);
+      } else {
+        toggleFolder(node.relativePath);
+      }
     } else {
       void onSelectFilePath(node.filePath);
     }
@@ -371,6 +394,7 @@ export function FileTree({
             node={node}
             depth={0}
             expandedFolderPaths={expandedFolderPaths}
+            folderMatchCounts={folderMatchCounts}
             selectedFilePath={selectedFilePath}
             selectedKeys={selectedKeys}
             dirtyFilePaths={dirtyFilePaths}
