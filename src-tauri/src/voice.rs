@@ -475,7 +475,7 @@ fn transcribe(
 
     if context_slot.is_none() {
         let context = WhisperContext::new_with_params(
-            &model_path.to_string_lossy(),
+            model_path,
             WhisperContextParameters::default(),
         )
         .map_err(|error| error.to_string())?;
@@ -509,15 +509,15 @@ fn transcribe(
 
     state.full(params, audio).map_err(|error| error.to_string())?;
 
-    let segment_count = state.full_n_segments().map_err(|error| error.to_string())?;
+    let segment_count = state.full_n_segments();
     let mut text = String::new();
 
     for index in 0..segment_count {
-        text.push_str(
-            &state
-                .full_get_segment_text(index)
-                .map_err(|error| error.to_string())?,
-        );
+        let segment = state
+            .get_segment(index)
+            .ok_or_else(|| format!("segment {index} is out of bounds"))?;
+
+        text.push_str(segment.to_str().map_err(|error| error.to_string())?);
     }
 
     Ok(text.trim().to_string())
