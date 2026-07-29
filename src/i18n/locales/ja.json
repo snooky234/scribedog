@@ -502,6 +502,8 @@
     "matchCount": "{{total}} 件中 {{current}} 件目",
     "noMatches": "一致なし",
     "allFilesSummary": "他 {{files}} ファイルに {{matches}} 件の一致",
+    "allFilesSummaryStandalone": "{{files}} 個のファイルで {{matches}} 件一致",
+    "allFilesLocked": "ファイルを開いていない場合は常にフォルダー全体を検索します",
     "previousMatch": "前の一致",
     "nextMatch": "次の一致",
     "replaceButton": "置換…",

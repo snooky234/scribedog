@@ -502,6 +502,8 @@
     "matchCount": "{{current}} di {{total}}",
     "noMatches": "Nessuna corrispondenza",
     "allFilesSummary": "{{matches}} corrispondenze in {{files}} altri file",
+    "allFilesSummaryStandalone": "{{matches}} corrispondenze in {{files}} file",
+    "allFilesLocked": "Senza file aperti la ricerca riguarda sempre l'intera cartella",
     "previousMatch": "Corrispondenza precedente",
     "nextMatch": "Corrispondenza successiva",
     "replaceButton": "Sostituisci…",

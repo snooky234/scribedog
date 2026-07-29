@@ -92,6 +92,12 @@ export function FindReplacePanel({
     [caseSensitive, wholeWord]
   );
 
+  // No document at all — as opposed to a document whose editor just isn't
+  // mounted yet (file switch, load error). Only then is the vault-wide search
+  // the single possible mode; during a plain file switch the user's own
+  // all-files setting must survive untouched.
+  const isVaultOnly = !editor && !filePath;
+
   const docMatches = useMemo(() => {
     if (!open || !editor) {
       return [];
@@ -138,10 +144,10 @@ export function FindReplacePanel({
   // to work on, so the vault-wide search is the only meaningful mode and is
   // switched on for the user instead of leaving them with a dead search box.
   useEffect(() => {
-    if (open && !editor && !allFiles) {
+    if (open && isVaultOnly && !allFiles) {
       setAllFiles(true);
     }
-  }, [open, editor, allFiles, setAllFiles]);
+  }, [open, isVaultOnly, allFiles, setAllFiles]);
 
   useEffect(() => {
     if (open) {
@@ -605,12 +611,12 @@ export function FindReplacePanel({
           </Toggle>
           <label
             className="find-panel__all-files"
-            title={editor ? undefined : t("findReplace.allFilesLocked")}
+            title={isVaultOnly ? t("findReplace.allFilesLocked") : undefined}
           >
             <input
               type="checkbox"
               checked={allFiles}
-              disabled={!editor}
+              disabled={isVaultOnly}
               onChange={(event) => setAllFiles(event.target.checked)}
             />
             {t("findReplace.allFiles")}
@@ -620,7 +626,7 @@ export function FindReplacePanel({
         {allFiles && query ? (
           <p className="find-panel__summary" aria-live="polite">
             {/* "other files" only makes sense next to an open one. */}
-            {t(editor ? "findReplace.allFilesSummary" : "findReplace.allFilesSummaryStandalone", {
+            {t(isVaultOnly ? "findReplace.allFilesSummaryStandalone" : "findReplace.allFilesSummary", {
               matches: otherMatchCount,
               files: otherFileResults.length
             })}

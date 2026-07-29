@@ -512,6 +512,8 @@
     "matchCount": "{{current}} из {{total}}",
     "noMatches": "Совпадений нет",
     "allFilesSummary": "Совпадений: {{matches}} в других файлах: {{files}}",
+    "allFilesSummaryStandalone": "Совпадений: {{matches}} в файлах: {{files}}",
+    "allFilesLocked": "Когда файл не открыт, поиск всегда идёт по всей папке",
     "previousMatch": "Предыдущее совпадение",
     "nextMatch": "Следующее совпадение",
     "replaceButton": "Заменить…",

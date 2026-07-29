@@ -502,6 +502,8 @@
     "matchCount": "{{current}} sur {{total}}",
     "noMatches": "Aucune occurrence",
     "allFilesSummary": "{{matches}} occurrences dans {{files}} autres fichiers",
+    "allFilesSummaryStandalone": "{{matches}} occurrences dans {{files}} fichiers",
+    "allFilesLocked": "Sans fichier ouvert, la recherche porte toujours sur tout le dossier",
     "previousMatch": "Occurrence précédente",
     "nextMatch": "Occurrence suivante",
     "replaceButton": "Remplacer…",

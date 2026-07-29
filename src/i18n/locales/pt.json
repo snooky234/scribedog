@@ -502,6 +502,8 @@
     "matchCount": "{{current}} de {{total}}",
     "noMatches": "Nenhuma ocorrência",
     "allFilesSummary": "{{matches}} ocorrências em {{files}} outros arquivos",
+    "allFilesSummaryStandalone": "{{matches}} ocorrências em {{files}} arquivos",
+    "allFilesLocked": "Sem nenhum arquivo aberto, a busca abrange sempre a pasta inteira",
     "previousMatch": "Ocorrência anterior",
     "nextMatch": "Próxima ocorrência",
     "replaceButton": "Substituir…",

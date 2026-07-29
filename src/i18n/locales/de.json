@@ -502,6 +502,8 @@
     "matchCount": "{{current}} von {{total}}",
     "noMatches": "Keine Treffer",
     "allFilesSummary": "{{matches}} Treffer in {{files}} weiteren Dateien",
+    "allFilesSummaryStandalone": "{{matches}} Treffer in {{files}} Dateien",
+    "allFilesLocked": "Ohne geöffnete Datei wird immer im gesamten Ordner gesucht",
     "previousMatch": "Vorheriger Treffer",
     "nextMatch": "Nächster Treffer",
     "replaceButton": "Ersetzen …",
