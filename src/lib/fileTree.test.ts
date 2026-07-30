@@ -85,6 +85,15 @@ describe("buildFileTree", () => {
 
     expect(names(tree)).toEqual(["c.md", "a.md", "b.md"]);
   });
+
+  it("renders \"manual\" with no stored order exactly like \"name\"", () => {
+    const records = [record("note10.md"), record("Note2.md"), record("z/inner.md")];
+    const emptyFolders = ["empty"];
+
+    expect(names(buildFileTree(records, emptyFolders, { sortMode: "manual" }))).toEqual(
+      names(buildFileTree(records, emptyFolders, { sortMode: "name" }))
+    );
+  });
 });
 
 describe("getChildBasenamesByParent", () => {

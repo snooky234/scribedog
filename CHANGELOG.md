@@ -7,6 +7,7 @@ All notable changes to ScribeDog are documented here. Format loosely follows
 
 ### Highlights
 - Enable find/replace without an open file, with cumulative folder match badges when searching across the vault
+- Default the file tree to Manual sort order, so drag & drop works right away — the starting order is the familiar folders-first alphabetical one
 
 ### Improvements
 - Add spacing to the shortcuts-settings dialog

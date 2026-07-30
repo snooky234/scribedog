@@ -41,6 +41,15 @@ function compareNames(left: string, right: string): number {
   });
 }
 
+/** The default ordering: folders before files, each alphabetically. */
+function compareByKindThenName(left: FileTreeNode, right: FileTreeNode): number {
+  if (left.kind !== right.kind) {
+    return left.kind === "folder" ? -1 : 1;
+  }
+
+  return compareNames(left.name, right.name);
+}
+
 /** Returns the mtime to sort/display by: a file's own mtime, or a folder's precomputed effective mtime. */
 export function getNodeMtimeMs(node: FileTreeNode): number {
   return node.kind === "file" ? node.mtimeMs : node.effectiveMtimeMs;
@@ -89,7 +98,10 @@ function sortChildrenRecursively(folder: FileTreeFolderNode, context: SortContex
         return 1;
       }
 
-      return compareNames(left.name, right.name);
+      // Nothing has been reordered here yet (Manual is the default mode, so
+      // this is the state of every untouched folder): fall back to the default
+      // ordering so switching modes never reshuffles the tree on its own.
+      return compareByKindThenName(left, right);
     });
   } else if (context.mode === "modified") {
     folder.children.sort((left, right) => {
@@ -103,13 +115,7 @@ function sortChildrenRecursively(folder: FileTreeFolderNode, context: SortContex
       return compareNames(left.name, right.name);
     });
   } else {
-    folder.children.sort((left, right) => {
-      if (left.kind !== right.kind) {
-        return left.kind === "folder" ? -1 : 1;
-      }
-
-      return compareNames(left.name, right.name);
-    });
+    folder.children.sort(compareByKindThenName);
   }
 
   for (const child of folder.children) {

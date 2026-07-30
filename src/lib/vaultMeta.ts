@@ -13,6 +13,14 @@ const ORDER_FILE_NAME = "order.json";
 const MANUSCRIPT_FILE_NAME = "manuscript.json";
 const SORT_MODES: SortMode[] = ["name", "modified", "manual"];
 
+/**
+ * What a vault without a sort-mode sidecar gets: Manual, so drag & drop works
+ * right away instead of after a trip to the sort menu. Costs nothing visually
+ * — with no stored order yet, Manual renders in the same folders-first
+ * alphabetical order as Name (see sortChildrenRecursively in lib/fileTree).
+ */
+export const DEFAULT_SORT_MODE: SortMode = "manual";
+
 async function vaultMetaDirPath(folderPath: string): Promise<string> {
   return join(folderPath, VAULT_META_DIR_NAME);
 }
@@ -36,7 +44,7 @@ export async function readSortMode(folderPath: string): Promise<SortMode> {
     const filePath = await join(await vaultMetaDirPath(folderPath), SORT_MODE_FILE_NAME);
 
     if (!(await exists(filePath))) {
-      return "name";
+      return DEFAULT_SORT_MODE;
     }
 
     const parsed: unknown = JSON.parse(await readTextFile(filePath));
@@ -49,9 +57,9 @@ export async function readSortMode(folderPath: string): Promise<SortMode> {
       return (parsed as { mode: SortMode }).mode;
     }
 
-    return "name";
+    return DEFAULT_SORT_MODE;
   } catch {
-    return "name";
+    return DEFAULT_SORT_MODE;
   }
 }
 

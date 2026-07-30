@@ -101,9 +101,13 @@ export function currentChildBasenames(
  * A folder only has a tracked order once something has explicitly reordered
  * it (drag & drop, or an insert like this one) — until then
  * insertManualOrderEntry would silently no-op. Seeds it from the current
- * on-screen (alphabetical) order first so the very first insert into an
- * untouched folder still lands at the requested position instead of being
- * dropped, without reshuffling siblings that were already there.
+ * on-screen order first so the very first insert into an untouched folder
+ * still lands at the requested position instead of being dropped, without
+ * reshuffling siblings that were already there.
+ *
+ * currentChildren is taken as given (callers pass what the tree shows, folders
+ * before files) — re-sorting it here would make the first insert visibly
+ * reshuffle the folder it seeds.
  */
 export function ensureManualOrderEntry(
   manualOrder: ManualOrderMap,
@@ -114,12 +118,7 @@ export function ensureManualOrderEntry(
     return manualOrder;
   }
 
-  return {
-    ...manualOrder,
-    [parentRelativePath]: [...currentChildren].sort((left, right) =>
-      left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" })
-    )
-  };
+  return { ...manualOrder, [parentRelativePath]: [...currentChildren] };
 }
 
 /** Inserts at insertIndex (clamped), or appends at the end when omitted. */

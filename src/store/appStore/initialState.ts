@@ -1,3 +1,5 @@
+import { DEFAULT_SORT_MODE } from "@/lib/vaultMeta";
+
 import type { AppData } from "./types";
 
 export const initialAppData: AppData = {
@@ -16,7 +18,7 @@ export const initialAppData: AppData = {
   folderError: null,
   fileError: null,
   saveError: null,
-  sortMode: "name",
+  sortMode: DEFAULT_SORT_MODE,
   manualOrder: {},
   fileMtimeMs: {},
   emptyFolderMtimeMs: {}
