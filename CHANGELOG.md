@@ -3,6 +3,11 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.3] - 2026-07-30
+
+### Bug Fixes
+- Fix local AI connections (Ollama, Jan.ai, LM Studio) returning 403 in the installed app, while working fine in development
+
 ## [0.8.2] - 2026-07-30
 
 ### Highlights
