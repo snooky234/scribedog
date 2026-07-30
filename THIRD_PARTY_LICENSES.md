@@ -140,40 +140,7 @@ SOFTWARE.
 
 </details>
 
-### @emoji-mart/react@1.1.1
-
-- License: MIT
-- Repository: https://github.com/missive/emoji-mart
-
-<details><summary>License text</summary>
-
-```
-MIT License
-
-Copyright (c) Missive.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-</details>
-
-### @floating-ui/core@1.7.5
+### @floating-ui/core@1.8.0
 
 - License: MIT
 - Repository: https://github.com/floating-ui/floating-ui
@@ -206,7 +173,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 </details>
 
-### @floating-ui/dom@1.7.6
+### @floating-ui/dom@1.8.0
 
 - License: MIT
 - Repository: https://github.com/floating-ui/floating-ui
@@ -239,7 +206,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 </details>
 
-### @floating-ui/react-dom@2.1.8
+### @floating-ui/react-dom@2.1.9
 
 - License: MIT
 - Repository: https://github.com/floating-ui/floating-ui
@@ -272,7 +239,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 </details>
 
-### @floating-ui/utils@0.2.11
+### @floating-ui/utils@0.2.12
 
 - License: MIT
 - Repository: https://github.com/floating-ui/floating-ui
@@ -3095,7 +3062,7 @@ MIT License
 
 </details>
 
-### @types/prop-types@15.7.15
+### @types/react-dom@19.2.3
 
 - License: MIT
 - Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
@@ -3128,40 +3095,7 @@ MIT License
 
 </details>
 
-### @types/react-dom@18.3.7
-
-- License: MIT
-- Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
-
-<details><summary>License text</summary>
-
-```
-MIT License
-
-    Copyright (c) Microsoft Corporation.
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE
-```
-
-</details>
-
-### @types/react@18.3.31
+### @types/react@19.2.17
 
 - License: MIT
 - Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
@@ -4692,40 +4626,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 </details>
 
-### js-tokens@4.0.0
-
-- License: MIT
-- Repository: https://github.com/lydell/js-tokens
-- Publisher: Simon Lydell
-
-<details><summary>License text</summary>
-
-```
-The MIT License (MIT)
-
-Copyright (c) 2014, 2015, 2016, 2017, 2018 Simon Lydell
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
-</details>
-
 ### jszip@3.10.1
 
 - License: (MIT OR GPL-3.0-or-later)
@@ -5487,40 +5387,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 Copyright (c) 2024 Nick Frasser
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
-</details>
-
-### loose-envify@1.4.0
-
-- License: MIT
-- Repository: https://github.com/zertosh/loose-envify
-- Publisher: Andres Suarez
-
-<details><summary>License text</summary>
-
-```
-The MIT License (MIT)
-
-Copyright (c) 2015 Andres Suarez <zertosh@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -6889,17 +6755,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 </details>
 
-### react-dom@18.3.1
+### react-dom@19.2.8
 
 - License: MIT
-- Repository: https://github.com/facebook/react
+- Repository: https://github.com/react/react
 
 <details><summary>License text</summary>
 
 ```
 MIT License
 
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta Platforms, Inc. and affiliates.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -6956,17 +6822,17 @@ SOFTWARE.
 
 </details>
 
-### react@18.3.1
+### react@19.2.8
 
 - License: MIT
-- Repository: https://github.com/facebook/react
+- Repository: https://github.com/react/react
 
 <details><summary>License text</summary>
 
 ```
 MIT License
 
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta Platforms, Inc. and affiliates.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -7249,7 +7115,7 @@ software or this license, under any kind of legal claim.***
 
 </details>
 
-### scheduler@0.23.2
+### scheduler@0.27.0
 
 - License: MIT
 - Repository: https://github.com/facebook/react
@@ -7259,7 +7125,7 @@ software or this license, under any kind of legal claim.***
 ```
 MIT License
 
-Copyright (c) Facebook, Inc. and its affiliates.
+Copyright (c) Meta Platforms, Inc. and affiliates.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -8313,7 +8179,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | atomic-waker | 1.1.2 | Apache-2.0 OR MIT |
 | autocfg | 1.5.1 | Apache-2.0 OR MIT |
 | base64 | 0.22.1 | MIT OR Apache-2.0 |
-| bindgen | 0.71.1 | BSD-3-Clause |
+| bindgen | 0.72.1 | BSD-3-Clause |
 | bit-set | 0.8.0 | Apache-2.0 OR MIT |
 | bit-vec | 0.8.0 | Apache-2.0 OR MIT |
 | bitflags | 1.3.2 | MIT/Apache-2.0 |
@@ -8611,8 +8477,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | webview2-com | 0.38.2 | MIT |
 | webview2-com-macros | 0.8.1 | MIT |
 | webview2-com-sys | 0.38.2 | MIT |
-| whisper-rs | 0.14.4 | Unlicense |
-| whisper-rs-sys | 0.13.1 | Unlicense |
+| whisper-rs | 0.16.0 | Unlicense |
+| whisper-rs-sys | 0.15.0 | Unlicense |
 | winapi-util | 0.1.11 | Unlicense OR MIT |
 | window-vibrancy | 0.6.0 | Apache-2.0 OR MIT |
 | windows | 0.54.0 | MIT OR Apache-2.0 |

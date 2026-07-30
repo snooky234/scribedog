@@ -3,6 +3,17 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.2] - 2026-07-30
+
+### Highlights
+- Enable find/replace without an open file, with cumulative folder match badges when searching across the vault
+
+### Improvements
+- Add spacing to the shortcuts-settings dialog
+
+### Bug Fixes
+- Normalize pasted slices with stray hard breaks
+
 ## [0.8.1] - 2026-07-29
 
 ### Highlights
