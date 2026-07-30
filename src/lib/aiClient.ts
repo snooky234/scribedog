@@ -448,6 +448,31 @@ async function extractResponseErrorMessage(response: Response): Promise<string> 
 // Generous enough that a slow local model on CPU still finishes a full step.
 const REQUEST_TIMEOUT_MS = 180_000;
 
+// tauri-plugin-http stamps the calling webview's own origin onto every request,
+// and on Windows a packaged build's webview lives at http://tauri.localhost — an
+// origin Ollama does not have in its allowlist, so it answers 403 while
+// `tauri dev` (http://localhost:1420) sails through. Local endpoints therefore
+// get an explicit localhost origin; being allowed to override that header at all
+// is what the plugin's `unsafe-headers` feature is turned on for in Cargo.toml.
+//
+// Only local endpoints: assertValidEndpoint has already pinned those to
+// localhost/127.0.0.1, so the claim is true rather than forged. Cloud endpoints
+// keep the webview origin — none of them inspect it.
+const LOCAL_ENDPOINT_ORIGIN = "http://localhost";
+
+type HttpFetchInit = Omit<RequestInit, "headers"> & { headers?: Record<string, string> };
+
+async function httpFetch(url: string, init: HttpFetchInit): Promise<Response> {
+  if (!isLocalApiUrl(url)) {
+    return tauriFetch(url, init);
+  }
+
+  return tauriFetch(url, {
+    ...init,
+    headers: { ...init.headers, Origin: LOCAL_ENDPOINT_ORIGIN }
+  });
+}
+
 async function postJson(url: string, body: unknown, extraHeaders?: Record<string, string>, signal?: AbortSignal) {
   // Own controller so the deadline and the user's cancel button can both stop
   // the request while staying distinguishable: only the timeout gets rewritten
@@ -464,7 +489,7 @@ async function postJson(url: string, body: unknown, extraHeaders?: Record<string
   signal?.addEventListener("abort", forwardAbort);
 
   try {
-    const response = await tauriFetch(url, {
+    const response = await httpFetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -492,7 +517,7 @@ async function postJson(url: string, body: unknown, extraHeaders?: Record<string
 }
 
 async function getJson(url: string, signal?: AbortSignal, extraHeaders?: Record<string, string>) {
-  const response = await tauriFetch(url, {
+  const response = await httpFetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -687,7 +712,7 @@ async function streamJsonLines(
   signal?: AbortSignal,
   extraHeaders?: Record<string, string>
 ) {
-  const response = await tauriFetch(url, {
+  const response = await httpFetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1000,7 +1025,7 @@ async function consumeAnthropicStream(
   handlers: AiStreamHandlers,
   signal?: AbortSignal
 ): Promise<string> {
-  const response = await tauriFetch(url, {
+  const response = await httpFetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -2116,7 +2141,7 @@ async function consumeChatStepStream(
   armDeadline();
 
   try {
-    const response = await tauriFetch(url, {
+    const response = await httpFetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...extraHeaders },
       body: JSON.stringify(body),

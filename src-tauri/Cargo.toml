@@ -20,7 +20,12 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
-tauri-plugin-http = "2"
+# `unsafe-headers` lets the frontend override the Origin header the plugin would
+# otherwise stamp on from the webview URL. Needed because a packaged Windows
+# build's webview origin is http://tauri.localhost, which Ollama rejects with 403
+# — see the httpFetch comment in src/lib/aiClient.ts. It does not widen *where*
+# requests may go: that stays the URL allowlist in capabilities/default.json.
+tauri-plugin-http = { version = "2", features = ["unsafe-headers"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-window-state = "2"
