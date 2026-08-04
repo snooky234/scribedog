@@ -3,6 +3,11 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.0] - 2026-08-05
+
+### Highlights
+- Add a vault-wide chat agent with staged changes, checkpoints, and file tools (read, write, edit, rename, delete, search) across the whole vault, not just the open document
+
 ## [0.8.3] - 2026-07-30
 
 ### Bug Fixes
