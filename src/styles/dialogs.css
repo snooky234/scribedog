@@ -78,7 +78,7 @@
 .ai-dialog__title-icon {
   width: 1.15em;
   height: 1.15em;
-  color: rgb(168, 85, 247);
+  color: rgb(var(--accent-rgb));
   flex-shrink: 0;
 }
 
@@ -184,6 +184,45 @@
   grid-column: 1 / -1;
   margin-top: 1.1rem;
   margin-bottom: 1rem;
+}
+
+/* The accent-color picker: a native swatch, an editable hex field and a
+   reset-to-default link in one row, instead of the full-width stacked
+   input every other .ai-dialog__field gets. */
+.accent-color-setting {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-dialog__field .accent-color-setting__swatch {
+  width: 2.4rem;
+  height: 2.4rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(var(--overlay-rgb),0.1);
+  border-radius: 0.6rem;
+  padding: 0.15rem;
+  background: rgba(var(--surface-raised-rgb),0.84);
+  cursor: pointer;
+}
+
+.ai-dialog__field .accent-color-setting__hex {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  text-transform: lowercase;
+}
+
+.accent-color-setting .ai-dialog__link {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.accent-color-setting .ai-dialog__link:disabled {
+  opacity: 0.4;
+  text-decoration: none;
+  cursor: default;
 }
 
 .ai-dialog__model-field {
@@ -397,6 +436,18 @@
   color: rgba(var(--text-rgb), 0.86);
   font-size: 0.82rem;
   line-height: 1.5;
+}
+
+/* Same block, blue instead of amber: for a note that explains something rather
+   than warning about it — an amber panel next to a real warning elsewhere in
+   the dialog would flatten the difference between the two. */
+.ai-dialog__notice--info {
+  border-left-color: var(--blue-fg);
+  background: rgba(var(--info-bg-rgb), 0.75);
+}
+
+.ai-dialog__notice--info .ai-dialog__notice-icon {
+  color: var(--blue-fg);
 }
 
 .ai-dialog__notice-icon {
@@ -682,7 +733,7 @@
 }
 
 .shortcuts-list__keys--editable[data-recording="true"] {
-  border-color: var(--accent-fg, rgba(var(--text-rgb),0.6));
+  border-color: rgb(var(--accent-rgb));
   background: rgba(var(--overlay-rgb),0.16);
   font-style: italic;
 }
@@ -1109,4 +1160,36 @@
   background: rgba(var(--surface-rgb),0.85);
   padding: 0.7rem 0.85rem;
   line-height: 1.5;
+}
+
+/* The agent's settings sit folded away: seven switches with sensible defaults
+   nobody has to touch, and the model-class hints as the only reason to open
+   it in the first place. */
+.ai-dialog__section {
+  grid-column: 1 / -1;
+  margin: 0.8rem 0.2rem 0;
+  border-top: 1px solid rgba(var(--overlay-rgb), 0.12);
+  padding-top: 0.8rem;
+}
+
+.ai-dialog__section > summary {
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: rgba(var(--text-rgb), 0.86);
+  list-style: revert;
+}
+
+.ai-dialog__section .ai-dialog__switch:last-of-type {
+  margin-bottom: 0.35rem;
+}
+
+/* One line per setting saying which model class it realistically needs. A
+   switch without it is unfinished — see AgentSettingsSection. */
+.ai-dialog__hint {
+  grid-column: 1 / -1;
+  margin: 0 0.6rem 0.9rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: rgba(var(--text-rgb), 0.6);
 }

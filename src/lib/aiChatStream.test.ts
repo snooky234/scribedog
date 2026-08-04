@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AiChatRequest } from "./aiClient";
-import type { AiSettings } from "@/store/useAiSettingsStore";
+import { defaultAiSettings, type AiSettings } from "@/store/useAiSettingsStore";
 
 // The module under test talks to the endpoint through Tauri's http plugin,
 // which has no implementation outside the app shell.
@@ -70,6 +70,7 @@ function brokenStreamResponse(pieces: string[], message: string): Response {
 }
 
 const OLLAMA: AiSettings = {
+  ...defaultAiSettings,
   provider: "ollama",
   apiUrl: "http://localhost:11434",
   apiKey: "",
@@ -79,6 +80,7 @@ const OLLAMA: AiSettings = {
 };
 
 const OPENAI: AiSettings = {
+  ...defaultAiSettings,
   provider: "openai",
   apiUrl: "https://api.openai.com",
   apiKey: "sk-test",
@@ -88,6 +90,7 @@ const OPENAI: AiSettings = {
 };
 
 const ANTHROPIC: AiSettings = {
+  ...defaultAiSettings,
   provider: "anthropic",
   apiUrl: "https://api.anthropic.com",
   apiKey: "sk-ant-test",
@@ -178,6 +181,24 @@ describe("streamAiChatStep — OpenAI-compatible", () => {
     await streamAiChatStep(OPENAI, REQUEST, seen.handlers);
 
     expect(seen.toolCalls).toEqual(["read_note"]);
+  });
+
+  // Smaller models produce a tool name from memory rather than from the list
+  // they were handed — `create_file` for write_file, `str_replace` for
+  // edit_file. Resolving it here means the loop, the consent gate and the
+  // chat's status label all see one name per tool.
+  it("resolves a hallucinated tool name to the documented one", async () => {
+    fetchMock.mockResolvedValueOnce(
+      streamResponse([
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"create_file","arguments":"{}"}}]}}]}\n'
+      ])
+    );
+
+    const seen = recorder();
+    const step = await streamAiChatStep(OPENAI, REQUEST, seen.handlers);
+
+    expect(step.toolCalls[0].name).toBe("write_file");
+    expect(seen.toolCalls).toEqual(["write_file"]);
   });
 
   it("keeps parallel tool calls apart by their index", async () => {
@@ -450,6 +471,39 @@ describe("streamAiChatStep — models without vision", () => {
     const step = await streamAiChatStep(OPENAI, REQUEST, recorder().handlers);
 
     expect(step.imagesDropped).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Some OpenAI-compatible backends refuse to mix tool calls with a reasoning
+// model's default effort on /v1/chat/completions and name their own fix in
+// the error text — the endpoint switch they also suggest (/v1/responses) is
+// not one this client speaks, so the retry takes the other fix instead.
+describe("streamAiChatStep — reasoning-effort/tool conflict", () => {
+  it("retries with reasoning_effort: none when the endpoint rejects tools alongside it", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        errorResponse({
+          error: {
+            message:
+              "Function tools with reasoning_effort are not supported for gpt-5.6-luna in " +
+              "/v1/chat/completions. To use function tools, use /v1/responses or set reasoning_effort to 'none'."
+          }
+        })
+      )
+      .mockResolvedValueOnce(streamResponse(['data: {"choices":[{"delta":{"content":"hi there"}}]}\n']));
+
+    const step = await streamAiChatStep({ ...OPENAI, model: "gpt-5.6-luna" }, REQUEST, recorder().handlers);
+
+    expect(step.text).toBe("hi there");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(requestBodyOf(1).reasoning_effort).toBe("none");
+  });
+
+  it("lets an unrelated tool error through untouched", async () => {
+    fetchMock.mockResolvedValueOnce(errorResponse({ error: { message: "invalid tool schema" } }));
+
+    await expect(streamAiChatStep(OPENAI, REQUEST, recorder().handlers)).rejects.toThrow("invalid tool schema");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

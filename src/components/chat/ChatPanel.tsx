@@ -8,18 +8,22 @@ import {
   FileText,
   Image as ImageIcon,
   Library,
+  ListChecks,
   Loader2,
   Mic,
   Paperclip,
+  PawPrint,
   PencilLine,
   Search,
   SendHorizontal,
   Square,
   TextCursorInput,
   TextQuote,
+  Undo2,
   X
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { join } from "@tauri-apps/api/path";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
@@ -32,6 +36,7 @@ import i18n from "@/i18n";
 import {
   EDITING_TOOL_NAMES,
   FLAG_SUGGESTION_TOOL_NAME,
+  STAGING_TOOL_NAMES,
   type AiChatMessage,
   type VaultSourceRef
 } from "@/lib/aiClient";
@@ -47,6 +52,13 @@ import {
   readDropPayload,
   type DropPayload
 } from "@/lib/dragDrop/droppedSources";
+import { settleOpenDocumentProposals } from "@/lib/chat/agentTools";
+import type { PlanStep } from "@/lib/chat/agentPlan";
+import {
+  stagedChangeKind,
+  vaultPathKey,
+  type StagedChange
+} from "@/lib/chat/vaultStaging";
 import { renderChatMarkdown } from "@/lib/chat/renderMarkdown";
 import {
   FILE_LINK_DRAG_MIME,
@@ -58,8 +70,9 @@ import { isKnowledgeBaseReady } from "@/lib/ragSearch";
 import { formatBinding } from "@/lib/shortcuts/binding";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { assistantDisplayName, useAssistantsStore } from "@/store/useAssistantsStore";
-import { getActiveSession, useChatStore } from "@/store/useChatStore";
+import { getActiveSession, PLANNING_ACTIVITY, useChatStore } from "@/store/useChatStore";
 import { useAppStore } from "@/store/useAppStore";
+import { useStagedChangesStore } from "@/store/useStagedChangesStore";
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
 
 const OPEN_ASSISTANT_SETTINGS_VALUE = "__open-assistant-settings__";
@@ -86,7 +99,20 @@ const TOOL_LABEL_KEYS: Record<string, string> = {
   accept_proposals: "chat.toolAcceptedProposals",
   discard_proposals: "chat.toolDiscardedProposals",
   search_vault: "chat.toolSearchedVault",
-  read_note: "chat.toolReadNote"
+  read_note: "chat.toolReadNote",
+  list_files: "chat.toolListFiles",
+  read_file: "chat.toolReadFile",
+  write_file: "chat.toolWriteFile",
+  edit_file: "chat.toolEditFile",
+  multi_edit: "chat.toolMultiEdit",
+  rename_file: "chat.toolRenameFile",
+  delete_file: "chat.toolDeleteFile",
+  create_folder: "chat.toolCreateFolder",
+  search_files: "chat.toolSearchFiles",
+  get_outline: "chat.toolGetOutline",
+  create_plan: "chat.toolPlanCreated",
+  update_plan: "chat.toolPlanUpdated",
+  complete_step: "chat.toolPlanStepDone"
 };
 
 // Distinct wording for the failure case of each tool — reusing the success
@@ -102,7 +128,19 @@ const TOOL_ERROR_LABEL_KEYS: Record<string, string> = {
   replace_passage: "chat.toolProposePassageFailed",
   accept_proposals: "chat.toolSettleProposalsFailed",
   discard_proposals: "chat.toolSettleProposalsFailed",
-  read_note: "chat.toolReadNoteFailed"
+  read_note: "chat.toolReadNoteFailed",
+  read_file: "chat.toolReadFileFailed",
+  write_file: "chat.toolWriteFileFailed",
+  edit_file: "chat.toolEditFileFailed",
+  multi_edit: "chat.toolMultiEditFailed",
+  rename_file: "chat.toolRenameFileFailed",
+  delete_file: "chat.toolDeleteFileFailed",
+  create_folder: "chat.toolCreateFolderFailed",
+  search_files: "chat.toolSearchFilesFailed",
+  get_outline: "chat.toolGetOutlineFailed",
+  create_plan: "chat.toolPlanFailed",
+  update_plan: "chat.toolPlanFailed",
+  complete_step: "chat.toolPlanFailed"
 };
 
 // What the agent is doing right now, per tool — present tense, unlike the
@@ -120,7 +158,21 @@ const TOOL_ACTIVITY_KEYS: Record<string, string> = {
   accept_proposals: "chat.activityEditing",
   discard_proposals: "chat.activityEditing",
   search_vault: "chat.activitySearchingVault",
-  read_note: "chat.activityReadingNote"
+  read_note: "chat.activityReadingNote",
+  list_files: "chat.activityBrowsingVault",
+  read_file: "chat.activityReadingNote",
+  write_file: "chat.activityWritingFile",
+  edit_file: "chat.activityWritingFile",
+  multi_edit: "chat.activityWritingFile",
+  rename_file: "chat.activityWritingFile",
+  delete_file: "chat.activityWritingFile",
+  create_folder: "chat.activityWritingFile",
+  search_files: "chat.activitySearchingFiles",
+  get_outline: "chat.activityReadingNote",
+  create_plan: "chat.activityPlanning",
+  update_plan: "chat.activityPlanning",
+  complete_step: "chat.activityPlanning",
+  [PLANNING_ACTIVITY]: "chat.activityPlanning"
 };
 
 // Shown, one after another, while nothing more specific is known — a model
@@ -232,9 +284,16 @@ function hiddenToolStatuses(messages: AiChatMessage[], answering: boolean): Set<
   const hidden = new Set<number>();
   let retryableInTurn: number[] = [];
   let turnProposed = false;
+  let lastToolIndex = -1;
 
   const closeTurn = (running = false) => {
-    const keepLast = !turnProposed && !running && retryableInTurn.length > 0;
+    const last = retryableInTurn[retryableInTurn.length - 1];
+    // Kept only when it is the turn's *last* tool call: a failure the model
+    // went on working after is a step on the way, whatever came of the turn in
+    // the end — showing it in red says "this went wrong" about an attempt the
+    // very next call corrected. What is left is the case the line exists for:
+    // the turn stopped on this failure and gave the user nothing.
+    const keepLast = !turnProposed && !running && last !== undefined && last === lastToolIndex;
 
     for (const index of keepLast ? retryableInTurn.slice(0, -1) : retryableInTurn) {
       hidden.add(index);
@@ -242,6 +301,7 @@ function hiddenToolStatuses(messages: AiChatMessage[], answering: boolean): Set<
 
     retryableInTurn = [];
     turnProposed = false;
+    lastToolIndex = -1;
   };
 
   messages.forEach((message, index) => {
@@ -254,9 +314,18 @@ function hiddenToolStatuses(messages: AiChatMessage[], answering: boolean): Set<
       return;
     }
 
+    lastToolIndex = index;
+
     if (message.retryable) {
       retryableInTurn.push(index);
-    } else if (EDITING_TOOL_NAMES.includes(message.toolName) && !message.content.startsWith("Error:")) {
+    } else if (
+      // A staged file change is a proposal in exactly the same sense as an
+      // editor widget: once one succeeded, the turn's earlier stumbles are
+      // steps on the way and not worth a line of their own.
+      (EDITING_TOOL_NAMES.includes(message.toolName) ||
+        STAGING_TOOL_NAMES.includes(message.toolName)) &&
+      !message.content.startsWith("Error:")
+    ) {
       turnProposed = true;
     }
   });
@@ -331,11 +400,15 @@ function AnswerSources({ sources }: { sources: VaultSourceRef[] }) {
 function AssistantMessage({
   message,
   canApplyToDocument,
-  onApplyToDocument
+  onApplyToDocument,
+  canUndo,
+  onUndo
 }: {
   message: AssistantChatMessage;
   canApplyToDocument: boolean;
   onApplyToDocument: (markdown: string) => void;
+  canUndo: boolean;
+  onUndo: () => void;
 }) {
   const { t } = useTranslation();
   const folderPath = useAppStore((state) => state.folderPath);
@@ -419,7 +492,226 @@ function AssistantMessage({
         </button>
       ) : null}
 
+      {/* The turn changed files on disk and can be taken back as a whole —
+          which is what a checkpoint records (see src/lib/chat/checkpoints.ts).
+          Not shown per file: a revert restores the batch, and offering it any
+          finer would promise precision the mechanism does not have. */}
+      {canUndo ? (
+        <button
+          type="button"
+          className="chat-message__insert"
+          title={t("chat.undoTurnTitle")}
+          onClick={onUndo}
+        >
+          <Undo2 className="size-3.5" />
+          {t("chat.undoTurn")}
+        </button>
+      ) : null}
+
       <AnswerSources sources={message.sources ?? []} />
+    </div>
+  );
+}
+
+/**
+ * The agent's task list for a multi-step goal, in whichever mode wrote it (see
+ * src/lib/chat/agentPlan.ts). One rendering for both modes on purpose: the user
+ * should not be able to tell from the chat who is holding the pen.
+ */
+function PlanView({ plan }: { plan: PlanStep[] }) {
+  const { t } = useTranslation();
+  const done = plan.filter((step) => step.status === "done").length;
+
+  return (
+    <div className="chat-plan">
+      <div className="chat-plan__header">
+        <ListChecks className="size-3.5 shrink-0" aria-hidden="true" />
+        <span>{t("chat.planTitle", { done, total: plan.length })}</span>
+      </div>
+
+      <ol className="chat-plan__steps">
+        {plan.map((step, index) => (
+          <li
+            key={index}
+            className={`chat-plan__step chat-plan__step--${step.status}`}
+            title={step.instruction}
+          >
+            <span className="chat-plan__marker" aria-hidden="true">
+              {step.status === "done" ? (
+                <Check className="size-3" />
+              ) : step.status === "failed" ? (
+                <X className="size-3" />
+              ) : step.status === "running" ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : null}
+            </span>
+            <span className="chat-plan__title">{step.title}</span>
+            {step.result ? <span className="chat-plan__result">{step.result}</span> : null}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/** Localized label per kind of staged change, for the list above the composer. */
+function stagedChangeLabel(t: TFunction, change: StagedChange): string {
+  switch (stagedChangeKind(change)) {
+    case "create":
+      return t("chat.stagedCreate");
+    case "delete":
+      return t("chat.stagedDelete");
+    case "rename":
+      return t("chat.stagedRename", { path: change.targetPath });
+    case "rename-edit":
+      return t("chat.stagedRenameEdit", { path: change.targetPath });
+    case "editor":
+      return t("chat.stagedEditorProposal");
+    default:
+      return t("chat.stagedEdit");
+  }
+}
+
+/**
+ * Everything the agent has proposed and nobody has settled yet, above the
+ * composer.
+ *
+ * It sits here rather than in the transcript because the proposals are state,
+ * not history: they outlive the turn that made them (and a restart), and the
+ * question they pose — apply or throw away — is the same one however long ago
+ * they were made.
+ */
+function StagedChangesCard({
+  changes,
+  isApplying,
+  onOpen,
+  onApplyAll,
+  onDiscardAll
+}: {
+  changes: StagedChange[];
+  isApplying: boolean;
+  onOpen: (change: StagedChange) => void;
+  onApplyAll: () => void;
+  onDiscardAll: () => void;
+}) {
+  const { t } = useTranslation();
+
+  if (changes.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="chat-staged" aria-label={t("chat.stagedChanges", { count: changes.length })}>
+      <div className="chat-staged__header">
+        <PawPrint className="size-3.5 shrink-0" aria-hidden="true" />
+        <span>{t("chat.stagedChanges", { count: changes.length })}</span>
+      </div>
+
+      <ul className="chat-staged__list">
+        {changes.map((change) => (
+          <li key={`${change.path}|${change.targetPath}`}>
+            <button
+              type="button"
+              className="chat-staged__entry"
+              title={t("chat.stagedOpen")}
+              onClick={() => onOpen(change)}
+            >
+              <span className="chat-staged__path">{change.path || change.targetPath}</span>
+              <span className="chat-staged__kind">{stagedChangeLabel(t, change)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className="chat-staged__actions">
+        <Button type="button" size="sm" variant="outline" disabled={isApplying} onClick={onDiscardAll}>
+          {t("chat.discardAll")}
+        </Button>
+        <Button type="button" size="sm" disabled={isApplying} onClick={onApplyAll}>
+          {isApplying ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+          {t("chat.acceptAll")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Confirms taking an applied agent revision back.
+ *
+ * Deliberately blunt about what it does: a revert undoes this batch *and*
+ * everything applied after it, because each checkpoint only holds the files of
+ * its own batch — see checkpointsToRevert. Cherry-picking is left out on
+ * purpose, and a dialog that hid this would be promising precision the
+ * mechanism does not have.
+ */
+function UndoTurnDialog({
+  open,
+  isReverting,
+  onConfirm,
+  onCancel
+}: {
+  open: boolean;
+  isReverting: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isReverting) {
+        event.preventDefault();
+        onCancel();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, isReverting, onCancel]);
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div
+      className="unsaved-dialog"
+      role="presentation"
+      onClick={() => {
+        if (!isReverting) {
+          onCancel();
+        }
+      }}
+    >
+      <div
+        className="unsaved-dialog__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="undo-turn-title"
+        aria-describedby="undo-turn-description"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <p className="unsaved-dialog__eyebrow">{t("chat.undoConfirmEyebrow")}</p>
+        <h3 id="undo-turn-title">{t("chat.undoConfirmTitle")}</h3>
+        <p id="undo-turn-description" className="unsaved-dialog__description">
+          {t("chat.undoConfirmDescription")}
+        </p>
+
+        <div className="unsaved-dialog__actions">
+          <Button type="button" variant="outline" disabled={isReverting} onClick={onCancel}>
+            {t("common.cancel")}
+          </Button>
+          <Button type="button" variant="destructive" disabled={isReverting} onClick={onConfirm}>
+            {t("chat.undoConfirmAction")}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -647,10 +939,52 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
     [vaultFolderPath, vaultFilePaths, ragConfig]
   );
 
+  const stagedChanges = useStagedChangesStore((state) => state.changes);
+  const checkpoints = useStagedChangesStore((state) => state.checkpoints);
+  const isApplyingStaged = useStagedChangesStore((state) => state.isApplying);
+  const selectFilePathFromTree = useAppStore((state) => state.selectFilePath);
+  // Which assistant message the confirmation dialog is about; null while it is
+  // closed. Holding the checkpoint id rather than a boolean is what lets the
+  // dialog stay correct if the transcript grows underneath it.
+  const [undoTarget, setUndoTarget] = useState<string | null>(null);
+
+  // The checkpoint that belongs to a given assistant message, if the batch it
+  // proposed was actually applied.
+  const checkpointByMessage = useMemo(() => {
+    const map = new Map<number, string>();
+
+    for (const checkpoint of checkpoints) {
+      if (checkpoint.sessionId === activeSession?.id && checkpoint.messageIndex >= 0) {
+        map.set(checkpoint.messageIndex, checkpoint.id);
+      }
+    }
+
+    return map;
+  }, [checkpoints, activeSession?.id]);
+
   const messages = activeSession?.messages ?? [];
   const isEmptyChat = messages.length === 0 && !isAnswering;
   const hiddenStatuses = useMemo(() => hiddenToolStatuses(messages, isAnswering), [messages, isAnswering]);
   const hasSessions = useChatStore((state) => state.sessions.length > 0);
+
+  // Clicking an entry in the pending-changes card opens that file, which is
+  // where the change can actually be looked at (the editor renders it as a
+  // red/green preview and locks the document — see StagedChangeBar).
+  const openStagedChange = (change: StagedChange) => {
+    const store = useAppStore.getState();
+    const relativePath = change.path || change.targetPath;
+
+    if (!store.folderPath || !relativePath) {
+      return;
+    }
+
+    const separator = store.folderPath.includes("\\") ? "\\" : "/";
+    const absolutePath = `${store.folderPath}${separator}${relativePath.split("/").join(separator)}`;
+    const known = store.filePaths.find((path) => vaultPathKey(path) === vaultPathKey(absolutePath));
+
+    useStagedChangesStore.getState().seedCreatedDocument(known ?? absolutePath);
+    void selectFilePathFromTree(known ?? absolutePath);
+  };
 
   // Follow the conversation as it grows and as tokens stream in.
   useEffect(() => {
@@ -978,6 +1312,8 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
                 // here: a button on every answer is what made it noise.
                 canApplyToDocument={canEditDocument && !isStreaming && (message.suggestsEdit ?? false)}
                 onApplyToDocument={handleApplyToDocument}
+                canUndo={!isStreaming && checkpointByMessage.has(index)}
+                onUndo={() => setUndoTarget(checkpointByMessage.get(index) ?? null)}
               />
             );
           }
@@ -987,6 +1323,14 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
           // so it stays out of the transcript. The get_image tool status line
           // above it is what tells them the image was looked at.
           if (message.imagePaths?.length) {
+            return null;
+          }
+
+          // The instruction the agent hands itself for one step of a plan.
+          // Nobody wrote it, and the plan's own step list above already shows
+          // where the agent is — as a user bubble it would just be the same
+          // list repeated in prose, once per step.
+          if (message.action === "planStep") {
             return null;
           }
 
@@ -1034,6 +1378,8 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
           );
         })}
 
+        {activeSession?.plan?.length ? <PlanView plan={activeSession.plan} /> : null}
+
         {isAnswering ? (
           <div className="chat-message chat-message--assistant">
             {streamingThinking ? (
@@ -1070,6 +1416,29 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
         {isStreaming && !isAnswering ? (
           <p className="chat-panel__hint">{t("chat.otherSessionBusy")}</p>
         ) : null}
+
+        <StagedChangesCard
+          changes={stagedChanges}
+          isApplying={isApplyingStaged}
+          onOpen={openStagedChange}
+          onApplyAll={() => {
+            // The open document's proposals are widgets in the editor; the
+            // staging list only carries a marker for them, so they are settled
+            // through the bridge rather than by the apply run.
+            if (stagedChanges.some((change) => change.editorProposal)) {
+              settleOpenDocumentProposals(true);
+            }
+
+            void useStagedChangesStore.getState().applyAll();
+          }}
+          onDiscardAll={() => {
+            if (stagedChanges.some((change) => change.editorProposal)) {
+              settleOpenDocumentProposals(false);
+            }
+
+            void useStagedChangesStore.getState().discardAll();
+          }}
+        />
 
         {/* The files this chat answers from first. They stay attached until the
             user removes them or starts another chat, so they sit above the
@@ -1223,6 +1592,20 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
           </Toggle>
         </div>
       </footer>
+
+      <UndoTurnDialog
+        open={undoTarget !== null}
+        isReverting={isApplyingStaged}
+        onCancel={() => setUndoTarget(null)}
+        onConfirm={() => {
+          const target = undoTarget;
+          setUndoTarget(null);
+
+          if (target) {
+            void useStagedChangesStore.getState().revertTo(target);
+          }
+        }}
+      />
 
       <VoiceModelDownloadDialog
         open={voice.isModelDialogOpen}

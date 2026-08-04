@@ -3,11 +3,13 @@ import {
   ChevronRight,
   FileText,
   Folder,
-  FolderOpen
+  FolderOpen,
+  PawPrint
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
+import { vaultPathKey } from "@/lib/chat/vaultStaging";
 import { carriesExternalFiles } from "@/lib/dragDrop/droppedSources";
 import { FILE_LINK_DRAG_MIME } from "@/lib/editor/fileLinks";
 import { getNodeMtimeMs, type FileTreeNode } from "@/lib/fileTree";
@@ -33,6 +35,16 @@ type TreeNodeRowProps = {
    * its own subtree without re-walking it on every render.
    */
   folderMatchCounts: Record<string, number>;
+  /**
+   * The vault agent's proposals, in the three forms a row has to distinguish:
+   * something is staged for this file at all, the file does not exist yet, the
+   * file is staged for deletion. Keyed like everywhere else in the staging
+   * layer (slashes normalized, lowercased — Windows).
+   */
+  folderStagedCounts: Record<string, number>;
+  stagedKeys: Set<string>;
+  stagedCreatedKeys: Set<string>;
+  stagedDeletedKeys: Set<string>;
   selectedFilePath: string | null;
   selectedKeys: Set<string>;
   dirtyFilePaths: string[];
@@ -62,6 +74,10 @@ export function TreeNodeRow({
   depth,
   expandedFolderPaths,
   folderMatchCounts,
+  folderStagedCounts,
+  stagedKeys,
+  stagedCreatedKeys,
+  stagedDeletedKeys,
   selectedFilePath,
   selectedKeys,
   dirtyFilePaths,
@@ -97,6 +113,15 @@ export function TreeNodeRow({
   // ancestor up to the root matches, which would wash out the whole sidebar.
   const folderMatchCount =
     node.kind === "folder" ? folderMatchCounts[node.relativePath] ?? 0 : 0;
+  // The paw. On a folder it is cumulative over the subtree and only shown while
+  // the folder is collapsed — expanded, the files carry their own, and the same
+  // marker repeated on every ancestor would say nothing.
+  const stagedKey = node.kind === "file" ? vaultPathKey(node.filePath) : "";
+  const hasStagedChange = node.kind === "file" && stagedKeys.has(stagedKey);
+  const isStagedNew = node.kind === "file" && stagedCreatedKeys.has(stagedKey);
+  const isStagedDeleted = node.kind === "file" && stagedDeletedKeys.has(stagedKey);
+  const folderStagedCount =
+    node.kind === "folder" ? folderStagedCounts[node.relativePath] ?? 0 : 0;
   // Where a drop from outside the app imports to: a folder takes the drop
   // itself, a file hands it to the folder it lives in. Only folders light up
   // for it — every file in the root would otherwise highlight for the same
@@ -270,6 +295,14 @@ export function TreeNodeRow({
                 {folderMatchCount}
               </span>
             ) : null}
+            {!isExpanded && folderStagedCount > 0 ? (
+              <PawPrint
+                className="file-tree__paw"
+                aria-label={t("fileTree.stagedChangeFolder", { count: folderStagedCount })}
+              >
+                <title>{t("fileTree.stagedChangeFolder", { count: folderStagedCount })}</title>
+              </PawPrint>
+            ) : null}
             {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
           </button>
         )}
@@ -283,6 +316,10 @@ export function TreeNodeRow({
                 depth={depth + 1}
                 expandedFolderPaths={expandedFolderPaths}
                 folderMatchCounts={folderMatchCounts}
+                folderStagedCounts={folderStagedCounts}
+                stagedKeys={stagedKeys}
+                stagedCreatedKeys={stagedCreatedKeys}
+                stagedDeletedKeys={stagedDeletedKeys}
                 selectedFilePath={selectedFilePath}
                 selectedKeys={selectedKeys}
                 dirtyFilePaths={dirtyFilePaths}
@@ -357,6 +394,8 @@ export function TreeNodeRow({
           className={cn(
             "file-tree__row file-tree__row--file",
             searchMatchCount > 0 && "file-tree__row--search-match",
+            isStagedNew && "file-tree__row--staged-new",
+            isStagedDeleted && "file-tree__row--staged-deleted",
             isSelected && "file-tree__row--active",
             isMultiSelected && "file-tree__row--selected",
             isDragSource && "file-tree__row--drag-source",
@@ -386,6 +425,14 @@ export function TreeNodeRow({
             >
               {searchMatchCount}
             </span>
+          ) : null}
+          {hasStagedChange ? (
+            <PawPrint
+              className="file-tree__paw"
+              aria-label={t("fileTree.stagedChange")}
+            >
+              <title>{t("fileTree.stagedChange")}</title>
+            </PawPrint>
           ) : null}
           {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
           {isDirty ? (

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, Info, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { resolveResource } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
@@ -29,13 +29,20 @@ import {
 } from "@/lib/fonts";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import {
+  AGENT_MAX_ITERATIONS_MAX,
+  AGENT_MAX_ITERATIONS_MIN,
+  AGENT_MAX_PLAN_STEPS_MAX,
+  AGENT_MAX_PLAN_STEPS_MIN,
   AI_PROVIDERS,
   loadApiKeyForProvider,
+  type AgentPlanningMode,
   type AiProvider,
   type AiSettings
 } from "@/store/useAiSettingsStore";
 import { persistLanguage, type SupportedLanguage } from "@/i18n";
 import { type Theme, useThemeStore } from "@/store/useThemeStore";
+import { DEFAULT_ACCENT_COLOR, useAccentColorStore } from "@/store/useAccentColorStore";
+import { isValidHexColor } from "@/lib/color";
 import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
 import { isWindowsPlatform } from "@/lib/platform";
 import { useAppVersion } from "@/hooks/useAppVersion";
@@ -44,6 +51,181 @@ export type SettingsTab = "general" | "shortcuts" | "fonts" | "ai" | "assistants
 
 /** Tabs whose settings apply through their own store, without the Save button. */
 const SELF_SAVING_TABS: SettingsTab[] = ["shortcuts", "fonts", "assistants", "rag", "versioning"];
+
+/** The agent's own settings, split off so the dialog can reset them as one. */
+type AgentSettings = Pick<
+  AiSettings,
+  | "agentFileAccess"
+  | "agentAllowDelete"
+  | "agentPlanning"
+  | "agentCompactContext"
+  | "agentMultiEdit"
+  | "agentMaxIterations"
+  | "agentMaxPlanSteps"
+>;
+
+function pickAgentSettings(settings: AiSettings): AgentSettings {
+  return {
+    agentFileAccess: settings.agentFileAccess,
+    agentAllowDelete: settings.agentAllowDelete,
+    agentPlanning: settings.agentPlanning,
+    agentCompactContext: settings.agentCompactContext,
+    agentMultiEdit: settings.agentMultiEdit,
+    agentMaxIterations: settings.agentMaxIterations,
+    agentMaxPlanSteps: settings.agentMaxPlanSteps
+  };
+}
+
+function clampAgentNumber(raw: string, min: number, max: number, fallback: number): number {
+  const parsed = Number.parseInt(raw, 10);
+
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+/**
+ * The vault agent's capabilities, behind a collapsed section.
+ *
+ * Seven switches are a lot for an app whose appeal is quiet — so they sit
+ * folded away, with defaults nobody has to touch. Each one carries a line
+ * saying which model class it realistically needs: without that the user cannot
+ * tell whether their model can carry a capability, and ends up switching either
+ * everything off or everything on. The numbers are deliberately orders of
+ * magnitude plus the symptom to watch for, because model quality per parameter
+ * keeps moving and a good 8B beats a poor 14B.
+ */
+function AgentSettingsSection({
+  value,
+  provider,
+  onChange
+}: {
+  value: AgentSettings;
+  provider: AiProvider;
+  onChange: (patch: Partial<AgentSettings>) => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <details className="ai-dialog__section">
+      <summary>{t("settingsDialog.agentSection")}</summary>
+
+      {/* Only for the local providers: the capabilities below ask more of a
+          model than a rewrite does, and a small local model is where they
+          quietly fail. A cloud model carries them, so the note would only be
+          noise there. */}
+      {!isCloudProvider(provider) ? (
+        <div className="ai-dialog__notice ai-dialog__notice--info" role="note">
+          <Info className="ai-dialog__notice-icon" aria-hidden="true" />
+          <p>{t("settingsDialog.agentModelNotice")}</p>
+        </div>
+      ) : null}
+
+      <div className="ai-dialog__grid">
+        <label className="ai-dialog__switch">
+          <input
+            type="checkbox"
+            checked={value.agentFileAccess}
+            onChange={(event) => onChange({ agentFileAccess: event.target.checked })}
+          />
+          <span>{t("settingsDialog.agentFileAccessLabel")}</span>
+        </label>
+        <p className="ai-dialog__hint">{t("settingsDialog.agentFileAccessHint")}</p>
+
+        <label className="ai-dialog__switch">
+          <input
+            type="checkbox"
+            checked={value.agentAllowDelete}
+            disabled={!value.agentFileAccess}
+            onChange={(event) => onChange({ agentAllowDelete: event.target.checked })}
+          />
+          <span>{t("settingsDialog.agentAllowDeleteLabel")}</span>
+        </label>
+        <p className="ai-dialog__hint">{t("settingsDialog.agentAllowDeleteHint")}</p>
+
+        <label className="ai-dialog__field">
+          <span>{t("settingsDialog.agentPlanningLabel")}</span>
+          <select
+            value={value.agentPlanning}
+            onChange={(event) => onChange({ agentPlanning: event.target.value as AgentPlanningMode })}
+          >
+            <option value="off">{t("settingsDialog.agentPlanningOff")}</option>
+            <option value="auto">{t("settingsDialog.agentPlanningAuto")}</option>
+            <option value="model">{t("settingsDialog.agentPlanningModel")}</option>
+          </select>
+        </label>
+        <p className="ai-dialog__hint">
+          {value.agentPlanning === "model"
+            ? t("settingsDialog.agentPlanningModelHint")
+            : t("settingsDialog.agentPlanningAutoHint")}
+        </p>
+
+        <label className="ai-dialog__switch">
+          <input
+            type="checkbox"
+            checked={value.agentMultiEdit}
+            disabled={!value.agentFileAccess}
+            onChange={(event) => onChange({ agentMultiEdit: event.target.checked })}
+          />
+          <span>{t("settingsDialog.agentMultiEditLabel")}</span>
+        </label>
+        <p className="ai-dialog__hint">{t("settingsDialog.agentMultiEditHint")}</p>
+
+        <label className="ai-dialog__switch">
+          <input
+            type="checkbox"
+            checked={value.agentCompactContext}
+            onChange={(event) => onChange({ agentCompactContext: event.target.checked })}
+          />
+          <span>{t("settingsDialog.agentCompactContextLabel")}</span>
+        </label>
+        <p className="ai-dialog__hint">{t("settingsDialog.agentCompactContextHint")}</p>
+
+        <label className="ai-dialog__field">
+          <span>{t("settingsDialog.agentMaxIterationsLabel")}</span>
+          <input
+            type="number"
+            min={AGENT_MAX_ITERATIONS_MIN}
+            max={AGENT_MAX_ITERATIONS_MAX}
+            step={1}
+            value={value.agentMaxIterations}
+            onChange={(event) =>
+              onChange({
+                agentMaxIterations: clampAgentNumber(
+                  event.target.value,
+                  AGENT_MAX_ITERATIONS_MIN,
+                  AGENT_MAX_ITERATIONS_MAX,
+                  value.agentMaxIterations
+                )
+              })
+            }
+          />
+        </label>
+        <p className="ai-dialog__hint">{t("settingsDialog.agentMaxIterationsHint")}</p>
+
+        <label className="ai-dialog__field">
+          <span>{t("settingsDialog.agentMaxPlanStepsLabel")}</span>
+          <input
+            type="number"
+            min={AGENT_MAX_PLAN_STEPS_MIN}
+            max={AGENT_MAX_PLAN_STEPS_MAX}
+            step={1}
+            value={value.agentMaxPlanSteps}
+            onChange={(event) =>
+              onChange({
+                agentMaxPlanSteps: clampAgentNumber(
+                  event.target.value,
+                  AGENT_MAX_PLAN_STEPS_MIN,
+                  AGENT_MAX_PLAN_STEPS_MAX,
+                  value.agentMaxPlanSteps
+                )
+              })
+            }
+          />
+        </label>
+        <p className="ai-dialog__hint">{t("settingsDialog.agentMaxPlanStepsHint")}</p>
+      </div>
+    </details>
+  );
+}
 
 /**
  * Document font for editor and export alike. The preview renders the actual
@@ -162,6 +344,10 @@ export function SettingsDialog({
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
+  const accentColor = useAccentColorStore((state) => state.accentColor);
+  const setAccentColor = useAccentColorStore((state) => state.setAccentColor);
+  const resetAccentColor = useAccentColorStore((state) => state.resetAccentColor);
+  const [accentColorInput, setAccentColorInput] = useState(accentColor);
   const checkForUpdatesEnabled = useUpdateSettingsStore((state) => state.checkForUpdatesEnabled);
   const setCheckForUpdatesEnabled = useUpdateSettingsStore(
     (state) => state.setCheckForUpdatesEnabled
@@ -177,6 +363,7 @@ export function SettingsDialog({
   const [model, setModel] = useState(settings.model);
   const [contextLength, setContextLength] = useState(String(settings.contextLength));
   const [thinkingMode, setThinkingMode] = useState(settings.thinkingMode);
+  const [agent, setAgent] = useState<AgentSettings>(() => pickAgentSettings(settings));
 
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
@@ -229,10 +416,15 @@ export function SettingsDialog({
     setModel(settings.model);
     setContextLength(String(settings.contextLength));
     setThinkingMode(settings.thinkingMode);
+    setAgent(pickAgentSettings(settings));
     setAvailableModels([]);
     setModelsError(null);
     void loadModels(settings.provider, settings.apiUrl, settings.apiKey);
   }, [open, settings, initialTab]);
+
+  useEffect(() => {
+    setAccentColorInput(accentColor);
+  }, [accentColor]);
 
   useEffect(() => {
     if (!open) {
@@ -398,6 +590,44 @@ export function SettingsDialog({
                   <option value="light">{t("settingsDialog.themeLight")}</option>
                   <option value="dark">{t("settingsDialog.themeDark")}</option>
                 </select>
+              </label>
+
+              <label className="ai-dialog__field">
+                <span>{t("settingsDialog.accentColor")}</span>
+                <div className="accent-color-setting">
+                  <input
+                    type="color"
+                    className="accent-color-setting__swatch"
+                    value={accentColor}
+                    onChange={(event) => setAccentColor(event.target.value)}
+                    aria-label={t("settingsDialog.accentColor")}
+                  />
+                  <input
+                    type="text"
+                    className="accent-color-setting__hex"
+                    value={accentColorInput}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setAccentColorInput(nextValue);
+                      if (isValidHexColor(nextValue)) {
+                        setAccentColor(nextValue);
+                      }
+                    }}
+                    onBlur={() => setAccentColorInput(accentColor)}
+                    spellCheck={false}
+                    maxLength={7}
+                    aria-label={t("settingsDialog.accentColorHex")}
+                  />
+                  <button
+                    type="button"
+                    className="ai-dialog__link"
+                    onClick={resetAccentColor}
+                    disabled={accentColor.toLowerCase() === DEFAULT_ACCENT_COLOR}
+                  >
+                    {t("settingsDialog.accentColorReset")}
+                  </button>
+                </div>
+                <span className="ai-dialog__model-hint">{t("settingsDialog.accentColorHint")}</span>
               </label>
 
               {isWindowsPlatform() && (
@@ -607,6 +837,12 @@ export function SettingsDialog({
                 </select>
               </label>
             </div>
+
+            <AgentSettingsSection
+              value={agent}
+              provider={provider}
+              onChange={(patch) => setAgent((current) => ({ ...current, ...patch }))}
+            />
           </div>
         )}
 
@@ -628,7 +864,8 @@ export function SettingsDialog({
                 apiKey: apiKey.trim(),
                 model: model.trim(),
                 contextLength: clampContextLength(contextLength),
-                thinkingMode
+                thinkingMode,
+                ...agent
               });
             }}
           >

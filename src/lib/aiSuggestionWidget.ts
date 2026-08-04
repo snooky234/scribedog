@@ -49,37 +49,108 @@ function previewMarkdown(editor: Editor, suggestion: AiSuggestion): string {
   return completeMarkdownForContext(editor, suggestion.from, suggestion.replacement);
 }
 
-const widgets = new Map<string, WidgetEntry>();
-let cachedSuggestions: AiSuggestion[] | null = null;
-let cachedDecorationSet: DecorationSet | null = null;
+// Per editor instance, not per module. Replacing the open file tears down one
+// Tiptap editor and builds another, and the two overlap: the new editor renders
+// its proposals before React runs the old one's cleanup. With a single shared
+// map, that cleanup unmounted the widgets the *new* editor had just drawn — the
+// proposal flashed up and disappeared, while the plugin state still listed it,
+// so nothing ever drew it again. A WeakMap keyed by editor keeps each instance
+// tearing down only its own widgets and lets a destroyed editor's entry go.
+type EditorWidgets = {
+  widgets: Map<string, WidgetEntry>;
+  cachedSuggestions: AiSuggestion[] | null;
+  cachedDecorationSet: DecorationSet | null;
+  override: AiSuggestionOverride | null;
+};
 
-function destroyWidget(id: string) {
-  const entry = widgets.get(id);
+/**
+ * Takes over what accepting or discarding a proposal *means* for this editor.
+ *
+ * A staged file change borrows this widget for its review, but it is not a
+ * document edit: the change lives in the staging layer, and applying it has to
+ * go through the app store's own actions (versioning, tree, images). Writing
+ * the proposal into the document instead would leave the staged entry in place
+ * — the review is rebuilt from it on the next pass, so the text landed twice
+ * and the green block never went away.
+ *
+ * The override sits per editor rather than per proposal, so accepting from a
+ * widget, from the bar or from the chat's accept_proposals tool all take the
+ * one path, and a whole-file change is applied once no matter how many hunks
+ * its review was cut into.
+ */
+export type AiSuggestionOverride = { onAccept: () => void; onDiscard: () => void };
+
+const editorWidgets = new WeakMap<Editor, EditorWidgets>();
+
+function widgetsOf(editor: Editor): EditorWidgets {
+  let entry = editorWidgets.get(editor);
+
+  if (!entry) {
+    entry = {
+      widgets: new Map(),
+      cachedSuggestions: null,
+      cachedDecorationSet: null,
+      override: null
+    };
+    editorWidgets.set(editor, entry);
+  }
+
+  return entry;
+}
+
+export function setAiSuggestionOverride(editor: Editor, override: AiSuggestionOverride | null): void {
+  if (editor.isDestroyed) {
+    return;
+  }
+
+  widgetsOf(editor).override = override;
+}
+
+/**
+ * Told whenever no proposal is open any more, however that happened — the
+ * accept/discard buttons on a widget, the chat's accept_proposals tool, or the
+ * user simply typing over the passage.
+ *
+ * The staging layer needs it: it carries a marker entry for the open document
+ * so the paw in the tree knows about these proposals (see markEditorProposal),
+ * and that marker has to disappear with them. Every other way of noticing
+ * would be a poll — the proposals live in ProseMirror plugin state, which React
+ * cannot subscribe to.
+ */
+let emptyListener: (() => void) | null = null;
+
+export function setAiSuggestionsEmptyListener(listener: (() => void) | null): void {
+  emptyListener = listener;
+}
+
+function destroyWidget(state: EditorWidgets, id: string) {
+  const entry = state.widgets.get(id);
 
   if (entry) {
     entry.root.unmount();
-    widgets.delete(id);
+    state.widgets.delete(id);
   }
 }
 
-function destroyAllWidgets() {
-  for (const id of Array.from(widgets.keys())) {
-    destroyWidget(id);
+function destroyAllWidgets(state: EditorWidgets) {
+  for (const id of Array.from(state.widgets.keys())) {
+    destroyWidget(state, id);
   }
 
-  cachedSuggestions = null;
-  cachedDecorationSet = null;
+  state.cachedSuggestions = null;
+  state.cachedDecorationSet = null;
 }
 
 function renderWidget(editor: Editor, suggestion: AiSuggestion): HTMLElement {
-  let entry = widgets.get(suggestion.id);
+  const state = widgetsOf(editor);
+  let entry = state.widgets.get(suggestion.id);
 
   if (!entry) {
     const container = document.createElement("div");
     container.className = "ai-diff-widget ai-diff-widget--suggestion";
     container.contentEditable = "false";
     entry = { container, root: createRoot(container), renderedMarkdown: null };
-    widgets.set(suggestion.id, entry);
+    state.widgets.set(suggestion.id, entry);
   }
 
   const markdown = previewMarkdown(editor, suggestion);
@@ -97,7 +168,7 @@ function renderWidget(editor: Editor, suggestion: AiSuggestion): HTMLElement {
         // user is working.
         autoFocusAccept: false,
         onAccept: () => acceptAiSuggestion(editor, suggestion.id),
-        onDiscard: () => removeAiSuggestion(editor, suggestion.id)
+        onDiscard: () => discardAiSuggestion(editor, suggestion.id)
       })
     );
   }
@@ -110,6 +181,7 @@ export const AiSuggestionWidget = Extension.create({
 
   addProseMirrorPlugins() {
     const editor = this.editor as Editor;
+    const widgetState = widgetsOf(editor);
 
     return [
       new Plugin<AiSuggestion[]>({
@@ -150,22 +222,27 @@ export const AiSuggestionWidget = Extension.create({
             const suggestions = aiSuggestionKey.getState(state) ?? [];
 
             if (suggestions.length === 0) {
-              if (widgets.size > 0) {
-                destroyAllWidgets();
+              if (widgetState.widgets.size > 0) {
+                destroyAllWidgets(widgetState);
               }
+
+              // Idempotent by design: this runs on every decoration pass, and
+              // the listener's own no-op check is cheaper than tracking here
+              // whether the list was already empty a moment ago.
+              emptyListener?.();
 
               return null;
             }
 
-            if (suggestions === cachedSuggestions && cachedDecorationSet) {
-              return cachedDecorationSet;
+            if (suggestions === widgetState.cachedSuggestions && widgetState.cachedDecorationSet) {
+              return widgetState.cachedDecorationSet;
             }
 
             const live = new Set(suggestions.map((suggestion) => suggestion.id));
 
-            for (const id of Array.from(widgets.keys())) {
+            for (const id of Array.from(widgetState.widgets.keys())) {
               if (!live.has(id)) {
-                destroyWidget(id);
+                destroyWidget(widgetState, id);
               }
             }
 
@@ -187,15 +264,15 @@ export const AiSuggestionWidget = Extension.create({
               );
             }
 
-            cachedSuggestions = suggestions;
-            cachedDecorationSet = DecorationSet.create(state.doc, decorations);
+            widgetState.cachedSuggestions = suggestions;
+            widgetState.cachedDecorationSet = DecorationSet.create(state.doc, decorations);
 
-            return cachedDecorationSet;
+            return widgetState.cachedDecorationSet;
           }
         },
         view() {
           return {
-            destroy: destroyAllWidgets
+            destroy: () => destroyAllWidgets(widgetState)
           };
         }
       })
@@ -228,12 +305,34 @@ export function addAiSuggestion(editor: Editor, suggestion: AiSuggestion): void 
   // the dispatch above already ran the decoration pass. Focus stays where it
   // is (typically the chat input).
   if (getAiSuggestions(editor).length === 1) {
-    widgets.get(suggestion.id)?.container.scrollIntoView({ block: "center", behavior: "smooth" });
+    widgetsOf(editor)
+      .widgets.get(suggestion.id)
+      ?.container.scrollIntoView({ block: "center", behavior: "smooth" });
   }
 }
 
 export function removeAiSuggestion(editor: Editor, id: string): void {
   dispatchMeta(editor, { type: "remove", id });
+}
+
+/**
+ * The user rejecting a proposal — which for an override is rejecting the staged
+ * change as a whole, not just dropping its decoration. Distinct from
+ * removeAiSuggestion, which stays the raw plumbing the plugin itself uses.
+ */
+export function discardAiSuggestion(editor: Editor, id: string): void {
+  if (editor.isDestroyed) {
+    return;
+  }
+
+  const override = widgetsOf(editor).override;
+
+  if (override) {
+    override.onDiscard();
+    return;
+  }
+
+  removeAiSuggestion(editor, id);
 }
 
 export function clearAiSuggestions(editor: Editor): void {
@@ -251,6 +350,22 @@ export function clearAiSuggestions(editor: Editor): void {
  * Each proposal stays its own undo step, exactly as when clicked.
  */
 export function acceptAllAiSuggestions(editor: Editor): number {
+  if (editor.isDestroyed) {
+    return 0;
+  }
+
+  const override = widgetsOf(editor).override;
+
+  if (override) {
+    const count = getAiSuggestions(editor).length;
+
+    if (count > 0) {
+      override.onAccept();
+    }
+
+    return count;
+  }
+
   const ids = [...getAiSuggestions(editor)]
     .sort((a, b) => b.from - a.from)
     .map((suggestion) => suggestion.id);
@@ -264,6 +379,13 @@ export function acceptAllAiSuggestions(editor: Editor): number {
 
 export function acceptAiSuggestion(editor: Editor, id: string): void {
   if (editor.isDestroyed) {
+    return;
+  }
+
+  const override = widgetsOf(editor).override;
+
+  if (override) {
+    override.onAccept();
     return;
   }
 

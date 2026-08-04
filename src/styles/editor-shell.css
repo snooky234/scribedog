@@ -38,3 +38,45 @@
   background: rgba(var(--success-bg-rgb),0.82);
   color: var(--success-fg);
 }
+
+/* The bar above a document the agent has proposed a change for. It is also the
+   only place that says why the document cannot be typed in — see
+   StagedChangeBar for why the lock is load-bearing rather than cosmetic. */
+.staged-change-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(var(--overlay-rgb), 0.18);
+  border-radius: 0.7rem;
+  background: rgba(var(--overlay-rgb), 0.05);
+}
+
+.staged-change-bar__text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.staged-change-bar__summary {
+  font-size: 0.82rem;
+  color: rgba(var(--text-rgb), 0.86);
+}
+
+.staged-change-bar__hint {
+  font-size: 0.74rem;
+  color: rgba(var(--text-rgb), 0.55);
+}
+
+.staged-change-bar__warning {
+  font-size: 0.74rem;
+  color: var(--amber-fg, var(--error-fg));
+}
+
+.staged-change-bar__actions {
+  flex: none;
+  display: flex;
+  gap: 0.4rem;
+}

@@ -31,6 +31,7 @@
   --error-bg-rgb: 254, 226, 226;
   --success-bg-rgb: 220, 252, 231;
   --warning-bg-rgb: 255, 251, 235;
+  --info-bg-rgb: 239, 246, 255;
 
   /* Diff highlights (AI rewrite/suggestion review, grammar check, version
      diff). Kept separate from --error-bg-rgb: that token is a panel/toast
@@ -42,6 +43,19 @@
   --diff-removed-accent: rgba(185, 28, 28, 0.55);
   --diff-added-bg: rgba(22, 163, 74, 0.16);
   --diff-added-accent: rgba(21, 128, 61, 0.55);
+
+  /* The app's accent color (AI buttons, links, the vault agent's paw and
+     plan checkmark, …). Defaults to the violet ramp the app shipped with;
+     src/store/useAccentColorStore.ts overwrites these as inline styles on
+     <html> once a user picks a different color, and persists the choice
+     across restarts — these values are only the pre-JS/fallback ramp. */
+  --accent-rgb: 168, 85, 247;
+  --accent-pale-rgb: 233, 213, 255;
+  --accent-lighter-rgb: 216, 180, 254;
+  --accent-light-rgb: 192, 132, 252;
+  --accent-dark-rgb: 147, 51, 234;
+  --accent-darker-rgb: 76, 29, 130;
+  --accent-darkest-rgb: 49, 22, 74;
 
   /* Code block tokens. The prose styles give code blocks a dark background in
      both themes, so the palette below is shared; .dark only nudges it. */
@@ -111,6 +125,7 @@
   --error-bg-rgb: 44, 18, 18;
   --success-bg-rgb: 18, 34, 24;
   --warning-bg-rgb: 69, 49, 7;
+  --info-bg-rgb: 15, 33, 62;
 
   --diff-removed-bg: rgba(248, 113, 113, 0.26);
   --diff-removed-accent: rgba(252, 165, 165, 0.7);

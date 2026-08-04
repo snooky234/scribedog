@@ -47,6 +47,8 @@ export type FolderSlice = {
   openFolderAtPath: (folderPath: string) => Promise<boolean>;
   refreshFolderFiles: () => Promise<boolean>;
   createNewFolder: (targetDirectory?: string, insertAfterBasename?: string | null) => Promise<string | null>;
+  /** Creates a folder at exactly this path (see createFileAtPath for the why). */
+  createFolderAtPath: (folderPath: string) => Promise<boolean>;
   renameFolderPath: (folderPath: string, newBaseName: string) => Promise<boolean>;
   deleteFolderPath: (folderPath: string) => Promise<boolean>;
 };
@@ -60,6 +62,13 @@ export type FileSlice = {
   saveSelectedFile: () => Promise<boolean>;
   restoreFileVersion: (versionId: string) => Promise<boolean>;
   createNewFile: (targetDirectory?: string, insertAfterBasename?: string | null) => Promise<string | null>;
+  /**
+   * Creates a file at exactly this path with this content, without selecting
+   * it. What the vault agent's apply path needs and createNewFile cannot do:
+   * the agent names the file, and it writes several of them in one batch
+   * without the editor jumping to each in turn.
+   */
+  createFileAtPath: (filePath: string, content: string) => Promise<boolean>;
   registerImportedFiles: (
     importedFilePaths: string[],
     parentRelativePath: string,

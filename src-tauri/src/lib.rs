@@ -1,13 +1,35 @@
 mod rag;
 mod voice;
 
-use std::{path::PathBuf, sync::Mutex};
+use std::{
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_fs::FsExt;
 
 const FOLDER_FILES_CHANGED_EVENT: &str = "scribedog-folder-files-changed";
+
+/// Mirrors VAULT_META_DIR_NAME in src/lib/fileSystem.ts.
+const VAULT_META_DIR_NAME: &str = ".scribedog";
+
+// The app writes its own state into the vault (staged changes, chat sessions,
+// checkpoints, sort order), and every one of those writes lands under the
+// watched folder. Reporting them would make the UI refresh the whole tree in
+// reaction to something it just did itself — which is how a note that is only
+// staged, and therefore not on disk, ended up being closed again right after
+// the user opened it. A change is only interesting if it touches something
+// outside the metadata directory.
+fn is_metadata_path(path: &Path) -> bool {
+    path.components()
+        .any(|component| component.as_os_str() == VAULT_META_DIR_NAME)
+}
+
+fn is_metadata_only_event(event: &Event) -> bool {
+    !event.paths.is_empty() && event.paths.iter().all(|path| is_metadata_path(path))
+}
 
 #[derive(Default)]
 struct StartupState {
@@ -53,9 +75,15 @@ fn watch_folder(
 
     let mut watcher = RecommendedWatcher::new(
         move |result: notify::Result<Event>| {
-            if result.is_ok() {
-                let _ = app_handle.emit(FOLDER_FILES_CHANGED_EVENT, folder_path_for_event.clone());
+            let Ok(event) = result else {
+                return;
+            };
+
+            if is_metadata_only_event(&event) {
+                return;
             }
+
+            let _ = app_handle.emit(FOLDER_FILES_CHANGED_EVENT, folder_path_for_event.clone());
         },
         Config::default(),
     )

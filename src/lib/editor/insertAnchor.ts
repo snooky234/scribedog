@@ -77,13 +77,30 @@ export function hasAnchorableContent(doc: ProseMirrorNode): boolean {
   return hasImage;
 }
 
+export type InsertAnchor = {
+  /** Where genuinely new text goes: after the block the anchor sits in. */
+  position: number;
+  /**
+   * The anchor passage's own range in the document, or null when the anchor
+   * named an image (an atom node with no text range).
+   *
+   * Carried out of here rather than discarded, because it is what tells an
+   * insertion apart from a revision: a model reworking a line passes that line
+   * as after_text and its new version as text, so "the anchor" and "what is
+   * being inserted" are the same passage. Without this range the caller can
+   * only ever add, and the document ends up with the old line and the new one
+   * under each other — see rewrittenAnchorRange in duplicateInsertion.ts.
+   */
+  range: { from: number; to: number } | null;
+};
+
 /**
  * Resolves an anchor to the position the new text goes after. Returns null
  * when the anchor names nothing in this document — the caller reports that
  * back to the model rather than silently falling back to the caret, which is
  * how the text ended up in the wrong place to begin with.
  */
-export function resolveInsertAnchor(doc: ProseMirrorNode, anchor: string): number | null {
+export function resolveInsertAnchor(doc: ProseMirrorNode, anchor: string): InsertAnchor | null {
   if (!anchor.trim()) {
     return null;
   }
@@ -95,10 +112,12 @@ export function resolveInsertAnchor(doc: ProseMirrorNode, anchor: string): numbe
 
     // +1 puts the probe behind the image itself, so a top-level image resolves
     // to the position after it instead of the one before.
-    return imagePosition === null ? null : afterTopLevelBlock(doc, imagePosition + 1);
+    return imagePosition === null
+      ? null
+      : { position: afterTopLevelBlock(doc, imagePosition + 1), range: null };
   }
 
   const found = findTextRange(doc, 0, doc.content.size, anchor);
 
-  return found ? afterTopLevelBlock(doc, found.to) : null;
+  return found ? { position: afterTopLevelBlock(doc, found.to), range: found } : null;
 }

@@ -218,3 +218,25 @@
   background: #fde68a;
   box-shadow: 0 0 0 4px rgba(253, 230, 138, 0.12);
 }
+
+/* The vault agent's paw: a file (or a collapsed folder holding one) has a
+   change waiting for review. Deliberately quieter than the dirty dot — a
+   proposal is not something the user has to act on right now. */
+.file-tree__paw {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  color: rgb(var(--accent-rgb));
+  opacity: 0.85;
+}
+
+/* A file the agent has only proposed: it is in the tree, but not on disk yet. */
+.file-tree__row--staged-new .file-tree__name {
+  color: rgba(var(--text-rgb), 0.5);
+  font-style: italic;
+}
+
+.file-tree__row--staged-deleted .file-tree__name {
+  text-decoration: line-through;
+  color: rgba(var(--text-rgb), 0.5);
+}

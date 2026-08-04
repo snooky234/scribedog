@@ -125,17 +125,17 @@
   gap: 0.4rem;
   flex-shrink: 0;
   overflow: hidden;
-  border: 1px solid rgba(168, 85, 247, 0.4);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
   border-radius: 9999px;
   background: linear-gradient(
     120deg,
-    rgba(49, 22, 74, 0.85),
-    rgba(76, 29, 130, 0.7),
-    rgba(49, 22, 74, 0.85)
+    rgba(var(--accent-darkest-rgb), 0.85),
+    rgba(var(--accent-darker-rgb), 0.7),
+    rgba(var(--accent-darkest-rgb), 0.85)
   );
   background-size: 200% 100%;
   padding: 0.4rem 0.5rem 0.4rem 0.8rem;
-  color: #e9d5ff;
+  color: rgb(var(--accent-pale-rgb));
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -151,7 +151,7 @@
   background: linear-gradient(
     100deg,
     transparent 30%,
-    rgba(216, 180, 254, 0.28) 50%,
+    rgba(var(--accent-lighter-rgb), 0.28) 50%,
     transparent 70%
   );
   background-size: 200% 100%;

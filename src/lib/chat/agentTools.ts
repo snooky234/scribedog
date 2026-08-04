@@ -7,7 +7,8 @@
 
 import { EDITING_TOOL_NAMES, FLAG_SUGGESTION_TOOL_NAME, type VaultSourceRef } from "@/lib/aiClient";
 import { normalizeImageSrc, resolveDocumentImagePath } from "@/lib/chat/imageAttachments";
-import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
+import { decodeEscapedLineBreaks, normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
+import { executeFileTool } from "@/lib/chat/vaultFileTools";
 import { isSemanticSearchActive, readNote, searchVault } from "@/lib/ragSearch";
 
 // What set_image_width did, so the tool result can name the resulting size.
@@ -29,6 +30,9 @@ export type ProposalOutcome =
   | "duplicate"
   // The proposal embeds an image the document already carries.
   | "image-duplicate"
+  // Every line of an insertion is already in the document — the model is
+  // re-emitting a passage it means to *change*. See duplicateInsertion.ts.
+  | "text-duplicate"
   // insert_at_cursor's after_text names nothing in this document.
   | "anchor-not-found"
   // replace_passage's old_text names nothing in this document.
@@ -36,6 +40,12 @@ export type ProposalOutcome =
   | "failed";
 
 export type EditorToolBridge = {
+  // Whether a note is open at all. The bridge itself is registered for the
+  // app's whole lifetime, so its absence never meant "no document" — with no
+  // note open every getter simply answered empty and every proposal came back
+  // "failed", which the model reads as a broken tool rather than as a state of
+  // the app. Everything that needs a document checks this first now.
+  hasDocument: () => boolean;
   getDocument: () => string;
   getSelection: () => string;
   // The src of every image embedded in the current document, in document
@@ -164,7 +174,7 @@ function blockedByOpenReview(): string | null {
  * prevent, and here the fallback (the "apply" button) is a fine second best.
  */
 export function proposeComposedText(text: string): boolean {
-  if (!bridge || !text.trim() || blockedByOpenReview()) {
+  if (!bridge || !bridge.hasDocument() || !text.trim() || blockedByOpenReview()) {
     return false;
   }
 
@@ -173,6 +183,19 @@ export function proposeComposedText(text: string): boolean {
   // working, and in the case this exists for — a note whose first content was
   // just written — it is the only position there is.
   return bridge.proposeInsertion(normalizeEscapedCheckboxes(text)) === "proposed";
+}
+
+/**
+ * Settles the open document's proposals from the UI rather than from a tool —
+ * what the chat's "apply all" / "discard all" buttons do for the marker entry
+ * the staging layer carries for the open file (see markEditorProposal).
+ *
+ * The staging store cannot do this itself: these proposals are ProseMirror
+ * widgets, reachable only through the bridge above, and having the store import
+ * this module would close an import cycle back through vaultFileTools.
+ */
+export function settleOpenDocumentProposals(accept: boolean): number {
+  return accept ? (bridge?.acceptPendingProposals() ?? 0) : (bridge?.discardPendingProposals() ?? 0);
 }
 
 function settleProposals(accept: boolean): ToolResult {
@@ -521,6 +544,15 @@ const OUTCOME_MESSAGES: Record<ProposalOutcome, string> = {
   "image-duplicate":
     "Error: your text embeds an image that is already in the document, which would show it twice. Write only " +
     "the new text and leave every ![alt](path) out of it — to change an image call set_image_width.",
+  // The mistake behind this one is using the wrong tool, so the message names
+  // the right one instead of asking for a better insertion: an insertion only
+  // ever adds, and the model is trying to *change* wording that is already
+  // there. Left unguarded this is what puts the old line and the new one under
+  // each other, which the user reads as the app duplicating their text.
+  "text-duplicate":
+    "Error: that text is already in the document, so inserting it would put it there twice. You are " +
+    "rewriting an existing passage, not adding a new one — call replace_passage with the passage as it " +
+    "stands now as old_text and your new wording as new_text, once per line or passage you are changing.",
   // An anchor copied out of an attached file or out of the model's own earlier
   // answer is the usual cause — none of that is in the document. Retrying with
   // no anchor at all is then the right move, so the message has to offer it.
@@ -539,15 +571,23 @@ const OUTCOME_MESSAGES: Record<ProposalOutcome, string> = {
   failed: "Error: could not propose the change."
 };
 
-// Everything but a flat "failed" is something the model put right on its next
-// attempt — see ToolResult.retryable. "failed" is not in here because it means
-// the editor itself refused the change (nothing selected, no editor): retrying
-// cannot help, and the user is the one who has to do something about it.
+// "failed" used to mean two very different things — the model handed in an
+// empty argument, or there was no editor at all. The second case is caught
+// before the bridge is ever asked (noDocumentResult), so what is left is the
+// first: something the next call fixes.
+
+// Every outcome here is one the model put right on its next attempt — see
+// ToolResult.retryable. "failed" belongs in the list now that the one case it
+// covered that no retry could fix (no note open at all) is answered before the
+// bridge is asked: what remains is an empty selection or an empty argument, and
+// the message for each names the tool that does work.
 const RETRYABLE_OUTCOMES: readonly ProposalOutcome[] = [
   "duplicate",
   "image-duplicate",
+  "text-duplicate",
   "anchor-not-found",
-  "not-found"
+  "not-found",
+  "failed"
 ];
 
 function proposalResult(
@@ -594,6 +634,49 @@ function pendingProposalNote(): string {
   );
 }
 
+// The tools that cannot mean anything without a note open in the editor. Every
+// other tool — searching the vault, reading notes, the whole file-tool set —
+// works with no document at all, which is why the check below is per tool
+// rather than one gate in front of executeTool.
+const DOCUMENT_TOOL_NAMES: readonly string[] = [
+  "get_document",
+  "get_selection",
+  "get_image",
+  "set_image_width",
+  "accept_proposals",
+  "discard_proposals",
+  // The flag only buys the user an "apply to the document" button, which has
+  // nothing to apply to while no note is open.
+  FLAG_SUGGESTION_TOOL_NAME,
+  ...EDITING_TOOL_NAMES
+];
+
+/**
+ * What a document tool answers while no note is open.
+ *
+ * The wording matters more than it looks: a bare "no editor is open" is what
+ * made the model report the user's whole request as impossible, including the
+ * parts (creating a note, searching the vault) that never needed an editor. So
+ * the result says what is unavailable, what still is, and what to do instead —
+ * and marks itself retryable, because reaching for write_file after this is the
+ * model correcting itself, not a failure the user has to see.
+ */
+function noDocumentResult(name: string): ToolResult {
+  const alternative = EDITING_TOOL_NAMES.includes(name)
+    ? "To write a note, call write_file with a path and the complete text — that needs no open editor. If " +
+      "you do not have write_file, the agent's file access is switched off: tell the user they can enable " +
+      "it in the AI settings, and do not describe this as an error."
+    : "Work from the vault tools instead (list_files / read_file / search_vault), which do not need an " +
+      "open editor.";
+
+  return {
+    content:
+      `Error: no note is open in the editor, so ${name} has nothing to work on. This is not a malfunction ` +
+      `and it does NOT block the rest of the request. ${alternative}`,
+    retryable: true
+  };
+}
+
 // An image is an atom node carrying no text, so its ![alt](path) markdown
 // exists only in the serialization — no text search can ever locate it (see
 // findTextRange in src/lib/editor/textSearch.ts). Without this check a model
@@ -607,8 +690,27 @@ const IMAGE_ONLY_PASSAGE = /^\s*!\[[^\]]*\]\([^)]*\)\s*$/;
 // UI never shows this text directly; it renders a localized status line
 // keyed off the tool call's name instead (see ChatPanel).
 export async function executeTool(name: string, args: Record<string, unknown>): Promise<ToolResult> {
+  // The vault agent's file tools work on files other than the open one, so
+  // they run before the editor check — the whole point of them is that they
+  // work with no document open at all. They are also deliberately outside the
+  // open-review guard below: that guard is about the open document's widgets,
+  // and blocking every file in the vault because one passage of one document
+  // is waiting for review would kill multi-file work before it starts.
+  const fileResult = await executeFileTool(name, args);
+
+  if (fileResult) {
+    return fileResult;
+  }
+
   if (!bridge) {
     return { content: "Error: no editor is open." };
+  }
+
+  // Checked before anything else the editor tools do: with no note open every
+  // one of them would otherwise answer with a symptom ("nothing is selected",
+  // "could not propose an insertion") instead of with the cause.
+  if (DOCUMENT_TOOL_NAMES.includes(name) && !bridge.hasDocument()) {
+    return noDocumentResult(name);
   }
 
   // The serializer writes checkbox brackets escaped ("- \[ \] …"), and a model
@@ -616,8 +718,13 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
   // straight to an editing tool — where markdown-it no longer recognizes it as
   // a checkbox and the item silently degrades to a plain bullet. Normalizing
   // both directions keeps the agent working with the form that round-trips.
+  // decodeEscapedLineBreaks handles the other half of the same problem: a text
+  // the model escaped one time too many, arriving with literal "\n" in place of
+  // its line breaks.
   const asString = (value: unknown): string =>
-    normalizeEscapedCheckboxes(typeof value === "string" ? value : String(value ?? ""));
+    normalizeEscapedCheckboxes(
+      decodeEscapedLineBreaks(typeof value === "string" ? value : String(value ?? ""))
+    );
 
   // The editing tools are off limits while an earlier turn's review is still
   // open — a new proposal next to unsettled ones is what the user has to
@@ -660,14 +767,18 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
         proposed:
           "OK: change proposed for the selection. The user sees it inline and will accept or discard it. " +
           "It is NOT part of the document yet — do not verify it with get_document.",
-        failed: "Error: nothing is selected."
+        failed:
+          "Error: the user has nothing selected, so there is no selection to replace. Call replace_passage " +
+          "instead with the exact passage you mean as old_text."
       });
     case "insert_at_cursor":
       return proposalResult(bridge.proposeInsertion(asString(args.text), insertAnchorArgument(args)), {
         proposed:
           "OK: insertion proposed. The user sees it inline and will accept or discard it. It is NOT part " +
           "of the document yet — do not call get_document to verify it, and do not propose it again.",
-        failed: "Error: could not propose an insertion."
+        failed:
+          "Error: the text argument was empty, so there was nothing to insert. Call insert_at_cursor again " +
+          "with the complete Markdown you want in the document."
       });
     case "replace_passage": {
       const oldText = asString(args.old_text);
@@ -695,6 +806,18 @@ export async function executeTool(name: string, args: Record<string, unknown>): 
           "unless the user explicitly asks you to apply it."
       };
     default:
-      return { content: `Error: unknown tool "${name}".` };
+      // Naming what there is instead of only what there isn't: a model that
+      // invented a tool name has to be able to pick the right one from this
+      // answer, or it spends the rest of the turn guessing. Retryable for the
+      // same reason — the next call is normally the correct one.
+      return {
+        content:
+          `Error: there is no tool called "${name}". The tools you have for the open document are ` +
+          "get_document, get_selection, replace_passage, replace_selection, insert_at_cursor, get_image " +
+          "and set_image_width. Anything about other notes goes through the file tools (list_files, " +
+          "read_file, write_file, edit_file, …) if they were offered to you. Call one of those, and if " +
+          "none of them can do what you need, say so plainly instead of inventing a tool.",
+        retryable: true
+      };
   }
 }

@@ -27,8 +27,13 @@ const listPendingProposals = vi.fn<EditorToolBridge["listPendingProposals"]>(() 
 const acceptPendingProposals = vi.fn<EditorToolBridge["acceptPendingProposals"]>(() => 0);
 const discardPendingProposals = vi.fn<EditorToolBridge["discardPendingProposals"]>(() => 0);
 
-function registerBridge(sources: string[] = ["images/photo.png"], document = "Hello") {
+function registerBridge(
+  sources: string[] = ["images/photo.png"],
+  document = "Hello",
+  hasDocument = true
+) {
   registerEditorToolBridge({
+    hasDocument: () => hasDocument,
     getDocument: () => document,
     getSelection: () => "",
     listImageSources: () => sources,
@@ -147,15 +152,16 @@ describe("retryable failures", () => {
     expect(result.retryable).toBe(true);
   });
 
-  // Nothing selected is the user's state, not the model's mistake: retrying
-  // cannot change it, so this one stays visible.
-  it("leaves a failure the model cannot retry its way out of unmarked", async () => {
+  // An empty argument, or a selection tool called with nothing selected: both
+  // name the tool that does work, so both are steps on the way rather than
+  // something the user has to be shown in red.
+  it("marks an empty editing argument as retryable", async () => {
     proposeInsertion.mockReturnValueOnce("failed");
 
     const result = await executeTool("insert_at_cursor", { text: "Hi" });
 
     expect(result.content.startsWith("Error:")).toBe(true);
-    expect(result.retryable).toBeUndefined();
+    expect(result.retryable).toBe(true);
   });
 
   it("leaves a proposal that worked unmarked", async () => {
@@ -400,6 +406,52 @@ describe("proposeComposedText", () => {
     startTurn();
 
     expect(proposeComposedText("   ")).toBe(false);
+    expect(proposeInsertion).not.toHaveBeenCalled();
+  });
+});
+
+// With no note open the editor tools used to answer with a symptom — an empty
+// document, "nothing is selected", "could not propose an insertion" — and a
+// model that collects three of those reports the user's whole request as
+// impossible, including the parts (write_file, search_vault) that never needed
+// an editor. So they answer with the cause, and point at what does work.
+describe("with no note open", () => {
+  beforeEach(() => {
+    registerBridge([], "", false);
+    beginChatTurn();
+  });
+
+  it("tells get_document there is no note rather than handing back an empty one", async () => {
+    const result = await executeTool("get_document", {});
+
+    expect(result.content).toContain("no note is open");
+    expect(result.retryable).toBe(true);
+  });
+
+  it("points an editing tool at write_file instead of failing it", async () => {
+    const result = await executeTool("insert_at_cursor", { text: "Hallo" });
+
+    expect(proposeInsertion).not.toHaveBeenCalled();
+    expect(result.content).toContain("write_file");
+    expect(result.retryable).toBe(true);
+  });
+
+  it("says the rest of the request is not blocked", async () => {
+    const result = await executeTool("replace_passage", { old_text: "a", new_text: "b" });
+
+    expect(result.content).toContain("does NOT block");
+  });
+
+  it("keeps the knowledge base tools working", async () => {
+    const result = await executeTool("search_vault", {});
+
+    // The empty-query complaint, not a "no editor" refusal: this tool reads
+    // the vault index and has nothing to do with the open document.
+    expect(result.content).toContain("no search query");
+  });
+
+  it("does not fall back to composing text into a document that is not there", () => {
+    expect(proposeComposedText("Ein neuer Absatz")).toBe(false);
     expect(proposeInsertion).not.toHaveBeenCalled();
   });
 });

@@ -893,6 +893,19 @@ function withOpenAiParamCompat(settings: AiSettings, body: Record<string, unknow
   return compatBody;
 }
 
+// Matched against the endpoint's own error text. Seen from an OpenAI-shaped
+// backend refusing to mix tool calls with a reasoning model's default effort
+// on /v1/chat/completions ("Function tools with reasoning_effort are not
+// supported for <model> in /v1/chat/completions. To use function tools, use
+// /v1/responses or set reasoning_effort to 'none'.") — this client only
+// speaks /v1/chat/completions, so the request is retried once with
+// reasoning_effort turned off instead of switching endpoints.
+function isReasoningEffortToolConflict(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+
+  return /reasoning_effort/i.test(message) && /tool/i.test(message) && /not supported|unsupported/i.test(message);
+}
+
 async function requestOpenAiCompatible(
   settings: AiSettings,
   request: AiContentRequest,
@@ -1169,6 +1182,64 @@ export type AiChatRole = "user" | "assistant" | "tool";
 
 export type ToolCall = { id: string; name: string; arguments: Record<string, unknown> };
 
+/**
+ * Tool names models reach for instead of the documented ones, mapped to the
+ * tool they meant.
+ *
+ * Not a convenience: a model that has seen a few thousand agent transcripts
+ * produces `create_file` or `str_replace` from memory, and the smaller local
+ * ones this feature is meant to work with do it constantly. Bouncing the call
+ * back costs a round trip at best; at worst the model concludes the capability
+ * does not exist and tells the user their request is impossible.
+ *
+ * Only unambiguous names belong here, and an alias never widens what the agent
+ * may do — the file tools re-check the consent switches themselves (see
+ * setAgentCapabilities in src/lib/chat/vaultFileTools.ts), so a mapped name
+ * reaches exactly the same gate the documented one does.
+ */
+const TOOL_NAME_ALIASES: Record<string, string> = {
+  // Open-document tools.
+  read_document: "get_document",
+  get_content: "get_document",
+  get_text: "get_document",
+  read_selection: "get_selection",
+  insert_text: "insert_at_cursor",
+  append_text: "insert_at_cursor",
+  insert: "insert_at_cursor",
+  replace_text: "replace_passage",
+  edit_passage: "replace_passage",
+  view_image: "get_image",
+  resize_image: "set_image_width",
+  // Knowledge base.
+  search_notes: "search_vault",
+  // Vault file tools.
+  create_file: "write_file",
+  new_file: "write_file",
+  save_file: "write_file",
+  create_note: "write_file",
+  update_file: "edit_file",
+  replace_in_file: "edit_file",
+  str_replace: "edit_file",
+  move_file: "rename_file",
+  list_directory: "list_files",
+  list_notes: "list_files",
+  read_file_content: "read_file",
+  find_files: "search_files",
+  create_directory: "create_folder"
+};
+
+/**
+ * The documented tool behind whatever the model actually called. Applied where
+ * a call is read off the wire, so everything downstream — the agent loop's
+ * dispatch, the "did this turn propose something" check, the chat's status
+ * labels — sees one name per tool.
+ */
+export function canonicalToolName(name: string): string {
+  const normalized = name.trim().toLowerCase();
+
+  return TOOL_NAME_ALIASES[normalized] ?? normalized;
+}
+
 // One image handed to a vision model, already downscaled and base64-encoded.
 // Resolved from imagePaths per request and never persisted — see
 // src/lib/chat/imageAttachments.ts for why the split exists.
@@ -1178,7 +1249,11 @@ export type AiChatImage = { path: string; base64: string; mimeType: string };
 // it. The wire payload is unaffected — the flag only tells the transcript to
 // show what was clicked rather than the generated instruction, which quotes a
 // whole assistant answer back at the model.
-export type ChatUserAction = "applyToDocument";
+// "planStep" is the second kind: the instruction the agent loop hands itself
+// for one step of a multi-step plan. It is model-facing text, not something the
+// user wrote or clicked, so the transcript renders nothing for it at all — the
+// plan's own step list is what shows the user where the agent is.
+export type ChatUserAction = "applyToDocument" | "planStep";
 
 // A tagged union rather than a flat {role, content} shape: the agent loop
 // needs to carry tool_calls on assistant turns and tool_call_id/toolName on
@@ -1253,6 +1328,12 @@ export type AiChatRequest = {
   // prompt so the assistant can talk about "this passage". Not used in the
   // agent (tool-calling) path — the agent reads the document via its tools.
   documentContext?: string;
+  // Whether a note is open in the editor at all. False is a state the agent
+  // rules have to spell out rather than let the model discover through failing
+  // tools: without a document there is no passage tool that can work, and a
+  // model that learns this from three "could not propose" results in a row
+  // reports the whole request as impossible (see NO_DOCUMENT_INSTRUCTION).
+  documentOpen?: boolean;
   // Replaces the whole system prompt (assistant persona + agent rules) instead
   // of being composed with it. For the one-question follow-up steps that are not
   // part of the conversation — see detectPendingSuggestion.
@@ -1266,6 +1347,19 @@ export type AiChatRequest = {
   // the user never opened, so their availability is a consent decision, not a
   // capability one (see src/store/useRagSettingsStore.ts).
   vaultSearchEnabled?: boolean;
+  // Offers the vault agent's file tools (create/rename/move/edit/delete notes
+  // other than the open one). Off unless agentFileAccess is on — like the
+  // knowledge base above this is a consent decision, and a wider one: it lets
+  // the agent read every note in the vault as well as write to it.
+  fileAccessEnabled?: boolean;
+  // Sub-switches of the above; only meaningful while fileAccessEnabled. Left
+  // undefined they default to on, so a caller that only knows about the main
+  // switch still gets the documented tool set.
+  deleteEnabled?: boolean;
+  multiEditEnabled?: boolean;
+  // Offers create_plan/update_plan/complete_step, i.e. the model keeps its own
+  // task list (agentPlanning === "model").
+  planToolsEnabled?: boolean;
 };
 
 // Name of the tool the model calls to flag that its own reply text (not an
@@ -1461,6 +1555,259 @@ const VAULT_TOOL_SPECS = [
   }
 ] as const;
 
+// The vault agent's file tools (v3, see DOCS/vault-agent-plan.md). Gated on
+// agentFileAccess — the switch is a consent decision like the knowledge base's:
+// it lets the agent read *and* write every note in the vault, not just the one
+// the user has open.
+export const FILE_TOOL_NAMES: readonly string[] = [
+  "list_files",
+  "read_file",
+  "write_file",
+  "edit_file",
+  "multi_edit",
+  "rename_file",
+  "delete_file",
+  "create_folder",
+  "search_files",
+  "get_outline"
+];
+
+/** Off unless agentAllowDelete; the one file tool that destroys something. */
+export const DELETE_TOOL_NAME = "delete_file";
+
+/** Off unless agentMultiEdit; small models routinely mangle its nested arguments. */
+export const MULTI_EDIT_TOOL_NAME = "multi_edit";
+
+/**
+ * The file tools that propose a change (rather than read something). A turn
+ * that called one of these has already given the user something to accept, so
+ * it needs no "apply this reply" button — same role EDITING_TOOL_NAMES plays
+ * for the open document.
+ *
+ * Deliberately NOT part of EDITING_TOOL_NAMES: that list drives the
+ * open-review guard, which is about the *open document's* widgets. A file tool
+ * works on a different file and must not be blocked by them (see
+ * blockedByOpenReview in src/lib/chat/agentTools.ts).
+ */
+export const STAGING_TOOL_NAMES: readonly string[] = [
+  "write_file",
+  "edit_file",
+  "multi_edit",
+  "rename_file",
+  "delete_file"
+];
+
+const FILE_TOOL_SPECS = [
+  {
+    name: "list_files",
+    description:
+      "List every note in the vault with its path. Call this first when you need to work on files other than the open document — it is how you learn which paths exist. Never guess a path.",
+    parameters: { type: "object", properties: {}, required: [] }
+  },
+  {
+    name: "read_file",
+    description:
+      "Read one note of the vault in full, by its path. Use a path exactly as list_files or search_files reported it. For the document the user currently has open, call get_document instead.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Vault-relative path, e.g. Projekte/Kunde A.md." }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "write_file",
+    description:
+      "Propose a note with this complete content: creates it when the path does not exist yet, replaces the whole file when it does. Pass the finished text in this one call — never create the file empty and fill it in a later step, which leaves the user with a proposal for an empty note. Use it for new notes, and for a rewrite that touches most of the file. To change a passage of an existing note use edit_file — rewriting a long note in full to change one sentence wastes the whole file's worth of output and risks truncating it. To move an existing note use rename_file, never this tool. The change is staged for the user's review, not written to disk.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Vault-relative path ending in .md, e.g. Ideen.md." },
+        content: {
+          type: "string",
+          description:
+            "The complete Markdown content of the file, with real line breaks — never the two characters \\ and n."
+        }
+      },
+      required: ["path", "content"]
+    }
+  },
+  {
+    name: "edit_file",
+    description:
+      "Propose replacing one passage of a note that is NOT the open document. old_text is the wording to locate, copied from read_file — keep it short and distinctive, and make sure it occurs exactly once. The change is staged for the user's review, not written to disk.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Vault-relative path of the note to change." },
+        old_text: { type: "string", description: "The exact passage to replace, copied from read_file." },
+        new_text: { type: "string", description: "The Markdown that replaces it." }
+      },
+      required: ["path", "old_text", "new_text"]
+    }
+  },
+  {
+    name: MULTI_EDIT_TOOL_NAME,
+    description:
+      "Propose several passage replacements in one call — the same thing as calling edit_file once per entry, but in a single step. Each entry names a path, the exact old_text to locate and its new_text. The result reports success or failure for every entry separately, so only repeat the ones that failed.",
+    parameters: {
+      type: "object",
+      properties: {
+        edits: {
+          type: "array",
+          description: "The replacements to propose.",
+          items: {
+            type: "object",
+            properties: {
+              path: { type: "string", description: "Vault-relative path of the note to change." },
+              old_text: { type: "string", description: "The exact passage to replace." },
+              new_text: { type: "string", description: "The Markdown that replaces it." }
+            },
+            required: ["path", "old_text", "new_text"]
+          }
+        }
+      },
+      required: ["edits"]
+    }
+  },
+  {
+    name: "rename_file",
+    description:
+      "Propose renaming a note, moving it to another folder, or both — new_path is the complete new vault-relative path. This is the only tool for either; there is no separate move, and a move is never write_file plus delete_file. The file's content travels along untouched, so you do not need to read it first. The change is staged for the user's review.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "The note's current vault-relative path." },
+        new_path: {
+          type: "string",
+          description: "The complete new vault-relative path, e.g. Archiv/Alte Idee.md."
+        }
+      },
+      required: ["path", "new_path"]
+    }
+  },
+  {
+    name: DELETE_TOOL_NAME,
+    description:
+      "Propose deleting a note. Only ever call this when the user explicitly asked for that note to go — never as tidying up you decided on yourself, and never to make room for something you are writing. The deletion is staged for the user's review.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Vault-relative path of the note to delete." }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "create_folder",
+    description:
+      "Create an empty folder in the vault. Unlike the other file tools this takes effect immediately — an empty folder holds no text there would be anything to review. You do not need it before writing a file: write_file creates the folders in its path on its own.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Vault-relative folder path, e.g. Projekte/2026." }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "search_files",
+    description:
+      "Search the raw text of every note in the vault and report each hit as path:line with the matching line. This finds characters, not meaning: query with the literal words, names or markers that are in the text. Use it instead of reading file after file — it is how you find the two places a request is actually about.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "The text to search for." },
+        regex: { type: "boolean", description: "Treat query as a regular expression. Default false." },
+        glob: {
+          type: "string",
+          description: "Limit the search to paths containing this text, e.g. Projekte/."
+        },
+        max_results: { type: "integer", description: "How many hits to report. Default 50." }
+      },
+      required: ["query"]
+    }
+  },
+  {
+    name: "get_outline",
+    description:
+      "List only the headings of a note, with their line numbers. Use it to see how a long note is structured before deciding which part you actually need to read.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Vault-relative path of the note." }
+      },
+      required: ["path"]
+    }
+  }
+] as const;
+
+/**
+ * The tools of the model-driven plan mode (agentPlanning === "model"). The
+ * store owns the list either way — these only let the model write it.
+ */
+export const PLAN_TOOL_NAMES: readonly string[] = ["create_plan", "update_plan", "complete_step"];
+
+const PLAN_TOOL_SPECS = [
+  {
+    name: "create_plan",
+    description:
+      "Write down the steps this request needs, once, before you start working. Only for goals that genuinely take several steps across several files — a single rewrite needs no plan, just do it. Each step is one self-contained piece of work with a short title and an instruction to yourself.",
+    parameters: {
+      type: "object",
+      properties: {
+        steps: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "One short line naming the step." },
+              instruction: { type: "string", description: "What to do in this step." }
+            },
+            required: ["title", "instruction"]
+          }
+        }
+      },
+      required: ["steps"]
+    }
+  },
+  {
+    name: "update_plan",
+    description:
+      "Replace the steps that are still outstanding, when what you learned along the way changed what is left to do. Steps already completed stay as they are — pass only the remaining ones.",
+    parameters: {
+      type: "object",
+      properties: {
+        steps: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "One short line naming the step." },
+              instruction: { type: "string", description: "What to do in this step." }
+            },
+            required: ["title", "instruction"]
+          }
+        }
+      },
+      required: ["steps"]
+    }
+  },
+  {
+    name: "complete_step",
+    description:
+      "Close off the step you are working on with one sentence saying what came of it. Call it before you start the next step.",
+    parameters: {
+      type: "object",
+      properties: {
+        result: { type: "string", description: "One sentence on the outcome of this step." }
+      },
+      required: ["result"]
+    }
+  }
+] as const;
+
 type ToolSpec = {
   readonly name: string;
   readonly description: string;
@@ -1486,6 +1833,10 @@ const AGENT_TOOLS_OPENAI = toOpenAiTools(AGENT_TOOL_SPECS as readonly ToolSpec[]
 const AGENT_TOOLS_ANTHROPIC = toAnthropicTools(AGENT_TOOL_SPECS as readonly ToolSpec[]);
 const VAULT_TOOLS_OPENAI = toOpenAiTools(VAULT_TOOL_SPECS as readonly ToolSpec[]);
 const VAULT_TOOLS_ANTHROPIC = toAnthropicTools(VAULT_TOOL_SPECS as readonly ToolSpec[]);
+const FILE_TOOLS_OPENAI = toOpenAiTools(FILE_TOOL_SPECS as readonly ToolSpec[]);
+const FILE_TOOLS_ANTHROPIC = toAnthropicTools(FILE_TOOL_SPECS as readonly ToolSpec[]);
+const PLAN_TOOLS_OPENAI = toOpenAiTools(PLAN_TOOL_SPECS as readonly ToolSpec[]);
+const PLAN_TOOLS_ANTHROPIC = toAnthropicTools(PLAN_TOOL_SPECS as readonly ToolSpec[]);
 
 // Applies request.toolNames. Narrowing the offered tools is the guard that lets
 // a follow-up step ask the model a question without giving it the means to
@@ -1512,9 +1863,43 @@ function offeredTools<T extends { name: string } | { function: { name: string } 
 function requestTools<T extends { name: string } | { function: { name: string } }>(
   base: T[],
   vault: T[],
+  file: T[],
+  plan: T[],
   request: AiChatRequest
 ): T[] {
-  return offeredTools(request.vaultSearchEnabled ? [...base, ...vault] : base, request.toolNames);
+  const toolName = (tool: T): string => ("name" in tool ? tool.name : tool.function.name);
+  const composed = [...base];
+
+  if (request.vaultSearchEnabled) {
+    composed.push(...vault);
+  }
+
+  if (request.fileAccessEnabled) {
+    // The two sub-switches narrow the file set rather than the whole group: a
+    // user who lets the agent write but not delete, or whose small model
+    // mangles multi_edit's nested arguments, still gets everything else.
+    composed.push(
+      ...file.filter((tool) => {
+        const name = toolName(tool);
+
+        if (name === DELETE_TOOL_NAME) {
+          return request.deleteEnabled !== false;
+        }
+
+        if (name === MULTI_EDIT_TOOL_NAME) {
+          return request.multiEditEnabled !== false;
+        }
+
+        return true;
+      })
+    );
+  }
+
+  if (request.planToolsEnabled) {
+    composed.push(...plan);
+  }
+
+  return offeredTools(composed, request.toolNames);
 }
 
 // Ollama's tool_calls arguments already arrive as an object; OpenAI-compatible
@@ -1599,6 +1984,10 @@ const AGENT_INSTRUCTION =
   `on it: an offer left in your reply text unflagged is one the user cannot accept. Do not call it when you ` +
   `already proposed the change with an editing tool, and not when your reply merely answers a question, ` +
   `explains something or confirms a change you have already made.\n` +
+  "10. Speak TO the user, never about them. Your reply goes to the person who asked, so it is \"I have " +
+  "proposed …, you can accept it in the file tree\" — never \"the user sees it and can accept it\". Tool " +
+  "results describe the mechanism from the outside; do not carry that third person over into what you " +
+  "write back. Answer in the language the user wrote in.\n" +
   "If the user only asks a question, answer it normally after reading the document.";
 
 // Added on top of AGENT_INSTRUCTION only when the vault's knowledge base is on.
@@ -1628,6 +2017,81 @@ const VAULT_INSTRUCTION =
   "V5. When the notes do not contain the answer, say so plainly. Do not fill the gap with general " +
   "knowledge and do not imply it came from their notes.";
 
+// Added on top of AGENT_INSTRUCTION only when agentFileAccess is on. Every one
+// of these is a failure mode observed with tool-capable models the moment they
+// can reach more than one file: a guessed path, two mechanisms fighting over
+// the open document, a "helpful" cleanup nobody asked for.
+const FILE_INSTRUCTION =
+  "You can also work on the other notes in this vault — create them, rewrite them, rename, move and " +
+  "delete them.\n" +
+  "F1. Never guess a path. Call list_files (or search_files) first and use a path exactly as it came " +
+  "back. A path you invented names a file that does not exist, and the tool will tell you so.\n" +
+  "F2. The document the user has OPEN is off limits to the file tools. Change it with replace_passage / " +
+  "replace_selection / insert_at_cursor, exactly as before. The file tools are for every OTHER note, and " +
+  "they will refuse the open document and remind you of this.\n" +
+  "F3. The file tools change nothing on disk. Each one stages a proposal the user reviews and applies — " +
+  "so do not claim a file was written, renamed or deleted; say what you have proposed. Reading a file " +
+  "back after proposing a change shows the OLD content, and that is correct.\n" +
+  "F4. One proposal per file. A second call for a file you already proposed something for UPDATES that " +
+  "proposal instead of adding a second one — so do not repeat a change to make sure it took.\n" +
+  "F5. Only delete a note the user explicitly asked you to delete. Never as tidying up of your own, " +
+  "never to make room for something you are writing.\n" +
+  "F6. Use edit_file for a passage and write_file only for a new note or a rewrite of most of the file. " +
+  "Re-emitting a long note in full to change one sentence risks cutting it off at your output limit.\n" +
+  "F7. Put the file where the user said to put it. When they name a folder (\"unter Misc\", \"in " +
+  "Projekte\"), that IS the location — even when another folder looks like a better fit for the subject, " +
+  "and even when a folder of that subject already exists. If the folder they named does not exist yet, " +
+  "create it; do not quietly choose a different one.\n" +
+  "F8. A note is written in ONE write_file call, with its complete content. Never create the file empty " +
+  "first and fill it in later: until that second call arrives the user is looking at a proposal for an " +
+  "empty note, and if the turn ends there they get one.\n" +
+  "F9. Moving a note is rename_file and nothing else — one call, with the complete new path. Never move " +
+  "one by writing its text to the new path and deleting the old file: that reroutes the whole note " +
+  "through your output, where it loses its formatting and can be cut off, and it throws away the note's " +
+  "version history. You do not need to read a file to move it.\n" +
+  "F10. Text arguments carry REAL line breaks. Never write \\n, \\r\\n or \\t as characters into content, " +
+  "new_text or old_text — the file would end up with those two characters where its line breaks belong.";
+
+// Added when NO note is open in the editor. Without it the model works from
+// rule 6, reaches for insert_at_cursor, gets a refusal it cannot place, and
+// tells the user their request cannot be done at all — the transcript that
+// started this: three failed passage tools and "I cannot create a file because
+// no editor is open".
+const NO_DOCUMENT_INSTRUCTION =
+  "IMPORTANT — no note is open in the editor right now.\n" +
+  "N1. get_document, get_selection, insert_at_cursor, replace_passage and replace_selection have nothing " +
+  "to work on and will refuse. Do not call them, and never report their refusal to the user as the reason " +
+  "their request failed.\n" +
+  "N2. Everything that does not need the open document still works exactly as usual — searching their " +
+  "notes, reading them, and (when you have the file tools) creating, editing, renaming and deleting notes " +
+  "with write_file / edit_file / rename_file. A new note is written with write_file and needs no editor.\n" +
+  "N3. Only when the request genuinely is about the open document — \"rewrite this\", \"continue here\", " +
+  "\"what does this say\" — say in one sentence that no note is open and ask them to open one.";
+
+// Added when the file tools are NOT offered, i.e. agentFileAccess is off. The
+// model otherwise has no way to know the capability exists, so it tries to
+// serve "create a note" with the passage tools and reports a failure the user
+// cannot act on — the setting that would fix it is never mentioned.
+const NO_FILE_ACCESS_INSTRUCTION =
+  "You can only work on the note that is open in the editor. Creating, renaming, deleting or editing any " +
+  "OTHER note is switched off — you have no tool for it, and no way to turn it on yourself. When the user " +
+  "asks for one of those, do not attempt it with the passage tools and do not report it as a failure: say " +
+  "in one sentence that the agent's file access is switched off and that they can enable it in the AI " +
+  "settings under the agent options. Then offer what you can do without it (for example writing the text " +
+  "into the open note, or answering from their notes).";
+
+// Added when agentPlanning is "model": the model keeps the task list itself.
+const PLAN_INSTRUCTION =
+  "For a goal that genuinely takes several steps you keep your own task list.\n" +
+  "P1. Call create_plan ONCE, at the start, with two or more steps — but only when the request really " +
+  "needs them (several files, or work that has to happen in order). A single rewrite gets no plan: just " +
+  "do it.\n" +
+  "P2. Work the steps in order. When a step is done, call complete_step with one sentence on what came " +
+  "of it, then start the next.\n" +
+  "P3. When what you learned changes what is left to do, call update_plan with the remaining steps. " +
+  "Completed steps stay as they are — pass only what is still outstanding.\n" +
+  "P4. The plan is not the work. Never finish a turn having only written or revised a plan.";
+
 function buildChatSystemPrompt(
   request: AiChatRequest,
   thinkingMode: AiThinkingMode,
@@ -1653,12 +2117,24 @@ function buildChatSystemPrompt(
 
   const agentSection = toolsEnabled ? AGENT_INSTRUCTION : "";
   const vaultSection = toolsEnabled && request.vaultSearchEnabled ? VAULT_INSTRUCTION : "";
+  const fileSection = toolsEnabled && request.fileAccessEnabled ? FILE_INSTRUCTION : "";
+  const planSection = toolsEnabled && request.planToolsEnabled ? PLAN_INSTRUCTION : "";
+  // Both of these describe what the agent *cannot* do in this turn, and both
+  // are only worth saying in the agent path — without tools there is no call
+  // that could fail. documentOpen left undefined means "unknown", which the
+  // old behaviour covers: say nothing.
+  const noFileAccessSection = toolsEnabled && !request.fileAccessEnabled ? NO_FILE_ACCESS_INSTRUCTION : "";
+  const noDocumentSection = toolsEnabled && request.documentOpen === false ? NO_DOCUMENT_INSTRUCTION : "";
 
   return [
     baseInstruction,
     MARKDOWN_OUTPUT_INSTRUCTION,
     agentSection,
     vaultSection,
+    fileSection,
+    noFileAccessSection,
+    noDocumentSection,
+    planSection,
     thinkingInstruction,
     documentSection
   ]
@@ -1906,7 +2382,7 @@ function anthropicChatStepBody(settings: AiSettings, request: AiChatRequest): Re
     model: settings.model,
     system: buildChatSystemPrompt(request, settings.thinkingMode, true),
     max_tokens: resolveMaxOutputTokens(settings.contextLength),
-    tools: requestTools(AGENT_TOOLS_ANTHROPIC, VAULT_TOOLS_ANTHROPIC, request),
+    tools: requestTools(AGENT_TOOLS_ANTHROPIC, VAULT_TOOLS_ANTHROPIC, FILE_TOOLS_ANTHROPIC, PLAN_TOOLS_ANTHROPIC, request),
     messages: toAnthropicMessages(request)
   };
 }
@@ -1915,7 +2391,7 @@ function ollamaChatStepBody(settings: AiSettings, request: AiChatRequest): Recor
   const body: Record<string, unknown> = {
     model: settings.model,
     messages: toOpenAiCompatMessages(request, settings.thinkingMode, true),
-    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, request),
+    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, FILE_TOOLS_OPENAI, PLAN_TOOLS_OPENAI, request),
     options: { num_ctx: settings.contextLength, num_predict: resolveMaxOutputTokens(settings.contextLength) }
   };
 
@@ -1930,7 +2406,7 @@ function openAiCompatibleChatStepBody(settings: AiSettings, request: AiChatReque
   const body: Record<string, unknown> = {
     model: settings.model,
     messages: toOpenAiCompatMessages(request, settings.thinkingMode, false),
-    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, request),
+    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, FILE_TOOLS_OPENAI, PLAN_TOOLS_OPENAI, request),
     tool_choice: "auto",
     temperature: 0.2,
     max_tokens: resolveMaxOutputTokens(settings.contextLength)
@@ -1971,7 +2447,7 @@ export async function generateAiChatStep(
       .filter((block) => block.type === "tool_use")
       .map((block) => ({
         id: String(block.id),
-        name: String(block.name),
+        name: canonicalToolName(String(block.name)),
         arguments: safeParseJson(block.input)
       }));
     const text = stripThinkingBlocks(
@@ -2000,7 +2476,7 @@ export async function generateAiChatStep(
     const message = payload.message;
     const toolCalls = (message?.tool_calls ?? []).map((toolCall, index) => ({
       id: toolCall.id ?? `call_${Date.now()}_${index}`,
-      name: toolCall.function.name,
+      name: canonicalToolName(toolCall.function.name),
       // Ollama already hands back an object here; safeParseJson passes it through unchanged.
       arguments: safeParseJson(toolCall.function.arguments)
     }));
@@ -2009,21 +2485,35 @@ export async function generateAiChatStep(
   }
 
   // OpenAI-compatible (OpenAI, Mistral, Jan, LM Studio)
-  const payload = (await postJson(
-    new URL("/v1/chat/completions", settings.apiUrl).toString(),
-    { ...openAiCompatibleChatStepBody(settings, request), stream: false },
-    buildOpenAiCompatibleAuthHeaders(settings),
-    signal
-  )) as {
+  const chatCompletionsUrl = new URL("/v1/chat/completions", settings.apiUrl).toString();
+  const chatCompletionsHeaders = buildOpenAiCompatibleAuthHeaders(settings);
+  const chatCompletionsBody = { ...openAiCompatibleChatStepBody(settings, request), stream: false };
+
+  let payload: {
     choices?: Array<{
       message?: { content?: string; tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }> };
     }>;
   };
 
+  try {
+    payload = await postJson(chatCompletionsUrl, chatCompletionsBody, chatCompletionsHeaders, signal);
+  } catch (error) {
+    if (!isReasoningEffortToolConflict(error)) {
+      throw error;
+    }
+
+    payload = await postJson(
+      chatCompletionsUrl,
+      { ...chatCompletionsBody, reasoning_effort: "none" },
+      chatCompletionsHeaders,
+      signal
+    );
+  }
+
   const message = payload.choices?.[0]?.message;
   const toolCalls = (message?.tool_calls ?? []).map((toolCall) => ({
     id: toolCall.id,
-    name: toolCall.function.name,
+    name: canonicalToolName(toolCall.function.name),
     arguments: safeParseJson(toolCall.function.arguments)
   }));
 
@@ -2075,7 +2565,7 @@ function createToolCallBuffer(onToolCall: (name: string) => void) {
       }
 
       if (name && !call.name) {
-        call.name = name;
+        call.name = canonicalToolName(name);
       }
 
       if (call.name && !announced.has(index)) {
@@ -2307,69 +2797,80 @@ async function streamOpenAiCompatibleChatStep(
   const splitter = createThinkingSplitter({ onChunk: handlers.onText, onThinking: handlers.onThinking });
   const tools = createToolCallBuffer(handlers.onToolCall);
 
-  await consumeChatStepStream(
-    new URL("/v1/chat/completions", settings.apiUrl).toString(),
-    { ...openAiCompatibleChatStepBody(settings, request), stream: true },
-    buildOpenAiCompatibleAuthHeaders(settings),
-    signal,
-    (line) => {
-      const parsed = parseStreamLinePayload(line);
+  const url = new URL("/v1/chat/completions", settings.apiUrl).toString();
+  const headers = buildOpenAiCompatibleAuthHeaders(settings);
+  const body = { ...openAiCompatibleChatStepBody(settings, request), stream: true };
 
-      if (!parsed) {
-        return;
-      }
+  const onLine = (line: string) => {
+    const parsed = parseStreamLinePayload(line);
 
-      const choice = (
-        parsed.choices as
-          | Array<{
-              delta?: Record<string, unknown>;
-              message?: Record<string, unknown>;
-            }>
-          | undefined
-      )?.[0];
-
-      // Some local backends answer a streaming request with whole `message`
-      // objects rather than deltas; both carry the same fields, so either does.
-      const delta = (choice?.delta ?? choice?.message) as
-        | {
-            content?: string | null;
-            reasoning_content?: string | null;
-            reasoning?: string | null;
-            tool_calls?: Array<{
-              index?: number;
-              id?: string;
-              function?: { name?: string; arguments?: unknown };
-            }>;
-          }
-        | undefined;
-
-      const thinking = delta?.reasoning_content ?? delta?.reasoning;
-
-      if (thinking) {
-        handlers.onThinking(thinking);
-      }
-
-      if (delta?.content) {
-        splitter.push(delta.content);
-      }
-
-      (delta?.tool_calls ?? []).forEach((call, position) => {
-        // Parallel calls are told apart by `index`; the fallback covers the
-        // whole-message case above, where the array position is the index.
-        const index = typeof call.index === "number" ? call.index : position;
-
-        tools.open(index, call.id, call.function?.name);
-
-        const args = call.function?.arguments;
-
-        if (typeof args === "string") {
-          tools.appendArguments(index, args);
-        } else if (args !== undefined) {
-          tools.setArguments(index, args);
-        }
-      });
+    if (!parsed) {
+      return;
     }
-  );
+
+    const choice = (
+      parsed.choices as
+        | Array<{
+            delta?: Record<string, unknown>;
+            message?: Record<string, unknown>;
+          }>
+        | undefined
+    )?.[0];
+
+    // Some local backends answer a streaming request with whole `message`
+    // objects rather than deltas; both carry the same fields, so either does.
+    const delta = (choice?.delta ?? choice?.message) as
+      | {
+          content?: string | null;
+          reasoning_content?: string | null;
+          reasoning?: string | null;
+          tool_calls?: Array<{
+            index?: number;
+            id?: string;
+            function?: { name?: string; arguments?: unknown };
+          }>;
+        }
+      | undefined;
+
+    const thinking = delta?.reasoning_content ?? delta?.reasoning;
+
+    if (thinking) {
+      handlers.onThinking(thinking);
+    }
+
+    if (delta?.content) {
+      splitter.push(delta.content);
+    }
+
+    (delta?.tool_calls ?? []).forEach((call, position) => {
+      // Parallel calls are told apart by `index`; the fallback covers the
+      // whole-message case above, where the array position is the index.
+      const index = typeof call.index === "number" ? call.index : position;
+
+      tools.open(index, call.id, call.function?.name);
+
+      const args = call.function?.arguments;
+
+      if (typeof args === "string") {
+        tools.appendArguments(index, args);
+      } else if (args !== undefined) {
+        tools.setArguments(index, args);
+      }
+    });
+  };
+
+  try {
+    await consumeChatStepStream(url, body, headers, signal, onLine);
+  } catch (error) {
+    if (!isReasoningEffortToolConflict(error)) {
+      throw error;
+    }
+
+    // consumeChatStepStream throws on a non-ok response before the first line
+    // is read (see there), so nothing has reached onLine yet — retrying from
+    // scratch cannot duplicate output.
+    await consumeChatStepStream(url, { ...body, reasoning_effort: "none" }, headers, signal, onLine);
+  }
 
   return { text: splitter.answer(), toolCalls: tools.toToolCalls() };
 }

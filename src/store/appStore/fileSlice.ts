@@ -3,6 +3,7 @@ import { dirname, join } from "@tauri-apps/api/path";
 import i18n from "@/i18n";
 import {
   cleanupOrphanedImages,
+  createMarkdownFolderAtPath,
   deleteMarkdownFile,
   getRelativeDisplayPath,
   readMarkdownFile,
@@ -365,6 +366,86 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       });
 
       return null;
+    }
+  },
+  // Creating a file the agent named, as part of applying a batch of staged
+  // changes. Deliberately not createNewFile with a rename afterwards: that
+  // would select the file, write an empty version first, and produce a rename
+  // per created file in the version history.
+  createFileAtPath: async (filePath: string, content: string) => {
+    const { folderPath, filePaths, emptyFolderPaths } = get();
+
+    if (!folderPath) {
+      return false;
+    }
+
+    try {
+      const targetDirectory = await dirname(filePath);
+
+      // The agent may create "Projekte/2026/Notiz.md" without either folder
+      // existing yet — mkdir is what makes that one tool call instead of three.
+      await createMarkdownFolderAtPath(targetDirectory);
+      await writeMarkdownFile(filePath, content);
+      snapshotFileVersion(folderPath, filePath, content);
+
+      const parentRelativePath = getRelativeDisplayPath(folderPath, targetDirectory);
+      const currentManualOrder = get().manualOrder;
+      const seededManualOrder = ensureManualOrderEntry(
+        currentManualOrder,
+        parentRelativePath,
+        currentChildBasenames(folderPath, filePaths, emptyFolderPaths, parentRelativePath)
+      );
+      const nextManualOrder = insertManualOrderEntry(
+        seededManualOrder,
+        parentRelativePath,
+        getBasename(filePath),
+        // At the end: a batch has no meaningful anchor to insert after, and the
+        // user can drag it wherever they want afterwards.
+        (seededManualOrder[parentRelativePath] ?? []).length
+      );
+      persistManualOrderIfChanged(folderPath, currentManualOrder, nextManualOrder);
+
+      const currentState = get();
+      const alreadyKnown = currentState.filePaths.some(
+        (path) => normalizePathKey(path) === normalizePathKey(filePath)
+      );
+
+      // The created file can be the one on screen: the agent proposes it, the
+      // user opens it to review the proposal, and applies from there. Without
+      // mirroring into the selected-file fields the editor keeps the empty
+      // document it was opened with, and that stale document wins the next time
+      // anything writes back — the content shows up for a moment when the
+      // folder watcher reloads it, and is then overwritten with nothing. Every
+      // other mutating action in this slice does the same mirroring.
+      const isSelected = currentState.selectedFilePath === filePath;
+
+      set({
+        filePaths: alreadyKnown
+          ? currentState.filePaths
+          : insertFilePathSorted(currentState.filePaths, filePath),
+        manualOrder: nextManualOrder,
+        fileDocuments: {
+          ...currentState.fileDocuments,
+          [filePath]: { content, baseContent: content }
+        },
+        ...(isSelected
+          ? {
+              selectedFileContent: content,
+              selectedFileBaseContent: content,
+              isDirty: false,
+              isFileLoading: false
+            }
+          : {}),
+        fileError: null
+      });
+
+      return true;
+    } catch (error) {
+      set({
+        fileError: toErrorMessage(error, i18n.t("store.fileCreateError"))
+      });
+
+      return false;
     }
   },
   // Optimistically registers files the import wrote to disk: adds them to

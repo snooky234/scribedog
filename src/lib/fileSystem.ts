@@ -248,6 +248,16 @@ export async function createUniqueMarkdownFolder(
   return candidatePath;
 }
 
+/**
+ * Creates a folder at exactly this path, parents included. Unlike
+ * createUniqueMarkdownFolder it does not invent a free name: the agent's
+ * create_folder names the folder, and silently getting "Ideen 2" instead of
+ * "Ideen" would leave every path it writes afterwards pointing nowhere.
+ */
+export async function createMarkdownFolderAtPath(folderPath: string): Promise<void> {
+  await mkdir(folderPath, { recursive: true });
+}
+
 export async function renameMarkdownFolder(oldPath: string, newPath: string): Promise<void> {
   await rename(oldPath, newPath);
 }

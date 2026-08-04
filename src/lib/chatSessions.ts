@@ -2,6 +2,7 @@ import { join } from "@tauri-apps/api/path";
 import { exists, mkdir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 
 import type { AiChatMessage, AiChatRole, ChatUserAction, ToolCall } from "@/lib/aiClient";
+import { normalizePlan, type PlanStep } from "@/lib/chat/agentPlan";
 import { VAULT_META_DIR_NAME } from "@/lib/fileSystem";
 
 export type ChatSession = {
@@ -13,6 +14,10 @@ export type ChatSession = {
   // active assistant at send time still governs each turn.
   assistantId: string;
   messages: AiChatMessage[];
+  // The agent's task list for a multi-step goal, in either planning mode (see
+  // src/lib/chat/agentPlan.ts). Absent for every session that never needed one
+  // — which is most of them, and for every session written before v3.
+  plan?: PlanStep[];
 };
 
 const SESSIONS_FILE_NAME = "chat-sessions.json";
@@ -27,7 +32,7 @@ async function vaultMetaDirPath(folderPath: string): Promise<string> {
 
 const CHAT_ROLES: AiChatRole[] = ["user", "assistant", "tool"];
 
-const CHAT_USER_ACTIONS: ChatUserAction[] = ["applyToDocument"];
+const CHAT_USER_ACTIONS: ChatUserAction[] = ["applyToDocument", "planStep"];
 
 function normalizeToolCall(raw: unknown): ToolCall | null {
   if (typeof raw !== "object" || raw === null) {
@@ -166,6 +171,7 @@ function normalizeSession(raw: unknown): ChatSession | null {
         .filter((message): message is AiChatMessage => message !== null)
     : [];
 
+  const plan = normalizePlan((candidate as { plan?: unknown }).plan);
   const now = Date.now();
 
   return {
@@ -174,7 +180,10 @@ function normalizeSession(raw: unknown): ChatSession | null {
     createdAt: typeof candidate.createdAt === "number" ? candidate.createdAt : now,
     updatedAt: typeof candidate.updatedAt === "number" ? candidate.updatedAt : now,
     assistantId: typeof candidate.assistantId === "string" ? candidate.assistantId : "default",
-    messages
+    messages,
+    // Sessions written before plans existed simply have none, and reopen
+    // unchanged.
+    ...(plan ? { plan } : {})
   };
 }
 

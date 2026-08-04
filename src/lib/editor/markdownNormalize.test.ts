@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
+import { decodeEscapedLineBreaks, normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 
 describe("normalizeEscapedCheckboxes", () => {
   it("unescapes brackets in bulleted list items", () => {
@@ -45,5 +45,48 @@ describe("normalizeEscapedCheckboxes", () => {
     expect(normalizeEscapedCheckboxes("text with [ ] in the middle")).toBe(
       "text with [ ] in the middle"
     );
+  });
+});
+
+describe("decodeEscapedLineBreaks", () => {
+  it("turns a fully escaped text back into line breaks", () => {
+    expect(decodeEscapedLineBreaks("Zeile eins\\nZeile zwei\\n\\nAbsatz")).toBe(
+      "Zeile eins\nZeile zwei\n\nAbsatz"
+    );
+  });
+
+  it("decodes a text the model escaped only from the second line on", () => {
+    const escaped =
+      "Im Feld von Lila,\n\nSteht der Lavendel,\\nSein Duft so süß,\\nTrägt mich fort.\\n\\nDie Sonne küsst ihn,\\nEr strahlt zurück.";
+
+    expect(decodeEscapedLineBreaks(escaped)).toBe(
+      "Im Feld von Lila,\n\nSteht der Lavendel,\nSein Duft so süß,\nTrägt mich fort.\n\nDie Sonne küsst ihn,\nEr strahlt zurück."
+    );
+  });
+
+  it("leaves a single literal sequence alone — a sentence about \\n is likelier than one escaped break", () => {
+    expect(decodeEscapedLineBreaks("Ein Umbruch schreibt sich \\n.")).toBe(
+      "Ein Umbruch schreibt sich \\n."
+    );
+  });
+
+  it("handles escaped CRLF and tabs alongside", () => {
+    expect(decodeEscapedLineBreaks("a\\r\\nb\\r\\n\\tc")).toBe("a\nb\n\tc");
+  });
+
+  it("leaves a text without literal sequences untouched", () => {
+    expect(decodeEscapedLineBreaks("# Titel\n\nAbsatz mit \\* Sternchen.")).toBe(
+      "# Titel\n\nAbsatz mit \\* Sternchen."
+    );
+  });
+
+  it("leaves a note that documents \\n in prose or code alone", () => {
+    const note = "# Escapes\n\nEin Zeilenumbruch ist `\\n`:\n\n```js\nconsole.log(\"a\\nb\");\n```\n\nSo weit.";
+
+    expect(decodeEscapedLineBreaks(note)).toBe(note);
+  });
+
+  it("leaves an empty string alone", () => {
+    expect(decodeEscapedLineBreaks("")).toBe("");
   });
 });

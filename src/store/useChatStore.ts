@@ -6,6 +6,8 @@ import {
   EDITING_TOOL_NAMES,
   FLAG_SUGGESTION_TOOL_NAME,
   IMAGE_UNSUPPORTED_TOOL_RESULT,
+  PLAN_TOOL_NAMES,
+  STAGING_TOOL_NAMES,
   streamAiChatStep,
   stripChatImages,
   type AiChatMessage,
@@ -16,8 +18,22 @@ import {
   beginChatTurn,
   executeTool,
   pendingProposalTurnNote,
-  proposeComposedText
+  proposeComposedText,
+  type ToolResult
 } from "@/lib/chat/agentTools";
+import {
+  parsePlanToolSteps,
+  planTask,
+  reviewPlan,
+  stepContext,
+  type PlanStep
+} from "@/lib/chat/agentPlan";
+import { setAgentCapabilities, setAgentTurnContext } from "@/lib/chat/vaultFileTools";
+import { deleteCheckpointsForSessions, pruneCheckpointsToSessions } from "@/lib/chat/checkpoints";
+import { getRelativeDisplayPath } from "@/lib/fileSystem";
+import { normalizeVaultPath } from "@/lib/chat/vaultStaging";
+import { useAppStore } from "@/store/useAppStore";
+import { useStagedChangesStore } from "@/store/useStagedChangesStore";
 import {
   inlineAttachedFiles,
   MAX_ATTACHED_FILES,
@@ -29,6 +45,7 @@ import { selectMessagesForModel } from "@/lib/chat/contextWindow";
 import { attachImageData } from "@/lib/chat/imageAttachments";
 import { clampSelection, inlineSelectionContext } from "@/lib/chat/selectionContext";
 import {
+  MAX_SESSIONS,
   orderAndCapSessions,
   readSessions,
   writeSessions,
@@ -129,9 +146,26 @@ const IDLE_STREAM_VIEW: {
 // them into one write per interval reads as continuous typing all the same.
 const STREAM_FLUSH_MS = 60;
 
-// Hard cap on tool-call round trips per send, guarding against a model that
-// keeps calling tools without ever settling on a final answer.
-const MAX_ITERATIONS = 8;
+// How many characters of a step's closing reply become the one-sentence result
+// carried into the next step (see agentCompactContext).
+const STEP_RESULT_CHARS = 240;
+
+// The activity line is keyed by tool name; the separate planning call is not a
+// tool, so it gets a name of its own rather than leaving the wait to the idle
+// filler (see TOOL_ACTIVITY_KEYS in ChatPanel).
+export const PLANNING_ACTIVITY = "__planning__";
+
+// Endpoint/model combinations whose planning call came back unusable twice.
+// Same mechanism as noVisionModels below: a model that cannot produce a plan
+// will not start being able to mid-session, and paying for that extra call on
+// every multi-step request is waste the user notices. Keyed by endpoint *and*
+// model, so switching models is a fresh verdict.
+const noPlanModels = new Set<string>();
+const planFailureCounts = new Map<string, number>();
+
+// Chats that have already been told the planning was switched off for their
+// model — said once, not on every turn afterwards.
+const planNoticeShown = new Set<string>();
 
 // Endpoint/model combinations that have already rejected a request for carrying
 // an image (see streamAiChatStep's retry). Remembered for the app's lifetime so
@@ -199,8 +233,22 @@ function withPendingProposalNote(messages: AiChatMessage[]): AiChatMessage[] {
 }
 
 function persist(state: ChatState): void {
-  if (state.loadedFolderPath) {
-    void writeSessions(state.loadedFolderPath, state.sessions);
+  if (!state.loadedFolderPath) {
+    return;
+  }
+
+  void writeSessions(state.loadedFolderPath, state.sessions);
+
+  // Only once the FIFO cap can actually be biting: orderAndCapSessions drops
+  // the oldest sessions on write, and their checkpoint blobs would otherwise
+  // stay behind as orphans nothing can ever reach again.
+  if (state.sessions.length >= MAX_SESSIONS) {
+    void pruneCheckpointsToSessions(
+      state.loadedFolderPath,
+      orderAndCapSessions(state.sessions).map((session) => session.id)
+    )
+      .then(() => useStagedChangesStore.getState().refreshCheckpoints())
+      .catch(() => undefined);
   }
 }
 
@@ -306,6 +354,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return { sessions, activeSessionId };
     });
     persist(get());
+
+    // The undo checkpoints belong to the conversation that produced them —
+    // otherwise their full-text blobs pile up in `.scribedog/` for a chat that
+    // no longer exists, with nothing left to hang an undo button on.
+    const folderPath = get().loadedFolderPath;
+
+    if (folderPath) {
+      void deleteCheckpointsForSessions(folderPath, [id])
+        .then(() => useStagedChangesStore.getState().refreshCheckpoints())
+        .catch(() => undefined);
+    }
   },
   setFolder: async (folderPath) => {
     if (folderPath === get().loadedFolderPath) {
@@ -379,8 +438,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       ? get().sessions.find((session) => session.id === get().activeSessionId) ?? null
       : null;
 
+    // A new turn starts without the previous turn's task list: leaving it would
+    // show a finished (or half-run) plan above an answer it has nothing to do
+    // with, and the outer loop below would have to guess which of the two it is.
     const session: ChatSession = existing
-      ? { ...existing, messages: [...existing.messages, userMessage], updatedAt: now }
+      ? { ...existing, messages: [...existing.messages, userMessage], plan: undefined, updatedAt: now }
       : {
           id: createId(),
           title: deriveTitle(content),
@@ -519,16 +581,62 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }));
     };
 
+    // The turn's task list, kept on the session: the chat renders it live, and
+    // it survives a reload the way the transcript does.
+    const setPlan = (plan: PlanStep[] | undefined) => {
+      set((state) => ({
+        sessions: state.sessions.map((entry) =>
+          entry.id === session.id ? { ...entry, plan, updatedAt: Date.now() } : entry
+        )
+      }));
+    };
+
+    const readPlan = (): PlanStep[] =>
+      get().sessions.find((entry) => entry.id === session.id)?.plan ?? [];
+
+    // The agent's capabilities for this turn. Read once, unlike the knowledge
+    // base toggle: these are settings in a dialog, not something the user flips
+    // while an answer is coming in.
+    const fileAccessEnabled = aiSettings.agentFileAccess;
+    // The same switches, enforced a second time where the tools run: a tool
+    // name resolved through an alias must not slip past the consent gate that
+    // "the model was never offered this tool" normally provides.
+    setAgentCapabilities({ fileAccess: fileAccessEnabled, allowDelete: aiSettings.agentAllowDelete });
+    const planToolsEnabled = aiSettings.agentPlanning === "model";
+    const maxIterations = aiSettings.agentMaxIterations;
+    const maxPlanSteps = aiSettings.agentMaxPlanSteps;
+    const modelKey = visionKey(aiSettings);
+
+    // A proposal for the OPEN document is a widget in the editor, not a staged
+    // entry — this registers the marker that makes the paw in the tree and the
+    // chat's pending-changes card aware of it (see markEditorProposal).
+    const markOpenDocumentProposal = (messageIndex: number) => {
+      const { folderPath, selectedFilePath } = useAppStore.getState();
+
+      if (folderPath && selectedFilePath) {
+        useStagedChangesStore
+          .getState()
+          .markEditorProposal(
+            normalizeVaultPath(getRelativeDisplayPath(folderPath, selectedFilePath)),
+            session.id,
+            messageIndex
+          );
+      }
+    };
+
     try {
-      let iterations = 0;
-      // Whether this turn has already given the user something to accept in the
-      // editor. If it has, the reply needs no "apply" button — the review widget
-      // is the affordance.
+      // Whether this turn has already given the user something to accept —
+      // either in the editor or as a staged file change. If it has, the reply
+      // needs no "apply" button: the review widget (or the paw) is the
+      // affordance.
       let turnProposedEdit = false;
       // Set when the turn ended on a plain text reply that the model did not
       // flag: the one case where it never got the chance to (see
       // detectPendingSuggestion). Resolved once the turn is otherwise finished.
-      let unflaggedReply: { index: number; text: string } | null = null;
+      // A holder rather than a plain `let`: it is assigned inside runToolLoop,
+      // and TypeScript does not track assignments across a closure boundary —
+      // read back directly it would narrow to `null` at every use site.
+      const unflaggedReply: { value: { index: number; text: string } | null } = { value: null };
       // Notes the knowledge base tools surfaced during this turn, deduplicated.
       // Collected across all steps: the model typically searches in one step
       // and reads in the next, and both are sources of the eventual answer.
@@ -536,198 +644,435 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Whether this model has been found to reject requests carrying an image.
       // Starts true when an earlier turn already ran into it, and is set the
       // moment a step only came back after its images were dropped.
-      let noVision = noVisionModels.has(visionKey(aiSettings));
+      let noVision = noVisionModels.has(modelKey);
+      // Said after the turn rather than in the middle of it: an assistant
+      // bubble about a setting, appended between two working steps, is a turn
+      // the model then has to read back as part of its own history.
+      let planDisabledNotice = false;
 
-      while (iterations < MAX_ITERATIONS) {
-        iterations += 1;
+      /**
+       * The plan tools of the "model" mode. Handled here rather than in
+       * executeTool because the list lives on the session: the model writes it,
+       * the store owns it — which is also where agentMaxPlanSteps is enforced,
+       * with the tool result saying so instead of silently swallowing steps.
+       */
+      const executePlanTool = (name: string, args: Record<string, unknown>): ToolResult => {
+        if (name === "create_plan" || name === "update_plan") {
+          const proposed = parsePlanToolSteps(args, maxPlanSteps);
 
-        // Re-read from the store each iteration rather than reusing an array
-        // captured before the loop started: after each tool result the
-        // session's message history has grown, and re-trimming against the
-        // current history is what keeps the trimmed window valid (see
-        // selectMessagesForModel's user-turn-start guarantee).
-        const current = get().sessions.find((entry) => entry.id === session.id);
+          if (proposed.length === 0) {
+            return {
+              content: "Error: no usable steps given. Pass steps as [{title, instruction}, …]."
+            };
+          }
 
-        if (!current) {
-          break;
+          // update_plan replaces only what is outstanding; anything already
+          // settled stays exactly as it is.
+          const settled =
+            name === "update_plan" ? readPlan().filter((entry) => entry.status !== "pending") : [];
+          const room = Math.max(1, maxPlanSteps - settled.length);
+          const capped = proposed.slice(0, room);
+          const next = [...settled.map((entry) => ({ ...entry })), ...capped];
+
+          // The first outstanding step is the one being worked on from here.
+          const running = next.findIndex((entry) => entry.status === "pending");
+
+          if (running !== -1) {
+            next[running] = { ...next[running], status: "running" };
+          }
+
+          setPlan(next);
+
+          const cut =
+            capped.length < proposed.length ? ` (cut to the limit of ${maxPlanSteps} steps in total)` : "";
+
+          return {
+            content:
+              `OK: ${capped.length} step(s) recorded${cut}. The plan is not the work — start the first ` +
+              "outstanding step now."
+          };
         }
 
-        const modelMessages = withPendingProposalNote(
-          selectMessagesForModel(
-            // Expanded before trimming: the selection and attachment notes
-            // become part of the content and are charged against the budget
-            // along with it. Re-read per iteration like the history itself, so
-            // a file detached mid-turn is gone from the next step's request
-            // (see currentAttachedFiles for the one case that does not hold).
-            inlineAttachedFiles(
-              inlineSelectionContext(current.messages),
-              currentAttachedFiles(),
-              aiSettings.contextLength
-            ),
-            systemEstimate,
-            aiSettings.contextLength
-          )
+        const plan = readPlan();
+        const index = plan.findIndex((entry) => entry.status === "running" || entry.status === "pending");
+
+        if (index === -1) {
+          return {
+            content: "Error: no step is open. Call create_plan first if this request needs several steps."
+          };
+        }
+
+        const result = typeof args.result === "string" ? args.result.trim() : "";
+        const next = plan.map((entry, at) =>
+          at === index
+            ? { ...entry, status: "done" as const, ...(result ? { result } : {}) }
+            : { ...entry }
         );
+        const following = next.findIndex((entry) => entry.status === "pending");
 
-        // A fresh step is the model thinking again, whatever tool the last one
-        // ran — the panel falls back to its idle wording until a call names
-        // something more specific.
-        set({ streamingActivity: null });
+        if (following !== -1) {
+          next[following] = { ...next[following], status: "running" };
+        }
 
-        const step = await streamAiChatStep(
-          aiSettings,
-          // The history only stores image paths; the payloads are read from
-          // disk here, for this request only (see attachImageData).
-          {
-            // A model already known to have no vision gets the note in place of
-            // the image right away — reading and encoding a payload it would
-            // only reject again is wasted work on both sides.
-            messages: noVision ? stripChatImages(modelMessages) : await attachImageData(modelMessages),
-            assistantInstruction: assistant.instruction,
-            // Re-read per step rather than captured before the loop: the user
-            // can switch the knowledge base off mid-turn, and the next step
-            // must not still be offered tools that read their notes (again
-            // with the caveat in currentUseKnowledgeBase).
-            vaultSearchEnabled: isKnowledgeBaseReady() && currentUseKnowledgeBase()
-          },
-          {
-            onText: (chunk) => {
-              pendingText += chunk;
-              scheduleFlush();
+        setPlan(next);
+
+        return {
+          content:
+            following === -1
+              ? `OK: step ${index + 1} closed. That was the last one — tell the user what you did.`
+              : `OK: step ${index + 1} closed. ${
+                  next.filter((entry) => entry.status === "pending").length + 1
+                } step(s) left; start the next one now.`
+        };
+      };
+
+      /**
+       * One run of the tool loop: the model works until it answers without
+       * calling a tool, or until the iteration cap stops it.
+       *
+       * `historyFrom` is where the request's history starts. 0 means the whole
+       * conversation (the v2 behaviour, and what agentCompactContext: false
+       * keeps). For a plan step with compact context it is that step's own
+       * instruction message — which already carries the goal, the plan and one
+       * sentence per finished step, so the window stays constant over ten steps
+       * instead of growing with each one.
+       *
+       * Answers with the step's closing text, which becomes the plan step's
+       * one-line result.
+       */
+      const runToolLoop = async (historyFrom: number): Promise<string> => {
+        let iterations = 0;
+        let finalText = "";
+
+        while (iterations < maxIterations) {
+          iterations += 1;
+
+          // Re-read from the store each iteration rather than reusing an array
+          // captured before the loop started: after each tool result the
+          // session's message history has grown, and re-trimming against the
+          // current history is what keeps the trimmed window valid (see
+          // selectMessagesForModel's user-turn-start guarantee).
+          const current = get().sessions.find((entry) => entry.id === session.id);
+
+          if (!current) {
+            break;
+          }
+
+          const history = historyFrom > 0 ? current.messages.slice(historyFrom) : current.messages;
+
+          const modelMessages = withPendingProposalNote(
+            selectMessagesForModel(
+              // Expanded before trimming: the selection and attachment notes
+              // become part of the content and are charged against the budget
+              // along with it. Re-read per iteration like the history itself, so
+              // a file detached mid-turn is gone from the next step's request
+              // (see currentAttachedFiles for the one case that does not hold).
+              inlineAttachedFiles(
+                inlineSelectionContext(history),
+                currentAttachedFiles(),
+                aiSettings.contextLength
+              ),
+              systemEstimate,
+              aiSettings.contextLength
+            )
+          );
+
+          // A fresh step is the model thinking again, whatever tool the last one
+          // ran — the panel falls back to its idle wording until a call names
+          // something more specific.
+          set({ streamingActivity: null });
+
+          const step = await streamAiChatStep(
+            aiSettings,
+            // The history only stores image paths; the payloads are read from
+            // disk here, for this request only (see attachImageData).
+            {
+              // A model already known to have no vision gets the note in place of
+              // the image right away — reading and encoding a payload it would
+              // only reject again is wasted work on both sides.
+              messages: noVision ? stripChatImages(modelMessages) : await attachImageData(modelMessages),
+              assistantInstruction: assistant.instruction,
+              // Re-read per step rather than captured before the loop: the user
+              // can switch the knowledge base off mid-turn, and the next step
+              // must not still be offered tools that read their notes (again
+              // with the caveat in currentUseKnowledgeBase).
+              vaultSearchEnabled: isKnowledgeBaseReady() && currentUseKnowledgeBase(),
+              // Re-read per step like the knowledge base toggle: the user can
+              // open or close a note while the turn is running, and the rules
+              // about the passage tools have to describe the editor as it is
+              // for THIS step (see NO_DOCUMENT_INSTRUCTION).
+              documentOpen: Boolean(useAppStore.getState().selectedFilePath),
+              fileAccessEnabled,
+              deleteEnabled: aiSettings.agentAllowDelete,
+              multiEditEnabled: aiSettings.agentMultiEdit,
+              planToolsEnabled
             },
-            onThinking: (chunk) => {
-              pendingThinking += chunk;
-              scheduleFlush();
+            {
+              onText: (chunk) => {
+                pendingText += chunk;
+                scheduleFlush();
+              },
+              onThinking: (chunk) => {
+                pendingThinking += chunk;
+                scheduleFlush();
+              },
+              // Announced while the model is still writing the call's arguments,
+              // which is the part of a tool step that takes the longest.
+              onToolCall: (name) => {
+                flushStream();
+                set({ streamingActivity: name });
+              }
             },
-            // Announced while the model is still writing the call's arguments,
-            // which is the part of a tool step that takes the longest.
-            onToolCall: (name) => {
-              flushStream();
-              set({ streamingActivity: name });
+            abortController.signal
+          );
+
+          // Everything below appends the step's own text as a message; the live
+          // copy has to be gone before it does.
+          clearStreamView();
+
+          // The step got through without its images: from here on the model is
+          // told it has no vision rather than being handed one again.
+          if (step.imagesDropped) {
+            noVision = true;
+            noVisionModels.add(modelKey);
+          }
+
+          if (step.toolCalls.length === 0) {
+            const index = appendMessage({
+              role: "assistant",
+              content: step.text,
+              // The notes this turn actually looked at, listed under the answer.
+              ...(turnSources.length > 0 ? { sources: turnSources } : {})
+            });
+
+            if (!turnProposedEdit && step.text.trim()) {
+              unflaggedReply.value = { index, text: step.text };
             }
-          },
+
+            return step.text;
+          }
+
+          const assistantIndex = appendMessage({
+            role: "assistant",
+            content: step.text,
+            toolCalls: step.toolCalls,
+            // The model's own call is the signal; the button appears on the very
+            // message whose text it flagged. Redundant next to a proposal it made
+            // in the same turn, which rule 9 tells it not to do — but a model that
+            // does both anyway must not produce two ways to apply one change.
+            ...(step.toolCalls.some((call) => call.name === FLAG_SUGGESTION_TOOL_NAME) &&
+            !turnProposedEdit &&
+            !step.toolCalls.some(
+              (call) =>
+                EDITING_TOOL_NAMES.includes(call.name) || STAGING_TOOL_NAMES.includes(call.name)
+            )
+              ? { suggestsEdit: true }
+              : {})
+          });
+
+          if (step.text.trim()) {
+            finalText = step.text;
+          }
+
+          if (
+            step.toolCalls.some(
+              (call) =>
+                EDITING_TOOL_NAMES.includes(call.name) || STAGING_TOOL_NAMES.includes(call.name)
+            )
+          ) {
+            turnProposedEdit = true;
+          }
+
+          // Staged entries record which message proposed them, so the undo
+          // button ends up on the turn that did the work.
+          setAgentTurnContext(session.id, assistantIndex);
+
+          const imagePaths: string[] = [];
+
+          for (const call of step.toolCalls) {
+            // Several calls in one step run one after the other, so the line
+            // follows along rather than staying on the first of them.
+            set({ streamingActivity: call.name });
+
+            const result = PLAN_TOOL_NAMES.includes(call.name)
+              ? executePlanTool(call.name, call.arguments)
+              : await executeTool(call.name, call.arguments);
+            // get_image resolved a picture the model cannot be shown: it is told
+            // so where it asked, instead of being promised an image that the next
+            // request would only be rejected for. The panel renders this as the
+            // failed-tool line, which is what actually happened.
+            const missingVision = Boolean(result.imagePath) && noVision;
+
+            appendMessage({
+              role: "tool",
+              toolCallId: call.id,
+              toolName: call.name,
+              content: missingVision ? IMAGE_UNSUPPORTED_TOOL_RESULT : result.content,
+              // A missing vision model is not something the model can retry its
+              // way out of, whatever the tool itself reported.
+              ...(result.retryable && !missingVision ? { retryable: true } : {})
+            });
+
+            // A proposal that was actually opened, not one the editor refused.
+            if (EDITING_TOOL_NAMES.includes(call.name) && !result.content.startsWith("Error:")) {
+              markOpenDocumentProposal(assistantIndex);
+            }
+
+            if (result.imagePath && !missingVision && !imagePaths.includes(result.imagePath)) {
+              imagePaths.push(result.imagePath);
+            }
+
+            for (const source of result.sources ?? []) {
+              // A note read after being found appears in both tool results; the
+              // more precise entry (the one naming a section) wins, so the source
+              // list points at the passage rather than at the whole file.
+              const existing = turnSources.findIndex((entry) => entry.path === source.path);
+
+              if (existing === -1) {
+                turnSources.push(source);
+              } else if (source.headingPath && !turnSources[existing].headingPath) {
+                turnSources[existing] = source;
+              }
+            }
+          }
+
+          // A tool result is plain text on every provider bar Anthropic, so an
+          // image get_image resolved cannot travel back inside it. It becomes one
+          // user turn after all tool results instead — the shape every provider
+          // family accepts images in. Collected across the turn's calls so two
+          // get_image calls stay a single turn (Anthropic rejects two
+          // consecutive user turns). Model-facing text, like the tool results
+          // themselves; the chat UI does not render this turn.
+          if (imagePaths.length > 0) {
+            const isSingle = imagePaths.length === 1;
+
+            appendMessage({
+              role: "user",
+              content:
+                `Here ${isSingle ? "is the image" : "are the images"} you requested ` +
+                `(${imagePaths.join(", ")}). Look at ${isSingle ? "it" : "them"} and answer my question.`,
+              imagePaths
+            });
+          }
+
+          // Flagging a suggestion ends the turn: the flag says the reply the model
+          // just wrote is what the user acts on, so another step would only append
+          // a second bubble restating it — and the "apply" button hangs on the
+          // flagged message, not on that restatement. The tool result is still
+          // appended above (a tool_calls turn without one is an invalid history on
+          // OpenAI and Anthropic alike), the loop just stops here.
+          if (step.toolCalls.every((call) => call.name === FLAG_SUGGESTION_TOOL_NAME)) {
+            break;
+          }
+
+          if (iterations >= maxIterations) {
+            appendMessage({ role: "assistant", content: i18n.t("chat.agentStopped") });
+          }
+        }
+
+        return finalText;
+      };
+
+      // --- Planning ---------------------------------------------------------
+      //
+      // Only in "auto" mode, and never for an action turn: those carry a
+      // generated instruction about one answer, which is a single piece of work
+      // by construction.
+      let plan: PlanStep[] | null = null;
+
+      if (aiSettings.agentPlanning === "auto" && !action && !noPlanModels.has(modelKey)) {
+        set({ streamingActivity: PLANNING_ACTIVITY });
+
+        const outcome = await planTask(
+          aiSettings,
+          content,
+          { maxSteps: maxPlanSteps, fileAccess: fileAccessEnabled },
           abortController.signal
         );
 
-        // Everything below appends the step's own text as a message; the live
-        // copy has to be gone before it does.
-        clearStreamView();
+        if (outcome.kind === "steps") {
+          plan = outcome.steps;
+          planFailureCounts.delete(modelKey);
+        } else if (outcome.kind === "unusable") {
+          // Same shape as the vision fallback: a model that cannot produce a
+          // plan twice will not start being able to, and every further
+          // multi-step request would pay for a call whose answer is thrown away.
+          const failures = (planFailureCounts.get(modelKey) ?? 0) + 1;
+          planFailureCounts.set(modelKey, failures);
 
-        // The step got through without its images: from here on the model is
-        // told it has no vision rather than being handed one again.
-        if (step.imagesDropped) {
-          noVision = true;
-          noVisionModels.add(visionKey(aiSettings));
+          if (failures >= 2 && !noPlanModels.has(modelKey)) {
+            noPlanModels.add(modelKey);
+            planDisabledNotice = !planNoticeShown.has(modelKey);
+            planNoticeShown.add(modelKey);
+          }
+        } else {
+          planFailureCounts.delete(modelKey);
         }
+      }
 
-        if (step.toolCalls.length === 0) {
-          const index = appendMessage({
-            role: "assistant",
-            content: step.text,
-            // The notes this turn actually looked at, listed under the answer.
-            ...(turnSources.length > 0 ? { sources: turnSources } : {})
-          });
+      if (plan && plan.length > 0) {
+        setPlan(plan);
 
-          if (!turnProposedEdit && step.text.trim()) {
-            unflaggedReply = { index, text: step.text };
+        for (let index = 0; index < readPlan().length; index += 1) {
+          if (abortController.signal.aborted) {
+            break;
           }
 
-          break;
-        }
+          setPlan(
+            readPlan().map((entry, at) => (at === index ? { ...entry, status: "running" } : entry))
+          );
 
-        appendMessage({
-          role: "assistant",
-          content: step.text,
-          toolCalls: step.toolCalls,
-          // The model's own call is the signal; the button appears on the very
-          // message whose text it flagged. Redundant next to a proposal it made
-          // in the same turn, which rule 9 tells it not to do — but a model that
-          // does both anyway must not produce two ways to apply one change.
-          ...(step.toolCalls.some((call) => call.name === FLAG_SUGGESTION_TOOL_NAME) &&
-          !turnProposedEdit &&
-          !step.toolCalls.some((call) => EDITING_TOOL_NAMES.includes(call.name))
-            ? { suggestsEdit: true }
-            : {})
-        });
-
-        if (step.toolCalls.some((call) => EDITING_TOOL_NAMES.includes(call.name))) {
-          turnProposedEdit = true;
-        }
-
-        const imagePaths: string[] = [];
-
-        for (const call of step.toolCalls) {
-          // Several calls in one step run one after the other, so the line
-          // follows along rather than staying on the first of them.
-          set({ streamingActivity: call.name });
-
-          const result = await executeTool(call.name, call.arguments);
-          // get_image resolved a picture the model cannot be shown: it is told
-          // so where it asked, instead of being promised an image that the next
-          // request would only be rejected for. The panel renders this as the
-          // failed-tool line, which is what actually happened.
-          const missingVision = Boolean(result.imagePath) && noVision;
-
-          appendMessage({
-            role: "tool",
-            toolCallId: call.id,
-            toolName: call.name,
-            content: missingVision ? IMAGE_UNSUPPORTED_TOOL_RESULT : result.content,
-            // A missing vision model is not something the model can retry its
-            // way out of, whatever the tool itself reported.
-            ...(result.retryable && !missingVision ? { retryable: true } : {})
+          // The step's instruction goes into the history as a hidden user turn:
+          // it is model-facing text nobody wrote, so the transcript renders
+          // nothing for it (see the "planStep" action) — the step list above the
+          // answer is what shows the user where the agent is.
+          const stepStart = appendMessage({
+            role: "user",
+            action: "planStep",
+            content: stepContext(content, readPlan(), index)
           });
 
-          if (result.imagePath && !missingVision && !imagePaths.includes(result.imagePath)) {
-            imagePaths.push(result.imagePath);
+          const finalText = await runToolLoop(aiSettings.agentCompactContext ? stepStart : 0);
+          const result = finalText.trim().replace(/\s+/g, " ").slice(0, STEP_RESULT_CHARS);
+
+          setPlan(
+            readPlan().map((entry, at) =>
+              at === index
+                ? { ...entry, status: "done" as const, ...(result ? { result } : {}) }
+                : entry
+            )
+          );
+
+          if (abortController.signal.aborted) {
+            break;
           }
 
-          for (const source of result.sources ?? []) {
-            // A note read after being found appears in both tool results; the
-            // more precise entry (the one naming a section) wins, so the source
-            // list points at the passage rather than at the whole file.
-            const existing = turnSources.findIndex((entry) => entry.path === source.path);
+          // The between-steps check: with what is known now, do the remaining
+          // steps still fit? Skipped after the last one, where there is nothing
+          // left to revise.
+          if (readPlan().some((entry) => entry.status === "pending")) {
+            const review = await reviewPlan(
+              aiSettings,
+              content,
+              readPlan(),
+              maxPlanSteps,
+              abortController.signal
+            );
 
-            if (existing === -1) {
-              turnSources.push(source);
-            } else if (source.headingPath && !turnSources[existing].headingPath) {
-              turnSources[existing] = source;
+            if (!review.keep) {
+              const settled = readPlan().filter((entry) => entry.status !== "pending");
+
+              setPlan([...settled, ...review.steps].slice(0, maxPlanSteps));
+              appendMessage({ role: "assistant", content: i18n.t("chat.planAdjusted") });
             }
           }
         }
+      } else {
+        await runToolLoop(0);
+      }
 
-        // A tool result is plain text on every provider bar Anthropic, so an
-        // image get_image resolved cannot travel back inside it. It becomes one
-        // user turn after all tool results instead — the shape every provider
-        // family accepts images in. Collected across the turn's calls so two
-        // get_image calls stay a single turn (Anthropic rejects two
-        // consecutive user turns). Model-facing text, like the tool results
-        // themselves; the chat UI does not render this turn.
-        if (imagePaths.length > 0) {
-          const isSingle = imagePaths.length === 1;
-
-          appendMessage({
-            role: "user",
-            content:
-              `Here ${isSingle ? "is the image" : "are the images"} you requested ` +
-              `(${imagePaths.join(", ")}). Look at ${isSingle ? "it" : "them"} and answer my question.`,
-            imagePaths
-          });
-        }
-
-        // Flagging a suggestion ends the turn: the flag says the reply the model
-        // just wrote is what the user acts on, so another step would only append
-        // a second bubble restating it — and the "apply" button hangs on the
-        // flagged message, not on that restatement. The tool result is still
-        // appended above (a tool_calls turn without one is an invalid history on
-        // OpenAI and Anthropic alike), the loop just stops here.
-        if (step.toolCalls.every((call) => call.name === FLAG_SUGGESTION_TOOL_NAME)) {
-          break;
-        }
-
-        if (iterations >= MAX_ITERATIONS) {
-          appendMessage({ role: "assistant", content: i18n.t("chat.agentStopped") });
-        }
+      if (planDisabledNotice) {
+        appendMessage({ role: "assistant", content: i18n.t("chat.planUnavailable") });
       }
 
       set({ isStreaming: false, ...IDLE_STREAM_VIEW, error: null });
@@ -736,11 +1081,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // more question, and the reply it judges is already on screen. Leaving the
       // turn "running" for it would hold the composer for a request the user is
       // not waiting for — the button simply appears a moment later.
-      if (unflaggedReply && !abortController.signal.aborted) {
+      // …and only while a note is open: with none, the extra request could only
+      // ever end in a button that has no document to write into.
+      if (
+        unflaggedReply.value &&
+        !abortController.signal.aborted &&
+        useAppStore.getState().selectedFilePath
+      ) {
+        const pending = unflaggedReply.value;
         const verdict = await resolveUnflaggedReply(
           aiSettings,
           content,
-          unflaggedReply.text,
+          pending.text,
           abortController.signal
         );
 
@@ -749,9 +1101,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         // refused — an unsettled review from an earlier turn blocks it — and
         // then the button is the fallback, which is what it always was.
         if (verdict.kind === "insert" && proposeComposedText(verdict.text)) {
-          markReplyOutcome(unflaggedReply.index, { proposedEdit: true });
+          markReplyOutcome(pending.index, { proposedEdit: true });
         } else if (verdict.kind !== "none") {
-          markReplyOutcome(unflaggedReply.index, { suggestsEdit: true });
+          markReplyOutcome(pending.index, { suggestsEdit: true });
         }
       }
     } catch (error) {

@@ -157,11 +157,11 @@
 }
 
 .ai-thinking-toggle.ai-thinking-toggle[aria-pressed="true"] {
-  border-color: rgba(192, 132, 252, 0.55);
-  background: rgba(168, 85, 247, 0.18);
-  color: rgb(192, 132, 252);
+  border-color: rgba(var(--accent-light-rgb), 0.55);
+  background: rgba(var(--accent-rgb), 0.18);
+  color: rgb(var(--accent-light-rgb));
 }
 
 .ai-thinking-toggle.ai-thinking-toggle[aria-pressed="true"]:hover {
-  background: rgba(168, 85, 247, 0.28);
+  background: rgba(var(--accent-rgb), 0.28);
 }

@@ -16,6 +16,7 @@ import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { Toolbar } from "@/components/Toolbar";
 import { FileLinkSuggestionPopover } from "@/components/editor/FileLinkSuggestionPopover";
 import { DetailsPanel } from "@/components/editor/DetailsPanel";
+import { StagedChangeBar } from "@/components/editor/StagedChangeBar";
 import { useAiEditorActions } from "@/components/editor/useAiEditorActions";
 import { useEditorDictation } from "@/components/editor/useEditorDictation";
 import { useFileLinkSuggestion } from "@/components/editor/useFileLinkSuggestion";
@@ -23,13 +24,21 @@ import {
   acceptAllAiSuggestions,
   addAiSuggestion,
   clearAiSuggestions,
-  getAiSuggestions
+  getAiSuggestions,
+  setAiSuggestionOverride
 } from "@/lib/aiSuggestionWidget";
 import type { ImageWidthChange, ProposalOutcome } from "@/lib/chat/agentTools";
+import {
+  findStagedChange,
+  normalizeVaultPath,
+  stagedChangeKind
+} from "@/lib/chat/vaultStaging";
+import { buildStagedPreview } from "@/lib/editor/stagedPreview";
 import { normalizeImageSrc } from "@/lib/chat/imageAttachments";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { buildEditorExtensions } from "@/lib/editor/extensions";
 import { duplicatedImageSources } from "@/lib/editor/documentImages";
+import { isDuplicateInsertion, rewrittenAnchorRange } from "@/lib/editor/duplicateInsertion";
 import {
   buildFileLinkHref,
   buildVaultFileOptions,
@@ -55,6 +64,7 @@ import { findTextRange } from "@/lib/editor/textSearch";
 import {
   allowFileAccess,
   getLastOpenedFolderPath,
+  getRelativeDisplayPath,
   getRelativeImageMarkdownPath,
   guessImageMimeType,
   saveImageToFolder
@@ -65,6 +75,7 @@ import { couldBeShortcut } from "@/lib/shortcuts/binding";
 import { isRetiredDefault, matchShortcut } from "@/lib/shortcuts/resolve";
 import { useAppStore } from "@/store/useAppStore";
 import { useChatStore } from "@/store/useChatStore";
+import { useStagedChangesStore } from "@/store/useStagedChangesStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
 import { useShortcutsStore } from "@/store/useShortcutsStore";
@@ -160,6 +171,31 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const fileLinkOptions = useMemo(
     () => (filePath ? buildVaultFileOptions(folderPath, vaultFilePaths, filePath) : []),
     [folderPath, vaultFilePaths, filePath]
+  );
+
+  // What the vault agent has proposed for THIS file, if anything. Read from the
+  // store rather than passed down: the proposal belongs to the file, not to the
+  // component tree above it, and threading it through App and DocumentPanel
+  // would only add two more props that mean nothing to either.
+  //
+  // The marker entry for the open document is filtered out on purpose — those
+  // proposals are already ProseMirror widgets in this very editor (see
+  // markEditorProposal), and previewing them again would show each change twice.
+  const stagedChange = useStagedChangesStore((state) => {
+    if (!folderPath || !filePath) {
+      return undefined;
+    }
+
+    const entry = findStagedChange(
+      state.changes,
+      normalizeVaultPath(getRelativeDisplayPath(folderPath, filePath))
+    );
+
+    return entry && !entry.editorProposal ? entry : undefined;
+  });
+  const isApplyingStagedChange = useStagedChangesStore((state) => state.isApplying);
+  const [stagedPreviewStats, setStagedPreviewStats] = useState<{ hunks: number; missing: number } | null>(
+    null
   );
 
   const ai = useAiEditorActions({ editorRef, markdown, filePath, onAiLoadingChange, onAiPendingChange });
@@ -691,9 +727,47 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       return "duplicate";
     }
 
+    // The anchored insertion that is really a revision: what the model wants
+    // put "after" the anchor IS the anchor, rewritten. Proposing it as a
+    // replacement of that passage is the only reading that makes sense —
+    // inserting it would leave the old wording standing above the new, which
+    // is how a reworked poem ended up with every changed line twice.
+    //
+    // Not an error the model has to correct: its intent is unambiguous here,
+    // and bouncing it back would cost a round trip to arrive at exactly this.
+    const rewritten = anchor?.range
+      ? rewrittenAnchorRange(doc, anchor.range, markdownText)
+      : null;
+
+    if (rewritten) {
+      addAiSuggestion(currentEditor, {
+        id: createSuggestionId(),
+        from: rewritten.from,
+        to: rewritten.to,
+        replacement: markdownText
+      });
+
+      return "proposed";
+    }
+
+    // Everything being inserted is already in the document, and it is not the
+    // anchor rewritten (that was just ruled out above) — the model is
+    // rewriting something, but nothing here can tell what. That one goes back
+    // with a pointer to replace_passage.
+    //
+    // Checked whether or not an anchor was given: an anchor only explains a
+    // duplicate when the match sits inside it (rewrittenAnchorRange, above). A
+    // model that names an anchor elsewhere and re-inserts a passage it already
+    // placed in an earlier turn is the same mistake as the unanchored case —
+    // this is the bug that duplicated a poem line by line, one accepted
+    // proposal at a time.
+    if (isDuplicateInsertion(doc, markdownText)) {
+      return "text-duplicate";
+    }
+
     // An empty range: nothing gets tinted red, the proposal is purely the new
     // text at that position.
-    const from = anchor ?? currentEditor.state.selection.from;
+    const from = anchor ? anchor.position : currentEditor.state.selection.from;
 
     addAiSuggestion(currentEditor, { id: createSuggestionId(), from, to: from, replacement: markdownText });
     return "proposed";
@@ -1070,6 +1144,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     editorRef.current?.commands.focus("start");
   }, [editorFocusRequestId]);
 
+  // Runs *before* the staged-preview effect below on purpose: effects fire in
+  // declaration order, so a preview added first would be wiped by this clear on
+  // the very mount that opened the file.
   // Pending chat proposals are anchored to positions in *this* document —
   // switching files (or having the content replaced from outside) would leave
   // them pointing at unrelated text, so they're dropped up front.
@@ -1080,6 +1157,10 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       clearAiSuggestions(currentEditor);
     }
   }, [filePath]);
+
+  const stagedRelativePath =
+    folderPath && filePath ? normalizeVaultPath(getRelativeDisplayPath(folderPath, filePath)) : "";
+
 
   // Kept in a ref so the sync effect below doesn't re-run for a new callback
   // identity — it may only react to actual content changes.
@@ -1115,12 +1196,106 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     }
   }, [markdown, editor, filePath]);
 
+  // Declared last on purpose. Every effect above can still move the document
+  // out from under a proposal on the very mount that opens the file — the
+  // filePath effect clears the suggestion list, and the sync effect above may
+  // call setContent, which replaces the doc the positions were computed
+  // against. Running after both means the document is settled before the
+  // preview is built; before them the preview was added and then silently
+  // wiped, so the change only appeared once the user left the file and came
+  // back.
+  // Renders a staged file change as the familiar red/green review, and locks the
+  // document while it is on screen.
+  //
+  // The lock is the load-bearing part. The proposal was computed against the
+  // file's content as the agent read it; letting the user type underneath it
+  // would drift the document away from that baseline, and applying the change
+  // afterwards would overwrite their words without either side noticing.
+  useEffect(() => {
+    const currentEditor = editorRef.current;
+
+
+    if (!currentEditor || currentEditor.isDestroyed) {
+      return;
+    }
+
+    if (!stagedChange) {
+      setAiSuggestionOverride(currentEditor, null);
+      currentEditor.setEditable(true);
+      setStagedPreviewStats(null);
+      return;
+    }
+
+    currentEditor.setEditable(false);
+
+    // The review's own accept/discard buttons belong to the chat agent's
+    // proposals, where they edit the document. A staged change is not a
+    // document edit — it has to be applied through the staging layer, or the
+    // entry survives the accept and the review is rebuilt from it: the text
+    // ends up in the document a second time and the green block stays.
+    setAiSuggestionOverride(currentEditor, {
+      onAccept: () => void useStagedChangesStore.getState().applyOne(stagedRelativePath),
+      onDiscard: () => void useStagedChangesStore.getState().discardOne(stagedRelativePath)
+    });
+
+    const kind = stagedChangeKind(stagedChange);
+
+    // A deletion or a plain rename changes no text, so there is no diff to
+    // show — the bar says what is proposed, and the lock keeps the file from
+    // drifting away from the baseline the entry was built on.
+    if (kind === "delete" || kind === "rename") {
+      setStagedPreviewStats({ hunks: 0, missing: 0 });
+
+      return () => {
+        if (!currentEditor.isDestroyed) {
+          setAiSuggestionOverride(currentEditor, null);
+          currentEditor.setEditable(true);
+        }
+      };
+    }
+
+    clearAiSuggestions(currentEditor);
+
+    const preview = buildStagedPreview(
+      currentEditor.state.doc,
+      stagedChange.baseContent ?? "",
+      stagedChange.content ?? ""
+    );
+
+    for (const suggestion of preview.suggestions) {
+      addAiSuggestion(currentEditor, { id: createSuggestionId(), ...suggestion });
+    }
+
+    setStagedPreviewStats({ hunks: preview.suggestions.length, missing: preview.missing });
+
+
+    return () => {
+
+      if (!currentEditor.isDestroyed) {
+        setAiSuggestionOverride(currentEditor, null);
+        clearAiSuggestions(currentEditor);
+        currentEditor.setEditable(true);
+      }
+    };
+  }, [stagedChange, editor, markdown, stagedRelativePath]);
+
   if (!editor) {
     return null;
   }
 
   return (
     <div className="editor-view">
+      {stagedChange ? (
+        <StagedChangeBar
+          change={stagedChange}
+          hunkCount={stagedPreviewStats?.hunks ?? 0}
+          missingHunks={stagedPreviewStats?.missing ?? 0}
+          isApplying={isApplyingStagedChange}
+          onAccept={() => void useStagedChangesStore.getState().applyOne(stagedRelativePath)}
+          onDiscard={() => void useStagedChangesStore.getState().discardOne(stagedRelativePath)}
+        />
+      ) : null}
+
       {dictation.status === "recording" || dictation.status === "transcribing" ? (
         <VoiceRecordingBanner
           level={dictation.level}

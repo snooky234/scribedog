@@ -35,6 +35,8 @@ place to write it, with an AI assistant that respects one simple rule:
 - 🔗 **Linked notes** — link one note to another by dragging it in from the sidebar, from the link dialog, or by typing `[[`; a click opens the target, and an optional panel shows links and backlinks
 - 🤖 **AI built in, local by default** — rewrite or generate text with Ollama, Jan.ai, or LM Studio; cloud providers are strictly opt-in
 - 💬 **Agentic AI chat** — a side-panel chat that reads your document and proposes edits itself, each one reviewed before it touches the file; needs a capable (9B+) model, smaller models should stick to simple select-and-rewrite
+- 🗂️ **Vault-wide edits** — the chat can propose changes to *any* file in your vault, not just the open one, shown as the same red/green review when you open that file, and it can undo a whole batch of applied changes in one click
+- 🧭 **Multi-step plans** — for goals that span several files, the agent keeps a visible step-by-step plan instead of trying everything in one leap
 - 📚 **Knowledge base** — let the AI look things up across your own notes, not just the open file, and answer with the sources it used; searches by word or, opt-in, by meaning via an embedding model; folder by folder
 - 📎 **Files as context** — drag notes from the sidebar, or files straight from outside the app (text, Word, PDF, even images via OCR), onto the chat and ask about them directly
 - 🧩 **Custom assistants** — save your own system prompts ("translate to English", "make more formal", …) and switch between them right from the chat panel
@@ -69,6 +71,8 @@ notes — fluently, privately, and for free.
 |---|---|---|
 | 🤖 AI rewrite & insert | Rewrite, extend, or generate text in place, local or cloud model | `Ctrl+E` / right-click |
 | 💬 Agentic AI chat | Side-panel chat that reads your document and proposes edits via tool calls | `Ctrl+Shift+A` |
+| 🗂️ Vault-wide edits | The chat proposes changes to any file in your vault, reviewed as red/green diffs, with one-click revert | Open the affected file |
+| 🧭 Multi-step plans | Visible step-by-step plan for goals that touch several files | Chat panel, agent settings |
 | 📚 Knowledge base | The AI searches your whole folder of notes — by word or by meaning — and answers from them, listing its sources | Settings → Knowledge base |
 | 📎 Files as chat context | Drag notes or text files onto the chat panel and ask about their content | Drag & drop into chat |
 | ✅ AI spelling & grammar check | List of issues with suggested corrections, apply one by one or all at once | `Ctrl+Shift+X` / toolbar |
@@ -110,6 +114,9 @@ notes — fluently, privately, and for free.
 
   <img src="src/assets/scribe-dog-ai-chat.png" alt="ScribeDog agentic AI chat panel" width="700">
 
+- **Edits reach the whole vault, not just the open file** — ask for a change to a note you haven't even opened and the agent proposes it anyway. Since a closed file has no editor for a proposal to live in, it's staged instead: open that file afterward and it shows the exact same red/green review as an open-document edit, with the file locked against further typing until you accept, discard, or ask for a revision — so the change is always reviewed against the content it was actually computed from
+- **One-click undo for a whole batch** — applying staged changes writes a checkpoint first, so if a multi-file edit turns out wrong you can revert the entire batch in one step, not file by file
+- **Multi-step plans for goals spanning several files** — for something bigger than a single edit, the agent keeps a visible, numbered plan in the chat instead of trying to do everything in one reply; turn it on in the agent settings, either as a separate planning step before it starts or with the model maintaining its own plan as it works
 - **Model recommendation:** reliable tool-calling is genuinely hard for small models. Local models from roughly **9B parameters** upward (e.g. Qwen 3.5 9B, Gemma 4 12B) or any of the supported cloud models handle the chat's agentic tools well. **Below that**, a model tends to call tools incorrectly or not at all — for those, use the simple **select text → `Ctrl+E`** rewrite instead; it asks nothing of the model beyond writing text and works reliably even on tiny models.
 
 ### 📚 Knowledge base — the AI answers from your own notes

@@ -12,6 +12,9 @@ import { ZenMode } from "@/components/app/ZenMode";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { ChatSessionOverview } from "@/components/chat/ChatSessionOverview";
 import { registerEditorToolBridge } from "@/lib/chat/agentTools";
+import { setAiSuggestionsEmptyListener } from "@/lib/aiSuggestionWidget";
+import { findStagedChange, normalizeVaultPath } from "@/lib/chat/vaultStaging";
+import { useStagedChangesStore } from "@/store/useStagedChangesStore";
 import type { BatchEntry, PendingFolderRename } from "@/components/FileTree";
 import { useAppVersion } from "@/hooks/useAppVersion";
 import { CHAT_MAX_WIDTH, CHAT_MIN_WIDTH, useChatWidth } from "@/hooks/useChatWidth";
@@ -169,8 +172,23 @@ function App() {
         .replace(/\.md$/i, "")
     : "";
 
+  // A note the agent has proposed into existence is not on disk either, but it
+  // was never removed — it has not been applied yet. Without this it opens
+  // under a warning saying the file is gone, which is both wrong and the
+  // opposite of what is about to happen to it.
+  const stagedChanges = useStagedChangesStore((state) => state.changes);
+  const isSelectedFileStaged =
+    selectedFilePath !== null &&
+    folderPath !== null &&
+    Boolean(
+      findStagedChange(
+        stagedChanges,
+        normalizeVaultPath(getRelativeDisplayPath(folderPath, selectedFilePath))
+      )
+    );
+
   const isSelectedFileMissing =
-    selectedFilePath !== null && !filePaths.includes(selectedFilePath);
+    selectedFilePath !== null && !filePaths.includes(selectedFilePath) && !isSelectedFileStaged;
 
   const { sidebarWidth, isResizingSidebar, handleResizeStart, handleResizeKeyDown } =
     useSidebarWidth();
@@ -281,6 +299,11 @@ function App() {
       setIsUnsavedDialogOpen(true);
       return;
     }
+
+    // A file the agent has only proposed is in the tree but not on disk; this
+    // gives it an in-memory document so opening it shows the proposal instead
+    // of a read error.
+    useStagedChangesStore.getState().seedCreatedDocument(filePath);
 
     await selectFilePath(filePath);
   };
@@ -531,6 +554,22 @@ function App() {
     void setChatFolder(folderPath);
   }, [folderPath, setChatFolder]);
 
+  // The agent's staged file changes and their undo checkpoints are vault-scoped
+  // in the same way, and for the same reason: they name paths inside this
+  // folder and mean nothing in the next one.
+  useEffect(() => {
+    void useStagedChangesStore.getState().setFolder(folderPath);
+  }, [folderPath]);
+
+  // The staging layer's marker for the open document has to go when its
+  // proposals do — whether the user clicked accept/discard on a widget or the
+  // chat settled them (see setAiSuggestionsEmptyListener).
+  useEffect(() => {
+    setAiSuggestionsEmptyListener(() => useStagedChangesStore.getState().clearEditorProposal());
+
+    return () => setAiSuggestionsEmptyListener(null);
+  }, []);
+
   // Same for the knowledge base's settings — which folders the AI may read is
   // consent given for one vault, and must never carry over to the next one.
   // Clearing the search cache alongside makes sure no passage of the previous
@@ -545,6 +584,9 @@ function App() {
   // that drives the agent loop has no path down into the editor component.
   useEffect(() => {
     registerEditorToolBridge({
+      // The editor component is only mounted while a note is open, so its
+      // handle is exactly the "is there a document" answer the agent needs.
+      hasDocument: () => editorHandleRef.current !== null,
       getDocument: () => editorHandleRef.current?.getMarkdown() ?? "",
       getSelection: () => editorHandleRef.current?.getSelectionText() ?? "",
       listImageSources: () => editorHandleRef.current?.listImageSources() ?? [],

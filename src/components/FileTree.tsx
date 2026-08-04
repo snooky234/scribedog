@@ -4,11 +4,17 @@ import { useTranslation } from "react-i18next";
 import { dirname, join } from "@tauri-apps/api/path";
 
 import type { ExportMode } from "@/components/ExportDialog";
+import {
+  normalizeVaultPath,
+  stagedChangeKind,
+  vaultPathKey
+} from "@/lib/chat/vaultStaging";
 import { getRelativeDisplayPath, type MarkdownFileRecord } from "@/lib/fileSystem";
 import { buildFileTree, type FileTreeNode } from "@/lib/fileTree";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import type { MoveTreeEntryInput } from "@/store/useAppStore";
 import { useSearchStore } from "@/store/useSearchStore";
+import { useStagedChangesStore } from "@/store/useStagedChangesStore";
 
 import { ContextMenuSurface } from "./fileTree/ContextMenuSurface";
 import { TreeNodeRow } from "./fileTree/TreeNodeRow";
@@ -92,12 +98,71 @@ export function FileTree({
   const fileMatchCounts = useSearchStore((state) => state.fileMatchCounts);
   const lastHandledFolderRenameRequestIdRef = useRef<number | undefined>(undefined);
 
+  const stagedChanges = useStagedChangesStore((state) => state.changes);
+
+  // What the agent has proposed, indexed the way the rows need it.
+  //
+  // Files it proposes to CREATE do not exist on disk yet, so they are not in
+  // filePaths — they are folded into the tree as records of their own, greyed
+  // out and with the paw. Leaving them out would mean the one kind of change a
+  // user most wants to look at before applying is the one they cannot find.
+  const staged = useMemo(() => {
+    const separator = folderPath.includes("\\") ? "\\" : "/";
+    const toAbsolute = (relativePath: string) =>
+      `${folderPath}${separator}${normalizeVaultPath(relativePath).split("/").join(separator)}`;
+
+    const changedFilePaths: Record<string, number> = {};
+    const deletedKeys = new Set<string>();
+    const createdRecords: MarkdownFileRecord[] = [];
+
+    for (const change of stagedChanges) {
+      const kind = stagedChangeKind(change);
+
+      if (kind === "create") {
+        const filePath = toAbsolute(change.targetPath);
+
+        createdRecords.push({
+          filePath,
+          relativePath: normalizeVaultPath(change.targetPath),
+          mtimeMs: 0
+        });
+        changedFilePaths[filePath] = 1;
+        continue;
+      }
+
+      const filePath = toAbsolute(change.path);
+      changedFilePaths[filePath] = 1;
+
+      if (kind === "delete") {
+        deletedKeys.add(vaultPathKey(filePath));
+      }
+    }
+
+    return {
+      changedFilePaths,
+      changedKeys: new Set(Object.keys(changedFilePaths).map(vaultPathKey)),
+      createdKeys: new Set(createdRecords.map((record) => vaultPathKey(record.filePath))),
+      deletedKeys,
+      createdRecords
+    };
+  }, [folderPath, stagedChanges]);
+
   const treeNodes = useMemo(() => {
     const records: MarkdownFileRecord[] = filePaths.map((filePath) => ({
       filePath,
       relativePath: getRelativeDisplayPath(folderPath, filePath),
       mtimeMs: fileMtimeMs[filePath] ?? 0
     }));
+
+    // Only the ones the tree does not already know: a file created and applied
+    // in the same session is in filePaths by now.
+    const known = new Set(records.map((record) => vaultPathKey(record.relativePath)));
+
+    for (const record of staged.createdRecords) {
+      if (!known.has(vaultPathKey(record.relativePath))) {
+        records.push(record);
+      }
+    }
     const emptyFolderRelativePaths = emptyFolderPaths.map((emptyFolderPath) =>
       getRelativeDisplayPath(folderPath, emptyFolderPath)
     );
@@ -113,13 +178,30 @@ export function FileTree({
       manualOrder,
       emptyFolderOwnMtimeMs
     });
-  }, [folderPath, filePaths, emptyFolderPaths, fileMtimeMs, emptyFolderMtimeMs, sortMode, manualOrder]);
+  }, [
+    folderPath,
+    filePaths,
+    emptyFolderPaths,
+    fileMtimeMs,
+    emptyFolderMtimeMs,
+    sortMode,
+    manualOrder,
+    staged
+  ]);
 
   const nodeContextByKey = useMemo(() => buildNodeContextMap(treeNodes), [treeNodes]);
 
   const folderMatchCounts = useMemo(
     () => buildFolderMatchCounts(treeNodes, fileMatchCounts),
     [treeNodes, fileMatchCounts]
+  );
+
+  // Same aggregation for the paw: a collapsed folder has to say that something
+  // inside it is waiting, and no row can work that out without re-walking its
+  // own subtree on every render.
+  const folderStagedCounts = useMemo(
+    () => buildFolderMatchCounts(treeNodes, staged.changedFilePaths),
+    [treeNodes, staged]
   );
 
   const flatNodes = useMemo(
@@ -395,6 +477,10 @@ export function FileTree({
             depth={0}
             expandedFolderPaths={expandedFolderPaths}
             folderMatchCounts={folderMatchCounts}
+            folderStagedCounts={folderStagedCounts}
+            stagedKeys={staged.changedKeys}
+            stagedCreatedKeys={staged.createdKeys}
+            stagedDeletedKeys={staged.deletedKeys}
             selectedFilePath={selectedFilePath}
             selectedKeys={selectedKeys}
             dirtyFilePaths={dirtyFilePaths}

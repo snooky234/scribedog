@@ -5,6 +5,7 @@ import {
   addRecentFolderPath,
   allowMarkdownFolderAccess,
   chooseMarkdownFolder,
+  createMarkdownFolderAtPath,
   createUniqueMarkdownFolder,
   deleteMarkdownFolder,
   getRelativeDisplayPath,
@@ -222,6 +223,57 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
       });
 
       return null;
+    }
+  },
+  // The agent's create_folder: the folder gets the name it was given, and
+  // registers as an empty folder so the tree shows it before anything is in it.
+  createFolderAtPath: async (targetFolderPath: string) => {
+    const { folderPath, filePaths, emptyFolderPaths } = get();
+
+    if (!folderPath) {
+      return false;
+    }
+
+    try {
+      await createMarkdownFolderAtPath(targetFolderPath);
+
+      const alreadyKnown = emptyFolderPaths.some(
+        (path) => normalizePathKey(path) === normalizePathKey(targetFolderPath)
+      );
+
+      if (alreadyKnown) {
+        return true;
+      }
+
+      const parentDirectory = await dirname(targetFolderPath);
+      const parentRelativePath = getRelativeDisplayPath(folderPath, parentDirectory);
+      const currentManualOrder = get().manualOrder;
+      const seededManualOrder = ensureManualOrderEntry(
+        currentManualOrder,
+        parentRelativePath,
+        currentChildBasenames(folderPath, filePaths, emptyFolderPaths, parentRelativePath)
+      );
+      const nextManualOrder = insertManualOrderEntry(
+        seededManualOrder,
+        parentRelativePath,
+        getBasename(targetFolderPath),
+        (seededManualOrder[parentRelativePath] ?? []).length
+      );
+      persistManualOrderIfChanged(folderPath, currentManualOrder, nextManualOrder);
+
+      set({
+        emptyFolderPaths: [...get().emptyFolderPaths, targetFolderPath],
+        manualOrder: nextManualOrder,
+        fileError: null
+      });
+
+      return true;
+    } catch (error) {
+      set({
+        fileError: toErrorMessage(error, i18n.t("store.folderCreateError"))
+      });
+
+      return false;
     }
   },
   renameFolderPath: async (folderPath: string, newBaseName: string) => {
