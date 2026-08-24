@@ -2219,10 +2219,21 @@ export function toOpenAiCompatMessages(
       const wireMessage: Record<string, unknown> = { role: "assistant", content: message.content || "" };
 
       if (message.toolCalls?.length) {
+        // The two shapes disagree about `arguments` and each rejects the
+        // other's: Ollama's native /api/chat wants the object and answers a
+        // JSON string with HTTP 400 ("Value looks like object, but can't find
+        // closing '}' symbol" — its Go parser reading the string as a body),
+        // while OpenAI-compatible endpoints want the stringified form. The
+        // request that carries a tool call back is the follow-up round, so
+        // getting this wrong kills every turn that used a tool, right after
+        // the work looked finished.
         wireMessage.tool_calls = message.toolCalls.map((toolCall) => ({
           id: toolCall.id,
           type: "function",
-          function: { name: toolCall.name, arguments: JSON.stringify(toolCall.arguments) }
+          function: {
+            name: toolCall.name,
+            arguments: isOllamaShape ? toolCall.arguments : JSON.stringify(toolCall.arguments)
+          }
         }));
       }
 

@@ -68,6 +68,32 @@ describe("toOpenAiCompatMessages", () => {
     }
   });
 
+  // Ollama 400s on the stringified form ("Value looks like object, but can't
+  // find closing '}' symbol"), OpenAI-compatible endpoints on the object.
+  it("sends tool-call arguments as an object for Ollama and as a string otherwise", () => {
+    const [, , ollamaCall] = toOpenAiCompatMessages(requestOf(IMAGE_TURN), "off", true);
+    const [, , openAiCall] = toOpenAiCompatMessages(requestOf(IMAGE_TURN), "off", false);
+
+    expect(ollamaCall).toEqual({
+      role: "assistant",
+      content: "",
+      tool_calls: [
+        { id: "call_1", type: "function", function: { name: "get_image", arguments: { path: "images/photo.png" } } }
+      ]
+    });
+    expect(openAiCall).toEqual({
+      role: "assistant",
+      content: "",
+      tool_calls: [
+        {
+          id: "call_1",
+          type: "function",
+          function: { name: "get_image", arguments: '{"path":"images/photo.png"}' }
+        }
+      ]
+    });
+  });
+
   it("leaves a user turn without images as a plain string in both shapes", () => {
     const plain = requestOf([{ role: "user", content: "hello" }]);
 
