@@ -3,6 +3,11 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.1] - 2026-08-25
+
+### Bug Fixes
+- Fix AI chat failing with Ollama after a tool was used ("Value looks like object, but can't find closing '}' symbol")
+
 ## [0.9.0] - 2026-08-05
 
 ### Highlights
