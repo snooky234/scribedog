@@ -28,7 +28,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "resources": { "../THIRD_PARTY_LICENSES.md": "THIRD_PARTY_LICENSES.md" },
     "windows": {
       "nsis": {
         "installMode": "currentUser",

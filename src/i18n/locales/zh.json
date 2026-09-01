@@ -169,6 +169,9 @@
     "checkForUpdates": "检查更新",
     "version": "应用版本 v{{version}}",
     "openSourceLicenses": "开源许可证",
+    "licensesLoading": "正在加载许可证 …",
+    "portableMode": "便携模式已启用 — 设置保存在 {{path}}",
+    "portableReadOnly": "无法启用便携模式：应用程序旁边的文件夹为只读。设置将保存到你的 Windows 用户配置文件中。",
     "provider": "提供商",
     "apiUrl": "API 地址",
     "apiKey": "API 密钥",
@@ -696,7 +699,9 @@
     "install": "安装",
     "installing": "安装中……",
     "installError": "无法安装更新。",
-    "dismiss": "关闭"
+    "dismiss": "关闭",
+    "portableBody": "有新版本可用。便携版不会自动更新——请下载新的 ZIP 并替换现有文件。",
+    "openDownload": "打开下载页面"
   },
   "voice": {
     "micStart": "开始语音输入",

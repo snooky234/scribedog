@@ -58,13 +58,18 @@ struct DownloadProgress {
 }
 
 fn model_path(app: &AppHandle) -> Result<PathBuf, String> {
-    let dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| error.to_string())?
-        .join("voice-models");
+    // In portable mode the ~460 MB model travels with the executable, so it
+    // does not have to be downloaded again on every machine the stick is
+    // plugged into.
+    let dir = match crate::portable::data_dir() {
+        Some(dir) => dir.to_path_buf(),
+        None => app
+            .path()
+            .app_data_dir()
+            .map_err(|error| error.to_string())?,
+    };
 
-    Ok(dir.join(MODEL_FILE_NAME))
+    Ok(dir.join("voice-models").join(MODEL_FILE_NAME))
 }
 
 fn model_is_downloaded(path: &PathBuf) -> bool {

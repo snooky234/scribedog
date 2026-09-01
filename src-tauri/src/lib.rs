@@ -1,5 +1,7 @@
+mod portable;
 mod rag;
 mod voice;
+mod window_state;
 
 use std::{
     path::{Path, PathBuf},
@@ -56,6 +58,38 @@ fn allow_folder_scope(app: AppHandle, folder_path: String) -> Result<(), String>
 fn allow_file_scope(app: AppHandle, file_path: String) -> Result<(), String> {
     let _ = app.fs_scope().allow_file(file_path);
     Ok(())
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PortableStatus {
+    mode: portable::PortableMode,
+    config_dir: String,
+}
+
+/// Where the frontend keeps the files it owns (`shortcuts.json`), plus whether
+/// portable mode is on. One command rather than two, because every caller that
+/// wants the directory also has to know when the marker was found but could
+/// not be written to.
+#[tauri::command]
+fn get_portable_status(app: AppHandle) -> Result<PortableStatus, String> {
+    let dir = match portable::data_dir() {
+        Some(dir) => dir.to_path_buf(),
+        None => app
+            .path()
+            .app_config_dir()
+            .map_err(|error| error.to_string())?,
+    };
+
+    // The static capability only covers the OS config dir, so the portable
+    // directory has to be opened up at runtime — the same mechanism the
+    // user-chosen vault folder goes through.
+    let _ = app.fs_scope().allow_directory(&dir, true);
+
+    Ok(PortableStatus {
+        mode: portable::mode(),
+        config_dir: dir.to_string_lossy().into_owned(),
+    })
 }
 
 #[tauri::command]
@@ -280,15 +314,15 @@ fn collect_startup_folder_path() -> Option<String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Resolved before anything else: creating the webview is what reads
+    // WEBVIEW2_USER_DATA_FOLDER, and by the time the builder runs it is too
+    // late to redirect where localStorage lives.
+    #[cfg(windows)]
+    if let Some(dir) = portable::data_subdir("webview") {
+        std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", dir);
+    }
+
     let mut builder = tauri::Builder::default()
-        .plugin(
-            tauri_plugin_window_state::Builder::default()
-                .with_state_flags(
-                    tauri_plugin_window_state::StateFlags::SIZE
-                        | tauri_plugin_window_state::StateFlags::MAXIMIZED,
-                )
-                .build(),
-        )
         .plugin(tauri_plugin_http::init())
         .manage(StartupState {
             folder_path: collect_startup_folder_path(),
@@ -299,6 +333,20 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init());
+
+    // The plugin writes into Tauri's app config directory and that path cannot
+    // be redirected, so in portable mode `window_state` takes over and writes
+    // next to the executable instead.
+    if portable::data_dir().is_none() {
+        builder = builder.plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::SIZE
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED,
+                )
+                .build(),
+        );
+    }
 
     #[cfg(windows)]
     {
@@ -314,6 +362,17 @@ pub fn run() {
             // frontend reveals it. This is the safety net that shows it anyway
             // if the frontend never gets that far.
             if let Some(window) = app.get_webview_window("main") {
+                if let Some(dir) = portable::data_dir() {
+                    window_state::restore(&window, dir);
+
+                    let tracked = window.clone();
+                    window.on_window_event(move |event| {
+                        if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
+                            window_state::save(&tracked, dir);
+                        }
+                    });
+                }
+
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_secs(5));
                     let _ = window.show();
@@ -326,6 +385,7 @@ pub fn run() {
             get_startup_folder_path,
             allow_folder_scope,
             allow_file_scope,
+            get_portable_status,
             watch_folder,
             check_spellcheck_dictionary,
             store_api_key,

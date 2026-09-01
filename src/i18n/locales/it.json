@@ -169,6 +169,9 @@
     "checkForUpdates": "Controlla aggiornamenti",
     "version": "Versione app v{{version}}",
     "openSourceLicenses": "Licenze open source",
+    "licensesLoading": "Caricamento delle licenze …",
+    "portableMode": "Modalità portatile attiva — le impostazioni sono salvate in {{path}}",
+    "portableReadOnly": "Modalità portatile non disponibile: la cartella accanto all’applicazione è di sola lettura. Le impostazioni verranno salvate nel tuo profilo utente di Windows.",
     "provider": "Provider",
     "apiUrl": "URL API",
     "apiKey": "Chiave API",
@@ -696,7 +699,9 @@
     "install": "Installa",
     "installing": "Installazione in corso …",
     "installError": "Impossibile installare l'aggiornamento.",
-    "dismiss": "Ignora"
+    "dismiss": "Ignora",
+    "portableBody": "È disponibile una nuova versione. La versione portatile non si aggiorna da sola: scarica il nuovo ZIP e sostituisci i file esistenti.",
+    "openDownload": "Apri la pagina di download"
   },
   "voice": {
     "micStart": "Avvia input vocale",

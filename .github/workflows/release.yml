@@ -54,3 +54,31 @@ jobs:
           releaseBody: 'See the assets below to download and install this version.'
           releaseDraft: false
           prerelease: false
+
+      # The portable build is the very same binary the installer ships, plus
+      # the marker file that makes it keep its data next to itself. Assembled
+      # here rather than by tauri-action, which only produces installer
+      # bundles. `.scribedog/app` is not created here — the app creates it on
+      # first run, and Compress-Archive would drop an empty directory anyway.
+      - name: Package portable build
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $staging = Join-Path $env:RUNNER_TEMP "portable"
+          New-Item -ItemType Directory -Force -Path "$staging/.scribedog" | Out-Null
+
+          Copy-Item "src-tauri/target/release/scribedog.exe" "$staging/ScribeDog.exe"
+          Copy-Item "packaging/portable/README.txt" "$staging/README.txt"
+          Set-Content -Path "$staging/.scribedog/portable" -Encoding utf8 -Value @(
+            "This file switches ScribeDog into portable mode: it keeps its",
+            "settings in .scribedog/app next to the executable instead of in",
+            "your Windows user profile. Delete it to go back to the default.",
+            "The contents of this file are never read."
+          )
+
+          $archive = "ScribeDog_${version}_portable.zip"
+          Compress-Archive -DestinationPath $archive -Force -Path "$staging/ScribeDog.exe", "$staging/README.txt", "$staging/.scribedog"
+          gh release upload "${{ github.ref_name }}" $archive --clobber

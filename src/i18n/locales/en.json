@@ -169,6 +169,9 @@
     "checkForUpdates": "Check for updates",
     "version": "App version v{{version}}",
     "openSourceLicenses": "Open source licenses",
+    "licensesLoading": "Loading licenses …",
+    "portableMode": "Portable mode active — settings are stored in {{path}}",
+    "portableReadOnly": "Portable mode is not available: the folder next to the application is read-only. Settings are stored in your Windows user profile instead.",
     "provider": "Provider",
     "apiUrl": "API URL",
     "apiKey": "API key",
@@ -696,7 +699,9 @@
     "install": "Install",
     "installing": "Installing …",
     "installError": "The update could not be installed.",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "portableBody": "A new version is available. The portable version does not update itself — download the new ZIP and replace the existing files.",
+    "openDownload": "Open download page"
   },
   "voice": {
     "micStart": "Start voice input",

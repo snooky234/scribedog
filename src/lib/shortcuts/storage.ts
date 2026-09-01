@@ -1,6 +1,7 @@
-import { appConfigDir, join } from "@tauri-apps/api/path";
+import { join } from "@tauri-apps/api/path";
 import { exists, mkdir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 
+import { getPortableStatus } from "@/lib/portable";
 import { hasPrimaryModifier, isShortcutBinding, type ShortcutBinding } from "@/lib/shortcuts/binding";
 import { isShortcutActionId, type ShortcutActionId } from "@/lib/shortcuts/definitions";
 
@@ -22,8 +23,14 @@ function hasTauriShell(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
+// Not appConfigDir() directly: in portable mode this file belongs next to the
+// executable, and the Rust side is the one that knows which of the two applies.
+async function shortcutsDirPath(): Promise<string> {
+  return (await getPortableStatus()).configDir;
+}
+
 async function shortcutsFilePath(): Promise<string> {
-  return join(await appConfigDir(), FILE_NAME);
+  return join(await shortcutsDirPath(), FILE_NAME);
 }
 
 function parseOverrides(raw: string): ShortcutOverrides {
@@ -92,7 +99,7 @@ export async function writeShortcutOverrides(overrides: ShortcutOverrides): Prom
     return;
   }
 
-  const dirPath = await appConfigDir();
+  const dirPath = await shortcutsDirPath();
   await mkdir(dirPath, { recursive: true });
   await writeTextFile(await join(dirPath, FILE_NAME), serialized);
 }

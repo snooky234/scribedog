@@ -267,9 +267,10 @@ Grab the latest installer for your platform from the
 **Windows**
 - `ScribeDog_x.y.z_x64-setup.exe` — NSIS installer (recommended). Also adds an optional **"Open with ScribeDog"** entry to the Explorer folder context menu.
 - `ScribeDog_x.y.z_x64_en-US.msi` — MSI package
+- `ScribeDog_x.y.z_portable.zip` — portable build: unpack it into a folder you own (Documents, Downloads, a USB stick) and run `ScribeDog.exe`; nothing is installed. Settings live in the `.scribedog` folder beside the executable, so the whole folder travels with you. It adds no Explorer context menu entry and does not update itself, and API keys still go to the Windows Credential Manager, so they stay on the machine you enter them on. Avoid system locations such as `C:\Program Files` or `C:\ProgramData`: they are often not writable, and antivirus software is quicker to scan or flag an installer-less program sitting there.
 
 **Linux**
-- `ScribeDog_x.y.z_amd64.AppImage` — no installation needed, just mark it executable and run it
+- `ScribeDog_x.y.z_amd64.AppImage` — no installation needed, just mark it executable and run it. This is the portable option on Linux; the portable ZIP above is Windows-only.
 - `ScribeDog_x.y.z_amd64.deb` — for Debian/Ubuntu-based distributions
 
 > **Note:** The installers are not code-signed, so you may see a warning on

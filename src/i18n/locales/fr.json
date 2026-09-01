@@ -169,6 +169,9 @@
     "checkForUpdates": "Vérifier les mises à jour",
     "version": "Version de l'application v{{version}}",
     "openSourceLicenses": "Licences open source",
+    "licensesLoading": "Chargement des licences …",
+    "portableMode": "Mode portable actif — les réglages sont enregistrés dans {{path}}",
+    "portableReadOnly": "Mode portable indisponible : le dossier situé à côté de l’application est en lecture seule. Les réglages seront enregistrés dans votre profil utilisateur Windows.",
     "provider": "Fournisseur",
     "apiUrl": "URL de l'API",
     "apiKey": "Clé API",
@@ -696,7 +699,9 @@
     "install": "Installer",
     "installing": "Installation …",
     "installError": "La mise à jour n'a pas pu être installée.",
-    "dismiss": "Ignorer"
+    "dismiss": "Ignorer",
+    "portableBody": "Une nouvelle version est disponible. La version portable ne se met pas à jour toute seule : téléchargez le nouveau ZIP et remplacez les fichiers existants.",
+    "openDownload": "Ouvrir la page de téléchargement"
   },
   "voice": {
     "micStart": "Démarrer la saisie vocale",

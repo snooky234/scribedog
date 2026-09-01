@@ -169,6 +169,9 @@
     "checkForUpdates": "Auf Updates prüfen",
     "version": "App-Version v{{version}}",
     "openSourceLicenses": "Open-Source-Lizenzen",
+    "licensesLoading": "Lizenzen werden geladen …",
+    "portableMode": "Portabler Modus aktiv — Einstellungen liegen in {{path}}",
+    "portableReadOnly": "Portabler Modus nicht möglich: Der Ordner neben der Anwendung ist schreibgeschützt. Einstellungen werden stattdessen im Windows-Benutzerprofil gespeichert.",
     "provider": "Provider",
     "apiUrl": "API-URL",
     "apiKey": "API-Key",
@@ -696,7 +699,9 @@
     "install": "Installieren",
     "installing": "Installiert …",
     "installError": "Das Update konnte nicht installiert werden.",
-    "dismiss": "Schließen"
+    "dismiss": "Schließen",
+    "portableBody": "Eine neue Version steht bereit. Die portable Version aktualisiert sich nicht selbst — lade das neue ZIP herunter und ersetze die vorhandenen Dateien.",
+    "openDownload": "Download-Seite öffnen"
   },
   "voice": {
     "micStart": "Spracheingabe starten",

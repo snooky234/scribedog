@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Eye, EyeOff, Info, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { resolveResource } from "@tauri-apps/api/path";
-import { openPath } from "@tauri-apps/plugin-opener";
 
 import { Button } from "@/components/ui/button";
 import { AssistantsSettings } from "@/components/AssistantsSettings";
+import { LicensesDialog } from "@/components/LicensesDialog";
 import { RagSettings } from "@/components/RagSettings";
 import { ShortcutsSettings } from "@/components/ShortcutsSettings";
 import { VersioningSettings } from "@/components/VersioningSettings";
 import type { Assistant } from "@/store/useAssistantsStore";
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
+import { getPortableStatus, type PortableMode } from "@/lib/portable";
 
 import {
   fetchAvailableModels,
@@ -365,6 +365,9 @@ export function SettingsDialog({
   const [thinkingMode, setThinkingMode] = useState(settings.thinkingMode);
   const [agent, setAgent] = useState<AgentSettings>(() => pickAgentSettings(settings));
 
+  const [licensesOpen, setLicensesOpen] = useState(false);
+  const [portableMode, setPortableMode] = useState<PortableMode>("off");
+  const [portableConfigDir, setPortableConfigDir] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelsError, setModelsError] = useState<string | null>(null);
@@ -431,9 +434,36 @@ export function SettingsDialog({
       return;
     }
 
+    let active = true;
+
+    void getPortableStatus().then((status) => {
+      if (active) {
+        setPortableMode(status.mode);
+        setPortableConfigDir(status.configDir);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
+
+        // The licenses sit on top of this dialog, so Escape peels off one
+        // layer at a time instead of closing both at once.
+        if (licensesOpen) {
+          setLicensesOpen(false);
+          return;
+        }
+
         onClose();
       }
     };
@@ -441,16 +471,11 @@ export function SettingsDialog({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, licensesOpen]);
 
   if (!open) {
     return null;
   }
-
-  const handleOpenLicenses = async () => {
-    const licensesPath = await resolveResource("THIRD_PARTY_LICENSES.md");
-    await openPath(licensesPath);
-  };
 
   const handleLanguageChange = (nextLanguage: SupportedLanguage) => {
     void i18n.changeLanguage(nextLanguage);
@@ -458,6 +483,7 @@ export function SettingsDialog({
   };
 
   return (
+    <>
     <div className="ai-dialog" role="presentation" onClick={onClose}>
       <div
         className="ai-dialog__panel ai-dialog__panel--settings"
@@ -642,6 +668,19 @@ export function SettingsDialog({
               )}
             </div>
 
+            {portableMode === "on" ? (
+              <p className="ai-dialog__model-hint">
+                {t("settingsDialog.portableMode", { path: portableConfigDir })}
+              </p>
+            ) : null}
+
+            {portableMode === "readOnly" ? (
+              <div className="ai-dialog__notice">
+                <AlertTriangle className="ai-dialog__notice-icon" aria-hidden="true" />
+                <p>{t("settingsDialog.portableReadOnly")}</p>
+              </div>
+            ) : null}
+
             <p className="ai-dialog__version">
               {appVersion ? (
                 <>
@@ -652,7 +691,7 @@ export function SettingsDialog({
               <button
                 type="button"
                 className="ai-dialog__link"
-                onClick={() => void handleOpenLicenses()}
+                onClick={() => setLicensesOpen(true)}
               >
                 {t("settingsDialog.openSourceLicenses")}
               </button>
@@ -874,5 +913,8 @@ export function SettingsDialog({
         </div>
       </div>
     </div>
+
+    <LicensesDialog open={licensesOpen} onClose={() => setLicensesOpen(false)} />
+    </>
   );
 }
