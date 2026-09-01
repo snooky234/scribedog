@@ -261,7 +261,7 @@ ScribeDog stores everything as plain `.md` files in a normal folder — so makin
 
 ## 📥 Installation
 
-Grab the latest installer for your platform from the
+Grab the latest installer (or the portable build) for your platform from the
 [**Releases page**](https://github.com/snooky234/scribedog/releases/latest):
 
 **Windows**
