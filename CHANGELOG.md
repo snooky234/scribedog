@@ -3,6 +3,11 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.0] - 2026-09-02
+
+### Highlights
+- Add a portable Windows build (ScribeDog_X.Y.Z_portable.zip) alongside the installer: no installation, no admin rights, no system traces. Settings and other app data travel with the executable, so a copy on a USB stick keeps its setup on any machine.
+
 ## [0.9.1] - 2026-08-25
 
 ### Bug Fixes
