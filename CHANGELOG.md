@@ -6,7 +6,7 @@ All notable changes to ScribeDog are documented here. Format loosely follows
 ## [0.10.0] - 2026-09-02
 
 ### Highlights
-- Add a portable Windows build (ScribeDog_X.Y.Z_portable.zip) alongside the installer: no installation, no admin rights, no system traces. Settings and other app data travel with the executable on a USB stick, except AI API keys, which stay in the Windows Credential Manager and need entering again on each new machine.
+- Add a portable Windows build (ScribeDog_X.Y.Z_portable.zip) alongside the installer: no installation, no admin rights, no registry entries or Start Menu shortcuts.
 
 ## [0.9.1] - 2026-08-25
 
