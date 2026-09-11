@@ -819,6 +819,8 @@
     "planTitle": "任务清单（{{done}}/{{total}}）",
     "planAdjusted": "计划已调整。",
     "planUnavailable": "该模型无法给出可用的任务清单，已为它关闭规划。可在 AI 设置的“代理”中重新开启。",
+    "planStepsUnfinished_one": "未执行：{{titles}}。助手跳过了这一步，却仍然报告任务已完成。请把这部分作为单独的消息重新发送：较小的模型一次处理一项工作要可靠得多。",
+    "planStepsUnfinished_other": "未执行：{{titles}}。助手跳过了这些步骤，却仍然报告任务已完成。请把它们逐条重新发送：较小的模型一次处理一项工作要可靠得多。",
     "toolListFiles": "已列出笔记",
     "toolReadFile": "已读取文件",
     "toolWriteFile": "已提议文件",

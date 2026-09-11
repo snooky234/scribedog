@@ -26,7 +26,10 @@ import {
   planTask,
   reviewPlan,
   stepContext,
-  type PlanStep
+  stepOutcome,
+  toolEffect,
+  type PlanStep,
+  type StepEffect
 } from "@/lib/chat/agentPlan";
 import { setAgentCapabilities, setAgentTurnContext } from "@/lib/chat/vaultFileTools";
 import { deleteCheckpointsForSessions, pruneCheckpointsToSessions } from "@/lib/chat/checkpoints";
@@ -738,11 +741,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
        * instead of growing with each one.
        *
        * Answers with the step's closing text, which becomes the plan step's
-       * one-line result.
+       * one-line result, and with what the run actually did — the second half is
+       * what lets the caller tell a step that happened from one the model only
+       * said had happened (see stepOutcome).
        */
-      const runToolLoop = async (historyFrom: number): Promise<string> => {
+      const runToolLoop = async (
+        historyFrom: number
+      ): Promise<{ text: string; effect: StepEffect }> => {
         let iterations = 0;
         let finalText = "";
+        // Filled from tool results below, never from the model's own account of
+        // the step: the whole point is that the two can disagree.
+        const effect: StepEffect = { wrote: false, usedTool: false };
 
         while (iterations < maxIterations) {
           iterations += 1;
@@ -849,7 +859,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               unflaggedReply.value = { index, text: step.text };
             }
 
-            return step.text;
+            return { text: step.text, effect };
           }
 
           const assistantIndex = appendMessage({
@@ -913,6 +923,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
               ...(result.retryable && !missingVision ? { retryable: true } : {})
             });
 
+            // What the step is judged by afterwards, accumulated over its calls.
+            const added = toolEffect(call.name, result.content);
+
+            effect.wrote ||= added.wrote;
+            effect.usedTool ||= added.usedTool;
+
             // A proposal that was actually opened, not one the editor refused.
             if (EDITING_TOOL_NAMES.includes(call.name) && !result.content.startsWith("Error:")) {
               markOpenDocumentProposal(assistantIndex);
@@ -970,7 +986,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }
         }
 
-        return finalText;
+        return { text: finalText, effect };
       };
 
       // --- Planning ---------------------------------------------------------
@@ -986,7 +1002,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const outcome = await planTask(
           aiSettings,
           content,
-          { maxSteps: maxPlanSteps, fileAccess: fileAccessEnabled },
+          {
+            maxSteps: maxPlanSteps,
+            fileAccess: fileAccessEnabled,
+            allowDelete: aiSettings.agentAllowDelete
+          },
           abortController.signal
         );
 
@@ -1032,13 +1052,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
             content: stepContext(content, readPlan(), index)
           });
 
-          const finalText = await runToolLoop(aiSettings.agentCompactContext ? stepStart : 0);
-          const result = finalText.trim().replace(/\s+/g, " ").slice(0, STEP_RESULT_CHARS);
+          const run = await runToolLoop(aiSettings.agentCompactContext ? stepStart : 0);
+          const result = run.text.trim().replace(/\s+/g, " ").slice(0, STEP_RESULT_CHARS);
 
+          // The step's status is read off what the loop actually did, not off
+          // the fact that it came back. Marking every step done here is what let
+          // a model skip half a request and still produce a list of ticks.
           setPlan(
             readPlan().map((entry, at) =>
               at === index
-                ? { ...entry, status: "done" as const, ...(result ? { result } : {}) }
+                ? { ...entry, status: stepOutcome(entry, run.effect), ...(result ? { result } : {}) }
                 : entry
             )
           );
@@ -1069,6 +1092,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       } else {
         await runToolLoop(0);
+      }
+
+      // What the turn is worth, said by the app rather than by the model. A
+      // model that skipped a step routinely closes with "all done" anyway, and
+      // the user only finds out that the notes were never written when they go
+      // looking for them.
+      //
+      // The steps are named, not counted: "the notes were not created" is
+      // something the user can act on, "1 of 3 steps failed" is not. The advice
+      // is the one that demonstrably works on the models this happens to, one
+      // piece of work per message.
+      const unfinished = readPlan().filter((step) => step.status === "failed");
+
+      if (unfinished.length > 0 && !abortController.signal.aborted) {
+        appendMessage({
+          role: "assistant",
+          content: i18n.t("chat.planStepsUnfinished", {
+            count: unfinished.length,
+            titles: unfinished.map((step) => step.title).join(", ")
+          })
+        });
       }
 
       if (planDisabledNotice) {

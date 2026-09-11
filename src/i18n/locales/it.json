@@ -819,6 +819,8 @@
     "planTitle": "Elenco attività ({{done}}/{{total}})",
     "planAdjusted": "Piano aggiornato.",
     "planUnavailable": "Questo modello non produce un elenco di attività utilizzabile, quindi la pianificazione è stata disattivata per esso. Puoi riattivarla in «Agente», nelle impostazioni IA.",
+    "planStepsUnfinished_one": "Non eseguito: {{titles}}. L'assistente ha saltato questo passaggio e ha comunque segnalato la richiesta come completata. Invialo di nuovo in un messaggio separato: i modelli piccoli gestiscono un compito alla volta in modo molto più affidabile.",
+    "planStepsUnfinished_other": "Non eseguiti: {{titles}}. L'assistente ha saltato questi passaggi e ha comunque segnalato la richiesta come completata. Inviali di nuovo uno alla volta: i modelli piccoli gestiscono un compito alla volta in modo molto più affidabile.",
     "toolListFiles": "Note elencate",
     "toolReadFile": "File letto",
     "toolWriteFile": "File proposto",

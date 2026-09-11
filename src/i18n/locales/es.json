@@ -819,6 +819,8 @@
     "planTitle": "Lista de tareas ({{done}}/{{total}})",
     "planAdjusted": "Plan ajustado.",
     "planUnavailable": "Este modelo no produce una lista de tareas utilizable, así que la planificación se ha desactivado para él. Puedes volver a activarla en «Agente», dentro de los ajustes de IA.",
+    "planStepsUnfinished_one": "No se ejecutó: {{titles}}. El asistente omitió este paso y aun así informó de que la petición estaba terminada. Vuelve a enviarlo como mensaje aparte: los modelos pequeños resuelven una sola tarea a la vez de forma mucho más fiable.",
+    "planStepsUnfinished_other": "No se ejecutaron: {{titles}}. El asistente omitió estos pasos y aun así informó de que la petición estaba terminada. Vuelve a enviarlos de uno en uno: los modelos pequeños resuelven una sola tarea a la vez de forma mucho más fiable.",
     "toolListFiles": "Notas listadas",
     "toolReadFile": "Archivo leído",
     "toolWriteFile": "Archivo propuesto",

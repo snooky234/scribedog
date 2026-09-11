@@ -11,7 +11,14 @@
 // drifting into two features; separate data models would be the point where
 // they stop looking like the same thing to the user.
 
-import { generateAiChatStep, stripJsonCodeFence } from "@/lib/aiClient";
+import {
+  EDITING_TOOL_NAMES,
+  FLAG_SUGGESTION_TOOL_NAME,
+  generateAiChatStep,
+  PLAN_TOOL_NAMES,
+  STAGING_TOOL_NAMES,
+  stripJsonCodeFence
+} from "@/lib/aiClient";
 import { type AiSettings } from "@/store/useAiSettingsStore";
 
 export type PlanStepStatus = "pending" | "running" | "done" | "failed";
@@ -22,6 +29,13 @@ export type PlanStep = {
   /** What this step is to do — the instruction the step's own loop runs with. */
   instruction: string;
   status: PlanStepStatus;
+  /**
+   * Whether this step has to write to the notes rather than only read or work
+   * something out. The planner answers it; undefined means it did not, which
+   * every plan from before this field and every model that omits it looks like
+   * (see stepOutcome, which is deliberately gentler in that case).
+   */
+  changes?: boolean;
   /** One sentence on what came of it; feeds the next step's context. */
   result?: string;
 };
@@ -58,7 +72,7 @@ export function parsePlanSteps(raw: unknown, maxSteps: number): PlanStep[] {
       continue;
     }
 
-    const candidate = entry as { title?: unknown; instruction?: unknown };
+    const candidate = entry as { title?: unknown; instruction?: unknown; changes?: unknown };
     const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
     const instruction =
       typeof candidate.instruction === "string" ? candidate.instruction.trim() : "";
@@ -73,7 +87,11 @@ export function parsePlanSteps(raw: unknown, maxSteps: number): PlanStep[] {
     steps.push({
       title: title || instruction.split(/\r?\n/, 1)[0].slice(0, 80),
       instruction: instruction || title,
-      status: "pending"
+      status: "pending",
+      // Only a boolean the planner actually gave. Anything else stays absent
+      // rather than being guessed into a `false` that would silence the check
+      // this field exists for.
+      ...(typeof candidate.changes === "boolean" ? { changes: candidate.changes } : {})
     });
   }
 
@@ -113,7 +131,12 @@ function parsePlanPayload(text: string): Record<string, unknown> | null {
   return null;
 }
 
-function planQuestion(userMessage: string, maxSteps: number, fileAccess: boolean): string {
+function planQuestion(
+  userMessage: string,
+  maxSteps: number,
+  fileAccess: boolean,
+  allowDelete: boolean
+): string {
   return [
     "A writing assistant works on the user's notes. Decide whether the request below needs to be split " +
       "into work steps.",
@@ -134,12 +157,33 @@ function planQuestion(userMessage: string, maxSteps: number, fileAccess: boolean
       "putting it where it belongs. Steps are pieces of work on the user's notes, not the stages of " +
       "composing a text.",
     "",
+    // The other half of that guardrail, and the one this file was missing: on
+    // its own the paragraph above answers "do X, and instead of the old text put
+    // Y" with an empty list, because every half looks like one piece of work.
+    // A request whose two halves never became two steps is exactly the one a
+    // small model finishes halfway and reports as done (see stepOutcome).
+    "But two different pieces of work on the notes are two steps, even when one sentence asks for " +
+      "both. \"Create a note per item and link to them from this text\" is two: writing the new notes " +
+      "is one piece of work, changing the text that links to them is another. Look for a second piece " +
+      "of work before you answer with an empty list.",
+    "",
     // What the assistant can actually do, spelled out. Without it the planner
     // writes steps the assistant has no tool for — "create the summary file"
     // while file access is switched off — and the turn ends in a failure the
     // user reads as a broken agent rather than as a switch they can flip.
-    fileAccess
+    fileAccess && allowDelete
       ? "The assistant can read, create, rewrite, rename and delete notes anywhere in the vault."
+      : fileAccess
+      ? // Deleting is its own switch, and it is off far more often than file access
+        // is: it defaults to off even once the user has allowed file access. A
+        // planner told otherwise plans a delete step, the assistant is never
+        // offered the tool, and the step can then only end as one that did not
+        // happen — which the user reads as a broken agent rather than as the
+        // switch they deliberately left off.
+        "The assistant can read, create, rewrite and rename notes anywhere in the vault. It cannot " +
+        "delete anything: deleting is switched off in this app's settings and the assistant has no tool " +
+        "for it. Never plan a step that deletes a note. If the request needs one, plan the rest and " +
+        "leave the deletion out."
       : "The assistant can ONLY change the note that is currently open in the editor. It cannot create, " +
         "rename, move or delete files, and it cannot write into any other note. Never plan a step that " +
         "does one of those — if the request needs them, answer {\"steps\":[]} and let the assistant " +
@@ -147,9 +191,17 @@ function planQuestion(userMessage: string, maxSteps: number, fileAccess: boolean
     "",
     `If it genuinely takes several steps${
       fileAccess ? " (several notes, or work that has to happen in order)" : ""
-    }, answer: {"steps":[{"title":"…","instruction":"…"}, …]} with between 2 and ${maxSteps} steps. ` +
+    }, answer: {"steps":[{"title":"…","instruction":"…","changes":true}, …]} with between 2 and ` +
+      `${maxSteps} steps. ` +
       "title is one short line for the user to read; instruction is what the assistant is to do in that " +
       "step, self-contained enough to work from on its own.",
+    "",
+    // What makes a step checkable afterwards: a step that was to write
+    // something and wrote nothing did not happen, whatever the assistant says
+    // about it. A model that omits the field costs nothing — the check simply
+    // falls back to its weaker form.
+    "changes is true when the step has to write to the notes (create, rewrite, rename or delete " +
+      "something) and false when it only reads or works something out.",
     "",
     "Do not do the work. Do not explain. Output only the JSON object."
   ].join("\n");
@@ -179,7 +231,7 @@ export type PlanOutcome =
 export async function planTask(
   settings: AiSettings,
   userMessage: string,
-  options: { maxSteps: number; fileAccess: boolean },
+  options: { maxSteps: number; fileAccess: boolean; allowDelete: boolean },
   signal?: AbortSignal
 ): Promise<PlanOutcome> {
   try {
@@ -187,7 +239,15 @@ export async function planTask(
       settings,
       {
         messages: [
-          { role: "user", content: planQuestion(userMessage, options.maxSteps, options.fileAccess) }
+          {
+            role: "user",
+            content: planQuestion(
+              userMessage,
+              options.maxSteps,
+              options.fileAccess,
+              options.allowDelete
+            )
+          }
         ],
         assistantInstruction: "",
         systemOverride: PLANNER_SYSTEM,
@@ -195,6 +255,16 @@ export async function planTask(
       },
       signal
     );
+
+    // An empty answer is not a model that cannot plan. A local thinking model
+    // now and then spends its whole budget inside the reasoning block and
+    // streams nothing after it, and that block is stripped before this line.
+    // Counting it as unusable would switch planning off for the model after two
+    // unlucky turns — and planning is what keeps a two-part request from being
+    // answered halfway. Same reasoning as the dropped connection below.
+    if (!step.text.trim()) {
+      return { kind: "single" };
+    }
 
     const payload = parsePlanPayload(step.text);
 
@@ -307,6 +377,75 @@ export function stepContext(userMessage: string, steps: PlanStep[], index: numbe
   ].join("\n");
 }
 
+/**
+ * What a step's loop actually did, as far as it can be seen from outside the
+ * model: whether it wrote anything to the notes, and whether it used a tool at
+ * all. Both are counted from tool results, not from tool calls — a call that
+ * came back as an error changed nothing.
+ */
+export type StepEffect = { wrote: boolean; usedTool: boolean };
+
+/**
+ * What one finished tool call adds to its step's effect.
+ *
+ * Read off the result rather than the call, because the two disagree exactly
+ * where it matters: a write that came back as an error wrote nothing, and a
+ * step whose only write was refused has to stay visible as one that did not
+ * happen.
+ *
+ * Plan bookkeeping and the suggestion flag count as neither kind of effect. A
+ * step that only wrote itself a to-do list, or only flagged its own reply as
+ * worth applying, did no work on the user's notes.
+ */
+export function toolEffect(name: string, result: string): StepEffect {
+  if (
+    PLAN_TOOL_NAMES.includes(name) ||
+    name === FLAG_SUGGESTION_TOOL_NAME ||
+    result.startsWith("Error:")
+  ) {
+    return { wrote: false, usedTool: false };
+  }
+
+  return {
+    wrote: EDITING_TOOL_NAMES.includes(name) || STAGING_TOOL_NAMES.includes(name),
+    usedTool: true
+  };
+}
+
+/**
+ * What a finished step's status is, given what its loop actually did.
+ *
+ * This exists because the loop used to mark every step done the moment it came
+ * back. A model that silently skipped half the work still produced a list of
+ * ticks and a closing "all done" — the status was never a finding, only a
+ * position in the list.
+ *
+ * Both rules are deliberately conservative. A step wrongly called failed is the
+ * worse error: it teaches the user to stop reading the line, and then the line
+ * is worth nothing on the run where it is right.
+ *
+ *  - The planner said the step writes to the notes and nothing was written:
+ *    failed. There is no reading of that in which the step happened.
+ *  - The planner said nothing (a plan from before that field, or a model that
+ *    drops it) and the step called no tool at all: failed as well. A plan step
+ *    is a piece of work on the notes; one that neither read nor wrote anything
+ *    only produced text about itself.
+ *
+ * Everything else is done — a reading step that read, and a step the planner
+ * itself marked as changing nothing.
+ */
+export function stepOutcome(step: PlanStep, effect: StepEffect): PlanStepStatus {
+  if (step.changes === true) {
+    return effect.wrote ? "done" : "failed";
+  }
+
+  if (step.changes === undefined && !effect.usedTool) {
+    return "failed";
+  }
+
+  return "done";
+}
+
 /** Reads a create_plan / update_plan tool argument. */
 export function parsePlanToolSteps(args: Record<string, unknown>, maxSteps: number): PlanStep[] {
   return parsePlanSteps(args.steps, maxSteps);
@@ -337,6 +476,7 @@ export function normalizePlan(raw: unknown): PlanStep[] | undefined {
       status: PLAN_STEP_STATUSES.includes(candidate.status as PlanStepStatus)
         ? (candidate.status as PlanStepStatus)
         : "pending",
+      ...(typeof candidate.changes === "boolean" ? { changes: candidate.changes } : {}),
       ...(typeof candidate.result === "string" && candidate.result ? { result: candidate.result } : {})
     });
   }

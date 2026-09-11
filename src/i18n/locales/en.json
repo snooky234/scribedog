@@ -819,6 +819,8 @@
     "planTitle": "Task list ({{done}}/{{total}})",
     "planAdjusted": "Plan adjusted.",
     "planUnavailable": "This model does not produce a usable task list, so planning was switched off for it. You can turn it back on under \"Agent\" in the AI settings.",
+    "planStepsUnfinished_one": "Not carried out: {{titles}}. The assistant skipped this step and still reported the request as done. Send it again as its own message – smaller models handle one piece of work at a time far more reliably.",
+    "planStepsUnfinished_other": "Not carried out: {{titles}}. The assistant skipped these steps and still reported the request as done. Send them again one at a time – smaller models handle one piece of work at a time far more reliably.",
     "toolListFiles": "Listed the notes",
     "toolReadFile": "Read a file",
     "toolWriteFile": "Proposed a file",

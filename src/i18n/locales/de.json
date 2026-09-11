@@ -819,6 +819,8 @@
     "planTitle": "Aufgabenliste ({{done}}/{{total}})",
     "planAdjusted": "Plan angepasst.",
     "planUnavailable": "Dieses Modell liefert keine brauchbare Aufgabenliste – die Planung wurde dafür abgeschaltet. Sie lässt sich in den KI-Einstellungen unter „Agent\" wieder einschalten.",
+    "planStepsUnfinished_one": "Nicht ausgeführt: {{titles}}. Der Assistent hat diesen Schritt übersprungen und den Auftrag trotzdem als erledigt gemeldet. Schick ihn am besten noch einmal als eigene Nachricht – einzelne Aufträge führen kleinere Modelle zuverlässiger aus.",
+    "planStepsUnfinished_other": "Nicht ausgeführt: {{titles}}. Der Assistent hat diese Schritte übersprungen und den Auftrag trotzdem als erledigt gemeldet. Schick sie am besten einzeln noch einmal – einzelne Aufträge führen kleinere Modelle zuverlässiger aus.",
     "toolListFiles": "Notizen aufgelistet",
     "toolReadFile": "Datei gelesen",
     "toolWriteFile": "Datei vorgeschlagen",
