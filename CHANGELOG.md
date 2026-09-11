@@ -3,6 +3,11 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.1] - 2026-09-11
+
+### Bug Fixes
+- Report skipped plan steps instead of always marking them done
+
 ## [0.10.0] - 2026-09-02
 
 ### Highlights
