@@ -74,7 +74,7 @@ export function AiRewriteDialog({
   const previewEditor = useEditor(
     {
       extensions: [
-        StarterKit,
+        StarterKit.configure({ link: false }),
         TaskList,
         TaskItem.configure({ nested: true }),
         Link.configure({ autolink: false, linkOnPaste: false, openOnClick: false }),

@@ -30,7 +30,18 @@ function buildContentExtensions(): Extensions {
     // The lists, the hard break and the table are the local variants: they
     // refuse block content in table cells and serialize a cell without ever
     // falling back to tiptap-markdown's "[table]" placeholder (table.ts).
-    StarterKit.configure({ codeBlock: false, bulletList: false, orderedList: false, hardBreak: false }),
+    // StarterKit 3 brings its own Link and Underline. Left on, its Link keeps
+    // openOnClick and opens every link in a new browser tab next to the
+    // editor's own click handling (in the desktop webview that window.open
+    // goes nowhere, in the browser it opens a note's relative path as a URL).
+    StarterKit.configure({
+      codeBlock: false,
+      bulletList: false,
+      orderedList: false,
+      hardBreak: false,
+      link: false,
+      underline: false
+    }),
     CodeBlock,
     BulletList,
     OrderedList,
