@@ -12,7 +12,8 @@ import {
   getBasename,
   insertFilePathSorted,
   isPathInsideFolder,
-  normalizePathKey
+  normalizePathKey,
+  resolveTargetDirectoryInVault
 } from "./pathUtils";
 
 describe("normalizePathKey", () => {
@@ -140,5 +141,23 @@ describe("removeManualOrderFolderPrefix", () => {
         "old"
       )
     ).toEqual({ "": ["x"], "old-backup": ["c"] });
+  });
+});
+
+describe("resolveTargetDirectoryInVault", () => {
+  it("keeps a directory inside the vault", () => {
+    expect(resolveTargetDirectoryInVault("C:/Vault", "C:\\Vault\\Sub")).toBe("C:\\Vault\\Sub");
+  });
+
+  it("falls back to the vault root without a target or for the root itself", () => {
+    expect(resolveTargetDirectoryInVault("C:/Vault")).toBe("C:/Vault");
+    expect(resolveTargetDirectoryInVault("C:/Vault", "c:\\vault")).toBe("C:/Vault");
+  });
+
+  it("never lets a directory outside the vault through", () => {
+    expect(resolveTargetDirectoryInVault("C:/Users/me/Desktop/test2", "D:\\MyProject")).toBe(
+      "C:/Users/me/Desktop/test2"
+    );
+    expect(resolveTargetDirectoryInVault("C:/Vault", "C:/Vault-Kopie/Sub")).toBe("C:/Vault");
   });
 });

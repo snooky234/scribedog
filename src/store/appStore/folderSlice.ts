@@ -47,7 +47,8 @@ import {
   INVALID_FILE_NAME_CHARS,
   isPathInsideFolder,
   normalizePathKey,
-  remapPathUnderRenamedFolder
+  remapPathUnderRenamedFolder,
+  resolveTargetDirectoryInVault
 } from "./pathUtils";
 import type { AppSlice, FileDocumentState, FolderSlice } from "./types";
 import { deleteFolderVersionHistory, moveFolderVersionHistory } from "./versioning";
@@ -158,7 +159,14 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
     set({ isRefreshing: true, folderError: null });
 
     try {
-      const markdownFiles = await listMarkdownFiles(folderPath);
+      // Empty folders are not in the markdown listing, so a folder deleted
+      // outside the app would otherwise stay in the tree for the whole
+      // session. A failed check keeps the folder: hiding one that is still
+      // there is worse than showing one a moment too long.
+      const [markdownFiles, emptyFolderExists] = await Promise.all([
+        listMarkdownFiles(folderPath),
+        Promise.all(emptyFolderPaths.map((path) => markdownFolderExists(path).catch(() => true)))
+      ]);
       const nextFilePaths = markdownFiles.map((record) => record.filePath);
       const refreshedDocuments = await refreshCleanDocumentsFromDisk(fileDocuments, markdownFiles);
 
@@ -188,7 +196,16 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
         currentSelectedFilePath
       );
       const selectedDocument = currentSelectedFilePath ? nextDocuments[currentSelectedFilePath] : null;
-      const emptyFolderRelativePaths = emptyFolderPaths.map((path) =>
+      // Filtered against the latest list, so a folder created while the
+      // checks were in flight survives.
+      const vanishedEmptyFolderKeys = new Set(
+        emptyFolderPaths.filter((_, index) => !emptyFolderExists[index]).map(normalizePathKey)
+      );
+      const nextEmptyFolderPaths =
+        vanishedEmptyFolderKeys.size === 0
+          ? latestState.emptyFolderPaths
+          : latestState.emptyFolderPaths.filter((path) => !vanishedEmptyFolderKeys.has(normalizePathKey(path)));
+      const emptyFolderRelativePaths = nextEmptyFolderPaths.map((path) =>
         getRelativeDisplayPath(folderPath, path)
       );
       const nextManualOrder = await reconcileManualOrder(
@@ -207,6 +224,7 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
 
       set({
         filePaths: nextFilePaths,
+        emptyFolderPaths: nextEmptyFolderPaths,
         fileDocuments: nextDocuments,
         fileMtimeMs: buildFileMtimeMap(markdownFiles),
         manualOrder: nextManualOrder,
@@ -242,7 +260,7 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
     }
 
     try {
-      const resolvedTargetDirectory = targetDirectory ?? folderPath;
+      const resolvedTargetDirectory = resolveTargetDirectoryInVault(folderPath, targetDirectory);
 
       const newFolderPath = await createUniqueMarkdownFolder(
         resolvedTargetDirectory,

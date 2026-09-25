@@ -6,7 +6,10 @@ vi.mock("@tauri-apps/api/path", () => ({
 }));
 
 // A vault read that takes a while, like an HTTP round trip on a server vault.
-const { readDelay } = vi.hoisted(() => ({ readDelay: { promise: Promise.resolve() } }));
+const { readDelay, existingFolders } = vi.hoisted(() => ({
+  readDelay: { promise: Promise.resolve() },
+  existingFolders: new Set<string>()
+}));
 
 vi.mock("@/lib/fileSystem", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/fileSystem")>()),
@@ -17,7 +20,8 @@ vi.mock("@/lib/fileSystem", async (importOriginal) => ({
   readMarkdownFile: vi.fn(async (path: string) => {
     await readDelay.promise;
     return path.endsWith("other.md") ? "# Other, changed on disk\n" : "# Note\n";
-  })
+  }),
+  markdownFolderExists: vi.fn(async (path: string) => existingFolders.has(path))
 }));
 
 vi.mock("@/lib/vaultMeta", async (importOriginal) => ({
@@ -94,5 +98,53 @@ describe("refreshFolderFiles while the user is typing", () => {
     await refresh;
 
     expect(useAppStore.getState().selectedFilePath).toBe(OTHER);
+  });
+});
+
+describe("refreshFolderFiles and empty folders", () => {
+  beforeEach(() => {
+    readDelay.promise = Promise.resolve();
+    existingFolders.clear();
+    useAppStore.setState({
+      folderPath: VAULT,
+      filePaths: [NOTE, OTHER],
+      emptyFolderPaths: ["/vault/Kept", "/vault/Gone"],
+      fileDocuments: {},
+      selectedFilePath: null,
+      selectedFileContent: null,
+      selectedFileBaseContent: null,
+      isDirty: false,
+      manualOrder: {}
+    });
+  });
+
+  it("drops an empty folder that was deleted outside the app", async () => {
+    existingFolders.add("/vault/Kept");
+
+    await useAppStore.getState().refreshFolderFiles();
+
+    expect(useAppStore.getState().emptyFolderPaths).toEqual(["/vault/Kept"]);
+  });
+
+  it("keeps an empty folder created while the refresh was running", async () => {
+    existingFolders.add("/vault/Kept");
+    let releaseReads!: () => void;
+    readDelay.promise = new Promise<void>((resolve) => {
+      releaseReads = resolve;
+    });
+    useAppStore.setState({
+      fileDocuments: { [NOTE]: { content: "# Note\n", baseContent: "# Note\n" } }
+    });
+
+    const refresh = useAppStore.getState().refreshFolderFiles();
+    await Promise.resolve();
+    useAppStore.setState({
+      emptyFolderPaths: [...useAppStore.getState().emptyFolderPaths, "/vault/Neu"]
+    });
+
+    releaseReads();
+    await refresh;
+
+    expect(useAppStore.getState().emptyFolderPaths).toEqual(["/vault/Kept", "/vault/Neu"]);
   });
 });

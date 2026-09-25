@@ -32,7 +32,8 @@ import {
   insertFilePathSorted,
   INVALID_FILE_NAME_CHARS,
   isPathInsideFolder,
-  normalizePathKey
+  normalizePathKey,
+  resolveTargetDirectoryInVault
 } from "./pathUtils";
 import type { AppSlice, FileSlice } from "./types";
 import { addWorkingSetEntry, hasWorkingSetEntry, remapWorkingSetPaths, removeWorkingSetEntry } from "./workingSet";
@@ -452,7 +453,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
     }
 
     try {
-      const resolvedTargetDirectory = targetDirectory ?? folderPath;
+      const resolvedTargetDirectory = resolveTargetDirectoryInVault(folderPath, targetDirectory);
 
       const newFileBaseName = i18n.t("store.newFileBaseName");
       const existingPathKeys = new Set(filePaths.map(normalizePathKey));

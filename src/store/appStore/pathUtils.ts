@@ -41,6 +41,23 @@ export function isPathInsideFolder(path: string, folderPath: string): boolean {
   return normalizePathKey(path).startsWith(`${normalizePathKey(folderPath)}/`);
 }
 
+/**
+ * Where a new note or folder goes: the requested directory if it lies in the
+ * vault, the vault root otherwise. A target from outside (a stale tree
+ * selection of the previous vault) must never become a write there.
+ */
+export function resolveTargetDirectoryInVault(folderPath: string, targetDirectory?: string): string {
+  if (
+    targetDirectory === undefined ||
+    normalizePathKey(targetDirectory) === normalizePathKey(folderPath) ||
+    !isPathInsideFolder(targetDirectory, folderPath)
+  ) {
+    return folderPath;
+  }
+
+  return targetDirectory;
+}
+
 export function getBasename(path: string): string {
   return path.replace(/\\/g, "/").split("/").pop() ?? path;
 }
