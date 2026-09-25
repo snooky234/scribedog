@@ -8,16 +8,6 @@
   overflow: hidden;
 }
 
-/* In Zen mode the grid collapses to a single column, which would stack the
-   chat below the editor as a full-width horizontal bar. Restore a vertical
-   side column: the centred editor keeps the remaining space, the chat sits on
-   the right. Higher specificity (two classes) beats the single-class zen and
-   chat-open rules regardless of import order. */
-.workspace-grid--zen.workspace-grid--chat-open {
-  grid-template-columns: minmax(0, 1fr) var(--chat-width, 380px);
-  gap: 1rem;
-}
-
 .chat-panel,
 .chat-overview {
   display: flex;

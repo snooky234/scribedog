@@ -168,3 +168,38 @@ body.is-resizing-zen {
   cursor: col-resize;
   user-select: none;
 }
+
+/* The chat panel while Zen mode is on (App.tsx renders it as a MobileSheet
+   here, never as a workspace-grid column): the centred text column's own
+   margin-inline: auto keeps it pinned to the viewport centre, so the chat
+   must float over the right edge instead of shrinking that column — anything
+   that resized the grid would shift the text sideways every time the panel
+   opens or closes. Desktop and tablet share this overlay; only the phone
+   sheet (full width, with backdrop) is unaffected, set inline in App.tsx.
+   On a narrow window the text column alone can fill most of the width, so
+   the panel is allowed to shrink well below --chat-width (never below 260px,
+   an unreadable chat helps no one) and turns translucent, so it reads as a
+   pane floating over the page rather than a wall blocking it. */
+.mobile-sheet__panel--chat-zen {
+  width: clamp(260px, var(--chat-width, 380px), calc(100vw - 2rem));
+  border-radius: 1rem 0 0 1rem;
+  background: rgba(var(--surface-strong-rgb), 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.mobile-sheet__panel--chat-zen .chat-panel,
+.mobile-sheet__panel--chat-zen .chat-overview {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+@media (pointer: fine) {
+  .mobile-sheet__panel--chat-zen {
+    box-shadow: -12px 0 32px rgba(var(--shadow-rgb), 0.14);
+  }
+
+  .dark .mobile-sheet__panel--chat-zen {
+    box-shadow: -20px 0 48px rgba(var(--shadow-rgb), 0.45);
+  }
+}

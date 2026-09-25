@@ -1028,7 +1028,7 @@ function App() {
           className={cn(
             "workspace-grid",
             isZenMode && "workspace-grid--zen",
-            isChatOpen && layout === "desktop" && "workspace-grid--chat-open"
+            isChatOpen && layout === "desktop" && !isZenMode && "workspace-grid--chat-open"
           )}
           aria-label={t("app.workspaceLabel")}
           style={
@@ -1112,7 +1112,7 @@ function App() {
             onSaveRequest={() => void saveSelectedFile()}
           />
 
-          {isChatOpen && layout === "desktop" ? (
+          {isChatOpen && layout === "desktop" && !isZenMode ? (
             <div
               className={cn(
                 "workspace-resizer",
@@ -1132,7 +1132,7 @@ function App() {
             </div>
           ) : null}
 
-          {isChatOpen && layout === "desktop" ? (
+          {isChatOpen && layout === "desktop" && !isZenMode ? (
             <aside className="chat-column" aria-label={t("chat.panelLabel")}>
               {chatContent}
             </aside>
@@ -1151,13 +1151,16 @@ function App() {
         </MobileSheet>
       ) : null}
 
-      {isChatOpen && layout !== "desktop" ? (
+      {isChatOpen && (layout !== "desktop" || isZenMode) ? (
         <MobileSheet
           side={layout === "phone" ? "full" : "right"}
           backdrop={layout === "phone"}
           label={t("chat.panelLabel")}
           onClose={() => useChatStore.getState().closePanel()}
-          className="mobile-sheet__panel--chat"
+          className={cn(
+            "mobile-sheet__panel--chat",
+            isZenMode && layout !== "phone" && "mobile-sheet__panel--chat-zen"
+          )}
         >
           <aside className="chat-column" aria-label={t("chat.panelLabel")}>
             {chatContent}
