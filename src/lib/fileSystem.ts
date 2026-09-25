@@ -3,7 +3,9 @@ import { getVaultStorage, platform } from "@/platform";
 import { activateVaultStorage, isRemoteVaultPath, remoteVaultFor, watchRemoteVault } from "@/lib/remoteVaults";
 import { dirname, join } from "@/platform/paths";
 import { exists, mkdir, readTextFile, remove, rename, stat, writeFile, writeTextFile } from "@/platform/vaultFs";
+import { getProtectedClipboardImages } from "@/lib/clipboardImages";
 import {
+  ABSOLUTE_URL_PATTERN,
   getRelativeDisplayPath,
   isPathInsideVault,
   normalizeDisplayPath,
@@ -12,10 +14,8 @@ import {
 import type { MarkdownFileRecord } from "@/platform/types";
 import { guessImageMimeType } from "@/lib/imageMimeTypes";
 
-export { getRelativeDisplayPath, guessImageMimeType, isPathInsideVault, VAULT_META_DIR_NAME };
+export { ABSOLUTE_URL_PATTERN, getRelativeDisplayPath, guessImageMimeType, isPathInsideVault, VAULT_META_DIR_NAME };
 export type { MarkdownFileRecord };
-
-export const ABSOLUTE_URL_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
 
 const IMAGES_FOLDER_NAME = "images";
 
@@ -388,10 +388,18 @@ async function resolveImageRootRelativePaths(
   fileDirPath: string,
   folderPath: string
 ): Promise<ResolvedImageRefs> {
+  return resolveImageSources(extractImageReferences(markdown), fileDirPath, folderPath);
+}
+
+async function resolveImageSources(
+  sources: string[],
+  fileDirPath: string,
+  folderPath: string
+): Promise<ResolvedImageRefs> {
   const paths = new Set<string>();
   let hasBrokenReference = false;
 
-  for (const rawSrc of extractImageReferences(markdown)) {
+  for (const rawSrc of sources) {
     if (ABSOLUTE_URL_PATTERN.test(rawSrc)) {
       continue;
     }
@@ -482,6 +490,23 @@ export async function rewriteRelativeImagePaths(
 }
 
 /**
+ * A note's markdown as the editor holds it right now, saved or not. The image
+ * cleanup reads every other note from disk, so an image pasted into a note
+ * whose save has not happened yet would count as unused without these.
+ */
+export type OpenDocument = { filePath: string; markdown: string };
+
+async function resolveClipboardImages(folderPath: string): Promise<Set<string>> {
+  const held = getProtectedClipboardImages();
+
+  if (!held || !isPathInsideVault(folderPath, held.filePath)) {
+    return new Set();
+  }
+
+  return (await resolveImageSources(held.sources, await dirname(held.filePath), folderPath)).paths;
+}
+
+/**
  * Deletes images from the "images" folder that were removed from the
  * markdown by saving this file — but only if no other document in the folder
  * still references them. Runs deliberately on save so undo before saving
@@ -491,7 +516,8 @@ export async function cleanupOrphanedImages(
   folderPath: string,
   filePath: string,
   previousMarkdown: string,
-  nextMarkdown: string
+  nextMarkdown: string,
+  openDocuments: OpenDocument[] = []
 ): Promise<void> {
   const fileDirPath = await dirname(filePath);
   const previousRefs = await resolveImageRootRelativePaths(previousMarkdown, fileDirPath, folderPath);
@@ -509,7 +535,7 @@ export async function cleanupOrphanedImages(
 
   const removedRefs = [...previousRefs.paths].filter((path) => !nextRefs.paths.has(path));
 
-  await removeUnreferencedImages(folderPath, removedRefs, nextRefs.paths, [filePath]);
+  await removeUnreferencedImages(folderPath, removedRefs, nextRefs.paths, [filePath], openDocuments);
 }
 
 /**
@@ -519,7 +545,8 @@ export async function cleanupOrphanedImages(
  */
 export async function cleanupImagesOfDeletedFiles(
   folderPath: string,
-  deletedDocuments: Array<{ filePath: string; markdown: string }>
+  deletedDocuments: Array<{ filePath: string; markdown: string }>,
+  openDocuments: OpenDocument[] = []
 ): Promise<void> {
   const removedRefs = new Set<string>();
 
@@ -533,43 +560,51 @@ export async function cleanupImagesOfDeletedFiles(
     folderPath,
     [...removedRefs],
     new Set(),
-    deletedDocuments.map((document) => document.filePath)
+    deletedDocuments.map((document) => document.filePath),
+    openDocuments
   );
 }
 
 /**
  * Removes each candidate image (vault-root-relative) that neither
- * `alreadyReferenced` nor any vault document outside `excludedFilePaths`
+ * `alreadyReferenced`, the clipboard (see lib/clipboardImages.ts) nor any
+ * vault document outside `excludedFilePaths`, on disk or open in the app,
  * references.
  */
 async function removeUnreferencedImages(
   folderPath: string,
   removedRefs: string[],
   alreadyReferenced: Set<string>,
-  excludedFilePaths: string[]
+  excludedFilePaths: string[],
+  openDocuments: OpenDocument[]
 ): Promise<void> {
   if (removedRefs.length === 0) {
     return;
   }
 
-  const stillReferenced = new Set(alreadyReferenced);
-  const markdownFiles = await listMarkdownFiles(folderPath);
+  const stillReferenced = new Set([...alreadyReferenced, ...(await resolveClipboardImages(folderPath))]);
   const excluded = new Set(excludedFilePaths.map(normalizeDisplayPath));
+  const isExcluded = (filePath: string) => excluded.has(normalizeDisplayPath(filePath));
+  const collectReferences = async (filePath: string, markdown: string) => {
+    const refs = await resolveImageRootRelativePaths(markdown, await dirname(filePath), folderPath);
+    refs.paths.forEach((ref) => stillReferenced.add(ref));
+  };
+  const markdownFiles = await listMarkdownFiles(folderPath);
 
-  await Promise.all(
-    markdownFiles
-      .filter((record) => !excluded.has(normalizeDisplayPath(record.filePath)))
+  await Promise.all([
+    ...markdownFiles
+      .filter((record) => !isExcluded(record.filePath))
       .map(async (record) => {
         try {
-          const otherMarkdown = await readMarkdownFile(record.filePath);
-          const otherDirPath = await dirname(record.filePath);
-          const otherRefs = await resolveImageRootRelativePaths(otherMarkdown, otherDirPath, folderPath);
-          otherRefs.paths.forEach((ref) => stillReferenced.add(ref));
+          await collectReferences(record.filePath, await readMarkdownFile(record.filePath));
         } catch {
           // File unreadable — ignore for the cleanup check.
         }
-      })
-  );
+      }),
+    ...openDocuments
+      .filter((document) => !isExcluded(document.filePath))
+      .map((document) => collectReferences(document.filePath, document.markdown).catch(() => undefined))
+  ]);
 
   await Promise.all(
     removedRefs

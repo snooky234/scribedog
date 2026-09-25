@@ -54,7 +54,11 @@ export function looksLikeMarkdown(text: string): boolean {
  * when the text could not be parsed, so the caller can leave the paste to
  * ProseMirror's default handling.
  */
-export function pasteMarkdown(editor: Editor, markdown: string): boolean {
+export function pasteMarkdown(
+  editor: Editor,
+  markdown: string,
+  transformSlice: (slice: Slice) => Slice = (slice) => slice
+): boolean {
   const fragment = parseMarkdownBlocks(editor, markdown);
 
   if (!fragment) {
@@ -63,7 +67,7 @@ export function pasteMarkdown(editor: Editor, markdown: string): boolean {
 
   // maxOpen is what ProseMirror's own paste uses: a single pasted paragraph
   // merges into the one the cursor is in, several paragraphs split it.
-  const slice = Slice.maxOpen(fragment);
+  const slice = transformSlice(Slice.maxOpen(fragment));
   const { state, dispatch } = editor.view;
 
   dispatch(state.tr.replaceSelection(slice).scrollIntoView().setMeta("paste", true).setMeta("uiEvent", "paste"));

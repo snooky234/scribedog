@@ -1,10 +1,10 @@
-import { readMarkdownFile } from "@/lib/fileSystem";
+import { readMarkdownFile, type OpenDocument } from "@/lib/fileSystem";
 import { isFolderNotePath } from "@/lib/folderNotes";
 import type { MarkdownFileRecord } from "@/platform/types";
 
 import { normalizePathKey } from "./pathUtils";
 import { stagedOnlyPathKeys } from "./stagedPaths";
-import type { FileDocumentState } from "./types";
+import type { AppData, FileDocumentState } from "./types";
 
 export function isDocumentDirty(document: FileDocumentState): boolean {
   return document.content !== document.baseContent;
@@ -109,4 +109,29 @@ export async function refreshCleanDocumentsFromDisk(
   );
 
   return nextDocuments;
+}
+
+/**
+ * The unsaved edits of every open note, for the image cleanup (see
+ * `OpenDocument`): an image pasted into a note that has not been saved yet is
+ * referenced there and nowhere on disk. The open note's own copy is the one
+ * the editor is showing, like in saveFilePath.
+ */
+export function collectUnsavedDocuments(
+  state: Pick<AppData, "fileDocuments" | "selectedFilePath" | "selectedFileContent">
+): OpenDocument[] {
+  const documents: OpenDocument[] = [];
+
+  for (const [filePath, document] of Object.entries(state.fileDocuments)) {
+    const markdown =
+      filePath === state.selectedFilePath && state.selectedFileContent !== null
+        ? state.selectedFileContent
+        : document.content;
+
+    if (markdown !== document.baseContent) {
+      documents.push({ filePath, markdown });
+    }
+  }
+
+  return documents;
 }

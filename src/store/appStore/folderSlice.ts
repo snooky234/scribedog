@@ -23,6 +23,7 @@ import {
 } from "@/lib/fileSystem";
 
 import {
+  collectUnsavedDocuments,
   isDocumentDirty,
   pruneDocumentsToCurrentFolder,
   refreshCleanDocumentsFromDisk
@@ -470,8 +471,11 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
           .filter((path) => isPathInsideFolder(path, folderPath))
           .map(async (path) => ({
             filePath: path,
-            markdown:
-              fileDocuments[path]?.baseContent ?? (await readMarkdownFile(path).catch(() => ""))
+            // Saved and unsaved content alike, as for a single note.
+            markdown: fileDocuments[path]
+              ? `${fileDocuments[path].baseContent}
+${fileDocuments[path].content}`
+              : await readMarkdownFile(path).catch(() => "")
           }))
       );
 
@@ -482,7 +486,9 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
       const vaultRootPath = get().folderPath;
 
       if (vaultRootPath && deletedDocuments.length > 0) {
-        void cleanupImagesOfDeletedFiles(vaultRootPath, deletedDocuments).catch(() => undefined);
+        void cleanupImagesOfDeletedFiles(vaultRootPath, deletedDocuments, collectUnsavedDocuments(get())).catch(
+          () => undefined
+        );
       }
 
       const currentState = get();

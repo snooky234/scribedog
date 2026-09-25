@@ -14,7 +14,7 @@ import {
 import { readVersionContent } from "@/lib/fileVersions";
 import { getFolderNotePath, isFolderNotePath } from "@/lib/folderNotes";
 
-import { isDocumentDirty, isExternallyModified } from "./documents";
+import { collectUnsavedDocuments, isDocumentDirty, isExternallyModified } from "./documents";
 import { discardDraft, flushDrafts, moveDraftFor, scheduleDraft } from "./drafts";
 import { toErrorMessage } from "./errors";
 import { dropVaultIcons, moveVaultIcons } from "./icons";
@@ -349,7 +349,8 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
           folderPath,
           selectedFilePath,
           previousBaseContent,
-          selectedFileContent
+          selectedFileContent,
+          collectUnsavedDocuments(get())
         ).catch(() => undefined);
       }
 
@@ -839,8 +840,13 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
     const { fileDocuments, selectedFilePath, folderPath } = get();
 
     try {
-      const contentBeforeDelete =
-        fileDocuments[filePath]?.baseContent ?? (await readMarkdownFile(filePath).catch(() => ""));
+      // What was saved plus what was not: an image pasted into the note and
+      // not saved yet is gone with it just the same.
+      const openDocument = fileDocuments[filePath];
+      const contentBeforeDelete = openDocument
+        ? `${openDocument.baseContent}
+${openDocument.content}`
+        : await readMarkdownFile(filePath).catch(() => "");
       // A folder note that was opened but never saved has nothing on disk;
       // "deleting" it only closes the empty document.
       const isUnwrittenFolderNote =
@@ -855,7 +861,13 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       discardDraft(folderPath, filePath);
 
       if (folderPath) {
-        void cleanupOrphanedImages(folderPath, filePath, contentBeforeDelete, "").catch(() => undefined);
+        void cleanupOrphanedImages(
+          folderPath,
+          filePath,
+          contentBeforeDelete,
+          "",
+          collectUnsavedDocuments(get())
+        ).catch(() => undefined);
       }
 
       const nextDocuments = { ...fileDocuments };

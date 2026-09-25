@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { getVaultCapabilities, platform, vaultCapabilityHint } from "@/platform";
 import type { PickedImageFile } from "@/platform/types";
 import { EditorContent, type Editor as TipTapEditor, useEditor } from "@tiptap/react";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -75,6 +76,7 @@ import { moveLine, moveListItem, toggleTaskItemChecked } from "@/lib/editor/list
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { looksLikeMarkdown, pasteMarkdown } from "@/lib/editor/pasteMarkdown";
 import { normalizePastedSlice } from "@/lib/editor/pasteNormalize";
+import { adoptPastedImages } from "@/lib/editor/pastedImages";
 import { getEditorMarkdown, getSelectionMarkdown } from "@/lib/editor/markdownStorage";
 import { serializeGuarded } from "@/lib/editor/serializationGuard";
 import {
@@ -90,6 +92,7 @@ import {
   getRelativeImageMarkdownPath,
   saveImageToFolder
 } from "@/lib/fileSystem";
+import { holdClipboardImages } from "@/lib/clipboardImages";
 import { updateSearchHighlight } from "@/lib/searchHighlight";
 import { canDownloadMarkdown, downloadNoteAsMarkdown } from "@/lib/export/markdownDownload";
 import { printMarkdown } from "@/lib/print";
@@ -185,6 +188,28 @@ function collapseNodeSelection(editor: TipTapEditor): void {
   }
 }
 
+// Records which images a cut or copy just put on the clipboard (see
+// lib/clipboardImages.ts): an image cut out of this note has to survive the
+// save that follows the cut, and a paste into a note in another folder has to
+// rewrite its path. Plain text carries no image, so its copy passes null.
+function holdCopiedImages(doc: ProseMirrorNode, range: SelectionRange | null): void {
+  const sources: string[] = [];
+
+  if (range) {
+    const size = doc.content.size;
+
+    doc.nodesBetween(Math.min(range.from, size), Math.min(range.to, size), (node) => {
+      const src = node.type.name === "image" ? ((node.attrs.src as string | null) ?? "") : "";
+
+      if (src) {
+        sources.push(src);
+      }
+    });
+  }
+
+  holdClipboardImages(useAppStore.getState().selectedFilePath, sources);
+}
+
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   {
     markdown,
@@ -211,6 +236,10 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   // Set by Ctrl+Shift+V and consumed by the paste event it triggers: the
   // clipboard event itself carries no modifier state.
   const plainPasteRequestedRef = useRef(false);
+  // True while a paste event is being handled: transformPasted also runs for
+  // a drop, which moves an image inside this note and must not count as the
+  // paste of the clipboard's images.
+  const pastingRef = useRef(false);
   const lastSyncedMarkdownRef = useRef(markdown);
   // Kept in a ref so the sync effect below doesn't re-run for a new callback
   // identity: it may only react to actual content changes. Declared up here
@@ -312,6 +341,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       reportCopyResult(copySelectionFormatted(currentEditor));
       return;
     }
+
+    const { from, to } = currentEditor.state.selection;
+    holdCopiedImages(currentEditor.state.doc, variant === "markdown" ? { from, to } : null);
 
     const copy = variant === "markdown" ? copySelectionAsMarkdown : copySelectionAsPlainText;
     void copy(currentEditor).then(reportCopyResult);
@@ -750,6 +782,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     if (!currentEditor) {
       return;
     }
+
+    holdCopiedImages(currentEditor.state.doc, variant === "markdown" ? range : null);
 
     const copy = variant === "markdown" ? copySelectionAsMarkdown : copySelectionAsPlainText;
     void copy(currentEditor, range).then(reportCopyResult);
@@ -1208,7 +1242,16 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
         return true;
       },
-      transformPasted: (slice) => normalizePastedSlice(slice),
+      transformPasted: (slice) => {
+        const normalized = normalizePastedSlice(slice);
+
+        if (!pastingRef.current) {
+          return normalized;
+        }
+
+        const { selectedFilePath, folderPath: vaultPath } = useAppStore.getState();
+        return adoptPastedImages(normalized, selectedFilePath, vaultPath);
+      },
       handlePaste: (view, event) => {
         const plainPasteRequested = plainPasteRequestedRef.current;
         plainPasteRequestedRef.current = false;
@@ -1243,7 +1286,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return false;
         }
 
-        if (!pasteMarkdown(currentEditor, text)) {
+        const { selectedFilePath, folderPath: vaultPath } = useAppStore.getState();
+
+        if (!pasteMarkdown(currentEditor, text, (slice) => adoptPastedImages(slice, selectedFilePath, vaultPath))) {
           return false;
         }
 
@@ -1251,6 +1296,34 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         return true;
       },
       handleDOMEvents: {
+        // Ctrl+C/Ctrl+X, the system menu and "copy with formatting" all end
+        // in the native event; ProseMirror still writes the clipboard itself.
+        // With nothing selected nothing is copied, and the clipboard (with
+        // the images it may hold) stays what it was.
+        copy: (view) => {
+          if (!view.state.selection.empty) {
+            holdCopiedImages(view.state.doc, view.state.selection);
+          }
+
+          return false;
+        },
+        cut: (view) => {
+          if (!view.state.selection.empty) {
+            holdCopiedImages(view.state.doc, view.state.selection);
+          }
+
+          return false;
+        },
+        // ProseMirror parses the clipboard in the same listener, right after
+        // this, so the flag is only up for that one synchronous run.
+        paste: () => {
+          pastingRef.current = true;
+          queueMicrotask(() => {
+            pastingRef.current = false;
+          });
+
+          return false;
+        },
         click: (_view, event) => {
           const target = event.target as HTMLElement | null;
           const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;

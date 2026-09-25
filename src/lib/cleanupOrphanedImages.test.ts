@@ -64,12 +64,14 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
 }));
 
 const { cleanupImagesOfDeletedFiles, cleanupOrphanedImages } = await import("@/lib/fileSystem");
+const { adoptPastedImageSource, holdClipboardImages } = await import("@/lib/clipboardImages");
 
 const VAULT = "/vault";
 
 beforeEach(() => {
   files = {};
   removed.length = 0;
+  holdClipboardImages(null, []);
 });
 
 describe("cleanupOrphanedImages", () => {
@@ -140,6 +142,106 @@ describe("cleanupOrphanedImages", () => {
     );
 
     expect(removed).toEqual(["/vault/images/a.png"]);
+  });
+});
+
+describe("images on the clipboard", () => {
+  // Regression: Ctrl+X on an image removed it from the note, the auto-save a
+  // second later deleted the file, and the paste pointed at nothing.
+  it("keeps an image that was cut out of the note being saved", async () => {
+    files["/vault/note.md"] = "# Title\n";
+    holdClipboardImages("/vault/note.md", ["images/a.png"]);
+
+    await cleanupOrphanedImages(VAULT, "/vault/note.md", "![x](images/a.png)", "# Title\n");
+
+    expect(removed).toEqual([]);
+  });
+
+  it("resolves the held image against the note it was cut from", async () => {
+    files["/vault/sub/note.md"] = "# Title\n";
+    holdClipboardImages("/vault/sub/note.md", ["../images/a.png"]);
+
+    await cleanupOrphanedImages(VAULT, "/vault/sub/note.md", "![x](../images/a.png)", "# Title\n");
+
+    expect(removed).toEqual([]);
+  });
+
+  it("deletes the image again once a later copy replaced it on the clipboard", async () => {
+    files["/vault/note.md"] = "# Title\n";
+    holdClipboardImages("/vault/note.md", ["images/a.png"]);
+    holdClipboardImages("/vault/note.md", []);
+
+    await cleanupOrphanedImages(VAULT, "/vault/note.md", "![x](images/a.png)", "# Title\n");
+
+    expect(removed).toEqual(["/vault/images/a.png"]);
+  });
+
+  // Cut from one note, pasted into another, then deleted there: the paste
+  // ended the protection, so the image goes with the note it now lives in.
+  it("deletes the image again once it was pasted", async () => {
+    files["/vault/note.md"] = "# Title\n";
+    holdClipboardImages("/vault/note.md", ["images/a.png"]);
+    adoptPastedImageSource("images/a.png", "/vault/other.md", VAULT);
+
+    await cleanupOrphanedImages(VAULT, "/vault/other.md", "![x](images/a.png)", "");
+
+    expect(removed).toEqual(["/vault/images/a.png"]);
+  });
+
+  it("spares only the held image, not the others removed with it", async () => {
+    files["/vault/note.md"] = "# Title\n";
+    holdClipboardImages("/vault/note.md", ["images/a.png"]);
+
+    await cleanupOrphanedImages(
+      VAULT,
+      "/vault/note.md",
+      "![x](images/a.png)\n![y](images/b.png)",
+      "# Title\n"
+    );
+
+    expect(removed).toEqual(["/vault/images/b.png"]);
+  });
+
+  it("ignores a hold from a note of another vault", async () => {
+    files["/vault/note.md"] = "# Title\n";
+    holdClipboardImages("/other/note.md", ["../vault/images/a.png"]);
+
+    await cleanupOrphanedImages(VAULT, "/vault/note.md", "![x](images/a.png)", "# Title\n");
+
+    expect(removed).toEqual(["/vault/images/a.png"]);
+  });
+});
+
+describe("unsaved notes", () => {
+  // Pasted into a note that is not saved yet: on disk nothing refers to the
+  // image any more, only the open note does.
+  it("keeps an image that only the unsaved content of an open note references", async () => {
+    files["/vault/note.md"] = "# Title\n";
+    files["/vault/sub/other.md"] = "# Other\n";
+
+    await cleanupOrphanedImages(VAULT, "/vault/note.md", "![x](images/a.png)", "# Title\n", [
+      { filePath: "/vault/sub/other.md", markdown: "![x](../images/a.png)" }
+    ]);
+
+    expect(removed).toEqual([]);
+  });
+
+  it("does not count the unsaved content of the note being deleted", async () => {
+    await cleanupOrphanedImages(VAULT, "/vault/note.md", "![x](images/a.png)", "", [
+      { filePath: "/vault/note.md", markdown: "![x](images/a.png)" }
+    ]);
+
+    expect(removed).toEqual(["/vault/images/a.png"]);
+  });
+
+  it("keeps an image of a deleted folder that an open note outside it references", async () => {
+    await cleanupImagesOfDeletedFiles(
+      VAULT,
+      [{ filePath: "/vault/sub/a.md", markdown: "![x](../images/a.png)" }],
+      [{ filePath: "/vault/keep.md", markdown: "![x](images/a.png)" }]
+    );
+
+    expect(removed).toEqual([]);
   });
 });
 

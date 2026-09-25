@@ -6,6 +6,8 @@
 
 export const VAULT_META_DIR_NAME = ".scribedog";
 
+export const ABSOLUTE_URL_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
+
 export function isMarkdownFileName(name: string): boolean {
   return name.toLowerCase().endsWith(".md");
 }
