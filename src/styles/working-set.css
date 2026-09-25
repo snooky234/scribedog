@@ -187,6 +187,15 @@
   font-size: 0.9rem;
 }
 
+.working-set__kind {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-right: 0.3rem;
+  vertical-align: -0.1rem;
+  color: rgba(var(--muted-rgb), 0.9);
+}
+
 .working-set__folder {
   overflow: hidden;
   white-space: nowrap;

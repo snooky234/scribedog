@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Ellipsis, ListX, Locate, Pin, PinOff, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Ellipsis, Folder, ListX, Locate, Pin, PinOff, X } from "lucide-react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, RefObject } from "react";
@@ -80,7 +80,12 @@ export function WorkingSetPanel({
       ? getFolderNoteFolderPath(relativePath).split("/").slice(0, -1).join("/")
       : relativePath.split("/").slice(0, -1).join("/");
 
-    return { name: getNoteDisplayName(relativePath), folder: folderRelativePath, relativePath };
+    return {
+      name: getNoteDisplayName(relativePath),
+      folder: folderRelativePath,
+      relativePath,
+      isFolderNote: isFolderNotePath(relativePath)
+    };
   };
 
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -173,7 +178,7 @@ export function WorkingSetPanel({
           style={fillsSidebar ? undefined : { maxHeight }}
         >
           {entries.map((entry) => {
-            const { name, folder, relativePath } = describe(entry.filePath);
+            const { name, folder, relativePath, isFolderNote } = describe(entry.filePath);
             const isActive = entry.filePath === selectedFilePath;
             const isDirty = dirtySet.has(entry.filePath);
 
@@ -201,7 +206,17 @@ export function WorkingSetPanel({
                   }}
                 >
                   <span className="working-set__text">
-                    <span className="working-set__name">{name}</span>
+                    {/* A folder note and a note of the same name next to it
+                        would read the same; the tree tells them apart by
+                        their icon, so this list does too. */}
+                    <span className="working-set__name">
+                      {isFolderNote ? (
+                        <Folder className="working-set__kind" aria-label={t("app.folderNoteBadge")}>
+                          <title>{t("app.folderNoteBadge")}</title>
+                        </Folder>
+                      ) : null}
+                      {name}
+                    </span>
                     {folder ? <span className="working-set__folder">{folder}</span> : null}
                   </span>
                   {entry.pinned ? (
