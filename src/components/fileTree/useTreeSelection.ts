@@ -111,6 +111,16 @@ export function useTreeSelection({
     onSelectionChange([]);
   }, [selectedKeys, activeKey, selectionAsBatchEntries, onSelectionChange]);
 
+  // The sidebar unmounts the tree when the vault has nothing to show (a
+  // freshly opened empty folder, the last note deleted). Without this the
+  // parent keeps the last selection, and "new note" or the toolbar delete
+  // act on an entry of the previous vault: a note created in the old
+  // vault's folder, shown in the new one under its absolute path.
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  onSelectionChangeRef.current = onSelectionChange;
+
+  useEffect(() => () => onSelectionChangeRef.current?.([]), []);
+
   // Moves the active entry (roving tabindex) to the file that was just
   // opened, so tabbing back from the editor later lands on the file being
   // edited instead of a previously selected row. A single selection follows
