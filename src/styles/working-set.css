@@ -133,6 +133,32 @@
   min-width: 0;
 }
 
+/* Drag & drop reordering: the same line and faded source as the tree's
+   (file-tree.css --drop-above/--drop-below, --drag-source). */
+.working-set__item--drag-source {
+  opacity: 0.5;
+}
+
+.working-set__item--drop-above::before,
+.working-set__item--drop-below::after {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--blue-fg);
+  pointer-events: none;
+}
+
+.working-set__item--drop-above::before {
+  top: 0;
+}
+
+.working-set__item--drop-below::after {
+  bottom: 0;
+}
+
 .working-set__row {
   display: flex;
   flex: 1;

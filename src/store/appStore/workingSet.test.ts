@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   addWorkingSetEntry,
   closableWorkingSetEntries,
+  moveWorkingSetEntry,
   normalizeStoredWorkingSet,
   pruneWorkingSet,
   remapWorkingSetPaths,
@@ -46,6 +47,38 @@ describe("setWorkingSetPinned / removeWorkingSetEntry", () => {
 
   it("removes regardless of separators and case", () => {
     expect(removeWorkingSetEntry([{ filePath: A, pinned: false }], "d:/vault/A.MD")).toEqual([]);
+  });
+});
+
+describe("moveWorkingSetEntry", () => {
+  const C = "D:\Vault\C.md";
+  const entries: WorkingSetEntry[] = [
+    { filePath: A, pinned: true },
+    { filePath: B, pinned: false },
+    { filePath: C, pinned: true }
+  ];
+  const order = (list: WorkingSetEntry[]) => list.map((entry) => entry.filePath);
+
+  it("puts the entry in front of the target index of the current list", () => {
+    expect(order(moveWorkingSetEntry(entries, C, 0))).toEqual([C, A, B]);
+    expect(order(moveWorkingSetEntry(entries, A, 2))).toEqual([B, A, C]);
+    expect(order(moveWorkingSetEntry(entries, A, 3))).toEqual([B, C, A]);
+  });
+
+  it("leaves the order alone for a drop onto the entry's own place", () => {
+    expect(order(moveWorkingSetEntry(entries, B, 1))).toEqual([A, B, C]);
+    expect(order(moveWorkingSetEntry(entries, B, 2))).toEqual([A, B, C]);
+  });
+
+  it("keeps the pin, matches the path loosely and clamps the index", () => {
+    const moved = moveWorkingSetEntry(entries, "d:/vault/a.md", 99);
+    expect(order(moved)).toEqual([B, C, A]);
+    expect(moved[2].pinned).toBe(true);
+    expect(order(moveWorkingSetEntry(entries, C, -5))).toEqual([C, A, B]);
+  });
+
+  it("ignores a path that is not in the list", () => {
+    expect(order(moveWorkingSetEntry(entries, "D:\Vault\X.md", 0))).toEqual([A, B, C]);
   });
 });
 

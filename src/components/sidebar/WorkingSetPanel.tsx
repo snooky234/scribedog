@@ -1,10 +1,17 @@
 import { ChevronDown, ChevronRight, Ellipsis, Folder, ListX, Locate, Pin, PinOff, X } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, RefObject } from "react";
+import type {
+  DragEvent as ReactDragEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+  RefObject
+} from "react";
 
 import { ContextMenuSurface } from "@/components/fileTree/ContextMenuSurface";
+import type { DropPosition } from "@/components/fileTree/types";
 import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
+import { FILE_LINK_DRAG_MIME } from "@/lib/editor/fileLinks";
 import { getRelativeDisplayPath } from "@/lib/fileSystem";
 import { getFolderNoteFolderPath, getNoteDisplayName, isFolderNotePath } from "@/lib/folderNotes";
 import { cn } from "@/lib/utils";
@@ -31,9 +38,13 @@ export type WorkingSetPanelProps = {
   onRevealInTree: (filePath: string) => void;
   onPin: (filePath: string) => void;
   onUnpin: (filePath: string) => void;
+  /** Drag & drop: the entry goes in front of the one at `beforeIndex`. */
+  onMove: (filePath: string, beforeIndex: number) => void;
 };
 
 type EntryContextMenu = { x: number; y: number; filePath: string };
+
+type EntryDropIndicator = { filePath: string; position: Extract<DropPosition, "above" | "below"> };
 
 /**
  * The "In progress" section above the file tree (store/appStore/workingSet.ts
@@ -60,7 +71,8 @@ export function WorkingSetPanel({
   onCloseSaved,
   onRevealInTree,
   onPin,
-  onUnpin
+  onUnpin,
+  onMove
 }: WorkingSetPanelProps) {
   const { t } = useTranslation();
   const { contextMenu, setContextMenu } = useContextMenuState<EntryContextMenu>();
@@ -119,6 +131,63 @@ export function WorkingSetPanel({
 
     rowRefs.current.get(next.filePath)?.focus();
     onSelect(next.filePath);
+  };
+
+  // Drag & drop reorders the list; the order is the user's from then on and
+  // is stored with it. The drag also carries the note's path the way a tree
+  // row does, so dropping a row into the editor or the chat still inserts a
+  // link. Only a drag that started in this list is a reorder: one from the
+  // tree or from outside the app passes through untouched.
+  const [dragFilePath, setDragFilePath] = useState<string | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<EntryDropIndicator | null>(null);
+
+  const resetDrag = () => {
+    setDragFilePath(null);
+    setDropIndicator(null);
+  };
+
+  const handleItemDragOver = (event: ReactDragEvent<HTMLLIElement>, filePath: string) => {
+    if (!dragFilePath) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+
+    if (filePath === dragFilePath) {
+      setDropIndicator(null);
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const position = event.clientY - rect.top < rect.height / 2 ? "above" : "below";
+
+    setDropIndicator((current) =>
+      current?.filePath === filePath && current.position === position ? current : { filePath, position }
+    );
+  };
+
+  const handleItemDrop = (event: ReactDragEvent<HTMLLIElement>, filePath: string) => {
+    if (!dragFilePath) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const source = dragFilePath;
+    const position = dropIndicator?.filePath === filePath ? dropIndicator.position : null;
+    resetDrag();
+
+    if (!position || source === filePath) {
+      return;
+    }
+
+    const targetIndex = entries.findIndex((entry) => entry.filePath === filePath);
+
+    if (targetIndex >= 0) {
+      onMove(source, position === "above" ? targetIndex : targetIndex + 1);
+    }
   };
 
   // Middle-click closes, like a browser tab; the button is read at pointer
@@ -181,11 +250,36 @@ export function WorkingSetPanel({
             const { name, folder, relativePath, isFolderNote } = describe(entry.filePath);
             const isActive = entry.filePath === selectedFilePath;
             const isDirty = dirtySet.has(entry.filePath);
+            const dropPosition = dropIndicator?.filePath === entry.filePath ? dropIndicator.position : null;
 
             return (
-              <li key={entry.filePath} className="working-set__item">
+              <li
+                key={entry.filePath}
+                className={cn(
+                  "working-set__item",
+                  dragFilePath === entry.filePath && "working-set__item--drag-source",
+                  dropPosition && `working-set__item--drop-${dropPosition}`
+                )}
+                onDragOver={(event) => handleItemDragOver(event, entry.filePath)}
+                onDragLeave={(event) => {
+                  // Moving between the row and its close button is no leave.
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    setDropIndicator((current) => (current?.filePath === entry.filePath ? null : current));
+                  }
+                }}
+                onDrop={(event) => handleItemDrop(event, entry.filePath)}
+              >
                 <button
                   type="button"
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = "copyMove";
+                    event.dataTransfer.setData("text/plain", entry.filePath);
+                    event.dataTransfer.setData(FILE_LINK_DRAG_MIME, JSON.stringify([entry.filePath]));
+                    setContextMenu(null);
+                    setDragFilePath(entry.filePath);
+                  }}
+                  onDragEnd={resetDrag}
                   ref={(element) => {
                     if (element) {
                       rowRefs.current.set(entry.filePath, element);

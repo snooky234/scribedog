@@ -2,7 +2,9 @@ import { normalizePathKey } from "./pathUtils";
 
 /**
  * The "In progress" list above the file tree: the notes the user is working
- * on, as opposed to the ones merely looked at. Ordered by admission.
+ * on, as opposed to the ones merely looked at. Ordered by admission, until
+ * the user drags an entry somewhere else (moveWorkingSetEntry); that order is
+ * what gets stored.
  *
  * Two rules decide membership, and nothing else does: a note enters when it
  * becomes dirty (the user typed into it) or when the user pins it on purpose
@@ -77,6 +79,33 @@ export function removeWorkingSetEntry(entries: readonly WorkingSetEntry[], fileP
   const key = normalizePathKey(filePath);
 
   return entries.filter((entry) => normalizePathKey(entry.filePath) !== key);
+}
+
+/**
+ * Drag & drop inside the list: the entry goes in front of the one at
+ * `beforeIndex` (an index into the list as it is now, so `entries.length`
+ * means the end). Dropping an entry onto its own place changes nothing.
+ */
+export function moveWorkingSetEntry(
+  entries: readonly WorkingSetEntry[],
+  filePath: string,
+  beforeIndex: number
+): WorkingSetEntry[] {
+  const existing = findWorkingSetEntry(entries, filePath);
+
+  if (!existing) {
+    return [...entries];
+  }
+
+  const fromIndex = entries.indexOf(existing);
+  const clamped = Math.min(entries.length, Math.max(0, beforeIndex));
+  // Taking the entry out first shifts everything behind it up by one.
+  const toIndex = clamped > fromIndex ? clamped - 1 : clamped;
+  const next = entries.filter((entry) => entry !== existing);
+
+  next.splice(toIndex, 0, existing);
+
+  return next;
 }
 
 /** Rename and move: every entry's path goes through the mapper, order kept. */

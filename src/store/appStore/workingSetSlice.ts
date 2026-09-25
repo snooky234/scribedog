@@ -7,6 +7,7 @@ import type { AppSlice, FileDocumentState, WorkingSetSlice } from "./types";
 import {
   addWorkingSetEntry,
   closableWorkingSetEntries,
+  moveWorkingSetEntry,
   removeWorkingSetEntry,
   resolveStoredWorkingSet,
   setWorkingSetPinned,
@@ -109,6 +110,17 @@ export const createWorkingSetSlice: AppSlice<WorkingSetSlice> = (set, get) => ({
   unpinWorkingSetEntry: (filePath: string) => {
     const { workingSet, folderPath } = get();
     const next = setWorkingSetPinned(workingSet, filePath, false);
+
+    set({ workingSet: next });
+    persistWorkingSet(folderPath, next);
+  },
+  moveWorkingSetEntry: (filePath: string, beforeIndex: number) => {
+    const { workingSet, folderPath } = get();
+    const next = moveWorkingSetEntry(workingSet, filePath, beforeIndex);
+
+    if (next.every((entry, index) => entry === workingSet[index])) {
+      return;
+    }
 
     set({ workingSet: next });
     persistWorkingSet(folderPath, next);

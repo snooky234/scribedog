@@ -144,6 +144,7 @@ function App() {
   const workingSet = useAppStore((state) => state.workingSet);
   const pinWorkingSetEntry = useAppStore((state) => state.pinWorkingSetEntry);
   const unpinWorkingSetEntry = useAppStore((state) => state.unpinWorkingSetEntry);
+  const moveWorkingSetEntry = useAppStore((state) => state.moveWorkingSetEntry);
   const closeSavedWorkingSetEntries = useAppStore((state) => state.closeSavedWorkingSetEntries);
   const discardFileChanges = useAppStore((state) => state.discardFileChanges);
   const workingSetActions = useWorkingSetActions();
@@ -940,6 +941,7 @@ function App() {
         onCloseSaved: closeSavedWorkingSetEntries,
         onPin: pinWorkingSetEntry,
         onUnpin: unpinWorkingSetEntry,
+        onMove: moveWorkingSetEntry,
         onDiscardChanges: (filePath) => void discardFileChanges(filePath)
       }}
       folderError={folderError}
