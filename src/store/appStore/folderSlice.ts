@@ -7,6 +7,7 @@ import {
   addRecentFolderPath,
   allowMarkdownFolderAccess,
   chooseMarkdownFolder,
+  cleanupImagesOfDeletedFiles,
   clearLastOpenedFolderPath,
   createMarkdownFolderAtPath,
   createUniqueMarkdownFolder,
@@ -14,6 +15,7 @@ import {
   getRelativeDisplayPath,
   listMarkdownFiles,
   markdownFolderExists,
+  readMarkdownFile,
   removeRecentFolderPath,
   renameMarkdownFolder,
   setLastOpenedFolderPath,
@@ -459,9 +461,29 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
   },
   deleteFolderPath: async (folderPath: string) => {
     try {
+      // The notes' images live in the vault-root images/ folder, not in the
+      // folder being deleted, so they have to be collected before the notes
+      // are gone — same as deleting the notes one by one.
+      const { fileDocuments, filePaths } = get();
+      const deletedDocuments = await Promise.all(
+        filePaths
+          .filter((path) => isPathInsideFolder(path, folderPath))
+          .map(async (path) => ({
+            filePath: path,
+            markdown:
+              fileDocuments[path]?.baseContent ?? (await readMarkdownFile(path).catch(() => ""))
+          }))
+      );
+
       await deleteMarkdownFolder(folderPath);
       deleteFolderVersionHistory(get().folderPath, folderPath);
       deleteFolderDraftsFor(get().folderPath, folderPath);
+
+      const vaultRootPath = get().folderPath;
+
+      if (vaultRootPath && deletedDocuments.length > 0) {
+        void cleanupImagesOfDeletedFiles(vaultRootPath, deletedDocuments).catch(() => undefined);
+      }
 
       const currentState = get();
       const isSelectedInside =

@@ -509,17 +509,56 @@ export async function cleanupOrphanedImages(
 
   const removedRefs = [...previousRefs.paths].filter((path) => !nextRefs.paths.has(path));
 
+  await removeUnreferencedImages(folderPath, removedRefs, nextRefs.paths, [filePath]);
+}
+
+/**
+ * Deletes the images the given (already deleted) documents referenced, e.g.
+ * every note of a deleted folder, unless a document that is still in the vault
+ * references them. One vault scan for the whole batch instead of one per note.
+ */
+export async function cleanupImagesOfDeletedFiles(
+  folderPath: string,
+  deletedDocuments: Array<{ filePath: string; markdown: string }>
+): Promise<void> {
+  const removedRefs = new Set<string>();
+
+  for (const document of deletedDocuments) {
+    const fileDirPath = await dirname(document.filePath);
+    const refs = await resolveImageRootRelativePaths(document.markdown, fileDirPath, folderPath);
+    refs.paths.forEach((ref) => removedRefs.add(ref));
+  }
+
+  await removeUnreferencedImages(
+    folderPath,
+    [...removedRefs],
+    new Set(),
+    deletedDocuments.map((document) => document.filePath)
+  );
+}
+
+/**
+ * Removes each candidate image (vault-root-relative) that neither
+ * `alreadyReferenced` nor any vault document outside `excludedFilePaths`
+ * references.
+ */
+async function removeUnreferencedImages(
+  folderPath: string,
+  removedRefs: string[],
+  alreadyReferenced: Set<string>,
+  excludedFilePaths: string[]
+): Promise<void> {
   if (removedRefs.length === 0) {
     return;
   }
 
-  const stillReferenced = new Set(nextRefs.paths);
+  const stillReferenced = new Set(alreadyReferenced);
   const markdownFiles = await listMarkdownFiles(folderPath);
-  const normalizedCurrentFilePath = normalizeDisplayPath(filePath);
+  const excluded = new Set(excludedFilePaths.map(normalizeDisplayPath));
 
   await Promise.all(
     markdownFiles
-      .filter((record) => normalizeDisplayPath(record.filePath) !== normalizedCurrentFilePath)
+      .filter((record) => !excluded.has(normalizeDisplayPath(record.filePath)))
       .map(async (record) => {
         try {
           const otherMarkdown = await readMarkdownFile(record.filePath);

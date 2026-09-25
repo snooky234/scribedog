@@ -63,7 +63,7 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
   })
 }));
 
-const { cleanupOrphanedImages } = await import("@/lib/fileSystem");
+const { cleanupImagesOfDeletedFiles, cleanupOrphanedImages } = await import("@/lib/fileSystem");
 
 const VAULT = "/vault";
 
@@ -138,6 +138,40 @@ describe("cleanupOrphanedImages", () => {
       '![x](images/a.png "width=388")',
       "# Title\n"
     );
+
+    expect(removed).toEqual(["/vault/images/a.png"]);
+  });
+});
+
+describe("cleanupImagesOfDeletedFiles", () => {
+  // The folder is already gone from disk when the cleanup runs, so only the
+  // notes outside it are in the in-memory vault.
+  it("deletes the images of every note in a deleted folder", async () => {
+    files["/vault/keep.md"] = "# Title\n";
+
+    await cleanupImagesOfDeletedFiles(VAULT, [
+      { filePath: "/vault/sub/a.md", markdown: "![x](../images/a.png)" },
+      { filePath: "/vault/sub/deep/b.md", markdown: "![y](../../images/b.png)" }
+    ]);
+
+    expect(removed.sort()).toEqual(["/vault/images/a.png", "/vault/images/b.png"]);
+  });
+
+  it("keeps an image that a note outside the deleted folder still references", async () => {
+    files["/vault/keep.md"] = "![x](images/a.png)";
+
+    await cleanupImagesOfDeletedFiles(VAULT, [
+      { filePath: "/vault/sub/a.md", markdown: "![x](../images/a.png)\n![y](../images/b.png)" }
+    ]);
+
+    expect(removed).toEqual(["/vault/images/b.png"]);
+  });
+
+  it("removes an image shared by two deleted notes once", async () => {
+    await cleanupImagesOfDeletedFiles(VAULT, [
+      { filePath: "/vault/sub/a.md", markdown: "![x](../images/a.png)" },
+      { filePath: "/vault/sub/b.md", markdown: "![x](../images/a.png)" }
+    ]);
 
     expect(removed).toEqual(["/vault/images/a.png"]);
   });
