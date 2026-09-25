@@ -5,10 +5,11 @@
 // use code blocks and quotes instead — any non-list block behaves the same.
 // @vitest-environment jsdom
 import { Editor } from "@tiptap/core";
-import { TextSelection } from "@tiptap/pm/state";
+import { NodeSelection, TextSelection } from "@tiptap/pm/state";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildPreviewExtensions } from "@/lib/editor/extensions";
+import { EditorImage } from "@/lib/editor/extensions/image";
 import { moveLine, moveListItem } from "@/lib/editor/listCommands";
 
 let editor: Editor | null = null;
@@ -134,5 +135,59 @@ describe("moveLine", () => {
     expect(moveLine(e.view, "down")).toBe(true);
 
     expect(markdownOf(e)).toBe("Second\n\nFirst");
+  });
+
+  // Built from JSON: jsdom drops images when it parses markdown.
+  function openWithSelectedImage(): Editor {
+    editor = new Editor({
+      element: document.createElement("div"),
+      extensions: [...buildPreviewExtensions(), EditorImage],
+      content: {
+        type: "doc",
+        content: [
+          { type: "paragraph", content: [{ type: "text", text: "Before" }] },
+          { type: "image", attrs: { src: "images/eye.png", alt: "eye" } },
+          { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Title" }] }
+        ]
+      }
+    });
+
+    let imagePos = -1;
+    editor.state.doc.forEach((node, offset) => {
+      if (node.type.name === "image") {
+        imagePos = offset;
+      }
+    });
+    editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, imagePos)));
+
+    return editor;
+  }
+
+  function childTypes(current: Editor): string[] {
+    const types: string[] = [];
+    current.state.doc.forEach((node) => types.push(node.type.name));
+    return types;
+  }
+
+  it("moves a selected image down and keeps it selected", () => {
+    const e = openWithSelectedImage();
+
+    expect(moveLine(e.view, "down")).toBe(true);
+
+    expect(childTypes(e).slice(0, 3)).toEqual(["paragraph", "heading", "image"]);
+    const { selection } = e.state;
+    expect(selection).toBeInstanceOf(NodeSelection);
+    expect((selection as NodeSelection).node.type.name).toBe("image");
+  });
+
+  it("moves a selected image up and keeps it selected", () => {
+    const e = openWithSelectedImage();
+
+    expect(moveLine(e.view, "up")).toBe(true);
+
+    expect(childTypes(e).slice(0, 3)).toEqual(["image", "paragraph", "heading"]);
+    const { selection } = e.state;
+    expect(selection).toBeInstanceOf(NodeSelection);
+    expect((selection as NodeSelection).node.type.name).toBe("image");
   });
 });

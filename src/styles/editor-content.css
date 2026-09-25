@@ -542,14 +542,17 @@
    of the document after a trailing image. StarterKit enables the extension,
    but prosemirror-gapcursor's own stylesheet is not imported anywhere (and
    hardcodes a black line, invisible in the dark theme), so the position
-   existed while nothing was painted at it. */
-.ProseMirror-gapcursor {
+   existed while nothing was painted at it. TipTap's core does inject a copy
+   of those rules (a <style data-tiptap-style> appended to the end of <head>),
+   black line included; at equal specificity that later tag wins, so the
+   rules here are scoped under .ProseMirror to take precedence. */
+.ProseMirror .ProseMirror-gapcursor {
   display: none;
   pointer-events: none;
   position: absolute;
 }
 
-.ProseMirror-gapcursor::after {
+.ProseMirror .ProseMirror-gapcursor::after {
   content: "";
   display: block;
   position: absolute;
@@ -565,7 +568,7 @@
   }
 }
 
-.ProseMirror-focused .ProseMirror-gapcursor {
+.ProseMirror.ProseMirror-focused .ProseMirror-gapcursor {
   display: block;
 }
 

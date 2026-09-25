@@ -1,5 +1,5 @@
 import { Fragment, type Node as ProseMirrorNode } from "@tiptap/pm/model";
-import { TextSelection } from "@tiptap/pm/state";
+import { NodeSelection, TextSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 
 // Shared implementation behind moveListItem and moveLine: swaps the node(s)
@@ -10,13 +10,20 @@ import type { EditorView } from "@tiptap/pm/view";
 // selection by the sibling's size" is identical.
 function moveSiblingsAtDepth(view: EditorView, direction: "up" | "down", depth: number): boolean {
   const { state } = view;
-  const { $from, $to, from, to } = state.selection;
+  const { selection } = state;
+  const { $from, $to, from, to } = selection;
+  const parentDepth = depth - 1;
 
-  if ($from.depth < depth || $to.depth < depth) {
+  // A selected block node (an image clicked on, a horizontal rule) is a
+  // NodeSelection whose ends sit *around* the node, one level above the
+  // position a text cursor inside it would have — the node itself is the
+  // range to move.
+  const selectsWholeNode = selection instanceof NodeSelection && $from.depth === parentDepth;
+
+  if (!selectsWholeNode && ($from.depth < depth || $to.depth < depth)) {
     return false;
   }
 
-  const parentDepth = depth - 1;
   const parent = $from.node(parentDepth);
 
   if ($to.node(parentDepth) !== parent) {
@@ -24,15 +31,15 @@ function moveSiblingsAtDepth(view: EditorView, direction: "up" | "down", depth: 
   }
 
   const startIndex = $from.index(parentDepth);
-  const endIndex = $to.index(parentDepth);
+  const endIndex = selectsWholeNode ? startIndex : $to.index(parentDepth);
   const targetIndex = direction === "up" ? startIndex - 1 : endIndex + 1;
 
   if (targetIndex < 0 || targetIndex >= parent.childCount) {
     return false;
   }
 
-  const rangeStart = $from.before(depth);
-  const rangeEnd = $to.after(depth);
+  const rangeStart = selectsWholeNode ? from : $from.before(depth);
+  const rangeEnd = selectsWholeNode ? to : $to.after(depth);
   const sibling = parent.child(targetIndex);
 
   const selectedNodes: ProseMirrorNode[] = [];
@@ -47,7 +54,11 @@ function moveSiblingsAtDepth(view: EditorView, direction: "up" | "down", depth: 
   const offset = direction === "up" ? -sibling.nodeSize : sibling.nodeSize;
 
   const tr = state.tr.replaceWith(newRangeStart, newRangeEnd, replacement);
-  tr.setSelection(TextSelection.create(tr.doc, from + offset, to + offset));
+  tr.setSelection(
+    selection instanceof NodeSelection
+      ? NodeSelection.create(tr.doc, from + offset)
+      : TextSelection.create(tr.doc, from + offset, to + offset)
+  );
   tr.scrollIntoView();
 
   view.dispatch(tr);
@@ -144,7 +155,11 @@ function moveListItemAcrossBlock(view: EditorView, direction: "up" | "down", ite
   const tr = state.tr.replaceWith(rangeStart, rangeEnd, Fragment.from(nodes));
   const anchor = Math.min(Math.max(from, itemStart), itemEnd) - itemStart;
   const head = Math.min(Math.max(to, itemStart), itemEnd) - itemStart;
-  tr.setSelection(TextSelection.create(tr.doc, newItemStart + anchor, newItemStart + head));
+  tr.setSelection(
+    state.selection instanceof NodeSelection
+      ? NodeSelection.create(tr.doc, newItemStart + anchor)
+      : TextSelection.create(tr.doc, newItemStart + anchor, newItemStart + head)
+  );
   tr.scrollIntoView();
 
   view.dispatch(tr);
@@ -184,7 +199,7 @@ export function moveListItem(view: EditorView, direction: "up" | "down"): boolea
 }
 
 // Moves the top-level block(s) (paragraph, heading, blockquote, code block,
-// etc.) the selection spans one position up or down, the same way VS Code's
+// a selected image, etc.) the selection spans one position up or down, the same way VS Code's
 // Alt+Up/Down moves whole lines. This is the fallback for content that isn't
 // inside a list — moveListItem takes priority there.
 export function moveLine(view: EditorView, direction: "up" | "down"): boolean {
