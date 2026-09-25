@@ -189,6 +189,11 @@ export type VaultAccessApi = {
   allowFolderAccess(folderPath: string): Promise<void>;
   allowFileAccess(filePath: string): Promise<void>;
   watchFolder(folderPath: string): Promise<void>;
+  /**
+   * Whether a local folder still exists, also outside the open vault (the
+   * recent-vaults list). Never widens any access.
+   */
+  folderExists(folderPath: string): Promise<boolean>;
   /** Called once at startup; null means "no vault to open automatically". */
   getStartupFolderPath(): Promise<string | null>;
   /**

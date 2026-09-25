@@ -61,6 +61,14 @@ fn allow_file_scope(app: AppHandle, file_path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Whether a recent vault is still there. A plain bool on purpose: the fs
+/// scope only covers the open vault, and widening it to every recent folder
+/// just to ask this would open far more than the question needs.
+#[tauri::command]
+fn folder_exists(folder_path: String) -> bool {
+    Path::new(&folder_path).is_dir()
+}
+
 /// Opens a folder in the OS file manager, positioned *inside* it. The opener
 /// plugin's `reveal_item_in_dir` instead opens the item's parent with the item
 /// selected — correct for a file, but for a folder that lands the user one
@@ -427,6 +435,7 @@ pub fn run() {
             get_startup_folder_path,
             allow_folder_scope,
             allow_file_scope,
+            folder_exists,
             open_folder_in_file_manager,
             get_portable_status,
             watch_folder,

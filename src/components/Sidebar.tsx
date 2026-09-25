@@ -48,7 +48,7 @@ import {
   type DropPayload
 } from "@/lib/dragDrop/droppedSources";
 import { canDownloadFolderArchive } from "@/lib/export/markdownDownload";
-import { formatFolderLabel, getFolderBasename } from "@/lib/fileSystem";
+import { formatFolderLabel, getFolderBasename, pruneMissingRecentFolderPaths } from "@/lib/fileSystem";
 import { isRemoteVaultPath, remoteVaultFor } from "@/lib/remoteVaults";
 import { getVaultCapabilities, platform, vaultCapabilityHint } from "@/platform";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
@@ -183,7 +183,27 @@ export function Sidebar({
 
   // A server vault whose entry is gone (forgotten in the settings) has
   // nothing to open; the recent list is cleaned on forget, this is the net.
+  // A local vault deleted or moved outside the app would otherwise stay in
+  // the list until someone clicks it. Checked when the list is about to be
+  // seen; the pruning writes the list, this set hides the entries until the
+  // parent hands over a fresh one.
+  const [missingRecentPaths, setMissingRecentPaths] = useState<ReadonlySet<string>>(() => new Set());
+  const pruneRecentVaults = () => {
+    void pruneMissingRecentFolderPaths().then((missingPaths) => {
+      if (missingPaths.length > 0) {
+        setMissingRecentPaths((current) => new Set([...current, ...missingPaths]));
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (platform.features.localFolders) {
+      pruneRecentVaults();
+    }
+  }, []);
+
   const recentVaults = recentFolderPaths
+    .filter((path) => !missingRecentPaths.has(path))
     .map((path) => ({ path, remote: remoteVaultFor(path) }))
     .filter(({ path, remote }) => remote !== null || !isRemoteVaultPath(path));
   const folderLabel = formatFolderLabel(folderPath);
@@ -481,7 +501,13 @@ export function Sidebar({
             </Button>
           ) : null}
           {platform.features.localFolders ? (
-            <Menu>
+            <Menu
+              onOpenChange={(open) => {
+                if (open) {
+                  pruneRecentVaults();
+                }
+              }}
+            >
               <MenuTrigger
                 render={
                   <button

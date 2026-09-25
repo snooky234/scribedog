@@ -82,6 +82,7 @@ export const platform: Platform = {
     // living outside the opened vault.
     allowFileAccess: (filePath) => invoke("allow_file_scope", { filePath }),
     watchFolder: (folderPath) => invoke("watch_folder", { folderPath }),
+    folderExists: (folderPath) => invoke<boolean>("folder_exists", { folderPath }),
     getStartupFolderPath: () => invoke<string | null>("get_startup_folder_path"),
     onFolderFilesChanged: (handler) =>
       listen<string>(FOLDER_FILES_CHANGED_EVENT, (event) => handler(event.payload)),

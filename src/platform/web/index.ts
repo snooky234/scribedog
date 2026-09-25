@@ -93,6 +93,8 @@ export const platform: Platform = {
     // The change stream is per tab, not per folder (there is only one), so
     // subscribing is what "watching" means here.
     watchFolder: async () => undefined,
+    // There are no local folders in the browser, so nothing ever goes missing.
+    folderExists: async () => true,
     // One server, one vault: nothing to choose, the session decides.
     getStartupFolderPath: async () => REMOTE_VAULT_ROOT,
     onFolderFilesChanged: async (handler) => subscribeToVaultChanges(() => handler(REMOTE_VAULT_ROOT)),

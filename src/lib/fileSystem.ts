@@ -248,6 +248,24 @@ export function removeRecentFolderPath(folderPath: string): void {
   );
 }
 
+/**
+ * Drops recent local vaults whose folder was deleted or moved and returns
+ * the paths it dropped. Server vaults are left alone: a server that is away
+ * right now is still the user's server. A failed check keeps the entry, since
+ * losing a vault from the list is worse than showing one too many.
+ */
+export async function pruneMissingRecentFolderPaths(): Promise<string[]> {
+  const localPaths = getRecentFolderPaths().filter((path) => !isRemoteVaultPath(path));
+  const existsByPath = await Promise.all(
+    localPaths.map((path) => platform.vault.folderExists(path).catch(() => true))
+  );
+  const missingPaths = localPaths.filter((_, index) => !existsByPath[index]);
+
+  missingPaths.forEach(removeRecentFolderPath);
+
+  return missingPaths;
+}
+
 export function formatFolderLabel(folderPath: string | null): string {
   if (!folderPath) {
     return i18n.t("fileSystem.noFolderOpen");
