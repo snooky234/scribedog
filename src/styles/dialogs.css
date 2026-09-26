@@ -1334,8 +1334,14 @@
   overflow: hidden;
 }
 
+/* The intro and the body share a wrapper so a phone can scroll both
+   together (responsive.css); on wider screens it steps out of the layout. */
+.theme-builder__scroll {
+  display: contents;
+}
+
 .ai-dialog__panel--theme-builder > h3,
-.ai-dialog__panel--theme-builder > .theme-builder__intro,
+.theme-builder__scroll > .theme-builder__intro,
 .ai-dialog__panel--theme-builder > .theme-builder__notice,
 .ai-dialog__panel--theme-builder > .theme-builder__actions {
   flex: 0 0 auto;

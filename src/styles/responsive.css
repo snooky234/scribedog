@@ -557,6 +557,45 @@
     flex-wrap: wrap;
   }
 
+  /* Theme builder: no room for a live preview next to or above the fields,
+     so it goes, and "view in app" is the preview. Between the fixed title
+     and the fixed actions, intro and fields scroll as one. */
+  .theme-builder__scroll {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .theme-builder__body {
+    overflow: visible;
+    padding-right: 0;
+    margin-right: 0;
+  }
+
+  .theme-builder__preview {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    background: none;
+    padding-bottom: 0;
+  }
+
+  .theme-builder__preview > .theme-preview,
+  .theme-builder__view-switch {
+    display: none;
+  }
+
+  /* The "view in app" bar: the text above the button, not squeezed into a
+     narrow column beside it. */
+  .theme-builder__app-view {
+    flex-direction: column;
+    align-items: stretch;
+    width: calc(100vw - 2rem);
+    padding: 0.8rem;
+    bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+
   /* The login form keeps its rows together instead of stretching them over
      the whole screen. */
   .login-view__panel {

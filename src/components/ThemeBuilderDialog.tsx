@@ -490,272 +490,274 @@ export function ThemeBuilderDialog({ open, onClose }: ThemeBuilderDialogProps) {
         onClick={(event) => event.stopPropagation()}
       >
         <h3 id="theme-builder-title">{t("themeBuilder.title")}</h3>
-        <p className="theme-builder__intro">{t("themeBuilder.intro")}</p>
+        <div className="theme-builder__scroll">
+          <p className="theme-builder__intro">{t("themeBuilder.intro")}</p>
 
-        <div className="theme-builder__body">
-          <div className="theme-builder__form">
-            <label className="ai-dialog__field">
-              <span>{t("themeBuilder.theme")}</span>
-              <select
-                value={selectValue}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  if (value.startsWith("template:")) {
-                    select({ kind: "template", id: value.slice("template:".length) });
-                  } else if (value.startsWith("custom:")) {
-                    select({ kind: "custom", id: value.slice("custom:".length) });
-                  }
-                }}
-              >
-                <optgroup label={t("themeBuilder.templates")}>
-                  {TEMPLATE_IDS.map((id) => (
-                    <option key={id} value={`template:${id}`}>
-                      {templateName(id)}
-                    </option>
-                  ))}
-                </optgroup>
-                {customThemes.length > 0 || selection.kind === "new" ? (
-                  <optgroup label={t("themeBuilder.customThemes")}>
-                    {customThemes.map((entry) => (
-                      <option key={entry.id} value={`custom:${entry.id}`}>
-                        {entry.name}
+          <div className="theme-builder__body">
+            <div className="theme-builder__form">
+              <label className="ai-dialog__field">
+                <span>{t("themeBuilder.theme")}</span>
+                <select
+                  value={selectValue}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value.startsWith("template:")) {
+                      select({ kind: "template", id: value.slice("template:".length) });
+                    } else if (value.startsWith("custom:")) {
+                      select({ kind: "custom", id: value.slice("custom:".length) });
+                    }
+                  }}
+                >
+                  <optgroup label={t("themeBuilder.templates")}>
+                    {TEMPLATE_IDS.map((id) => (
+                      <option key={id} value={`template:${id}`}>
+                        {templateName(id)}
                       </option>
                     ))}
-                    {selection.kind === "new" ? (
-                      <option value="__new">{draft.name || t("themeBuilder.unnamed")}</option>
-                    ) : null}
                   </optgroup>
-                ) : null}
-              </select>
-            </label>
-
-            {!editable ? <p className="theme-builder__hint">{t("themeBuilder.templateHint")}</p> : null}
-
-            <div className="theme-builder__row">
-              <label className="ai-dialog__field theme-builder__name">
-                <span>{t("themeBuilder.name")}</span>
-                <input
-                  type="text"
-                  value={draft.name}
-                  disabled={!editable}
-                  maxLength={THEME_NAME_MAX_LENGTH}
-                  placeholder={t("themeBuilder.namePlaceholder")}
-                  onChange={(event) => update({ name: event.target.value })}
-                />
-              </label>
-              <label className="ai-dialog__field theme-builder__mode">
-                <span>{t("themeBuilder.mode")}</span>
-                <select
-                  value={draft.mode}
-                  disabled={!editable}
-                  onChange={(event) => setDraft((current) => switchMode(current, event.target.value as ThemeMode))}
-                >
-                  <option value="light">{t("themeBuilder.modeLight")}</option>
-                  <option value="dark">{t("themeBuilder.modeDark")}</option>
+                  {customThemes.length > 0 || selection.kind === "new" ? (
+                    <optgroup label={t("themeBuilder.customThemes")}>
+                      {customThemes.map((entry) => (
+                        <option key={entry.id} value={`custom:${entry.id}`}>
+                          {entry.name}
+                        </option>
+                      ))}
+                      {selection.kind === "new" ? (
+                        <option value="__new">{draft.name || t("themeBuilder.unnamed")}</option>
+                      ) : null}
+                    </optgroup>
+                  ) : null}
                 </select>
               </label>
-            </div>
-            <p className="theme-builder__hint">{t("themeBuilder.modeHint")}</p>
 
-            <div className="theme-builder__section-title">{t("themeBuilder.baseColors")}</div>
-            <div className="theme-builder__colors">
-              {BASE_COLOR_KEYS.map((key) => (
-                <ColorField
-                  key={key}
-                  label={baseLabels[key].label}
-                  hint={baseLabels[key].hint}
-                  value={draft.base[key]}
-                  disabled={!editable}
-                  onChange={(value) => setBaseColor(key, value)}
-                  onReset={
-                    editable && draft.base[key] !== DEFAULT_BASE_COLORS[draft.mode][key]
-                      ? () => setBaseColor(key, DEFAULT_BASE_COLORS[draft.mode][key])
-                      : undefined
-                  }
-                  resetLabel={resetLabel}
-                />
-              ))}
-            </div>
+              {!editable ? <p className="theme-builder__hint">{t("themeBuilder.templateHint")}</p> : null}
 
-            {draft.mode === "dark" ? (
-              <>
-                <div className="theme-builder__section-title">{t("themeBuilder.paper")}</div>
-                <p className="theme-builder__hint">{t("themeBuilder.paperHint")}</p>
-                <div className="theme-builder__colors">
-                  {(["background", "text"] as const).map((key) => (
-                    <ColorField
-                      key={key}
-                      label={key === "background" ? t("themeBuilder.paperBackground") : t("themeBuilder.paperText")}
-                      value={paper[key]}
-                      disabled={!editable}
-                      onChange={(value) => {
-                        update({ paper: { ...paper, [key]: value } });
-                        setPreviewView("paper");
-                      }}
-                      onReset={
-                        editable && draft.paper && draft.paper[key] !== DEFAULT_PAPER_COLORS[key]
-                          ? () => {
-                              const next = { ...paper, [key]: DEFAULT_PAPER_COLORS[key] };
-                              const isDefault =
-                                next.background === DEFAULT_PAPER_COLORS.background &&
-                                next.text === DEFAULT_PAPER_COLORS.text;
-                              update({ paper: isDefault ? undefined : next });
-                            }
-                          : undefined
-                      }
-                      resetLabel={resetLabel}
-                    />
+              <div className="theme-builder__row">
+                <label className="ai-dialog__field theme-builder__name">
+                  <span>{t("themeBuilder.name")}</span>
+                  <input
+                    type="text"
+                    value={draft.name}
+                    disabled={!editable}
+                    maxLength={THEME_NAME_MAX_LENGTH}
+                    placeholder={t("themeBuilder.namePlaceholder")}
+                    onChange={(event) => update({ name: event.target.value })}
+                  />
+                </label>
+                <label className="ai-dialog__field theme-builder__mode">
+                  <span>{t("themeBuilder.mode")}</span>
+                  <select
+                    value={draft.mode}
+                    disabled={!editable}
+                    onChange={(event) => setDraft((current) => switchMode(current, event.target.value as ThemeMode))}
+                  >
+                    <option value="light">{t("themeBuilder.modeLight")}</option>
+                    <option value="dark">{t("themeBuilder.modeDark")}</option>
+                  </select>
+                </label>
+              </div>
+              <p className="theme-builder__hint">{t("themeBuilder.modeHint")}</p>
+
+              <div className="theme-builder__section-title">{t("themeBuilder.baseColors")}</div>
+              <div className="theme-builder__colors">
+                {BASE_COLOR_KEYS.map((key) => (
+                  <ColorField
+                    key={key}
+                    label={baseLabels[key].label}
+                    hint={baseLabels[key].hint}
+                    value={draft.base[key]}
+                    disabled={!editable}
+                    onChange={(value) => setBaseColor(key, value)}
+                    onReset={
+                      editable && draft.base[key] !== DEFAULT_BASE_COLORS[draft.mode][key]
+                        ? () => setBaseColor(key, DEFAULT_BASE_COLORS[draft.mode][key])
+                        : undefined
+                    }
+                    resetLabel={resetLabel}
+                  />
+                ))}
+              </div>
+
+              {draft.mode === "dark" ? (
+                <>
+                  <div className="theme-builder__section-title">{t("themeBuilder.paper")}</div>
+                  <p className="theme-builder__hint">{t("themeBuilder.paperHint")}</p>
+                  <div className="theme-builder__colors">
+                    {(["background", "text"] as const).map((key) => (
+                      <ColorField
+                        key={key}
+                        label={key === "background" ? t("themeBuilder.paperBackground") : t("themeBuilder.paperText")}
+                        value={paper[key]}
+                        disabled={!editable}
+                        onChange={(value) => {
+                          update({ paper: { ...paper, [key]: value } });
+                          setPreviewView("paper");
+                        }}
+                        onReset={
+                          editable && draft.paper && draft.paper[key] !== DEFAULT_PAPER_COLORS[key]
+                            ? () => {
+                                const next = { ...paper, [key]: DEFAULT_PAPER_COLORS[key] };
+                                const isDefault =
+                                  next.background === DEFAULT_PAPER_COLORS.background &&
+                                  next.text === DEFAULT_PAPER_COLORS.text;
+                                update({ paper: isDefault ? undefined : next });
+                              }
+                            : undefined
+                        }
+                        resetLabel={resetLabel}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : null}
+
+              <div className="theme-builder__section-title">{t("themeBuilder.zen")}</div>
+              <p className="theme-builder__hint">{t("themeBuilder.zenHint")}</p>
+              <div className="theme-builder__colors">
+                {(["background", "text"] as const).map((key) => (
+                  <ColorField
+                    key={key}
+                    label={key === "background" ? t("themeBuilder.zenBackground") : t("themeBuilder.zenText")}
+                    value={zen[key]}
+                    disabled={!editable}
+                    onChange={(value) => {
+                      update({ zen: { ...zen, [key]: value } });
+                      setPreviewView("zen");
+                    }}
+                    onReset={
+                      editable && draft.zen && draft.zen[key] !== zenInherited[key]
+                        ? () => {
+                            const next = { ...zen, [key]: zenInherited[key] };
+                            const inherited =
+                              next.background === zenInherited.background && next.text === zenInherited.text;
+                            update({ zen: inherited ? undefined : next });
+                          }
+                        : undefined
+                    }
+                    resetLabel={t("themeBuilder.resetZen")}
+                  />
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="theme-builder__advanced-toggle"
+                aria-expanded={advancedOpen}
+                onClick={() => setAdvancedOpen((value) => !value)}
+              >
+                <ChevronDown size={16} className={advancedOpen ? "theme-builder__chevron--open" : undefined} />
+                {t("themeBuilder.advanced")}
+              </button>
+              {advancedOpen ? (
+                <div className="theme-builder__advanced">
+                  <p className="theme-builder__hint">{t("themeBuilder.advancedHint")}</p>
+                  {ADVANCED_GROUPS.map((group) => (
+                    <div key={group.titleKey}>
+                      <div className="theme-builder__group-title">{t(group.titleKey)}</div>
+                      <div className="theme-builder__colors">
+                        {group.keys.map((key) => (
+                          <ColorField
+                            key={key}
+                            label={t(`themeBuilder.advancedColors.${key}`)}
+                            value={draft.advanced?.[key] ?? DEFAULT_ADVANCED_COLORS[draft.mode][key]}
+                            disabled={!editable}
+                            onChange={(value) => setAdvancedColor(key, value)}
+                            onReset={editable && draft.advanced?.[key] ? () => setAdvancedColor(key, undefined) : undefined}
+                            resetLabel={t("themeBuilder.resetAdvanced")}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </>
-            ) : null}
+              ) : null}
 
-            <div className="theme-builder__section-title">{t("themeBuilder.zen")}</div>
-            <p className="theme-builder__hint">{t("themeBuilder.zenHint")}</p>
-            <div className="theme-builder__colors">
-              {(["background", "text"] as const).map((key) => (
-                <ColorField
-                  key={key}
-                  label={key === "background" ? t("themeBuilder.zenBackground") : t("themeBuilder.zenText")}
-                  value={zen[key]}
-                  disabled={!editable}
-                  onChange={(value) => {
-                    update({ zen: { ...zen, [key]: value } });
-                    setPreviewView("zen");
-                  }}
-                  onReset={
-                    editable && draft.zen && draft.zen[key] !== zenInherited[key]
-                      ? () => {
-                          const next = { ...zen, [key]: zenInherited[key] };
-                          const inherited =
-                            next.background === zenInherited.background && next.text === zenInherited.text;
-                          update({ zen: inherited ? undefined : next });
-                        }
-                      : undefined
-                  }
-                  resetLabel={t("themeBuilder.resetZen")}
+              <div className="theme-builder__transfer">
+                <div className="theme-builder__section-title">{t("themeBuilder.transfer")}</div>
+                <p className="theme-builder__hint">{t("themeBuilder.transferHint")}</p>
+                <div className="theme-builder__transfer-buttons">
+                  {platform.downloads ? (
+                    <Button type="button" variant="outline" size="sm" disabled={!editable} onClick={() => void exportToFile()}>
+                      <Download />
+                      {t("themeBuilder.exportFile")}
+                    </Button>
+                  ) : null}
+                  <Button type="button" variant="outline" size="sm" disabled={!editable} onClick={() => void exportToClipboard()}>
+                    <ClipboardCopy />
+                    {t("themeBuilder.exportClipboard")}
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => void importFromFile()}>
+                    <Upload />
+                    {t("themeBuilder.importFile")}
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => void importFromClipboard()}>
+                    <ClipboardPaste />
+                    {t("themeBuilder.importClipboard")}
+                  </Button>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  hidden
+                  onChange={(event) => void handleFileInput(event)}
                 />
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="theme-builder__advanced-toggle"
-              aria-expanded={advancedOpen}
-              onClick={() => setAdvancedOpen((value) => !value)}
-            >
-              <ChevronDown size={16} className={advancedOpen ? "theme-builder__chevron--open" : undefined} />
-              {t("themeBuilder.advanced")}
-            </button>
-            {advancedOpen ? (
-              <div className="theme-builder__advanced">
-                <p className="theme-builder__hint">{t("themeBuilder.advancedHint")}</p>
-                {ADVANCED_GROUPS.map((group) => (
-                  <div key={group.titleKey}>
-                    <div className="theme-builder__group-title">{t(group.titleKey)}</div>
-                    <div className="theme-builder__colors">
-                      {group.keys.map((key) => (
-                        <ColorField
-                          key={key}
-                          label={t(`themeBuilder.advancedColors.${key}`)}
-                          value={draft.advanced?.[key] ?? DEFAULT_ADVANCED_COLORS[draft.mode][key]}
-                          disabled={!editable}
-                          onChange={(value) => setAdvancedColor(key, value)}
-                          onReset={editable && draft.advanced?.[key] ? () => setAdvancedColor(key, undefined) : undefined}
-                          resetLabel={t("themeBuilder.resetAdvanced")}
-                        />
-                      ))}
+                {pasteOpen ? (
+                  <div className="theme-builder__paste">
+                    <label className="ai-dialog__field">
+                      <span>{t("themeBuilder.pasteLabel")}</span>
+                      <textarea
+                        value={pasteText}
+                        spellCheck={false}
+                        placeholder={t("themeBuilder.pastePlaceholder")}
+                        onChange={(event) => setPasteText(event.target.value)}
+                      />
+                    </label>
+                    <div className="theme-builder__paste-actions">
+                      <Button type="button" variant="outline" size="sm" onClick={() => setPasteOpen(false)}>
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={!pasteText.trim()}
+                        onClick={() => {
+                          if (importJson(pasteText)) {
+                            setPasteOpen(false);
+                            setPasteText("");
+                          }
+                        }}
+                      >
+                        {t("themeBuilder.pasteImport")}
+                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="theme-builder__transfer">
-              <div className="theme-builder__section-title">{t("themeBuilder.transfer")}</div>
-              <p className="theme-builder__hint">{t("themeBuilder.transferHint")}</p>
-              <div className="theme-builder__transfer-buttons">
-                {platform.downloads ? (
-                  <Button type="button" variant="outline" size="sm" disabled={!editable} onClick={() => void exportToFile()}>
-                    <Download />
-                    {t("themeBuilder.exportFile")}
-                  </Button>
                 ) : null}
-                <Button type="button" variant="outline" size="sm" disabled={!editable} onClick={() => void exportToClipboard()}>
-                  <ClipboardCopy />
-                  {t("themeBuilder.exportClipboard")}
-                </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => void importFromFile()}>
-                  <Upload />
-                  {t("themeBuilder.importFile")}
-                </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => void importFromClipboard()}>
-                  <ClipboardPaste />
-                  {t("themeBuilder.importClipboard")}
-                </Button>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/json,.json"
-                hidden
-                onChange={(event) => void handleFileInput(event)}
-              />
-              {pasteOpen ? (
-                <div className="theme-builder__paste">
-                  <label className="ai-dialog__field">
-                    <span>{t("themeBuilder.pasteLabel")}</span>
-                    <textarea
-                      value={pasteText}
-                      spellCheck={false}
-                      placeholder={t("themeBuilder.pastePlaceholder")}
-                      onChange={(event) => setPasteText(event.target.value)}
-                    />
-                  </label>
-                  <div className="theme-builder__paste-actions">
-                    <Button type="button" variant="outline" size="sm" onClick={() => setPasteOpen(false)}>
-                      {t("common.cancel")}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={!pasteText.trim()}
-                      onClick={() => {
-                        if (importJson(pasteText)) {
-                          setPasteOpen(false);
-                          setPasteText("");
-                        }
-                      }}
-                    >
-                      {t("themeBuilder.pasteImport")}
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
             </div>
-          </div>
 
-          <div className="theme-builder__preview">
-            <ThemePreview theme={draft} view={shownView} />
-            <div className="theme-builder__preview-options">
-              <div className="theme-builder__view-switch" role="group" aria-label={t("themeBuilder.previewView")}>
-                {(["app", "paper", "zen"] as const).map((view) => (
-                  <button
-                    key={view}
-                    type="button"
-                    aria-pressed={shownView === view}
-                    disabled={view === "paper" && draft.mode !== "dark"}
-                    title={view === "paper" && draft.mode !== "dark" ? t("themeBuilder.viewPaperDarkOnly") : undefined}
-                    onClick={() => setPreviewView(view)}
-                  >
-                    {t(`themeBuilder.view.${view}`)}
-                  </button>
-                ))}
+            <div className="theme-builder__preview">
+              <ThemePreview theme={draft} view={shownView} />
+              <div className="theme-builder__preview-options">
+                <div className="theme-builder__view-switch" role="group" aria-label={t("themeBuilder.previewView")}>
+                  {(["app", "paper", "zen"] as const).map((view) => (
+                    <button
+                      key={view}
+                      type="button"
+                      aria-pressed={shownView === view}
+                      disabled={view === "paper" && draft.mode !== "dark"}
+                      title={view === "paper" && draft.mode !== "dark" ? t("themeBuilder.viewPaperDarkOnly") : undefined}
+                      onClick={() => setPreviewView(view)}
+                    >
+                      {t(`themeBuilder.view.${view}`)}
+                    </button>
+                  ))}
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={viewInApp}>
+                  <Eye />
+                  {t("themeBuilder.viewInApp")}
+                </Button>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={viewInApp}>
-                <Eye />
-                {t("themeBuilder.viewInApp")}
-              </Button>
             </div>
           </div>
         </div>
