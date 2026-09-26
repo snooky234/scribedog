@@ -642,8 +642,10 @@
       "zoomReset": "重置缩放",
       "shortcutsOverview": "打开快捷键概览",
       "closeDialog": "关闭对话框",
-      "moveListItemUp": "上移行或列表项",
-      "moveListItemDown": "下移行或列表项",
+      "moveListItemUp": "上移行、列表项或表格行",
+      "moveListItemDown": "下移行、列表项或表格行",
+      "moveTableColumnLeft": "左移表格列",
+      "moveTableColumnRight": "右移表格列",
       "toggleDetailsPanel": "显示/隐藏详情面板（大纲、链接、反向链接与文件信息）",
       "closeWorkingSetEntry": "关闭“进行中”里的笔记"
     },
@@ -881,11 +883,18 @@
     "options": "表格选项",
     "addColumnBefore": "在前面插入列",
     "addColumnAfter": "在后面插入列",
+    "moveColumnLeft": "左移列",
+    "moveColumnRight": "右移列",
     "deleteColumn": "删除列",
     "addRowBefore": "在上方插入行",
     "addRowAfter": "在下方插入行",
+    "moveRowUp": "上移行",
+    "moveRowDown": "下移行",
     "deleteRow": "删除行",
-    "deleteTable": "删除表格"
+    "deleteTable": "删除表格",
+    "gripRow": "拖动以移动该行，点按以选中",
+    "gripColumn": "拖动以移动该列，点按以选中",
+    "gripTable": "拖动以移动表格，点按以选中"
   },
   "imageView": {
     "notFound": "找不到图片：{{src}}",

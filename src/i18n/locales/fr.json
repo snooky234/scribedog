@@ -643,8 +643,10 @@
       "zoomReset": "Réinitialiser le zoom",
       "shortcutsOverview": "Ouvrir l'aperçu des raccourcis",
       "closeDialog": "Fermer la boîte de dialogue",
-      "moveListItemUp": "Déplacer la ligne ou l'élément de liste vers le haut",
-      "moveListItemDown": "Déplacer la ligne ou l'élément de liste vers le bas",
+      "moveListItemUp": "Déplacer la ligne, l'élément de liste ou la ligne du tableau vers le haut",
+      "moveListItemDown": "Déplacer la ligne, l'élément de liste ou la ligne du tableau vers le bas",
+      "moveTableColumnLeft": "Déplacer la colonne du tableau vers la gauche",
+      "moveTableColumnRight": "Déplacer la colonne du tableau vers la droite",
       "toggleDetailsPanel": "Afficher/masquer le panneau de détails (plan, liens, rétroliens et infos du fichier)",
       "closeWorkingSetEntry": "Fermer la note dans « En cours »"
     },
@@ -882,11 +884,18 @@
     "options": "Options du tableau",
     "addColumnBefore": "Insérer une colonne avant",
     "addColumnAfter": "Insérer une colonne après",
+    "moveColumnLeft": "Déplacer la colonne vers la gauche",
+    "moveColumnRight": "Déplacer la colonne vers la droite",
     "deleteColumn": "Supprimer la colonne",
     "addRowBefore": "Insérer une ligne au-dessus",
     "addRowAfter": "Insérer une ligne en dessous",
+    "moveRowUp": "Déplacer la ligne vers le haut",
+    "moveRowDown": "Déplacer la ligne vers le bas",
     "deleteRow": "Supprimer la ligne",
-    "deleteTable": "Supprimer le tableau"
+    "deleteTable": "Supprimer le tableau",
+    "gripRow": "Faites glisser pour déplacer la ligne, touchez pour la sélectionner",
+    "gripColumn": "Faites glisser pour déplacer la colonne, touchez pour la sélectionner",
+    "gripTable": "Faites glisser pour déplacer le tableau, touchez pour le sélectionner"
   },
   "imageView": {
     "notFound": "Image introuvable : {{src}}",

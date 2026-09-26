@@ -643,8 +643,10 @@
       "zoomReset": "Zoom zurücksetzen",
       "shortcutsOverview": "Tastenkürzel-Übersicht öffnen",
       "closeDialog": "Dialog schließen",
-      "moveListItemUp": "Zeile oder Listenelement nach oben verschieben",
-      "moveListItemDown": "Zeile oder Listenelement nach unten verschieben",
+      "moveListItemUp": "Zeile, Listenelement oder Tabellenzeile nach oben verschieben",
+      "moveListItemDown": "Zeile, Listenelement oder Tabellenzeile nach unten verschieben",
+      "moveTableColumnLeft": "Tabellenspalte nach links verschieben",
+      "moveTableColumnRight": "Tabellenspalte nach rechts verschieben",
       "toggleDetailsPanel": "Details-Panel (Gliederung, Links, Backlinks & Datei-Info) ein-/ausblenden",
       "closeWorkingSetEntry": "Notiz aus „In Arbeit“ schließen"
     },
@@ -882,11 +884,18 @@
     "options": "Tabellenoptionen",
     "addColumnBefore": "Spalte davor einfügen",
     "addColumnAfter": "Spalte danach einfügen",
+    "moveColumnLeft": "Spalte nach links verschieben",
+    "moveColumnRight": "Spalte nach rechts verschieben",
     "deleteColumn": "Spalte löschen",
     "addRowBefore": "Zeile darüber einfügen",
     "addRowAfter": "Zeile darunter einfügen",
+    "moveRowUp": "Zeile nach oben verschieben",
+    "moveRowDown": "Zeile nach unten verschieben",
     "deleteRow": "Zeile löschen",
-    "deleteTable": "Tabelle löschen"
+    "deleteTable": "Tabelle löschen",
+    "gripRow": "Ziehen verschiebt die Zeile, Tippen wählt sie aus",
+    "gripColumn": "Ziehen verschiebt die Spalte, Tippen wählt sie aus",
+    "gripTable": "Ziehen verschiebt die Tabelle, Tippen wählt sie aus"
   },
   "imageView": {
     "notFound": "Bild nicht gefunden: {{src}}",

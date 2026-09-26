@@ -643,8 +643,10 @@
       "zoomReset": "Reimposta lo zoom",
       "shortcutsOverview": "Apri panoramica scorciatoie",
       "closeDialog": "Chiudi finestra",
-      "moveListItemUp": "Sposta la riga o l'elemento dell'elenco in alto",
-      "moveListItemDown": "Sposta la riga o l'elemento dell'elenco in basso",
+      "moveListItemUp": "Sposta la riga, l'elemento dell'elenco o la riga della tabella in alto",
+      "moveListItemDown": "Sposta la riga, l'elemento dell'elenco o la riga della tabella in basso",
+      "moveTableColumnLeft": "Sposta la colonna della tabella a sinistra",
+      "moveTableColumnRight": "Sposta la colonna della tabella a destra",
       "toggleDetailsPanel": "Mostra/nascondi il pannello dei dettagli (struttura, collegamenti, backlink e info file)",
       "closeWorkingSetEntry": "Chiudi la nota in «In lavorazione»"
     },
@@ -882,11 +884,18 @@
     "options": "Opzioni tabella",
     "addColumnBefore": "Inserisci colonna prima",
     "addColumnAfter": "Inserisci colonna dopo",
+    "moveColumnLeft": "Sposta colonna a sinistra",
+    "moveColumnRight": "Sposta colonna a destra",
     "deleteColumn": "Elimina colonna",
     "addRowBefore": "Inserisci riga sopra",
     "addRowAfter": "Inserisci riga sotto",
+    "moveRowUp": "Sposta riga in alto",
+    "moveRowDown": "Sposta riga in basso",
     "deleteRow": "Elimina riga",
-    "deleteTable": "Elimina tabella"
+    "deleteTable": "Elimina tabella",
+    "gripRow": "Trascina per spostare la riga, tocca per selezionarla",
+    "gripColumn": "Trascina per spostare la colonna, tocca per selezionarla",
+    "gripTable": "Trascina per spostare la tabella, tocca per selezionarla"
   },
   "imageView": {
     "notFound": "Immagine non trovata: {{src}}",

@@ -2,6 +2,10 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
   Columns3,
   PanelBottomClose,
   PanelTopClose,
@@ -15,6 +19,7 @@ import type { Editor } from "@tiptap/react";
 
 import { Button } from "@/components/ui/button";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
+import { tableLineStep, type TableAxis } from "@/lib/editor/tableMove";
 import { useDismissablePopover } from "@/lib/useDismissablePopover";
 import {
   anchorForTrigger,
@@ -82,6 +87,20 @@ export function TableMenu({ editor }: TableMenuProps) {
     close();
   };
 
+  // The same step as Alt+Shift+Arrow (tableMove.ts): the header row stays
+  // first, and a table with merged cells is not reordered.
+  const moveStep = (axis: TableAxis, delta: -1 | 1) => tableLineStep(editor.state, axis, delta).tr;
+  const runMove = (axis: TableAxis, delta: -1 | 1) =>
+    run(() => {
+      const tr = moveStep(axis, delta);
+
+      if (tr) {
+        editor.view.dispatch(tr);
+      }
+
+      editor.commands.focus();
+    });
+
   return (
     <>
       <Button
@@ -134,6 +153,18 @@ export function TableMenu({ editor }: TableMenuProps) {
                 onSelect={() => run(() => editor.chain().focus().addColumnAfter().run())}
               />
               <MenuItem
+                icon={<ArrowLeft aria-hidden="true" />}
+                label={t("tableMenu.moveColumnLeft")}
+                disabled={!moveStep("column", -1)}
+                onSelect={() => runMove("column", -1)}
+              />
+              <MenuItem
+                icon={<ArrowRight aria-hidden="true" />}
+                label={t("tableMenu.moveColumnRight")}
+                disabled={!moveStep("column", 1)}
+                onSelect={() => runMove("column", 1)}
+              />
+              <MenuItem
                 icon={<Trash2 aria-hidden="true" />}
                 label={t("tableMenu.deleteColumn")}
                 danger
@@ -154,6 +185,18 @@ export function TableMenu({ editor }: TableMenuProps) {
                 label={t("tableMenu.addRowAfter")}
                 disabled={isInHeaderRow}
                 onSelect={() => run(() => editor.chain().focus().addRowAfter().run())}
+              />
+              <MenuItem
+                icon={<ArrowUp aria-hidden="true" />}
+                label={t("tableMenu.moveRowUp")}
+                disabled={!moveStep("row", -1)}
+                onSelect={() => runMove("row", -1)}
+              />
+              <MenuItem
+                icon={<ArrowDown aria-hidden="true" />}
+                label={t("tableMenu.moveRowDown")}
+                disabled={!moveStep("row", 1)}
+                onSelect={() => runMove("row", 1)}
               />
               <MenuItem
                 icon={<Rows3 aria-hidden="true" />}

@@ -52,7 +52,9 @@ export type ShortcutActionId =
   | "heading5"
   | "heading6"
   | "moveListItemUp"
-  | "moveListItemDown";
+  | "moveListItemDown"
+  | "moveTableColumnLeft"
+  | "moveTableColumnRight";
 
 export type ShortcutDefinition = {
   id: ShortcutActionId;
@@ -392,6 +394,20 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     category: "format",
     descriptionKey: "shortcutsDialog.items.moveListItemDown",
     defaultBinding: combo({ alt: true, shift: true }, "ArrowDown", "", "↓")
+  },
+  {
+    id: "moveTableColumnLeft",
+    scope: "editor",
+    category: "format",
+    descriptionKey: "shortcutsDialog.items.moveTableColumnLeft",
+    defaultBinding: combo({ alt: true, shift: true }, "ArrowLeft", "", "←")
+  },
+  {
+    id: "moveTableColumnRight",
+    scope: "editor",
+    category: "format",
+    descriptionKey: "shortcutsDialog.items.moveTableColumnRight",
+    defaultBinding: combo({ alt: true, shift: true }, "ArrowRight", "", "→")
   }
 ];
 

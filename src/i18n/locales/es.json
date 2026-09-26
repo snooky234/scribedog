@@ -643,8 +643,10 @@
       "zoomReset": "Restablecer el zoom",
       "shortcutsOverview": "Abrir el resumen de atajos",
       "closeDialog": "Cerrar cuadro de diálogo",
-      "moveListItemUp": "Subir línea o elemento de lista",
-      "moveListItemDown": "Bajar línea o elemento de lista",
+      "moveListItemUp": "Subir línea, elemento de lista o fila de tabla",
+      "moveListItemDown": "Bajar línea, elemento de lista o fila de tabla",
+      "moveTableColumnLeft": "Mover columna de la tabla a la izquierda",
+      "moveTableColumnRight": "Mover columna de la tabla a la derecha",
       "toggleDetailsPanel": "Mostrar/ocultar el panel de detalles (esquema, enlaces, retroenlaces e información del archivo)",
       "closeWorkingSetEntry": "Cerrar la nota de «En curso»"
     },
@@ -882,11 +884,18 @@
     "options": "Opciones de la tabla",
     "addColumnBefore": "Insertar columna antes",
     "addColumnAfter": "Insertar columna después",
+    "moveColumnLeft": "Mover columna a la izquierda",
+    "moveColumnRight": "Mover columna a la derecha",
     "deleteColumn": "Eliminar columna",
     "addRowBefore": "Insertar fila arriba",
     "addRowAfter": "Insertar fila abajo",
+    "moveRowUp": "Subir fila",
+    "moveRowDown": "Bajar fila",
     "deleteRow": "Eliminar fila",
-    "deleteTable": "Eliminar tabla"
+    "deleteTable": "Eliminar tabla",
+    "gripRow": "Arrastra para mover la fila, toca para seleccionarla",
+    "gripColumn": "Arrastra para mover la columna, toca para seleccionarla",
+    "gripTable": "Arrastra para mover la tabla, toca para seleccionarla"
   },
   "imageView": {
     "notFound": "Imagen no encontrada: {{src}}",

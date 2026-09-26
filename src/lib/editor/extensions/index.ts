@@ -10,6 +10,7 @@ import { CodeBlockLinks } from "@/lib/editor/codeBlockLinks";
 import { HeadingNumbering } from "@/lib/editor/headingNumbering";
 import { InactiveSelection } from "@/lib/inactiveSelection";
 import { OutlineHighlight } from "@/lib/editor/outlineHighlight";
+import { TableGrips } from "@/lib/editor/tableGrips";
 import { SearchHighlight } from "@/lib/searchHighlight";
 import { VoiceInsertWidget } from "@/lib/voiceInsertWidget";
 
@@ -49,7 +50,11 @@ function buildContentExtensions(): Extensions {
     TaskListMarkdown,
     Underline,
     Highlight,
-    Table.configure({ resizable: true }),
+    // A table can be selected as a whole (the grip in its corner,
+    // tableGrips.ts); without this prosemirror-tables turns that selection
+    // into a selection of every cell, which Alt+Shift+Up/Down would read
+    // as "move the row".
+    Table.configure({ resizable: true, allowTableNodeSelection: true }),
     TableRow,
     TableHeader,
     TableCell,
@@ -70,7 +75,7 @@ function buildContentExtensions(): Extensions {
 
 // The complete extension set of the editor. The widgets at the end (AI
 // stream/diff/suggestion, voice insert, search highlight, code block links,
-// inactive selection) are decoration-only and don't affect serialization. EditorImage lives here
+// table grips, inactive selection) are decoration-only and don't affect serialization. EditorImage lives here
 // rather than in the content set: its NodeView resolves vault-relative paths
 // into blob URLs, which only makes sense for a document that is actually open.
 export function buildEditorExtensions(): Extensions {
@@ -85,6 +90,7 @@ export function buildEditorExtensions(): Extensions {
     CodeBlockLinks,
     OutlineHighlight,
     HeadingNumbering,
+    TableGrips,
     InactiveSelection
   ];
 }

@@ -643,8 +643,10 @@
       "zoomReset": "Redefinir o zoom",
       "shortcutsOverview": "Abrir visão geral de atalhos",
       "closeDialog": "Fechar diálogo",
-      "moveListItemUp": "Mover linha ou item de lista para cima",
-      "moveListItemDown": "Mover linha ou item de lista para baixo",
+      "moveListItemUp": "Mover linha, item de lista ou linha de tabela para cima",
+      "moveListItemDown": "Mover linha, item de lista ou linha de tabela para baixo",
+      "moveTableColumnLeft": "Mover coluna da tabela para a esquerda",
+      "moveTableColumnRight": "Mover coluna da tabela para a direita",
       "toggleDetailsPanel": "Mostrar/ocultar o painel de detalhes (estrutura, links, backlinks e informações do arquivo)",
       "closeWorkingSetEntry": "Fechar a nota em \"Em andamento\""
     },
@@ -882,11 +884,18 @@
     "options": "Opções da tabela",
     "addColumnBefore": "Inserir coluna antes",
     "addColumnAfter": "Inserir coluna depois",
+    "moveColumnLeft": "Mover coluna para a esquerda",
+    "moveColumnRight": "Mover coluna para a direita",
     "deleteColumn": "Excluir coluna",
     "addRowBefore": "Inserir linha acima",
     "addRowAfter": "Inserir linha abaixo",
+    "moveRowUp": "Mover linha para cima",
+    "moveRowDown": "Mover linha para baixo",
     "deleteRow": "Excluir linha",
-    "deleteTable": "Excluir tabela"
+    "deleteTable": "Excluir tabela",
+    "gripRow": "Arraste para mover a linha, toque para selecioná-la",
+    "gripColumn": "Arraste para mover a coluna, toque para selecioná-la",
+    "gripTable": "Arraste para mover a tabela, toque para selecioná-la"
   },
   "imageView": {
     "notFound": "Imagem não encontrada: {{src}}",

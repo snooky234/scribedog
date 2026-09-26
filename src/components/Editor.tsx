@@ -73,6 +73,7 @@ import {
   getNonImageFilesFromDataTransfer
 } from "@/lib/editor/imageTransfer";
 import { moveLine, moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
+import { dispatchTableStep, tableLineStep } from "@/lib/editor/tableMove";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { looksLikeMarkdown, pasteMarkdown } from "@/lib/editor/pasteMarkdown";
 import { normalizePastedSlice } from "@/lib/editor/pasteNormalize";
@@ -1467,13 +1468,32 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           case "moveListItemUp":
           case "moveListItemDown": {
             const direction = action === "moveListItemUp" ? "up" : "down";
-            const moved = moveListItem(view, direction) || moveLine(view, direction);
+            // A list item wins, also inside a table cell. In a body row the
+            // row moves; in the header row the step is not handled and the
+            // whole table moves through moveLine, as it did before rows
+            // could move (tableMove.ts).
+            const tableStep = tableLineStep(view.state, "row", direction === "up" ? -1 : 1);
+            const moved =
+              moveListItem(view, direction) ||
+              (tableStep.handled && dispatchTableStep(view, tableStep.tr)) ||
+              moveLine(view, direction);
 
             if (moved) {
               event.preventDefault();
             }
 
             return moved;
+          }
+          case "moveTableColumnLeft":
+          case "moveTableColumnRight": {
+            const tableStep = tableLineStep(view.state, "column", action === "moveTableColumnLeft" ? -1 : 1);
+
+            if (!tableStep.handled) {
+              return false;
+            }
+
+            event.preventDefault();
+            return dispatchTableStep(view, tableStep.tr);
           }
           case "aiCheckDialog":
             event.preventDefault();

@@ -643,8 +643,10 @@
       "zoomReset": "Reset zoom",
       "shortcutsOverview": "Open shortcuts overview",
       "closeDialog": "Close dialog",
-      "moveListItemUp": "Move line or list item up",
-      "moveListItemDown": "Move line or list item down",
+      "moveListItemUp": "Move line, list item or table row up",
+      "moveListItemDown": "Move line, list item or table row down",
+      "moveTableColumnLeft": "Move table column left",
+      "moveTableColumnRight": "Move table column right",
       "toggleDetailsPanel": "Toggle the details panel (outline, links, backlinks & file info)",
       "closeWorkingSetEntry": "Close note in \"In progress\""
     },
@@ -882,11 +884,18 @@
     "options": "Table options",
     "addColumnBefore": "Insert column before",
     "addColumnAfter": "Insert column after",
+    "moveColumnLeft": "Move column left",
+    "moveColumnRight": "Move column right",
     "deleteColumn": "Delete column",
     "addRowBefore": "Insert row above",
     "addRowAfter": "Insert row below",
+    "moveRowUp": "Move row up",
+    "moveRowDown": "Move row down",
     "deleteRow": "Delete row",
-    "deleteTable": "Delete table"
+    "deleteTable": "Delete table",
+    "gripRow": "Drag to move the row, tap to select it",
+    "gripColumn": "Drag to move the column, tap to select it",
+    "gripTable": "Drag to move the table, tap to select it"
   },
   "imageView": {
     "notFound": "Image not found: {{src}}",
