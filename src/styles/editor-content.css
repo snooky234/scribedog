@@ -301,6 +301,32 @@
   text-decoration-color: currentColor;
 }
 
+/* Inline code (`code`): Typography's default is bare text bracketed by
+   generated backtick characters, which reads as unstyled in the middle of a
+   sentence. Restyled to the GitHub convention instead — a grey pill, no
+   backticks — and scoped away from a fenced block's own <code> in <pre>,
+   which keeps the dark syntax-highlighted look further down. Also applied to
+   the two AI markdown previews (rewrite dialog, diff widget result), which
+   render the same prose classes outside the main editor surface. */
+.editor-view__surface code:not(pre code),
+.ai-dialog__preview-content code:not(pre code),
+.ai-diff-widget__result-content code:not(pre code) {
+  background: rgba(var(--overlay-rgb), 0.08);
+  border-radius: 0.35em;
+  padding: 0.15em 0.4em;
+  font-size: 0.875em;
+  font-weight: 400;
+}
+
+.editor-view__surface code:not(pre code)::before,
+.editor-view__surface code:not(pre code)::after,
+.ai-dialog__preview-content code:not(pre code)::before,
+.ai-dialog__preview-content code:not(pre code)::after,
+.ai-diff-widget__result-content code:not(pre code)::before,
+.ai-diff-widget__result-content code:not(pre code)::after {
+  content: none;
+}
+
 .code-block-wrapper {
   position: relative;
 }
