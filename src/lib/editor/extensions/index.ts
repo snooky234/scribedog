@@ -17,6 +17,7 @@ import { Callout } from "./callout";
 import { CodeBlock } from "./codeBlock";
 import { Highlight } from "./highlight";
 import { EditorImage } from "./image";
+import { ListBackspace } from "./listBackspace";
 import { BulletList, OrderedList } from "./lists";
 import { HardBreak, Table, TableCell, TableHeader, TableRow } from "./table";
 import { TaskItem, TaskList, TaskListMarkdown } from "./taskList";
@@ -45,6 +46,7 @@ function buildContentExtensions(): Extensions {
     CodeBlock,
     BulletList,
     OrderedList,
+    ListBackspace,
     HardBreak,
     Callout,
     TaskList,
