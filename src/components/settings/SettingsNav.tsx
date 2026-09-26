@@ -2,14 +2,15 @@ import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
+  getSettingsTabOrder,
+  getVisibleSettingsNav,
   SETTINGS_GROUP_LABEL_KEY,
-  SETTINGS_NAV_VISIBLE,
   SETTINGS_TAB_LABEL_KEY,
-  SETTINGS_TAB_ORDER,
   type SettingsTab
 } from "@/components/settings/settingsTabs";
 import { getFolderBasename } from "@/lib/fileSystem";
 import { useAppStore } from "@/store/useAppStore";
+import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 type SettingsNavProps = {
   activeTab: SettingsTab;
@@ -32,7 +33,10 @@ export function settingsPanelId(tab: SettingsTab): string {
 export function SettingsNav({ activeTab, onSelect }: SettingsNavProps) {
   const { t } = useTranslation();
   const folderPath = useAppStore((state) => state.folderPath);
+  const aiFeaturesVisible = useEditorSettingsStore((state) => state.aiFeaturesVisible);
   const buttonRefs = useRef(new Map<SettingsTab, HTMLButtonElement>());
+  const visibleNav = getVisibleSettingsNav(aiFeaturesVisible);
+  const tabOrder = getSettingsTabOrder(aiFeaturesVisible);
 
   // In a narrow window the column is a strip that scrolls sideways, and the
   // entry that is open can sit outside it — on opening the dialog on the last
@@ -48,23 +52,23 @@ export function SettingsNav({ activeTab, onSelect }: SettingsNavProps) {
 
   // Both axes, since the column becomes a strip in a narrow window.
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const index = SETTINGS_TAB_ORDER.indexOf(activeTab);
-    const last = SETTINGS_TAB_ORDER.length - 1;
+    const index = tabOrder.indexOf(activeTab);
+    const last = tabOrder.length - 1;
 
     switch (event.key) {
       case "ArrowDown":
       case "ArrowRight":
-        moveTo(SETTINGS_TAB_ORDER[index >= last ? 0 : index + 1]);
+        moveTo(tabOrder[index >= last ? 0 : index + 1]);
         break;
       case "ArrowUp":
       case "ArrowLeft":
-        moveTo(SETTINGS_TAB_ORDER[index <= 0 ? last : index - 1]);
+        moveTo(tabOrder[index <= 0 ? last : index - 1]);
         break;
       case "Home":
-        moveTo(SETTINGS_TAB_ORDER[0]);
+        moveTo(tabOrder[0]);
         break;
       case "End":
-        moveTo(SETTINGS_TAB_ORDER[last]);
+        moveTo(tabOrder[last]);
         break;
       default:
         return;
@@ -81,7 +85,7 @@ export function SettingsNav({ activeTab, onSelect }: SettingsNavProps) {
       aria-label={t("settingsDialog.tabsAriaLabel")}
       onKeyDown={handleKeyDown}
     >
-      {SETTINGS_NAV_VISIBLE.map(({ group, tabs }) => (
+      {visibleNav.map(({ group, tabs }) => (
         <div key={group} className="settings-nav__group" role="presentation">
           <span className="settings-nav__group-title" aria-hidden="true">
             {t(SETTINGS_GROUP_LABEL_KEY[group])}

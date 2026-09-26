@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { platform } from "@/platform";
 import { useAppStore } from "@/store/useAppStore";
+import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useRagIndexStore } from "@/store/useRagIndexStore";
 import { isSemanticSearchConfigured } from "@/store/useRagEmbeddingStore";
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
@@ -26,6 +27,11 @@ const AFTER_VAULT_OPEN_MS = 4_000;
 
 async function updateIfNeeded(): Promise<void> {
   const { config } = useRagSettingsStore.getState();
+
+  // Hidden AI features send no note anywhere, not even to keep the index current.
+  if (!useEditorSettingsStore.getState().aiFeaturesVisible) {
+    return;
+  }
 
   // Never starts anything on its own that the user has not started once
   // themselves: this only *keeps up* a knowledge base that already exists.

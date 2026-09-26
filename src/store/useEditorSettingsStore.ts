@@ -49,6 +49,7 @@ export const AUTO_SAVE_STORAGE_KEY = "scribedog-auto-save-enabled";
 export const RESTORE_WORKING_SET_STORAGE_KEY = "scribedog-restore-working-set";
 export const AUTO_ADMIT_WORKING_SET_STORAGE_KEY = "scribedog-auto-admit-working-set";
 export const PASTE_MARKDOWN_STORAGE_KEY = "scribedog-paste-markdown";
+export const AI_FEATURES_VISIBLE_STORAGE_KEY = "scribedog-ai-features-visible";
 
 // Zoom level is an offset in percent relative to normal size (0 = 100%).
 export const ZOOM_MIN = -30;
@@ -221,6 +222,25 @@ function persistPasteMarkdown(enabled: boolean): void {
   }
 }
 
+// On by default: hiding is for the user who knows there is no model to talk
+// to (typically on the server edition). The AI configuration itself stays
+// untouched, so switching back on finds everything as it was.
+function getStoredAiFeaturesVisible(): boolean {
+  try {
+    return window.localStorage.getItem(AI_FEATURES_VISIBLE_STORAGE_KEY) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+function persistAiFeaturesVisible(visible: boolean): void {
+  try {
+    window.localStorage.setItem(AI_FEATURES_VISIBLE_STORAGE_KEY, String(visible));
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
 // On by default: the app already returns to the last folder, and stopping
 // one step short of the note is the step the user then takes every time.
 function getStoredReopenLastNote(): boolean {
@@ -386,6 +406,13 @@ type EditorSettingsState = {
    */
   pasteMarkdown: boolean;
   setPasteMarkdown: (enabled: boolean) => void;
+  /**
+   * Show the AI features: toolbar buttons, chat, the AI entries in menus and
+   * shortcuts, and the AI settings pages. Off hides them and keeps the
+   * knowledge base from updating in the background; the settings survive.
+   */
+  aiFeaturesVisible: boolean;
+  setAiFeaturesVisible: (visible: boolean) => void;
   /** Open the note that was open in the vault last time when it is opened again. */
   reopenLastNote: boolean;
   setReopenLastNote: (enabled: boolean) => void;
@@ -521,6 +548,11 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
   setPasteMarkdown: (enabled: boolean) => {
     persistPasteMarkdown(enabled);
     set({ pasteMarkdown: enabled });
+  },
+  aiFeaturesVisible: getStoredAiFeaturesVisible(),
+  setAiFeaturesVisible: (visible: boolean) => {
+    persistAiFeaturesVisible(visible);
+    set({ aiFeaturesVisible: visible });
   },
   reopenLastNote: getStoredReopenLastNote(),
   setReopenLastNote: (enabled: boolean) => {

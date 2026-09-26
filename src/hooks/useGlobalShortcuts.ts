@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import type { EditorHandle } from "@/components/Editor";
 import { TABLET_QUERY } from "@/lib/layoutMode";
 import { couldBeShortcut } from "@/lib/shortcuts/binding";
+import { requiresAiFeatures } from "@/lib/shortcuts/definitions";
 import { isRetiredDefault, matchShortcut } from "@/lib/shortcuts/resolve";
 import { getVaultCapabilities, platform } from "@/platform";
 import { useAppStore } from "@/store/useAppStore";
@@ -56,6 +57,11 @@ export function useGlobalShortcuts({
           event.preventDefault();
         }
 
+        return;
+      }
+
+      // A hidden AI feature leaves its combo to whatever else wants it.
+      if (requiresAiFeatures(action) && !useEditorSettingsStore.getState().aiFeaturesVisible) {
         return;
       }
 

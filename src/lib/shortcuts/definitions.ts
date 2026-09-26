@@ -417,6 +417,23 @@ export const SHORTCUT_DEFINITIONS_BY_ID = new Map<ShortcutActionId, ShortcutDefi
 
 export const SHORTCUT_CATEGORY_ORDER: ShortcutCategory[] = ["app", "ai", "format"];
 
+/**
+ * The actions that talk to a language model, and so go away with the "show
+ * AI features" switch. Not the whole "ai" category: dictation runs on the
+ * local speech model and works without any AI endpoint.
+ */
+const AI_FEATURE_ACTIONS = new Set<ShortcutActionId>([
+  "toggleChat",
+  "newChat",
+  "aiEditDialog",
+  "aiVoiceDialog",
+  "aiCheckDialog"
+]);
+
+export function requiresAiFeatures(id: ShortcutActionId): boolean {
+  return AI_FEATURE_ACTIONS.has(id);
+}
+
 export function isShortcutActionId(value: string): value is ShortcutActionId {
   return SHORTCUT_DEFINITIONS_BY_ID.has(value as ShortcutActionId);
 }

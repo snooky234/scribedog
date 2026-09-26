@@ -90,3 +90,14 @@ need it.
 
 Dictation with Whisper is desktop only as well; see
 [Phones and tablets](phones-and-tablets.md) for what to use in the browser.
+
+## Hiding the AI features
+
+If you have no model to talk to, switch off Settings → Application → Show AI
+features. The AI buttons in the toolbar, the chat, the AI entries in menus
+and shortcuts and the AI pages of the settings disappear, and the knowledge
+base stops updating in the background. Your AI settings and a stored API key
+stay where they are, so switching it back on finds everything as it was.
+
+Like the rest of the AI settings, the switch is kept per browser: hiding the
+AI on your phone leaves it visible on your laptop.

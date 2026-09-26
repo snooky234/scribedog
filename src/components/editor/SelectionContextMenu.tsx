@@ -11,6 +11,8 @@ export type SelectionContextMenuState = { x: number; y: number };
 type SelectionContextMenuProps = SelectionContextMenuState & {
   /** False while a diff review or a staged preview locks the document. */
   canAiEdit: boolean;
+  /** False when the AI features are hidden in the settings: no entry at all. */
+  showAiEdit: boolean;
   onAiEdit: () => void;
   onCopyFormatted: () => void;
   onCopyMarkdown: () => void;
@@ -27,6 +29,7 @@ export function SelectionContextMenu({
   x,
   y,
   canAiEdit,
+  showAiEdit,
   onAiEdit,
   onCopyFormatted,
   onCopyMarkdown,
@@ -36,14 +39,18 @@ export function SelectionContextMenu({
   const { t } = useTranslation();
   const overrides = useShortcutsStore((state) => state.overrides);
 
-  const items = [
+  const aiItems = [
     {
       id: "aiEdit",
       label: t("editorContextMenu.aiEdit"),
       keys: formatBinding(t, resolveBinding(overrides, "aiEditDialog")),
       disabled: !canAiEdit,
       run: onAiEdit
-    },
+    }
+  ];
+
+  const items = [
+    ...(showAiEdit ? aiItems : []),
     {
       id: "copyFormatted",
       label: t("editorContextMenu.copyFormatted"),

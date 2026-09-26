@@ -46,11 +46,21 @@ export function isSettingsTabAvailable(tab: SettingsTab): boolean {
   return feature === undefined || platform.features[feature];
 }
 
-export const SETTINGS_NAV_VISIBLE: { group: SettingsGroup; tabs: SettingsTab[] }[] = SETTINGS_NAV.map(
-  ({ group, tabs }) => ({ group, tabs: tabs.filter(isSettingsTabAvailable) })
-).filter(({ tabs }) => tabs.length > 0);
+/** The pages the "show AI features" switch in the application settings hides. */
+export const AI_SETTINGS_TABS: SettingsTab[] = ["ai", "assistants", "rag"];
 
-export const SETTINGS_TAB_ORDER: SettingsTab[] = SETTINGS_NAV_VISIBLE.flatMap((group) => group.tabs);
+export function getVisibleSettingsNav(aiFeaturesVisible: boolean): { group: SettingsGroup; tabs: SettingsTab[] }[] {
+  return SETTINGS_NAV.map(({ group, tabs }) => ({
+    group,
+    tabs: tabs.filter(
+      (tab) => isSettingsTabAvailable(tab) && (aiFeaturesVisible || !AI_SETTINGS_TABS.includes(tab))
+    )
+  })).filter(({ tabs }) => tabs.length > 0);
+}
+
+export function getSettingsTabOrder(aiFeaturesVisible: boolean): SettingsTab[] {
+  return getVisibleSettingsNav(aiFeaturesVisible).flatMap((group) => group.tabs);
+}
 
 /**
  * Tabs whose settings apply through their own store the moment they change.

@@ -9,11 +9,13 @@ import {
   SHORTCUT_CATEGORY_ORDER,
   SHORTCUT_DEFINITIONS,
   SHORTCUT_DEFINITIONS_BY_ID,
+  requiresAiFeatures,
   type ShortcutActionId,
   type ShortcutCategory
 } from "@/lib/shortcuts/definitions";
 import { findFixedConflict } from "@/lib/shortcuts/fixed";
 import { findConflict, isCustomBinding, resolveBinding } from "@/lib/shortcuts/resolve";
+import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useShortcutsStore } from "@/store/useShortcutsStore";
 
 type KeyToken = { mod: "ctrl" | "alt" | "shift" } | { special: "esc" | "enter" | "rightClick" } | { literal: string };
@@ -23,14 +25,20 @@ type KeyToken = { mod: "ctrl" | "alt" | "shift" } | { special: "esc" | "enter" |
  * undo) or they are a fixed part of an interaction (Tab indent, Esc closes).
  * They are listed for reference but have no editing affordance.
  */
-const FIXED_SHORTCUTS: { id: string; keys: KeyToken[]; descriptionKey: string }[] = [
+const FIXED_SHORTCUTS: { id: string; keys: KeyToken[]; descriptionKey: string; requiresAiFeatures?: boolean }[] = [
   { id: "renameEntry", keys: [{ literal: "F2" }], descriptionKey: "shortcutsDialog.items.renameEntry" },
   {
     id: "aiEditContextMenu",
     keys: [{ special: "rightClick" }],
-    descriptionKey: "shortcutsDialog.items.aiEditDialog"
+    descriptionKey: "shortcutsDialog.items.aiEditDialog",
+    requiresAiFeatures: true
   },
-  { id: "aiSubmit", keys: [{ mod: "ctrl" }, { special: "enter" }], descriptionKey: "shortcutsDialog.items.aiSubmit" },
+  {
+    id: "aiSubmit",
+    keys: [{ mod: "ctrl" }, { special: "enter" }],
+    descriptionKey: "shortcutsDialog.items.aiSubmit",
+    requiresAiFeatures: true
+  },
   // Not a key combination but typed text, so it can neither be rebound nor
   // conflict with one — it still belongs in this list to be discoverable.
   { id: "insertFileLink", keys: [{ literal: "[[" }], descriptionKey: "shortcutsDialog.items.insertFileLink" },
@@ -94,6 +102,7 @@ export function ShortcutsSettings() {
   const setBinding = useShortcutsStore((state) => state.setBinding);
   const resetBinding = useShortcutsStore((state) => state.resetBinding);
   const resetAllBindings = useShortcutsStore((state) => state.resetAllBindings);
+  const aiFeaturesVisible = useEditorSettingsStore((state) => state.aiFeaturesVisible);
 
   const [recordingId, setRecordingId] = useState<ShortcutActionId | null>(null);
   const [recordingError, setRecordingError] = useState<RecordingError | null>(null);
@@ -168,7 +177,14 @@ export function ShortcutsSettings() {
   const conflictLabel = recordingError?.kind === "conflict" ? t(recordingError.conflictingLabelKey) : "";
 
   const renderCategory = (category: ShortcutCategory) => {
-    const definitions = SHORTCUT_DEFINITIONS.filter((definition) => definition.category === category);
+    const definitions = SHORTCUT_DEFINITIONS.filter(
+      (definition) =>
+        definition.category === category && (aiFeaturesVisible || !requiresAiFeatures(definition.id))
+    );
+
+    if (definitions.length === 0) {
+      return null;
+    }
 
     return (
       <section key={category} className="shortcuts-section">
@@ -241,7 +257,7 @@ export function ShortcutsSettings() {
       <section className="shortcuts-section">
         <h5 className="settings-section__title">{t("shortcutsDialog.categories.fixed")}</h5>
         <ul className="shortcuts-list">
-          {FIXED_SHORTCUTS.map((shortcut) => (
+          {FIXED_SHORTCUTS.filter((shortcut) => aiFeaturesVisible || !shortcut.requiresAiFeatures).map((shortcut) => (
             <li key={shortcut.id} className="shortcuts-list__item">
               <span className="shortcuts-list__label">{t(shortcut.descriptionKey)}</span>
               <span className="shortcuts-list__keys-group">

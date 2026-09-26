@@ -563,6 +563,7 @@ export function Toolbar({
   // On phone and tablet this button is the only chat toggle, so whether the
   // panel is open has to be readable from it.
   const isChatOpen = useChatStore((state) => state.isOpen);
+  const aiFeaturesVisible = useEditorSettingsStore((state) => state.aiFeaturesVisible);
   const layout = useLayoutMode();
 
   // Undo/redo re-focus the editor so the caret lands on the reverted edit
@@ -610,64 +611,68 @@ export function Toolbar({
 
   return (
     <div className="editor-toolbar" aria-label={t("toolbar.formattingLabel")}>
-      <div className="editor-toolbar__group editor-toolbar__group--ai">
-        {layout !== "desktop" ? (
-          <AiMobileMenu
-            isChatOpen={isChatOpen}
-            onAiRequest={onAiRequest}
-            onAiCheckRequest={onAiCheckRequest}
-            onChatToggle={() => useChatStore.getState().togglePanel()}
-            onAiSettingsRequest={onAiSettingsRequest}
-          />
-        ) : (
-          <>
-            <Button
-              type="button"
-              size="icon-sm"
-              aria-label={t("toolbar.aiButton")}
-              title={t("toolbar.aiButtonTitle")}
-              className="editor-toolbar__ai-button"
-              onMouseDown={(event) => {
-                event.preventDefault();
-              }}
-              onClick={onAiRequest}
-            >
-              <PawPrint />
-            </Button>
-            <Button
-              type="button"
-              size="icon-sm"
-              title={hasSelection ? t("toolbar.aiCheckButtonTitle") : t("toolbar.aiCheckButtonTitleDocument")}
-              aria-label={t("toolbar.aiCheckButton")}
-              className="editor-toolbar__ai-check-button"
-              onMouseDown={(event) => {
-                event.preventDefault();
-              }}
-              onClick={onAiCheckRequest}
-            >
-              <SpellCheck />
-            </Button>
-            <Button
-              type="button"
-              size="icon-sm"
-              aria-label={t("chat.openButton")}
-              aria-pressed={isChatOpen}
-              title={`${t("chat.openButtonTitle")} (${t("common.keys.ctrl")}+${t("common.keys.shift")}+A)`}
-              className="editor-toolbar__chat-button"
-              data-testid="open-chat"
-              onMouseDown={(event) => {
-                event.preventDefault();
-              }}
-              onClick={() => useChatStore.getState().togglePanel()}
-            >
-              <MessagesSquare />
-            </Button>
-            <AiQuickSettings onAiSettingsRequest={onAiSettingsRequest} />
-          </>
-        )}
-      </div>
+      {aiFeaturesVisible ? (
+        <>
+          <div className="editor-toolbar__group editor-toolbar__group--ai">
+            {layout !== "desktop" ? (
+              <AiMobileMenu
+                isChatOpen={isChatOpen}
+                onAiRequest={onAiRequest}
+                onAiCheckRequest={onAiCheckRequest}
+                onChatToggle={() => useChatStore.getState().togglePanel()}
+                onAiSettingsRequest={onAiSettingsRequest}
+              />
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  aria-label={t("toolbar.aiButton")}
+                  title={t("toolbar.aiButtonTitle")}
+                  className="editor-toolbar__ai-button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                  }}
+                  onClick={onAiRequest}
+                >
+                  <PawPrint />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  title={hasSelection ? t("toolbar.aiCheckButtonTitle") : t("toolbar.aiCheckButtonTitleDocument")}
+                  aria-label={t("toolbar.aiCheckButton")}
+                  className="editor-toolbar__ai-check-button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                  }}
+                  onClick={onAiCheckRequest}
+                >
+                  <SpellCheck />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  aria-label={t("chat.openButton")}
+                  aria-pressed={isChatOpen}
+                  title={`${t("chat.openButtonTitle")} (${t("common.keys.ctrl")}+${t("common.keys.shift")}+A)`}
+                  className="editor-toolbar__chat-button"
+                  data-testid="open-chat"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                  }}
+                  onClick={() => useChatStore.getState().togglePanel()}
+                >
+                  <MessagesSquare />
+                </Button>
+                <AiQuickSettings onAiSettingsRequest={onAiSettingsRequest} />
+              </>
+            )}
+          </div>
 
-      <div className="editor-toolbar__separator" aria-hidden="true" />
+          <div className="editor-toolbar__separator" aria-hidden="true" />
+        </>
+      ) : null}
 
       <div className="editor-toolbar__group">
         <Button

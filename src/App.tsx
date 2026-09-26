@@ -181,7 +181,10 @@ function App() {
   const aiSettings = useAiSettingsStore((state) => state.settings);
   const updateAiSettings = useAiSettingsStore((state) => state.updateSettings);
   const navigationHistory = useNavigationHistoryStore((state) => state.history);
-  const isChatOpen = useChatStore((state) => state.isOpen);
+  // Hidden AI features take the chat with them, even if the panel was open.
+  const isChatPanelOpen = useChatStore((state) => state.isOpen);
+  const aiFeaturesVisible = useEditorSettingsStore((state) => state.aiFeaturesVisible);
+  const isChatOpen = isChatPanelOpen && aiFeaturesVisible;
   const chatView = useChatStore((state) => state.view);
   const setChatFolder = useChatStore((state) => state.setFolder);
   const loadRagSettings = useRagSettingsStore((state) => state.loadForFolder);

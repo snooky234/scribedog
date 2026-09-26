@@ -184,6 +184,11 @@ Not yet: the server only forwards to the cloud providers, and a browser
 reaches a local model server directly. The desktop app with a server vault
 uses the model on your computer, as always.
 
+**I don't use AI. Can I get rid of the buttons?**
+Yes: Settings → Application → Show AI features. It hides the toolbar
+buttons, the chat and the AI settings pages in that browser; your AI
+configuration is kept. See [AI](ai.md#hiding-the-ai-features).
+
 **Where are my API keys?**
 Encrypted on the server, under a key derived from your password. The browser
 sees a placeholder that says "stored". A password reset (not a change) makes

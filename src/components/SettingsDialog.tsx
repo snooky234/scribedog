@@ -13,7 +13,7 @@ import { InfoPopover } from "@/components/settings/InfoPopover";
 import { SettingRow } from "@/components/settings/SettingRow";
 import { SettingsNav } from "@/components/settings/SettingsNav";
 import { SettingsPage } from "@/components/settings/SettingsPage";
-import { SELF_SAVING_TABS, type SettingsTab } from "@/components/settings/settingsTabs";
+import { AI_SETTINGS_TABS, SELF_SAVING_TABS, type SettingsTab } from "@/components/settings/settingsTabs";
 import { VaultScopeHeader } from "@/components/settings/VaultScopeHeader";
 import { VaultSettings } from "@/components/settings/VaultSettings";
 import { ShortcutsSettings } from "@/components/ShortcutsSettings";
@@ -37,6 +37,7 @@ import {
   FONT_SIZE_PT_STEP,
   getFontScale
 } from "@/lib/fonts";
+import { useChatStore } from "@/store/useChatStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import {
   AGENT_MAX_ITERATIONS_MAX,
@@ -386,6 +387,8 @@ export function SettingsDialog({
   const reopenLastNote = useEditorSettingsStore((state) => state.reopenLastNote);
   const pasteMarkdown = useEditorSettingsStore((state) => state.pasteMarkdown);
   const setPasteMarkdown = useEditorSettingsStore((state) => state.setPasteMarkdown);
+  const aiFeaturesVisible = useEditorSettingsStore((state) => state.aiFeaturesVisible);
+  const setAiFeaturesVisible = useEditorSettingsStore((state) => state.setAiFeaturesVisible);
   const setReopenLastNote = useEditorSettingsStore((state) => state.setReopenLastNote);
   const restoreWorkingSet = useEditorSettingsStore((state) => state.restoreWorkingSet);
   const setRestoreWorkingSet = useEditorSettingsStore((state) => state.setRestoreWorkingSet);
@@ -458,7 +461,10 @@ export function SettingsDialog({
       return;
     }
 
-    setActiveTab(initialTab);
+    // A request for an AI page while those pages are hidden lands on the
+    // page with the switch that brings them back.
+    const aiHidden = !useEditorSettingsStore.getState().aiFeaturesVisible;
+    setActiveTab(aiHidden && AI_SETTINGS_TABS.includes(initialTab) ? "application" : initialTab);
     setProvider(settings.provider);
     setApiUrl(settings.apiUrl);
     setApiKey(settings.apiKey);
@@ -469,7 +475,11 @@ export function SettingsDialog({
     setAgent(pickAgentSettings(settings));
     setAvailableModels([]);
     setModelsError(null);
-    void loadModels(settings.provider, settings.apiUrl, settings.apiKey);
+
+    // Hidden AI features reach out to no endpoint, not even for the model list.
+    if (!aiHidden) {
+      void loadModels(settings.provider, settings.apiUrl, settings.apiKey);
+    }
   }, [open, settings, initialTab]);
 
   // Where the keys live can be in a state worth reporting: the server
@@ -641,6 +651,25 @@ export function SettingsDialog({
                       type="checkbox"
                       checked={pasteMarkdown}
                       onChange={(event) => setPasteMarkdown(event.target.checked)}
+                    />
+                  </SettingRow>
+
+                  <SettingRow
+                    layout="switch"
+                    label={t("settingsDialog.showAiFeatures")}
+                    hint={t("settingsDialog.showAiFeaturesShort")}
+                    info={t("settingsDialog.showAiFeaturesHint")}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={aiFeaturesVisible}
+                      onChange={(event) => {
+                        setAiFeaturesVisible(event.target.checked);
+
+                        if (!event.target.checked) {
+                          useChatStore.getState().closePanel();
+                        }
+                      }}
                     />
                   </SettingRow>
 

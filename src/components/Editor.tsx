@@ -99,6 +99,7 @@ import { canDownloadMarkdown, downloadNoteAsMarkdown } from "@/lib/export/markdo
 import { printMarkdown } from "@/lib/print";
 import { couldBeShortcut } from "@/lib/shortcuts/binding";
 import { matchFixedEditorShortcut } from "@/lib/shortcuts/fixed";
+import { requiresAiFeatures } from "@/lib/shortcuts/definitions";
 import { isRetiredDefault, matchShortcut } from "@/lib/shortcuts/resolve";
 import { useAppStore } from "@/store/useAppStore";
 import { useChatStore } from "@/store/useChatStore";
@@ -253,6 +254,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   onCanonicalMarkdownRef.current = onCanonicalMarkdown;
   const spellcheckEnabled = useEditorSettingsStore((state) => state.spellcheckEnabled);
   const paperSurface = useEditorSettingsStore((state) => state.paperSurface);
+  const aiFeaturesVisible = useEditorSettingsStore((state) => state.aiFeaturesVisible);
   const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
   const detailsPanelVisible = useEditorSettingsStore((state) => state.detailsPanelVisible);
   const layout = useLayoutMode();
@@ -1462,6 +1464,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           return false;
         }
 
+        // A hidden AI feature leaves its combo to whatever else wants it.
+        if (requiresAiFeatures(action) && !useEditorSettingsStore.getState().aiFeaturesVisible) {
+          return false;
+        }
+
         const chain = () => editorRef.current?.chain().focus();
 
         switch (action) {
@@ -1993,6 +2000,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           x={selectionMenu.x}
           y={selectionMenu.y}
           canAiEdit={Boolean(editor?.isEditable) && !ai.isDiffActive()}
+          showAiEdit={aiFeaturesVisible}
           onAiEdit={ai.openAiDraftFromSelection}
           onCopyFormatted={() => copySelection("formatted")}
           onCopyMarkdown={() => copySelection("markdown")}
