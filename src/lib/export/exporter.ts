@@ -8,6 +8,7 @@ import { DEFAULT_DOCUMENT_STYLE, type DocumentStyle } from "@/lib/fonts";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 
 import { numberExportBlockLists, numberExportBlocks } from "./headingNumbers";
+import { embedDiagrams } from "./diagramAssets";
 import { collectImageSrcs, loadExportImages, type ExportImageMap } from "./imageAssets";
 import {
   compileManuscript,
@@ -165,8 +166,9 @@ async function renderExportBytes(
   markdownFilePath: string,
   style: DocumentStyle
 ): Promise<RenderedExport> {
-  const blocks = parseMarkdownToBlocks(markdown);
-  const images = await loadExportImages(markdownFilePath, collectImageSrcs(blocks));
+  const parsed = parseMarkdownToBlocks(markdown);
+  const images = await loadExportImages(markdownFilePath, collectImageSrcs(parsed));
+  const blocks = await embedDiagrams(parsed, images);
 
   return renderBlocksAs(format, title, blocks, images, style);
 }

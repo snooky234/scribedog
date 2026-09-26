@@ -45,7 +45,9 @@ export type BlockAlign = "left" | "center" | "right";
 export type ExportBlock =
   | { kind: "heading"; level: number; runs: InlineRun[]; align?: BlockAlign }
   | { kind: "paragraph"; runs: InlineRun[]; align?: BlockAlign }
-  | { kind: "codeBlock"; text: string }
+  // language is the fence's info word ("mermaid", "ts"), empty for an
+  // indented block. Only diagrams read it (diagramAssets.ts).
+  | { kind: "codeBlock"; text: string; language?: string }
   | { kind: "blockquote"; children: ExportBlock[] }
   | { kind: "list"; ordered: boolean; start: number; items: ExportListItem[] }
   | { kind: "table"; rows: TableCell[][] }
@@ -232,9 +234,15 @@ function parseBlocks(state: ParserState, closeTokenType: string | null): ExportB
         break;
       }
       case "fence":
-      case "code_block":
-        blocks.push({ kind: "codeBlock", text: token.content.replace(/\n$/, "") });
+      case "code_block": {
+        const language = token.info.trim().split(/\s+/)[0] ?? "";
+        blocks.push({
+          kind: "codeBlock",
+          text: token.content.replace(/\n$/, ""),
+          ...(language ? { language } : {})
+        });
         break;
+      }
       case "blockquote_open":
         blocks.push({ kind: "blockquote", children: parseBlocks(state, "blockquote_close") });
         break;

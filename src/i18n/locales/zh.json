@@ -888,7 +888,9 @@
   "codeBlock": {
     "copy": "复制代码",
     "language": "语言",
-    "plain": "纯文本"
+    "plain": "纯文本",
+    "editDiagram": "点击编辑图表",
+    "diagramError": "Mermaid 图表中有错误："
   },
   "aiRewriteDialog": {
     "eyebrow": "本地 AI 修订",

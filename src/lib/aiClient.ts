@@ -243,6 +243,15 @@ const MARKDOWN_OUTPUT_INSTRUCTION =
   "Use only Markdown syntax (e.g. blank lines for paragraphs, **bold**, _italic_, # headings, - for lists). " +
   "Never use HTML tags like <p>, <br>, <div>, or <span>.";
 
+// Chat only: the editor draws ```mermaid blocks, so a diagram is something
+// the assistant can offer. The quoting rule is the one slip that breaks most
+// model-written diagrams (an unquoted label with parentheses or a colon).
+const DIAGRAM_INSTRUCTION =
+  "When a process, structure, relationship or timeline is clearer as a picture, you may add a diagram " +
+  "as a fenced ```mermaid code block (flowchart, sequenceDiagram, mindmap, timeline, classDiagram, " +
+  "stateDiagram-v2, erDiagram, gantt, pie); the editor renders it. Put node labels that contain spaces " +
+  'or punctuation in double quotes, e.g. A["Plan (draft)"]. Only add a diagram where it helps.';
+
 // The explanation is UI feedback, not content, so it follows the app's UI
 // language rather than the language of the checked text — passed in as an
 // English language name (e.g. "German") since that is what models honor most
@@ -2130,6 +2139,7 @@ function buildChatSystemPrompt(
   return [
     baseInstruction,
     MARKDOWN_OUTPUT_INSTRUCTION,
+    DIAGRAM_INSTRUCTION,
     agentSection,
     vaultSection,
     fileSection,

@@ -39,7 +39,7 @@ export function computeExportImageSize(
   return { width, height };
 }
 
-function bytesToBase64(bytes: Uint8Array): string {
+export function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunkSize = 0x8000;
 
@@ -50,7 +50,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-function base64ToBytes(base64: string): Uint8Array {
+export function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
 
@@ -70,12 +70,15 @@ function loadHtmlImage(dataUrl: string): Promise<HTMLImageElement> {
   });
 }
 
-async function rasterizeToPng(
-  dataUrl: string
+// scale > 1 renders a vector source (a diagram's SVG) at a higher pixel
+// density; the returned width/height are the rasterized pixels.
+export async function rasterizeToPng(
+  dataUrl: string,
+  scale = 1
 ): Promise<{ pngDataUrl: string; width: number; height: number }> {
   const image = await loadHtmlImage(dataUrl);
-  const width = image.naturalWidth || image.width || 1;
-  const height = image.naturalHeight || image.height || 1;
+  const width = Math.round((image.naturalWidth || image.width || 1) * scale);
+  const height = Math.round((image.naturalHeight || image.height || 1) * scale);
 
   const canvas = document.createElement("canvas");
   canvas.width = width;

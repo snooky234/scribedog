@@ -901,7 +901,9 @@
   "codeBlock": {
     "copy": "Копіювати код",
     "language": "Мова",
-    "plain": "Звичайний текст"
+    "plain": "Звичайний текст",
+    "editDiagram": "Натисніть, щоб змінити діаграму",
+    "diagramError": "У діаграмі Mermaid є помилка:"
   },
   "aiRewriteDialog": {
     "eyebrow": "Локальне редагування ШІ",

@@ -889,7 +889,9 @@
   "codeBlock": {
     "copy": "Copy code",
     "language": "Language",
-    "plain": "Plain text"
+    "plain": "Plain text",
+    "editDiagram": "Click to edit the diagram",
+    "diagramError": "The Mermaid diagram contains an error:"
   },
   "aiRewriteDialog": {
     "eyebrow": "Local AI revision",

@@ -9,6 +9,7 @@ import { EDITING_TOOL_NAMES, FLAG_SUGGESTION_TOOL_NAME, type VaultSourceRef } fr
 import { normalizeImageSrc, resolveDocumentImagePath } from "@/lib/chat/imageAttachments";
 import { decodeEscapedLineBreaks, normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { executeFileTool } from "@/lib/chat/vaultFileTools";
+import { mermaidSyntaxNote } from "@/lib/diagrams/mermaidToolCheck";
 import { isSemanticSearchActive, readNote, searchVault } from "@/lib/ragSearch";
 
 // What set_image_width did, so the tool result can name the resulting size.
@@ -690,6 +691,38 @@ const IMAGE_ONLY_PASSAGE = /^\s*!\[[^\]]*\]\([^)]*\)\s*$/;
 // UI never shows this text directly; it renders a localized status line
 // keyed off the tool call's name instead (see ChatPanel).
 export async function executeTool(name: string, args: Record<string, unknown>): Promise<ToolResult> {
+  const result = await runTool(name, args);
+
+  // Models write Mermaid well but not flawlessly, and a small local model's
+  // typical slip (an unquoted label with parentheses) only shows once the
+  // user looks at the drawing. Parsing it here hands the model Mermaid's own
+  // message while it can still fix it in the same turn.
+  if (result.content.startsWith("OK") && WRITING_TOOL_NAMES.has(name)) {
+    const note = await mermaidSyntaxNote(args, decodeEscapedLineBreaks, async (source) => {
+      const { validateMermaid } = await import("@/lib/diagrams/mermaidRenderer");
+      return validateMermaid(source);
+    }).catch(() => null);
+
+    if (note) {
+      return { ...result, content: `${result.content}
+
+${note}` };
+    }
+  }
+
+  return result;
+}
+
+const WRITING_TOOL_NAMES = new Set([
+  "write_file",
+  "edit_file",
+  "multi_edit",
+  "replace_passage",
+  "replace_selection",
+  "insert_at_cursor"
+]);
+
+async function runTool(name: string, args: Record<string, unknown>): Promise<ToolResult> {
   // The vault agent's file tools work on files other than the open one, so
   // they run before the editor check — the whole point of them is that they
   // work with no document open at all. They are also deliberately outside the

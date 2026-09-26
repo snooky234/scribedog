@@ -901,7 +901,9 @@
   "codeBlock": {
     "copy": "Копировать код",
     "language": "Язык",
-    "plain": "Обычный текст"
+    "plain": "Обычный текст",
+    "editDiagram": "Нажмите, чтобы изменить диаграмму",
+    "diagramError": "В диаграмме Mermaid есть ошибка:"
   },
   "aiRewriteDialog": {
     "eyebrow": "Локальная правка с ИИ",

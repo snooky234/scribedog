@@ -359,6 +359,61 @@
   color: rgb(var(--on-dark-rgb));
 }
 
+/* Mermaid diagrams: the fence stays the document's text, the drawing is a
+   non-editable sibling of the <pre>. With the caret outside the block the
+   source is collapsed rather than display:none, so arrow keys can still put
+   the DOM selection into it and bring it back. */
+.code-block-wrapper--diagram-only > pre {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.mermaid-diagram {
+  display: flex;
+  justify-content: center;
+  margin: 0.75rem 0 1.25rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  user-select: none;
+}
+
+.code-block-wrapper--diagram-only .mermaid-diagram {
+  cursor: text;
+}
+
+.code-block-wrapper--diagram-only .mermaid-diagram:hover {
+  background: rgba(var(--surface-hover-rgb), 1);
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-diagram__error {
+  margin: -0.5rem 0 1.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(var(--error-rgb), 0.35);
+  background: rgba(var(--error-bg-rgb), 1);
+  color: var(--error-fg);
+  font-size: 0.8rem;
+}
+
+.editor-view__surface .mermaid-diagram__error pre {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+
 /* Syntax highlighting (lowlight/highlight.js token classes). Colors come from
    the app's own variables so a code block never looks out of place after a
    theme switch. */

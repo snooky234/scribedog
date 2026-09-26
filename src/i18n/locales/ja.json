@@ -888,7 +888,9 @@
   "codeBlock": {
     "copy": "コードをコピー",
     "language": "言語",
-    "plain": "プレーンテキスト"
+    "plain": "プレーンテキスト",
+    "editDiagram": "クリックして図を編集",
+    "diagramError": "Mermaid 図にエラーがあります:"
   },
   "aiRewriteDialog": {
     "eyebrow": "ローカル AI による修正",

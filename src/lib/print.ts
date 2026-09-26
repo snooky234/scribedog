@@ -1,4 +1,5 @@
 import { numberExportBlocks } from "@/lib/export/headingNumbers";
+import { embedDiagrams } from "@/lib/export/diagramAssets";
 import { collectImageSrcs, loadExportImages } from "@/lib/export/imageAssets";
 import { parseMarkdownToBlocks } from "@/lib/export/markdownModel";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
@@ -13,15 +14,16 @@ import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 // UI instead of the note.
 export async function printMarkdown(markdown: string, markdownFilePath: string | null): Promise<void> {
   // Same numbering the editor shows, so the paper matches the screen.
-  const blocks = numberExportBlocks(
+  const parsed = numberExportBlocks(
     parseMarkdownToBlocks(markdown),
     useEditorSettingsStore.getState().headingNumbering
   );
 
   const [images, { renderHtmlBody }] = await Promise.all([
-    markdownFilePath ? loadExportImages(markdownFilePath, collectImageSrcs(blocks)) : Promise.resolve(new Map()),
+    markdownFilePath ? loadExportImages(markdownFilePath, collectImageSrcs(parsed)) : Promise.resolve(new Map()),
     import("@/lib/export/htmlExport")
   ]);
+  const blocks = await embedDiagrams(parsed, images);
 
   const printRoot = document.createElement("div");
   printRoot.className = "print-root";

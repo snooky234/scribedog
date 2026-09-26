@@ -33,7 +33,9 @@ export const CODE_LANGUAGES = [
   { value: "yaml", label: "YAML" },
   { value: "css", label: "CSS" },
   { value: "xml", label: "HTML / XML" },
-  { value: "markdown", label: "Markdown" }
+  { value: "markdown", label: "Markdown" },
+  // No grammar: the block renders as a diagram (CodeBlockView), not as highlighted code.
+  { value: "mermaid", label: "Mermaid" }
 ] as const;
 
 export type CodeLanguage = (typeof CODE_LANGUAGES)[number]["value"];

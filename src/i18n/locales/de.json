@@ -889,7 +889,9 @@
   "codeBlock": {
     "copy": "Code kopieren",
     "language": "Sprache",
-    "plain": "Einfacher Text"
+    "plain": "Einfacher Text",
+    "editDiagram": "Klicken, um das Diagramm zu bearbeiten",
+    "diagramError": "Das Mermaid-Diagramm enthält einen Fehler:"
   },
   "aiRewriteDialog": {
     "eyebrow": "Lokale KI-Überarbeitung",

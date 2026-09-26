@@ -1,5 +1,6 @@
 import { getNoteDisplayName } from "@/lib/folderNotes";
 
+import { embedDiagrams } from "./diagramAssets";
 import { collectImageSrcs, loadExportImages, type ExportImageMap } from "./imageAssets";
 import { parseMarkdownToBlocks, type ExportBlock, type InlineRun } from "./markdownModel";
 
@@ -229,17 +230,19 @@ export async function compileManuscript(
   const chapters: CompiledChapter[] = [];
 
   for (const [index, source] of sources.entries()) {
-    const parsed = parseMarkdownToBlocks(source.markdown);
-    const { title, body } = splitChapterTitle(parsed, source, options.chapterTitleSource);
-    const headingText = formatChapterHeading(title, index + 1, options);
+    const raw = parseMarkdownToBlocks(source.markdown);
 
     // Images resolve relative to their own chapter file, so they have to be
     // loaded per source before the chapters are merged.
-    const chapterImages = await loadExportImages(source.filePath, collectImageSrcs(parsed));
+    const chapterImages = await loadExportImages(source.filePath, collectImageSrcs(raw));
+    const parsed = await embedDiagrams(raw, chapterImages);
 
     for (const [src, asset] of chapterImages) {
       images.set(src, asset);
     }
+
+    const { title, body } = splitChapterTitle(parsed, source, options.chapterTitleSource);
+    const headingText = formatChapterHeading(title, index + 1, options);
 
     const blocks: ExportBlock[] = options.includeChapterHeadings
       ? [{ kind: "heading", level: 1, runs: [textRun(headingText)] }, ...body]
