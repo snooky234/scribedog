@@ -3,6 +3,34 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.17.0] - 2026-09-26
+
+### Highlights
+- Tablet layout for touch screens up to 1400px
+- Switch to hide the AI features
+- Reorder table rows and columns by keyboard and drag grips
+- Bullet, numbered and checklists inside table cells
+- Size table columns to their content
+- Chat-only switch that takes every tool away
+- Render Mermaid diagrams in code blocks, exports and agent edits
+- Drag & drop reorder the working set list
+- Move a selected image with Ctrl+Shift+Up/Down
+
+### Improvements
+- Render inline code as a grey pill without backticks
+
+### Bug Fixes
+- Make the theme builder dialog usable on phones
+- Keep the list item when deleting an empty line inside it
+- Mark folder notes with a folder icon in the working set
+- Stop StarterKit's link extension from opening note links in a new tab
+- Keep cut images until pasted and fix their paths on paste
+- Delete the images of a folder's notes when the folder is deleted
+- Clear the tree selection when the tree unmounts
+- Drop deleted vaults from the recent vault list
+- Reconcile empty folders on refresh and guard write targets against the vault
+- Overlay the chat panel instead of resizing the grid in Zen mode
+
 ## [0.16.0] - 2026-09-22
 
 ### Highlights

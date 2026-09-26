@@ -50,7 +50,7 @@ Open `.env` and set three things:
 `SCRIBEDOG_IMAGE` is already set to the current version, so there is nothing
 to change there for the latest release. Two reasons you might still touch it:
 you would rather pull from Docker Hub than GHCR (same image, set it to
-`snooky234/scribedog-server:0.16.0`, no registry host needed in the name), or
+`snooky234/scribedog-server:0.17.0`, no registry host needed in the name), or
 you want an older version on purpose (pin that tag instead).
 
 Then start it:

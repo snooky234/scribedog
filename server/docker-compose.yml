@@ -17,7 +17,7 @@ services:
     # Built locally by default. To run a published image instead, put
     # SCRIBEDOG_IMAGE=ghcr.io/snooky234/scribedog-server:<version> in .env and
     # use `docker compose pull` (see README, "Updating").
-    image: ${SCRIBEDOG_IMAGE:-scribedog-server:0.16.0}
+    image: ${SCRIBEDOG_IMAGE:-scribedog-server:0.17.0}
     restart: unless-stopped
     environment:
       # User and group the server runs as inside the container. The container

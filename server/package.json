@@ -1,7 +1,7 @@
 {
   "name": "scribedog-server",
   "private": true,
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "ScribeDog Server Edition: the ScribeDog note editor as a self-hosted web app",
   "license": "MIT",
   "type": "module",
