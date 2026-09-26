@@ -24,9 +24,20 @@ Below about 640 px wide:
 
 ## On a tablet
 
-Up to about 920 px (a tablet in portrait) the file list stays next to the
-note and the chat comes in from the right. Above that the layout is the
-desktop one.
+A touch screen up to about 1400 px wide gets the tablet layout, which covers
+every iPad from the mini to the 13" Pro in both orientations. A browser
+window with a mouse gets it up to about 920 px.
+
+- The formatting toolbar sits at the bottom, above the keyboard, in one row
+  that scrolls sideways, as on the phone. Find and replace, details, zoom,
+  zen mode and the other view options are in the header's menu.
+- In landscape the file list stays next to the note. Drag the handle between
+  the two to make it wider or narrower; it takes at most about half the
+  screen.
+- In portrait the file list is a sheet behind the button at the top left, as
+  on the phone. It comes up by itself while no note is open, closes when you
+  choose one, and a swipe from the left edge brings it back.
+- The chat and the details panel come in from the right.
 
 ## Touch
 

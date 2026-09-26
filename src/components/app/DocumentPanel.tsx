@@ -21,7 +21,7 @@ import { DocumentMenu } from "@/components/app/DocumentMenu";
 import { join } from "@/platform/paths";
 import { EmojiPickerPopover } from "@/components/EmojiPicker";
 import { useBreadcrumbScroll } from "@/hooks/useBreadcrumbScroll";
-import { useLayoutMode } from "@/hooks/useLayoutMode";
+import { useLayoutMode, useSidebarAsSheet } from "@/hooks/useLayoutMode";
 import { getPathCrumbs } from "@/lib/breadcrumbPath";
 import { getVaultIcon, type VaultIconMap } from "@/lib/vaultIcons";
 import { anchorForTrigger, type PopoverAnchor } from "@/lib/usePopoverOverflowAlign";
@@ -82,7 +82,7 @@ type DocumentPanelProps = {
   onVersionDiffRequest: (version: FileVersion) => void;
   onVersionRestoreRequest: (version: FileVersion) => void;
 
-  /** Phone layout: the sidebar is a sheet and this opens it. */
+  /** Phone and upright tablet: the sidebar is a sheet and this opens it. */
   onOpenSidebar: () => void;
   /** Phone and tablet: the status pill doubles as the save button. */
   onSaveRequest: () => void;
@@ -186,6 +186,7 @@ export function DocumentPanel({
 }: DocumentPanelProps) {
   const { t } = useTranslation();
   const layout = useLayoutMode();
+  const sidebarAsSheet = useSidebarAsSheet();
   // Desktop: the editor's toolbar is portalled here, above the title row, so
   // the formatting controls sit at the top of the panel. Tablet and phone keep
   // it inside the editor, where responsive.css moves it below the text. A
@@ -266,7 +267,7 @@ export function DocumentPanel({
           {layout === "desktop" ? <div className="detail-panel__toolbar" ref={setToolbarSlot} /> : null}
           <div className="detail-panel__header">
             <div className="detail-panel__title">
-              {layout === "phone" ? (
+              {sidebarAsSheet ? (
                 <Button
                   type="button"
                   size="icon-sm"
@@ -553,7 +554,7 @@ export function DocumentPanel({
       ) : (
         <div className="detail-panel__card detail-panel__card--empty">
           {standaloneFindPanel}
-          {layout === "phone" ? (
+          {sidebarAsSheet ? (
             // No note, no header: the sheet button still has to be somewhere.
             <div className="detail-panel__header detail-panel__header--empty">
               <Button

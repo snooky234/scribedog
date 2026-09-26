@@ -26,7 +26,7 @@ import { useDraftFlush } from "@/hooks/useDraftFlush";
 import { useExportTarget } from "@/hooks/useExportTarget";
 import { useFolderWatcher } from "@/hooks/useFolderWatcher";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
-import { useLayoutMode } from "@/hooks/useLayoutMode";
+import { useLayoutMode, useSidebarAsSheet } from "@/hooks/useLayoutMode";
 import { useMoveTarget } from "@/hooks/useMoveTarget";
 import { useRagIndexAutoUpdate } from "@/hooks/useRagIndexAutoUpdate";
 import { useRemoteVaultDialog } from "@/hooks/useRemoteVaultDialog";
@@ -290,24 +290,25 @@ function App() {
   useViewportHeight();
 
   const layout = useLayoutMode();
+  const sidebarAsSheet = useSidebarAsSheet();
 
   // The chat sheet covers the whole phone screen and Zen mode hides the
   // sidebar on purpose; a swipe there must not pull the file list over them.
   useSidebarSwipe({
-    enabled: layout === "phone" && !isChatOpen && !isZenMode,
+    enabled: sidebarAsSheet && !isChatOpen && !isZenMode,
     isOpen: isSidebarSheetOpen,
     onOpen: () => setIsSidebarSheetOpen(true),
     onClose: () => setIsSidebarSheetOpen(false)
   });
 
-  // A phone has no room for the file list next to the document, and no note
-  // means there is nothing but the file list to look at: the sheet opens by
-  // itself then. It closes when the user picks or creates a note (the
+  // A phone or an upright tablet has no room for the file list next to the
+  // document, and no note means there is nothing but the file list to look
+  // at: the sheet opens by itself then. It closes when the user picks or creates a note (the
   // handlers below), not on every change of the selected path: a move or
   // rename in the tree changes that path too, and closing the sheet then
   // hides the result the user is looking at.
   useEffect(() => {
-    if (layout !== "phone") {
+    if (!sidebarAsSheet) {
       setIsSidebarSheetOpen(false);
       return;
     }
@@ -315,7 +316,7 @@ function App() {
     if (selectedFilePath === null && folderPath !== null) {
       setIsSidebarSheetOpen(true);
     }
-  }, [layout, selectedFilePath, folderPath]);
+  }, [sidebarAsSheet, selectedFilePath, folderPath]);
 
   const { availableUpdate, dismissUpdate } = useUpdateCheck();
 
@@ -999,7 +1000,7 @@ function App() {
       fileTreeSelectionCount={fileTreeSelection.length}
       onFilesDropped={handleFilesDropped}
       onLogoutRequest={() => void logoutSafely()}
-      onClose={layout === "phone" ? () => setIsSidebarSheetOpen(false) : undefined}
+      onClose={sidebarAsSheet ? () => setIsSidebarSheetOpen(false) : undefined}
     />
   );
 
@@ -1033,7 +1034,8 @@ function App() {
           className={cn(
             "workspace-grid",
             isZenMode && "workspace-grid--zen",
-            isChatOpen && layout === "desktop" && !isZenMode && "workspace-grid--chat-open"
+            isChatOpen && layout === "desktop" && !isZenMode && "workspace-grid--chat-open",
+            sidebarAsSheet && "workspace-grid--sidebar-sheet"
           )}
           aria-label={t("app.workspaceLabel")}
           style={
@@ -1043,7 +1045,7 @@ function App() {
             } as React.CSSProperties
           }
         >
-          {layout === "phone" ? null : sidebar}
+          {sidebarAsSheet ? null : sidebar}
 
           <div
             className={cn(
@@ -1145,7 +1147,7 @@ function App() {
         </section>
       </div>
 
-      {isSidebarSheetOpen && layout === "phone" ? (
+      {isSidebarSheetOpen && sidebarAsSheet ? (
         <MobileSheet
           side="left"
           label={t("sidebar.filesLabel")}

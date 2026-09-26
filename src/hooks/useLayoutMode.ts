@@ -2,55 +2,67 @@ import { useSyncExternalStore } from "react";
 
 import {
   PHONE_QUERY,
+  TABLET_PORTRAIT_QUERY,
   TABLET_QUERY,
   layoutModeForWidth,
   type LayoutMode
 } from "@/lib/layoutMode";
 
-// One pair of media query lists for the whole app; every subscriber sees the
-// same answer as the stylesheets, which use the same two breakpoints.
-let phoneQuery: MediaQueryList | null = null;
-let tabletQuery: MediaQueryList | null = null;
+// One media query list per query for the whole app; every subscriber sees the
+// same answer as the stylesheets, which use the same breakpoints.
+const lists = new Map<string, MediaQueryList>();
 
-function queries(): { phone: MediaQueryList; tablet: MediaQueryList } | null {
+function queryList(query: string): MediaQueryList | null {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return null;
   }
 
-  phoneQuery ??= window.matchMedia(PHONE_QUERY);
-  tabletQuery ??= window.matchMedia(TABLET_QUERY);
+  let list = lists.get(query);
 
-  return { phone: phoneQuery, tablet: tabletQuery };
-}
-
-function subscribe(onChange: () => void): () => void {
-  const lists = queries();
-
-  if (!lists) {
-    return () => undefined;
+  if (!list) {
+    list = window.matchMedia(query);
+    lists.set(query, list);
   }
 
-  lists.phone.addEventListener("change", onChange);
-  lists.tablet.addEventListener("change", onChange);
+  return list;
+}
+
+function matches(query: string): boolean {
+  return queryList(query)?.matches ?? false;
+}
+
+const LAYOUT_QUERIES = [PHONE_QUERY, TABLET_QUERY, TABLET_PORTRAIT_QUERY];
+
+function subscribe(onChange: () => void): () => void {
+  const subscribed = LAYOUT_QUERIES.map(queryList).filter(
+    (list): list is MediaQueryList => list !== null
+  );
+
+  for (const list of subscribed) {
+    list.addEventListener("change", onChange);
+  }
 
   return () => {
-    lists.phone.removeEventListener("change", onChange);
-    lists.tablet.removeEventListener("change", onChange);
+    for (const list of subscribed) {
+      list.removeEventListener("change", onChange);
+    }
   };
 }
 
-function snapshot(): LayoutMode {
-  const lists = queries();
-
-  if (!lists) {
+function layoutSnapshot(): LayoutMode {
+  if (queryList(PHONE_QUERY) === null) {
     return "desktop";
   }
 
-  if (lists.phone.matches) {
+  if (matches(PHONE_QUERY)) {
     return "phone";
   }
 
-  return lists.tablet.matches ? "tablet" : "desktop";
+  return matches(TABLET_QUERY) ? "tablet" : "desktop";
+}
+
+function sidebarSheetSnapshot(): boolean {
+  return matches(PHONE_QUERY) || matches(TABLET_PORTRAIT_QUERY);
 }
 
 /**
@@ -60,7 +72,15 @@ function snapshot(): LayoutMode {
  * that is purely visual stays in CSS behind the same breakpoints.
  */
 export function useLayoutMode(): LayoutMode {
-  return useSyncExternalStore(subscribe, snapshot, () =>
+  return useSyncExternalStore(subscribe, layoutSnapshot, () =>
     layoutModeForWidth(Number.POSITIVE_INFINITY)
   );
+}
+
+/**
+ * Whether the file list is a sheet opened from the header instead of a
+ * docked column: on the phone, and on a touch tablet held upright.
+ */
+export function useSidebarAsSheet(): boolean {
+  return useSyncExternalStore(subscribe, sidebarSheetSnapshot, () => false);
 }

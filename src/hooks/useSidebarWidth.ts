@@ -48,7 +48,11 @@ export function useSidebarWidth() {
 
     event.preventDefault();
     const startX = event.clientX;
-    const startWidth = sidebarWidth;
+    // The rendered width, not the stored one: on a narrow screen the grid
+    // caps the column, and starting from the stored value would make the
+    // first part of a drag do nothing.
+    const renderedWidth = event.currentTarget.previousElementSibling?.getBoundingClientRect().width;
+    const startWidth = renderedWidth ? clampSidebarWidth(Math.round(renderedWidth)) : sidebarWidth;
     setIsResizingSidebar(true);
     document.body.classList.add("is-resizing-sidebar");
 
@@ -65,10 +69,14 @@ export function useSidebarWidth() {
       });
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", stopResizing);
+      window.removeEventListener("pointercancel", stopResizing);
     };
 
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", stopResizing);
+    // A touch the system takes over (a gesture, an incoming call) ends
+    // with a cancel instead of an up.
+    window.addEventListener("pointercancel", stopResizing);
   };
 
   const handleResizeKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {

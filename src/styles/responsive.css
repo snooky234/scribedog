@@ -1,12 +1,14 @@
 /* Phone and tablet layouts, and touch. Imported after the component sheets
    so these rules win over the ones they override.
 
-   Three layouts by width (src/lib/layoutMode.ts holds the same numbers):
-   phone up to 640px, tablet up to 920px, desktop above, where nothing in
-   this file applies. Touch is a separate axis: `pointer: coarse` and
-   `hover: none` decide target sizes and hover replacements regardless of
-   width, because an iPad in landscape is a desktop without a mouse and a
-   narrow desktop window is a phone with one. */
+   Three layouts (src/lib/layoutMode.ts holds the same numbers): phone up
+   to 640px, tablet up to 920px, or up to 1400px on a touch screen, so that
+   every iPad in either orientation gets the toolbar below the text; desktop
+   above, where nothing in this file applies. A touch tablet held upright
+   also gets the file list as a sheet (.workspace-grid--sidebar-sheet, set
+   by App from the same query). Target sizes and hover replacements are a
+   separate axis: `pointer: coarse` and `hover: none` decide them regardless
+   of width, since a narrow desktop window is a phone with a mouse. */
 
 /* --- Zoom --------------------------------------------------------------- */
 
@@ -14,13 +16,15 @@
    webview itself and never sets it, so the default of 1 leaves the desktop
    as it was. On narrow viewports the factor scales the document text only:
    a body-level zoom there fights the viewport meta and the pinch zoom. */
-@media (min-width: 921px) {
+@media (min-width: 921px) and (pointer: fine),
+  (min-width: 921px) and (pointer: none),
+  (min-width: 1401px) {
   body {
     zoom: var(--app-zoom, 1);
   }
 }
 
-@media (max-width: 920px) {
+@media (max-width: 920px), (pointer: coarse) and (max-width: 1400px) {
   .editor-view__surface {
     font-size: calc(1rem * var(--document-font-scale, 1) * var(--app-zoom, 1));
   }
@@ -31,7 +35,7 @@
    half off screen. The viewport meta says the same for the browsers that
    read it there. Zen mode has its own pinch (useZenFontZoom) that resizes
    the text instead, the way a reader does. */
-@media (max-width: 920px) {
+@media (max-width: 920px), (pointer: coarse) and (max-width: 1400px) {
   html {
     touch-action: pan-x pan-y;
   }
@@ -39,7 +43,7 @@
 
 /* --- Tablet and phone: shell, toolbar, header --------------------------- */
 
-@media (max-width: 920px) {
+@media (max-width: 920px), (pointer: coarse) and (max-width: 1400px) {
   /* The on-screen keyboard shrinks the visible area; useViewportHeight keeps
      --viewport-height at that size so the toolbar stays above the keyboard,
      and a fixed shell cannot be panned away by Safari. */
@@ -65,16 +69,19 @@
     padding-right: max(0.75rem, env(safe-area-inset-right));
   }
 
+  /* The docked sidebar keeps its draggable width, but never more than
+     about half the screen: a width chosen on a wide desktop window would
+     otherwise leave the text a sliver. The resizer column is the gap. */
   .workspace-grid {
-    grid-template-columns: clamp(240px, var(--sidebar-width, 320px), 300px) minmax(0, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: min(var(--sidebar-width, 320px), 45%) 0.75rem minmax(0, 1fr);
   }
 
-  .workspace-grid--zen {
+  .workspace-grid--zen,
+  .workspace-grid--sidebar-sheet {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .workspace-resizer {
+  .workspace-grid--sidebar-sheet .workspace-resizer {
     display: none;
   }
 
@@ -364,6 +371,10 @@
   .workspace-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
+  }
+
+  .workspace-resizer {
+    display: none;
   }
 
   /* The document is the screen: no card, no rounded frame, no inset. */
@@ -685,6 +696,30 @@
   .zen-exit {
     min-width: 2.75rem;
     min-height: 2.75rem;
+  }
+
+  /* No hover to reveal the sidebar resizer: a short handle is always there,
+     and the target reaches past the narrow gap on both sides so a finger
+     finds it. */
+  .workspace-resizer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -0.6rem;
+    right: -0.6rem;
+  }
+
+  .workspace-resizer__grip {
+    width: 3px;
+    height: 1.75rem;
+    background: rgba(var(--muted-rgb), 0.2);
+  }
+
+  .workspace-resizer--active .workspace-resizer__grip {
+    width: 3px;
+    height: 2.5rem;
+    background: rgba(var(--muted-rgb), 0.55);
   }
 
   /* Six of them have to fit a 240px sidebar next to each other. */
