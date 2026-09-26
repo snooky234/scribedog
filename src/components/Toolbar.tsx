@@ -69,7 +69,6 @@ import { TableMenu } from "@/components/TableMenu";
 import { ZoomControl } from "@/components/ZoomControl";
 import { CALLOUT_VARIANTS, type CalloutVariant } from "@/lib/editor/extensions/callout";
 import { isHighlighterModeActive } from "@/lib/editor/extensions/highlight";
-import { isInTableCell } from "@/lib/editor/extensions/table";
 import { checkSpellcheckDictionary } from "@/lib/spellcheckDictionary";
 import { useAiModelsStore } from "@/store/useAiModelsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
@@ -585,7 +584,6 @@ export function Toolbar({
   const inList =
     editor.isActive("bulletList") || editor.isActive("orderedList") || editor.isActive("taskList");
   const listItemType = editor.isActive("taskList") ? "taskItem" : "listItem";
-  const inTableCell = isInTableCell(editor.state);
   const changeIndent = (direction: "increase" | "decrease") => {
     if (direction === "increase") {
       editor.chain().focus().sinkListItem(listItemType).run();
@@ -809,13 +807,11 @@ export function Toolbar({
 
       <div className="editor-toolbar__separator" aria-hidden="true" />
 
-      {/* A Markdown table cell can't hold a list (see lib/editor/extensions/lists.ts). */}
       <div className="editor-toolbar__group">
         <ToggleButton
           pressed={editor.isActive("bulletList")}
           label={t("toolbar.bulletList")}
           title={t("toolbar.bulletListTitle")}
-          disabled={inTableCell}
           onClick={() => {
             editor.chain().focus().toggleBulletList().run();
           }}
@@ -826,7 +822,6 @@ export function Toolbar({
           pressed={editor.isActive("orderedList")}
           label={t("toolbar.orderedList")}
           title={t("toolbar.orderedListTitle")}
-          disabled={inTableCell}
           onClick={() => {
             editor.chain().focus().toggleOrderedList().run();
           }}
@@ -837,7 +832,6 @@ export function Toolbar({
           pressed={editor.isActive("taskList")}
           label={t("toolbar.taskList")}
           title={t("toolbar.taskListTitle")}
-          disabled={inTableCell}
           onClick={() => {
             editor.chain().focus().toggleTaskList().run();
           }}

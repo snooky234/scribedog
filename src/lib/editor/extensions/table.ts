@@ -1,4 +1,3 @@
-import { InputRule } from "@tiptap/core";
 import BaseHardBreak from "@tiptap/extension-hard-break";
 import { Table as BaseTable, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
@@ -17,11 +16,14 @@ export { TableCell, TableHeader, TableRow };
 // fallback wrote "[hardBreak]" for Shift+Enter inside a cell.
 //
 // This serializer never falls back. Every cell is flattened into one GFM
-// cell: blocks and hard breaks become "<br>", list items get a bullet glyph,
-// spans are padded out, a missing header row is promoted. Structure inside a
-// cell is lost on the round trip, but no text ever is, and the file stays a
-// table every Markdown tool can render. The parse side turns "<br>" inside a
-// cell back into a hard break (tableLineBreakMarkdownItPlugin).
+// cell: blocks and hard breaks become "<br>", list items get a glyph ("•",
+// "1)", "☐"/"☑") and their nesting an indent, spans are padded out, a
+// missing header row is promoted. The file stays a table every Markdown tool
+// can render, with the lists readable as text. The parse side turns "<br>"
+// inside a cell back into a hard break (tableLineBreakMarkdownItPlugin) and
+// the glyph lines back into lists (restoreCellLists), so bullet, numbered and
+// checklists inside a cell survive the round trip. Other block structure
+// (a second paragraph, a code block) comes back as lines of one paragraph.
 
 type MarkdownSerializerState = {
   out: string;
@@ -55,16 +57,28 @@ export function isInTableCell(state: EditorState): boolean {
   return false;
 }
 
-// Wraps a list input rule ("- ", "1. ", "[ ] ") so it stays plain text inside
-// a table cell: a Markdown cell can't hold a list, so the editor doesn't
-// offer one there either. The toggle commands are guarded the same way in
-// lists.ts and taskList.ts.
-export function withoutTableCells(rule: InputRule): InputRule {
-  return new InputRule({
-    find: rule.find,
-    handler: (props) => (isInTableCell(props.state) ? null : rule.handler(props)),
-    undoable: rule.undoable
-  });
+const LIST_ITEM_TYPES = new Set(["listItem", "taskItem"]);
+
+// The list items between the selection and its table cell, innermost first.
+// Empty outside a cell and for a caret in a cell's plain paragraph.
+function cellListItems(state: EditorState): ProseMirrorNode[] {
+  const { $from } = state.selection;
+  const items: ProseMirrorNode[] = [];
+
+  for (let depth = $from.depth; depth > 0; depth--) {
+    const node = $from.node(depth);
+    const { name } = node.type;
+
+    if (name === TableCell.name || name === TableHeader.name) {
+      return items;
+    }
+
+    if (LIST_ITEM_TYPES.has(name)) {
+      items.push(node);
+    }
+  }
+
+  return [];
 }
 
 // Serializes `render()`'s output into a string instead of the document, so a
@@ -100,6 +114,13 @@ function taskMarker(item: ProseMirrorNode): string {
   return item.attrs.checked ? "☑ " : "☐ ";
 }
 
+// A hard break inside a list item's text would put its second line at the
+// indent of the list itself, and reading the file back would move that line
+// out of the item. Every line after the first gets the item's indent.
+function pushInline(lines: string[], firstPrefix: string, restPrefix: string, inline: string): void {
+  inline.split(CELL_LINE_BREAK).forEach((part, index) => lines.push((index ? restPrefix : firstPrefix) + part));
+}
+
 // Flattens one block of a cell into lines of inline markdown. Lists keep
 // their nesting as indentation; everything else contributes its text.
 function flattenBlock(
@@ -121,7 +142,7 @@ function flattenBlock(
       return;
     }
 
-    lines.push(indent + capture(state, () => state.renderInline(node)));
+    pushInline(lines, indent, indent, capture(state, () => state.renderInline(node)));
     return;
   }
 
@@ -157,7 +178,7 @@ function flattenListItem(
   }
 
   if (first.isTextblock) {
-    lines.push(firstLinePrefix + capture(state, () => state.renderInline(first)));
+    pushInline(lines, firstLinePrefix, nestedIndent, capture(state, () => state.renderInline(first)));
   } else {
     lines.push(firstLinePrefix.trimEnd());
     flattenBlock(state, first, item, 0, nestedIndent, lines);
@@ -287,14 +308,218 @@ function splitLineBreaks(text: MarkdownItToken, Token: TokenConstructor): Markdo
   });
 }
 
+// The parse half of the list round trip. markdown-it renders a cell as inline
+// HTML, one line per "<br>"; this rebuilds the lists the serializer flattened
+// from the glyph at the start of each line and the indent in front of it. It
+// runs on the DOM tiptap-markdown hands to ProseMirror, so the lists arrive
+// as ordinary <ul>/<ol>/taskList markup. A cell without a glyph line is left
+// exactly as markdown-it rendered it.
+
+type CellListKind = "bullet" | "ordered" | "task";
+
+type CellLine = {
+  nodes: Node[];
+  indent: number;
+  // Characters to drop from the first text node: the newline the renderer puts
+  // after a "<br>", and the glyph of a list line.
+  prefix: number;
+  marker: { kind: CellListKind; start: number; checked: boolean } | null;
+};
+
+const LINE_MARKER_PATTERN = new RegExp(`^((?:${NESTING_INDENT})*)(?:(•)|(☐)|(☑)|(\\d+)\\))(?: |$)`);
+const LINE_INDENT_PATTERN = new RegExp(`^(?:${NESTING_INDENT})*`);
+
+function splitCellLines(cell: Element): CellLine[] {
+  const lines: CellLine[] = [];
+  let nodes: Node[] = [];
+
+  for (const child of Array.from(cell.childNodes)) {
+    if (child.nodeName === "BR") {
+      lines.push(readLine(nodes));
+      nodes = [];
+    } else {
+      nodes.push(child);
+    }
+  }
+
+  lines.push(readLine(nodes));
+
+  return lines;
+}
+
+function readLine(nodes: Node[]): CellLine {
+  const first = nodes[0];
+
+  if (!first || first.nodeType !== first.TEXT_NODE) {
+    return { nodes, indent: 0, prefix: 0, marker: null };
+  }
+
+  // Ordinary whitespace only: the indent is made of non-breaking spaces.
+  const content = first.textContent ?? "";
+  const whitespace = /^[ \t\r\n]*/.exec(content)![0].length;
+  const text = content.slice(whitespace);
+  const match = LINE_MARKER_PATTERN.exec(text);
+
+  if (!match) {
+    const indent = LINE_INDENT_PATTERN.exec(text)![0].length / NESTING_INDENT.length;
+
+    return { nodes, indent, prefix: whitespace, marker: null };
+  }
+
+  const [, indent, , unchecked, checked, number] = match;
+  const kind: CellListKind = number ? "ordered" : unchecked || checked ? "task" : "bullet";
+
+  return {
+    nodes,
+    indent: indent.length / NESTING_INDENT.length,
+    prefix: whitespace + match[0].length,
+    marker: { kind, start: number ? Number(number) : 1, checked: Boolean(checked) }
+  };
+}
+
+function dropPrefix(line: CellLine, length: number): void {
+  const first = line.nodes[0];
+
+  if (first && length > 0) {
+    first.textContent = (first.textContent ?? "").slice(length);
+  }
+}
+
+function createList(document: Document, kind: CellListKind, start: number): HTMLElement {
+  if (kind === "ordered") {
+    const list = document.createElement("ol");
+
+    if (start !== 1) {
+      list.setAttribute("start", String(start));
+    }
+
+    return list;
+  }
+
+  const list = document.createElement("ul");
+
+  if (kind === "task") {
+    list.setAttribute("data-type", "taskList");
+  }
+
+  return list;
+}
+
+function restoreCellLists(cell: Element): void {
+  const lines = splitCellLines(cell);
+
+  if (!lines.some((line) => line.marker)) {
+    return;
+  }
+
+  const document = cell.ownerDocument;
+  const blocks = document.createDocumentFragment();
+  const open: { kind: CellListKind; indent: number; list: HTMLElement; item: HTMLElement | null }[] = [];
+  // Consecutive lines that land in the same place are one paragraph with
+  // hard breaks, which is what the editor makes of Enter in a cell.
+  let paragraph: { target: Node; element: HTMLElement } | null = null;
+
+  for (const line of lines) {
+    const { marker, indent } = line;
+
+    if (marker) {
+      while (open.length) {
+        const top = open[open.length - 1];
+
+        if (top.indent > indent || (top.indent === indent && top.kind !== marker.kind)) {
+          open.pop();
+        } else {
+          break;
+        }
+      }
+
+      let top = open[open.length - 1];
+
+      if (!top || top.indent < indent) {
+        const list = createList(document, marker.kind, marker.start);
+        (top?.item ?? blocks).appendChild(list);
+        top = { kind: marker.kind, indent, list, item: null };
+        open.push(top);
+      }
+
+      const item = document.createElement("li");
+
+      if (marker.kind === "task") {
+        item.setAttribute("data-type", "taskItem");
+        item.setAttribute("data-checked", String(marker.checked));
+      }
+
+      dropPrefix(line, line.prefix);
+
+      const element = document.createElement("p");
+      element.append(...line.nodes);
+      item.appendChild(element);
+      top.list.appendChild(item);
+      top.item = item;
+      paragraph = { target: item, element };
+
+      continue;
+    }
+
+    // A line without a glyph continues the item one level above its indent,
+    // or is a paragraph of the cell itself.
+    while (open.length && open[open.length - 1].indent >= indent) {
+      open.pop();
+    }
+
+    const target = open[open.length - 1]?.item ?? blocks;
+
+    // The indent belongs to the list; a cell paragraph keeps its text.
+    dropPrefix(line, line.prefix + (target === blocks ? 0 : indent * NESTING_INDENT.length));
+
+    if (paragraph?.target === target) {
+      paragraph.element.append(document.createElement("br"), ...line.nodes);
+    } else {
+      const element = document.createElement("p");
+      element.append(...line.nodes);
+      target.appendChild(element);
+      paragraph = { target, element };
+    }
+  }
+
+  cell.replaceChildren(blocks);
+}
+
 export const Table = BaseTable.extend({
   // Enter inside a cell inserts a line break instead of a second
   // paragraph: that is what the file can hold, and what the user gets back
-  // after reopening the note. The stock table shortcuts (Tab, arrows) stay.
+  // after reopening the note. Inside a list in a cell Enter starts the next
+  // item and Tab indents it, as everywhere else; Tab on an item that can't
+  // be indented, and Shift+Tab on a top-level item, still move between
+  // cells. The other stock table shortcuts stay.
   addKeyboardShortcuts() {
+    const parent = this.parent?.() ?? {};
+
     return {
-      ...this.parent?.(),
-      Enter: () => (isInTableCell(this.editor.state) ? this.editor.commands.setHardBreak() : false)
+      ...parent,
+      Enter: () => {
+        const { state } = this.editor;
+
+        return isInTableCell(state) && cellListItems(state).length === 0 && this.editor.commands.setHardBreak();
+      },
+      Tab: (props) => {
+        const [item] = cellListItems(this.editor.state);
+
+        if (item && this.editor.commands.sinkListItem(item.type.name)) {
+          return true;
+        }
+
+        return parent.Tab?.(props) ?? false;
+      },
+      "Shift-Tab": (props) => {
+        const items = cellListItems(this.editor.state);
+
+        if (items.length > 1 && this.editor.commands.liftListItem(items[0].type.name)) {
+          return true;
+        }
+
+        return parent["Shift-Tab"]?.(props) ?? false;
+      }
     };
   },
 
@@ -305,6 +530,9 @@ export const Table = BaseTable.extend({
         parse: {
           setup(markdownit: MarkdownIt) {
             markdownit.use(tableLineBreakMarkdownItPlugin);
+          },
+          updateDOM(element: HTMLElement) {
+            element.querySelectorAll("td, th").forEach(restoreCellLists);
           }
         }
       }

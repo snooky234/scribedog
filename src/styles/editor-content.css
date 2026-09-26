@@ -285,6 +285,25 @@
   margin: 0;
 }
 
+/* Lists in a cell (table.ts): tighter than in running text, and a small gap
+   to a paragraph before or after them. */
+.editor-view__surface table :is(td, th) > * + * {
+  margin-top: 0.25em;
+}
+
+.editor-view__surface table :is(td, th) :is(ul, ol) {
+  padding-left: 1.25em;
+}
+
+.editor-view__surface table :is(td, th) li {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.editor-view__surface table :is(td, th) li > p {
+  margin: 0;
+}
+
 .editor-view__surface table th {
   background: rgba(var(--overlay-rgb),0.06);
   font-weight: 600;

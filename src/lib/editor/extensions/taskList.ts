@@ -3,8 +3,6 @@ import BaseTaskItem from "@tiptap/extension-task-item";
 import BaseTaskList from "@tiptap/extension-task-list";
 import type MarkdownIt from "markdown-it";
 
-import { isInTableCell, withoutTableCells } from "./table";
-
 // markdown-it/@types/markdown-it don't export the Token type from the package
 // root, so it's derived from a signature that uses it.
 type MarkdownItToken = Parameters<MarkdownIt["renderer"]["renderToken"]>[0][number];
@@ -13,32 +11,12 @@ type MarkdownItToken = Parameters<MarkdownIt["renderer"]["renderToken"]>[0][numb
 // into <ol data-type="taskList">, but the base extension only recognizes
 // <ul data-type="taskList"> when parsing. Without this extension the "[ ]"
 // brackets render as plain text instead of a clickable checkbox.
-//
-// The toggle and the "[ ] " input rule (on TaskItem) stay off inside a table
-// cell for the reason given in lists.ts.
 export const TaskList = BaseTaskList.extend({
   parseHTML() {
     return [
       { tag: 'ul[data-type="taskList"]', priority: 51 },
       { tag: 'ol[data-type="taskList"]', priority: 51 }
     ];
-  },
-
-  addCommands() {
-    const parent = this.parent?.();
-
-    return {
-      ...parent,
-      toggleTaskList: () => (props) => {
-        const toggle = parent?.toggleTaskList;
-
-        if (!toggle || isInTableCell(props.state)) {
-          return false;
-        }
-
-        return toggle()(props);
-      }
-    };
   }
 });
 
@@ -50,10 +28,6 @@ export const TaskList = BaseTaskList.extend({
 // writes the attribute in a plain transaction. The caret stays where it was:
 // in the text if the user was typing, nowhere if they were only ticking.
 export const TaskItem = BaseTaskItem.extend({
-  addInputRules() {
-    return (this.parent?.() ?? []).map(withoutTableCells);
-  },
-
   addNodeView() {
     const parent = this.parent?.();
 

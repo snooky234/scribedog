@@ -217,8 +217,8 @@ describe("table markdown serializer", () => {
 });
 
 describe("lists in table cells", () => {
-  it("refuses to turn a cell into a list", () => {
-    const editor = createEditor("| H |\n| --- |\n| text |\n");
+  function cellListEditor(markdown = "| H |\n| --- |\n| text |\n") {
+    const editor = createEditor(markdown);
     let cellStart = -1;
 
     editor.state.doc.descendants((node, pos) => {
@@ -231,12 +231,120 @@ describe("lists in table cells", () => {
     expect(cellStart).toBeGreaterThan(-1);
     editor.commands.setTextSelection(cellStart);
 
-    expect(editor.commands.toggleBulletList()).toBe(false);
-    expect(editor.commands.toggleOrderedList()).toBe(false);
-    expect(editor.commands.toggleTaskList()).toBe(false);
-    expect(findAll(editor.getJSON() as JSONNode, "bulletList")).toHaveLength(0);
+    return editor;
+  }
+
+  it.each([
+    ["toggleBulletList", "bulletList"],
+    ["toggleOrderedList", "orderedList"],
+    ["toggleTaskList", "taskList"]
+  ] as const)("%s turns a cell's text into a %s", (command, type) => {
+    const editor = cellListEditor();
+
+    expect(editor.commands[command]()).toBe(true);
+    expect(findAll(findAll(editor.getJSON() as JSONNode, "tableCell")[0], type)).toHaveLength(1);
 
     editor.destroy();
+  });
+
+  it("reads bullet, numbered and checklists in a cell back as lists", () => {
+    const markdown = serialize(
+      table([
+        [cell("tableHeader", [paragraph("H")])],
+        [
+          cell("tableCell", [
+            paragraph("Intro"),
+            bulletList("first", "second"),
+            {
+              type: "orderedList",
+              attrs: { start: 3 },
+              content: [
+                { type: "listItem", content: [paragraph("outer"), bulletList("inner")] },
+                { type: "listItem", content: [paragraph("next")] }
+              ]
+            },
+            {
+              type: "taskList",
+              content: [
+                { type: "taskItem", attrs: { checked: true }, content: [paragraph("done")] },
+                { type: "taskItem", attrs: { checked: false }, content: [paragraph("open")] }
+              ]
+            },
+            paragraph("Outro")
+          ])
+        ]
+      ])
+    );
+
+    const { doc } = parse(markdown);
+    const [tableCell] = findAll(doc, "tableCell");
+
+    expect(tableCell.content?.map((block) => block.type)).toEqual([
+      "paragraph",
+      "bulletList",
+      "orderedList",
+      "taskList",
+      "paragraph"
+    ]);
+    expect(findAll(tableCell, "orderedList")[0].attrs?.start).toBe(3);
+    expect(findAll(findAll(tableCell, "orderedList")[0], "bulletList")).toHaveLength(1);
+    expect(findAll(tableCell, "taskItem").map((item) => item.attrs?.checked)).toEqual([true, false]);
+    expect(findAll(tableCell, "text").map((text) => text.text)).toEqual([
+      "Intro",
+      "first",
+      "second",
+      "outer",
+      "inner",
+      "next",
+      "done",
+      "open",
+      "Outro"
+    ]);
+
+    // Opening and saving again leaves the file as it was.
+    expect(serialize(markdown)).toBe(markdown);
+  });
+
+  it("keeps a line break inside a list item in its item", () => {
+    const markdown = serialize(
+      table([
+        [cell("tableHeader", [paragraph("H")])],
+        [
+          cell("tableCell", [
+            {
+              type: "bulletList",
+              content: [
+                {
+                  type: "listItem",
+                  content: [
+                    { type: "paragraph", content: [{ type: "text", text: "one" }, { type: "hardBreak" }, { type: "text", text: "two" }] }
+                  ]
+                },
+                { type: "listItem", content: [paragraph("three")] }
+              ]
+            }
+          ])
+        ]
+      ])
+    );
+
+    expect(markdown).toContain(`| • one<br>${NESTING_INDENT}two<br>• three |`);
+
+    const [tableCell] = findAll(parse(markdown).doc, "tableCell");
+    const items = findAll(tableCell, "listItem");
+
+    expect(tableCell.content).toHaveLength(1);
+    expect(items).toHaveLength(2);
+    expect(findAll(items[0], "hardBreak")).toHaveLength(1);
+    expect(serialize(markdown)).toBe(markdown);
+  });
+
+  it("leaves a cell without a list glyph untouched", () => {
+    const { doc } = parse("| H |\n| --- |\n| a<br>- b<br>c • d |\n");
+    const [tableCell] = findAll(doc, "tableCell");
+
+    expect(tableCell.content?.map((block) => block.type)).toEqual(["paragraph"]);
+    expect(findAll(tableCell, "hardBreak")).toHaveLength(2);
   });
 
   it("still turns a paragraph outside a table into a list", () => {
@@ -280,6 +388,27 @@ describe("Enter inside a table cell", () => {
     editor.destroy();
   });
 
+  it("starts the next list item inside a list in a cell", () => {
+    const editor = createEditor("| H |\n| --- |\n| • one |\n");
+    let itemEnd = -1;
+
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === "paragraph" && node.textContent === "one") {
+        itemEnd = pos + 1 + node.content.size;
+      }
+    });
+
+    editor.commands.setTextSelection(itemEnd);
+
+    expect(pressEnter(editor)).toBe(true);
+
+    const [tableCell] = findAll(editor.getJSON() as JSONNode, "tableCell");
+    expect(findAll(tableCell, "listItem")).toHaveLength(2);
+    expect(findAll(tableCell, "hardBreak")).toHaveLength(0);
+
+    editor.destroy();
+  });
+
   it("still splits a paragraph outside a table", () => {
     const editor = createEditor("text\n");
 
@@ -293,8 +422,48 @@ describe("Enter inside a table cell", () => {
   });
 });
 
+describe("Tab inside a list in a table cell", () => {
+  function pressKey(editor: Editor, key: string, shiftKey = false): boolean {
+    const event = new KeyboardEvent("keydown", { key, code: key, shiftKey, bubbles: true });
+
+    return editor.view.someProp("handleKeyDown", (handler) => handler(editor.view, event)) ?? false;
+  }
+
+  function selectText(editor: Editor, text: string): void {
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === "paragraph" && node.textContent === text) {
+        editor.commands.setTextSelection(pos + 1);
+      }
+    });
+  }
+
+  it("indents the item and outdents it again with Shift+Tab", () => {
+    const editor = createEditor("| A | B |\n| --- | --- |\n| • one<br>• two | x |\n");
+
+    selectText(editor, "two");
+    expect(pressKey(editor, "Tab")).toBe(true);
+    expect(findAll(findAll(editor.getJSON() as JSONNode, "tableCell")[0], "bulletList")).toHaveLength(2);
+
+    expect(pressKey(editor, "Tab", true)).toBe(true);
+    expect(findAll(findAll(editor.getJSON() as JSONNode, "tableCell")[0], "bulletList")).toHaveLength(1);
+    expect(findAll(findAll(editor.getJSON() as JSONNode, "tableCell")[0], "listItem")).toHaveLength(2);
+
+    editor.destroy();
+  });
+
+  it("moves to the next cell from an item that can't be indented", () => {
+    const editor = createEditor("| A | B |\n| --- | --- |\n| • one | x |\n");
+
+    selectText(editor, "one");
+    expect(pressKey(editor, "Tab")).toBe(true);
+    expect(editor.state.selection.$from.parent.textContent).toBe("x");
+
+    editor.destroy();
+  });
+});
+
 describe("list input rules inside a table cell", () => {
-  function type(editor: Editor, text: string): void {
+  function typeText(editor: Editor, text: string): void {
     for (const character of text) {
       const { from, to } = editor.state.selection;
       const handled = editor.view.someProp("handleTextInput", (handler) => handler(editor.view, from, to, character, () => editor.state.tr.insertText(character, from, to)));
@@ -305,8 +474,12 @@ describe("list input rules inside a table cell", () => {
     }
   }
 
-  it("leaves \"- \" as text in a cell and makes a list elsewhere", () => {
-    const editor = createEditor("| H |\n| --- |\n|  |\n\nafter\n");
+  it.each([
+    ["- ", "bulletList"],
+    ["1. ", "orderedList"],
+    ["[ ] ", "taskList"]
+  ])("turns \"%s\" at the start of a cell into a %s", (trigger, type) => {
+    const editor = createEditor("| H |\n| --- |\n|  |\n");
     let cellStart = -1;
 
     editor.state.doc.descendants((node, pos) => {
@@ -316,17 +489,11 @@ describe("list input rules inside a table cell", () => {
     });
 
     editor.commands.setTextSelection(cellStart);
-    type(editor, "- item");
+    typeText(editor, `${trigger}item`);
 
-    expect(findAll(editor.getJSON() as JSONNode, "bulletList")).toHaveLength(0);
-    expect(editor.state.doc.textContent).toContain("- item");
-
-    // Same rule, outside the table: a new paragraph gets the list.
-    editor.commands.insertContentAt(editor.state.doc.content.size, { type: "paragraph" });
-    editor.commands.setTextSelection(editor.state.doc.content.size - 1);
-    type(editor, "- ");
-
-    expect(findAll(editor.getJSON() as JSONNode, "bulletList")).toHaveLength(1);
+    const [tableCell] = findAll(editor.getJSON() as JSONNode, "tableCell");
+    expect(findAll(tableCell, type)).toHaveLength(1);
+    expect(editor.state.doc.textContent).toBe("Hitem");
 
     editor.destroy();
   });
