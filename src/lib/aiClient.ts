@@ -1370,6 +1370,21 @@ export type AiChatRequest = {
   // Offers create_plan/update_plan/complete_step, i.e. the model keeps its own
   // task list (agentPlanning === "model").
   planToolsEnabled?: boolean;
+  // Drops every tool from the request and every agent rule from the system
+  // prompt: the assistant is a plain conversation partner (Assistant.chatOnly).
+  //
+  // Overrides the switches above rather than sitting beside them, because
+  // "no tools at all" is the one state that needs no second line of defence at
+  // the execution end: there is nothing for canonicalToolName to resolve a
+  // hallucinated name onto. Small models are also measurably better this way —
+  // twenty tool definitions in the context is what makes them answer a question
+  // with a tool call in the first place.
+  //
+  // What the user hands over themselves still reaches the model: attachments
+  // and the selected passage travel as part of the messages, not as tool
+  // results. The open document deliberately does NOT — not seeing it unless
+  // the user says so is the point of the switch.
+  toolsDisabled?: boolean;
 };
 
 // Name of the tool the model calls to flag that its own reply text (not an
@@ -1877,6 +1892,10 @@ function requestTools<T extends { name: string } | { function: { name: string } 
   plan: T[],
   request: AiChatRequest
 ): T[] {
+  if (request.toolsDisabled) {
+    return [];
+  }
+
   const toolName = (tool: T): string => ("name" in tool ? tool.name : tool.function.name);
   const composed = [...base];
 
@@ -2090,6 +2109,23 @@ const NO_FILE_ACCESS_INSTRUCTION =
   "settings under the agent options. Then offer what you can do without it (for example writing the text " +
   "into the open note, or answering from their notes).";
 
+// Added for a chat-only assistant (Assistant.chatOnly), in place of the whole
+// agent rule set. Without it a small model meets an attached file with "I have
+// no access to your files" — it has just been told nothing about tools, so it
+// concludes it can do nothing, and the one thing it *can* do is exactly what
+// the user is asking about.
+const CHAT_ONLY_INSTRUCTION =
+  "You are in a plain conversation with the user. You have no tools: you cannot open, search or change " +
+  "any of their notes on your own, and you must not claim or pretend otherwise.\n" +
+  "C1. The user decides what you get to see. Anything they attach to the chat, select in their editor, or " +
+  "paste into a message is right there in the conversation — read it and work with it as normal. Never " +
+  "answer a question about attached or quoted text with \"I cannot access your files\": that text is not a " +
+  "file you would have to fetch, it is part of what they wrote to you.\n" +
+  "C2. When something genuinely does need access you do not have — reading a note they only named, " +
+  "editing the open document, searching the vault — say in one sentence that this assistant is set to chat " +
+  "only, and that they can attach the file to the chat or switch to another assistant. Then answer " +
+  "whatever part of the request you can without it.";
+
 // Added when agentPlanning is "model": the model keeps the task list itself.
 const PLAN_INSTRUCTION =
   "For a goal that genuinely takes several steps you keep your own task list.\n" +
@@ -2116,31 +2152,43 @@ function buildChatSystemPrompt(
   const thinkingInstruction =
     thinkingMode === "off" ? "Do not output any reasoning, notes, or intermediate steps." : "";
 
+  // A chat-only assistant takes the tool-less branch of every rule below, even
+  // on the agent code path: the request carries no tools, so every rule about
+  // calling one would describe something that cannot happen.
+  const agentToolsLive = toolsEnabled && !request.toolsDisabled;
+
   // In the agent (tool-calling) path the document is deliberately not
   // embedded upfront — the agent reads it itself via get_document/
   // get_selection, which saves context and avoids stale duplicates.
+  //
+  // A chat-only assistant takes the other branch but is never passed a
+  // documentContext either (no caller sets it today): it is meant to see the
+  // open note neither through a tool nor behind the user's back. What the user
+  // attaches or selects rides on the messages instead.
   const documentSection =
-    !toolsEnabled && request.documentContext?.trim()
+    !agentToolsLive && request.documentContext?.trim()
       ? "The user is currently working on the following document. Use it as context when the " +
         `conversation refers to it:\n\n${request.documentContext.trim()}`
       : "";
 
-  const agentSection = toolsEnabled ? AGENT_INSTRUCTION : "";
-  const vaultSection = toolsEnabled && request.vaultSearchEnabled ? VAULT_INSTRUCTION : "";
-  const fileSection = toolsEnabled && request.fileAccessEnabled ? FILE_INSTRUCTION : "";
-  const planSection = toolsEnabled && request.planToolsEnabled ? PLAN_INSTRUCTION : "";
+  const agentSection = agentToolsLive ? AGENT_INSTRUCTION : "";
+  const chatOnlySection = request.toolsDisabled ? CHAT_ONLY_INSTRUCTION : "";
+  const vaultSection = agentToolsLive && request.vaultSearchEnabled ? VAULT_INSTRUCTION : "";
+  const fileSection = agentToolsLive && request.fileAccessEnabled ? FILE_INSTRUCTION : "";
+  const planSection = agentToolsLive && request.planToolsEnabled ? PLAN_INSTRUCTION : "";
   // Both of these describe what the agent *cannot* do in this turn, and both
   // are only worth saying in the agent path — without tools there is no call
   // that could fail. documentOpen left undefined means "unknown", which the
   // old behaviour covers: say nothing.
-  const noFileAccessSection = toolsEnabled && !request.fileAccessEnabled ? NO_FILE_ACCESS_INSTRUCTION : "";
-  const noDocumentSection = toolsEnabled && request.documentOpen === false ? NO_DOCUMENT_INSTRUCTION : "";
+  const noFileAccessSection = agentToolsLive && !request.fileAccessEnabled ? NO_FILE_ACCESS_INSTRUCTION : "";
+  const noDocumentSection = agentToolsLive && request.documentOpen === false ? NO_DOCUMENT_INSTRUCTION : "";
 
   return [
     baseInstruction,
     MARKDOWN_OUTPUT_INSTRUCTION,
     DIAGRAM_INSTRUCTION,
     agentSection,
+    chatOnlySection,
     vaultSection,
     fileSection,
     noFileAccessSection,

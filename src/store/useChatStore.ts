@@ -600,12 +600,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // The agent's capabilities for this turn. Read once, unlike the knowledge
     // base toggle: these are settings in a dialog, not something the user flips
     // while an answer is coming in.
-    const fileAccessEnabled = aiSettings.agentFileAccess;
+    //
+    // A chat-only assistant (Assistant.chatOnly) narrows them to nothing. It
+    // only ever subtracts: agentFileAccess stays the user's consent gate for
+    // the vault, and an assistant cannot hand itself an access the settings
+    // withhold — which is what keeps an imported or shared persona from being
+    // a way around that gate.
+    const toolsDisabled = assistant.chatOnly;
+    const fileAccessEnabled = aiSettings.agentFileAccess && !toolsDisabled;
     // The same switches, enforced a second time where the tools run: a tool
     // name resolved through an alias must not slip past the consent gate that
     // "the model was never offered this tool" normally provides.
     setAgentCapabilities({ fileAccess: fileAccessEnabled, allowDelete: aiSettings.agentAllowDelete });
-    const planToolsEnabled = aiSettings.agentPlanning === "model";
+    const planToolsEnabled = aiSettings.agentPlanning === "model" && !toolsDisabled;
     const maxIterations = aiSettings.agentMaxIterations;
     const maxPlanSteps = aiSettings.agentMaxPlanSteps;
     const modelKey = visionKey(aiSettings);
@@ -806,7 +813,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
               // can switch the knowledge base off mid-turn, and the next step
               // must not still be offered tools that read their notes (again
               // with the caveat in currentUseKnowledgeBase).
-              vaultSearchEnabled: isKnowledgeBaseReady() && currentUseKnowledgeBase(),
+              vaultSearchEnabled:
+                !toolsDisabled && isKnowledgeBaseReady() && currentUseKnowledgeBase(),
               // Re-read per step like the knowledge base toggle: the user can
               // open or close a note while the turn is running, and the rules
               // about the passage tools have to describe the editor as it is
@@ -815,7 +823,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
               fileAccessEnabled,
               deleteEnabled: aiSettings.agentAllowDelete,
               multiEditEnabled: aiSettings.agentMultiEdit,
-              planToolsEnabled
+              planToolsEnabled,
+              toolsDisabled
             },
             {
               onText: (chunk) => {
@@ -996,7 +1005,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // by construction.
       let plan: PlanStep[] | null = null;
 
-      if (aiSettings.agentPlanning === "auto" && !action && !noPlanModels.has(modelKey)) {
+      // A chat-only assistant plans nothing either: a plan is a list of work to
+      // be carried out with tools, and this turn has none.
+      if (
+        aiSettings.agentPlanning === "auto" &&
+        !toolsDisabled &&
+        !action &&
+        !noPlanModels.has(modelKey)
+      ) {
         set({ streamingActivity: PLANNING_ACTIVITY });
 
         const outcome = await planTask(
@@ -1127,8 +1143,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // not waiting for — the button simply appears a moment later.
       // …and only while a note is open: with none, the extra request could only
       // ever end in a button that has no document to write into.
+      // …and never for a chat-only assistant: the whole point of that switch is
+      // that this assistant does not reach into the open note, and this branch
+      // ends in exactly that — either a proposal written into the document or a
+      // button offering one.
       if (
         unflaggedReply.value &&
+        !toolsDisabled &&
         !abortController.signal.aborted &&
         useAppStore.getState().selectedFilePath
       ) {

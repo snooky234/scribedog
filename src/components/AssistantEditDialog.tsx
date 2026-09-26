@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { EmojiPicker } from "@/components/EmojiPicker";
+import { SettingRow } from "@/components/settings/SettingRow";
 import { DEFAULT_CHAT_ASSISTANT_INSTRUCTION } from "@/lib/aiClient";
 import {
   DEFAULT_ASSISTANT_ID,
@@ -66,6 +67,7 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instruction, setInstruction] = useState("");
+  const [chatOnly, setChatOnly] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -88,6 +90,7 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
         : ""
     );
     setInstruction(assistant?.instruction ?? "");
+    setChatOnly(assistant?.chatOnly ?? false);
   }, [open, assistant, t]);
 
   useEffect(() => {
@@ -126,7 +129,8 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
       // Same rule as the name: the default assistant keeps its stored
       // description empty so the localized text stays language-aware.
       description: isEditingDefault ? "" : description.trim(),
-      instruction: instruction.trim()
+      instruction: instruction.trim(),
+      chatOnly
     };
 
     if (assistant) {
@@ -192,6 +196,26 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
                 onChange={setInstruction}
               />
             </label>
+
+            {/* A capability, not a wording: the instruction above is a request
+                the model may ignore, this one removes the tools. Its hint names
+                the model class the way the agent switches in the AI settings do
+                — the symptom is what lets the user recognize their own case. */}
+            <div className="assistants__capabilities">
+              <SettingRow
+                layout="switch"
+                full
+                label={t("assistants.chatOnlyLabel")}
+                hint={t("assistants.chatOnlyHint")}
+                info={t("assistants.chatOnlyInfo")}
+              >
+                <input
+                  type="checkbox"
+                  checked={chatOnly}
+                  onChange={(event) => setChatOnly(event.target.checked)}
+                />
+              </SettingRow>
+            </div>
           </div>
         </div>
 

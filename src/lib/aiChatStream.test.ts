@@ -507,3 +507,90 @@ describe("streamAiChatStep — reasoning-effort/tool conflict", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+// A chat-only assistant (Assistant.chatOnly): the switch has to reach the wire,
+// not just the system prompt. The point of it is that a small model cannot call
+// a tool it was never handed — a rule telling it not to is what already failed.
+describe("streamAiChatStep — chat-only assistant", () => {
+  const CHAT_ONLY: AiChatRequest = {
+    ...REQUEST,
+    toolsDisabled: true,
+    // Everything that would normally widen the tool set, to prove the switch
+    // overrides them rather than sitting beside them.
+    vaultSearchEnabled: true,
+    fileAccessEnabled: true,
+    planToolsEnabled: true
+  };
+
+  // One streamed "hi", in whichever shape this provider family speaks: a step
+  // that streams nothing at all falls back to the non-streaming path and never
+  // reaches the assertion.
+  const answerChunk = (settings: AiSettings): string =>
+    settings.provider === "anthropic"
+      ? 'event: content_block_delta\ndata: {"delta":{"type":"text_delta","text":"hi"}}\n\n'
+      : settings.provider === "ollama"
+        ? '{"message":{"content":"hi"},"done":true}\n'
+        : 'data: {"choices":[{"delta":{"content":"hi"}}]}\n';
+
+  it("offers no tools at all, whatever the other switches say", async () => {
+    for (const settings of [OPENAI, OLLAMA, ANTHROPIC]) {
+      fetchMock.mockReset();
+      fetchMock.mockResolvedValueOnce(streamResponse([answerChunk(settings)]));
+
+      await streamAiChatStep(settings, CHAT_ONLY, recorder().handlers);
+
+      expect(requestBodyOf(0).tools).toEqual([]);
+    }
+  });
+
+  // Without this the model is told nothing about tools at all and concludes it
+  // can do nothing — including reading the file the user just attached, which
+  // is the one thing it can always do.
+  it("replaces the agent rules with the chat-only ones", async () => {
+    fetchMock.mockResolvedValueOnce(
+      streamResponse(['data: {"choices":[{"delta":{"content":"hi"}}]}\n'])
+    );
+
+    await streamAiChatStep(OPENAI, CHAT_ONLY, recorder().handlers);
+
+    const system = requestBodyOf(0).messages[0].content as string;
+
+    expect(system).toContain("You have no tools");
+    expect(system).toContain("attach to the chat");
+    // None of the rule blocks that describe calling a tool.
+    expect(system).not.toContain("get_document");
+    expect(system).not.toContain("search_vault");
+    expect(system).not.toContain("write_file");
+    expect(system).not.toContain("create_plan");
+  });
+
+  it("keeps the assistant's own persona", async () => {
+    fetchMock.mockResolvedValueOnce(
+      streamResponse(['data: {"choices":[{"delta":{"content":"hi"}}]}\n'])
+    );
+
+    await streamAiChatStep(
+      OPENAI,
+      { ...CHAT_ONLY, assistantInstruction: "Answer like a pirate." },
+      recorder().handlers
+    );
+
+    expect(requestBodyOf(0).messages[0].content).toContain("Answer like a pirate.");
+  });
+
+  // The counter-test: nothing about the switch may leak into a normal turn.
+  it("leaves an ordinary assistant's tools untouched", async () => {
+    fetchMock.mockResolvedValueOnce(
+      streamResponse(['data: {"choices":[{"delta":{"content":"hi"}}]}\n'])
+    );
+
+    await streamAiChatStep(OPENAI, { ...CHAT_ONLY, toolsDisabled: false }, recorder().handlers);
+
+    const body = requestBodyOf(0);
+    const names = (body.tools as { function: { name: string } }[]).map((tool) => tool.function.name);
+
+    expect(names).toContain("get_document");
+    expect(names).toContain("write_file");
+    expect(body.messages[0].content).not.toContain("You have no tools");
+  });
+});

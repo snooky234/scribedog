@@ -14,6 +14,18 @@ export type Assistant = {
   name: string;
   description: string;
   instruction: string;
+  // Turns this assistant into a plain conversation partner: no agent tools are
+  // offered at all, so it can neither read the open note nor reach any other
+  // file in the vault. The instruction text is not the place for this — a small
+  // model routinely ignores "do not look at the document" and calls
+  // get_document anyway, and a prompt was never a boundary in the first place.
+  //
+  // It only ever takes capabilities away; the global switches in AI settings
+  // still gate everything an assistant without it may do (see useChatStore).
+  // What the *user* hands over is untouched: attached files and the selected
+  // passage are folded into the request as ordinary context, not fetched
+  // through a tool (see src/lib/chat/attachedFiles.ts).
+  chatOnly: boolean;
 };
 
 type AssistantsState = {
@@ -31,7 +43,8 @@ function createDefaultAssistant(): Assistant {
     emoji: "🐾",
     name: "",
     description: "",
-    instruction: DEFAULT_CHAT_ASSISTANT_INSTRUCTION
+    instruction: DEFAULT_CHAT_ASSISTANT_INSTRUCTION,
+    chatOnly: false
   };
 }
 
@@ -60,7 +73,11 @@ function normalizeAssistant(raw: Partial<Assistant> | null): Assistant | null {
     emoji: typeof raw.emoji === "string" ? raw.emoji : "",
     name: typeof raw.name === "string" ? raw.name : "",
     description: typeof raw.description === "string" ? raw.description : "",
-    instruction: typeof raw.instruction === "string" ? raw.instruction : ""
+    instruction: typeof raw.instruction === "string" ? raw.instruction : "",
+    // Opt-in by the exact value, like agentFileAccess: an assistant stored
+    // before this switch existed, or one whose field is unparseable, keeps the
+    // tools it has always had rather than silently losing them.
+    chatOnly: raw.chatOnly === true
   };
 }
 

@@ -332,6 +332,17 @@
   margin-bottom: 0;
 }
 
+/* The capability switch sits apart from the persona fields above it: the
+   instruction is text the model may or may not honour, this one decides what
+   it is handed in the first place. A grid so SettingRow's --full modifier
+   resolves the way it does in the settings dialog. */
+.assistants__capabilities {
+  display: grid;
+  gap: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(var(--text-rgb), 0.12);
+}
+
 .assistants__form-row {
   display: flex;
   gap: 0.9rem;
