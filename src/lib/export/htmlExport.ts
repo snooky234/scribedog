@@ -1,4 +1,10 @@
-import { DEFAULT_DOCUMENT_STYLE, getFontDefinition, getFontScale, type DocumentStyle } from "@/lib/fonts";
+import {
+  DEFAULT_DOCUMENT_STYLE,
+  getFontDefinition,
+  getFontScale,
+  type DocumentStyle,
+  type TableWidth
+} from "@/lib/fonts";
 
 import type { BlockAlign, ExportBlock, InlineRun } from "./markdownModel";
 import type { ExportImageMap } from "./imageAssets";
@@ -7,7 +13,7 @@ import type { ExportImageMap } from "./imageAssets";
 // images embedded as data URIs (the exported file must work without the
 // vault next to it).
 
-const documentCss = (fontStack: string, baseSizePx: number) => `
+const documentCss = (fontStack: string, baseSizePx: number, tableWidth: TableWidth) => `
   :root { color-scheme: light; }
   body {
     margin: 0 auto;
@@ -61,8 +67,12 @@ const documentCss = (fontStack: string, baseSizePx: number) => `
     border-left: 0.25em solid #d1d9e0;
     color: #59636e;
   }
-  table { border-collapse: collapse; margin: 1em 0; }
-  th, td { border: 1px solid #d1d9e0; padding: 0.4em 0.8em; }
+  /* Mirrors the editor's table width setting; the columns size to their
+     content either way, this only decides the table's own width. */
+  table { border-collapse: collapse; margin: 1em 0; width: ${tableWidth === "content" ? "auto" : "100%"}; }
+  /* Lets a wide table break inside a word rather than run past the page
+     edge, as the editor does. */
+  th, td { border: 1px solid #d1d9e0; padding: 0.4em 0.8em; overflow-wrap: anywhere; }
   th { background: #f6f8fa; }
   hr { border: none; border-top: 1px solid #d1d9e0; margin: 2em 0; }
   ul.task-list { list-style: none; padding-left: 1.2em; }
@@ -233,7 +243,8 @@ export function renderHtmlDocument(
     `<title>${escapeHtml(title)}</title>`,
     `<style>${documentCss(
       getFontDefinition(style.fontId).cssStack,
-      Math.round(16 * getFontScale(style.fontSizePt) * 100) / 100
+      Math.round(16 * getFontScale(style.fontSizePt) * 100) / 100,
+      style.tableWidth ?? "full"
     )}</style>`,
     "</head>",
     "<body>",

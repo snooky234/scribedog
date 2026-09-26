@@ -211,7 +211,17 @@ export type DocumentStyle = {
   fontId: AppFontId;
   fontSizePt: number;
   headingNumbering?: HeadingNumberingSettings;
+  /**
+   * Table width, mirroring the editor setting of the same name
+   * (useEditorSettingsStore.tableWidth) so an exported table looks like the
+   * one on screen. Markdown itself cannot carry this, so it travels with
+   * the style rather than with the document. Omitted means "full".
+   */
+  tableWidth?: TableWidth;
 };
+
+/** @see DocumentStyle.tableWidth */
+export type TableWidth = "full" | "content";
 
 export const DEFAULT_DOCUMENT_STYLE: DocumentStyle = {
   fontId: DEFAULT_FONT_ID,

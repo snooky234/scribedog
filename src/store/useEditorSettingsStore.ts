@@ -8,8 +8,13 @@ import {
   getFontDefinition,
   getFontScale,
   resolveFontId,
-  type AppFontId
+  type AppFontId,
+  type TableWidth
 } from "@/lib/fonts";
+
+// Defined with DocumentStyle rather than here: the export carries the same
+// value, and one definition keeps the two from drifting apart.
+export type { TableWidth };
 import { clampOutlineDepth, OUTLINE_DEPTH_MAX } from "@/lib/editor/documentOutline";
 import { clampZenFontSizePt } from "@/lib/zenFontZoom";
 import {
@@ -39,6 +44,7 @@ export const ZEN_FONT_SIZE_STORAGE_KEY = "scribedog-zen-font-size-pt";
 export const FONT_STORAGE_KEY = "scribedog-font-id";
 export const FONT_SIZE_STORAGE_KEY = "scribedog-font-size-pt";
 export const PAPER_SURFACE_STORAGE_KEY = "scribedog-paper-surface";
+export const TABLE_WIDTH_STORAGE_KEY = "scribedog-table-width";
 export const AUTO_SAVE_STORAGE_KEY = "scribedog-auto-save-enabled";
 export const RESTORE_WORKING_SET_STORAGE_KEY = "scribedog-restore-working-set";
 export const AUTO_ADMIT_WORKING_SET_STORAGE_KEY = "scribedog-auto-admit-working-set";
@@ -300,6 +306,22 @@ function persistPaperSurface(enabled: boolean): void {
   }
 }
 
+function getStoredTableWidth(): TableWidth {
+  try {
+    return window.localStorage.getItem(TABLE_WIDTH_STORAGE_KEY) === "content" ? "content" : "full";
+  } catch {
+    return "full";
+  }
+}
+
+function persistTableWidth(width: TableWidth): void {
+  try {
+    window.localStorage.setItem(TABLE_WIDTH_STORAGE_KEY, width);
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
 function getStoredFontId(): AppFontId {
   try {
     return resolveFontId(window.localStorage.getItem(FONT_STORAGE_KEY));
@@ -385,6 +407,17 @@ type EditorSettingsState = {
    */
   paperSurface: boolean;
   setPaperSurface: (enabled: boolean) => void;
+  /**
+   * How wide a table sits in the document. "full" keeps it flush with the
+   * text on both sides, "content" shrinks it to what its cells need, so a
+   * two-column table stays narrow (issue #59). Either way the columns
+   * themselves are sized by their content, never split into equal shares,
+   * and a table too wide for the surface scrolls in its wrapper instead of
+   * squeezing its columns. No effect on a table whose columns were dragged:
+   * those widths are stored on the cells and win over both.
+   */
+  tableWidth: TableWidth;
+  setTableWidth: (width: TableWidth) => void;
   /**
    * Folder notes (see lib/folderNotes.ts): clicking a folder's name opens the
    * folder's own note. Controls only what the tree offers — the note files
@@ -512,6 +545,11 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
   setPaperSurface: (enabled: boolean) => {
     persistPaperSurface(enabled);
     set({ paperSurface: enabled });
+  },
+  tableWidth: getStoredTableWidth(),
+  setTableWidth: (width: TableWidth) => {
+    persistTableWidth(width);
+    set({ tableWidth: width });
   },
   folderNotesEnabled: false,
   setFolderNotesEnabled: (enabled: boolean) => {

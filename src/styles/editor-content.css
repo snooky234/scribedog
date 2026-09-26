@@ -4,7 +4,15 @@
 .editor-view__scroll {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  /* `scroll`, not `auto`: the bar is always there, so a change in document
+     height cannot make it appear. With `auto` it did, and appearing cost
+     the surface ~15px of width, which re-wrapped a wide table, which
+     changed the height again - the loop that showed up as flicker when
+     merely hovering a column resize handle. `scrollbar-gutter` alone does
+     not cover it here, because .scroll-area (sidebar.css) also sets
+     overflow-x on this element. */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 .editor-view__content {
@@ -189,24 +197,87 @@
 .editor-view__surface .tableWrapper {
   margin: 1rem 0;
   overflow-x: auto;
+  /* Setting overflow-x alone would leave overflow-y at the computed `auto`
+     that CSS forces on the other axis, and the wrapper would grow its own
+     vertical scrollbar. That bar is what flickered while hovering a column
+     resize handle: the hover redraw makes the table a little taller, the
+     bar appears, it costs ~15px of width, the table re-wraps, the height
+     drops, the bar goes away. The table is never scrolled vertically, only
+     sideways, so this axis is simply closed. */
+  overflow-y: hidden;
+  /* A flex/grid child's automatic minimum size is its content, so without
+     this the wrapper would be as wide as the table and push the whole
+     surface sideways instead of scrolling inside itself. */
+  min-width: 0;
+  max-width: 100%;
+  /* Panning the table horizontally must not also pan the page. */
+  overscroll-behavior-x: contain;
 }
 
+/* Column widths follow the content (issue #59): a "yes/no" column stays
+   narrow instead of being stretched to its share of a full-width table.
+   `table-layout: auto` is what does it.
+
+   No `max-width` here on purpose. Capping the table at the surface leaves
+   the browser one way out when the columns don't fit - wrapping every cell
+   into a narrow stack - which is the squeezed table this was meant to fix,
+   and it is worst on a phone. Without the cap the table grows past the
+   surface and the .tableWrapper's overflow-x scrolls it, so the columns
+   stay readable and the table is panned instead.
+
+   The lower bound is the cell's own `min-width` below; the extension's
+   cellMinWidth is 25px, a floor for dragging rather than a readable width.
+
+   Once a column has been dragged, ProseMirror's own table view puts a
+   `width` on the <col> and a `width` on the table itself; `auto` honours
+   those, so the manual widths keep winning without a second rule.
+
+   The table still spans the text width by default, which is what it looked
+   like before and what most notes want; the settings dialog's "table width"
+   switches it to the content width below. Both share `table-layout: auto` -
+   the setting decides where the leftover space goes, not how the columns
+   are measured.
+
+   `!important` earns its place here. The resize plugin writes an inline
+   `width` or `min-width` on the table on every redraw, including the one
+   that merely hovering a column handle triggers (prosemirror-tables'
+   displayColumnWidth -> updateColumnsOnResize). Against a stylesheet width
+   that inline value wins, so the table jumped between the two on every
+   mouse move across a handle. Overriding it keeps the table where the
+   setting puts it; the dragged column widths are unaffected because those
+   live on the <col> elements, not here. */
 .editor-view__surface table {
   border-collapse: collapse;
   margin: 0;
-  overflow: hidden;
-  table-layout: fixed;
-  width: 100%;
+  table-layout: auto;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* "Fit to content" (useEditorSettingsStore.tableWidth): a two-column table
+   stays narrow and left-aligned instead of being stretched to the margin.
+   `max-content` rather than `auto`: with the columns' own min-widths an
+   `auto` table would still fill the wrapper. */
+.editor-view__surface--table-content table {
+  width: max-content !important;
+  max-width: none !important;
 }
 
 .editor-view__surface table td,
 .editor-view__surface table th {
   position: relative;
   box-sizing: border-box;
-  min-width: 3em;
+  /* What keeps a column readable: wide enough for a short word, so a table
+     with many columns overflows the wrapper (and scrolls) instead of
+     wrapping every cell into a vertical stack. */
+  min-width: 7em;
   border: 1px solid rgba(var(--overlay-rgb),0.14);
   padding: 0.4rem 0.6rem;
   vertical-align: top;
+  /* A long URL or a single long word would otherwise widen its column past
+     everything else instead of wrapping - the one case where content-driven
+     widths go wrong. */
+  overflow-wrap: anywhere;
 }
 
 .editor-view__surface table td > *,

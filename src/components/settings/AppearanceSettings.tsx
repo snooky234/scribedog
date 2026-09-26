@@ -8,7 +8,7 @@ import { isValidHexColor } from "@/lib/color";
 import { findPresetTheme, PRESET_THEMES } from "@/lib/theme/presets";
 import { OUTLINE_DEPTH_MAX, OUTLINE_DEPTH_MIN } from "@/lib/editor/documentOutline";
 import { DEFAULT_ACCENT_COLOR, useAccentColorStore } from "@/store/useAccentColorStore";
-import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
+import { useEditorSettingsStore, type TableWidth } from "@/store/useEditorSettingsStore";
 import {
   customThemeIdOf,
   customThemeKey,
@@ -44,6 +44,8 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
     t(`themeBuilder.presets.${id}`, { defaultValue: findPresetTheme(id)?.name ?? id });
   const paperSurface = useEditorSettingsStore((state) => state.paperSurface);
   const setPaperSurface = useEditorSettingsStore((state) => state.setPaperSurface);
+  const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
+  const setTableWidth = useEditorSettingsStore((state) => state.setTableWidth);
   const outlineMaxDepth = useEditorSettingsStore((state) => state.outlineMaxDepth);
   const setOutlineMaxDepth = useEditorSettingsStore((state) => state.setOutlineMaxDepth);
   const settingAccentColor = useAccentColorStore((state) => state.accentColor);
@@ -169,6 +171,17 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
         info={t("settingsDialog.paperSurfaceHint")}
       >
         <input type="checkbox" checked={paperSurface} onChange={(event) => setPaperSurface(event.target.checked)} />
+      </SettingRow>
+
+      <SettingRow
+        label={t("settingsDialog.tableWidth")}
+        hint={t("settingsDialog.tableWidthShort")}
+        info={t("settingsDialog.tableWidthHint")}
+      >
+        <select value={tableWidth} onChange={(event) => setTableWidth(event.target.value as TableWidth)}>
+          <option value="full">{t("settingsDialog.tableWidthFull")}</option>
+          <option value="content">{t("settingsDialog.tableWidthContent")}</option>
+        </select>
       </SettingRow>
 
       <SettingRow label={t("settingsDialog.outlineDepth")} hint={t("settingsDialog.outlineDepthShort")}>

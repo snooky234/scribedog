@@ -85,7 +85,8 @@ export function ExportDialog({
   const fontId = useEditorSettingsStore((state) => state.fontId);
   const fontSizePt = useEditorSettingsStore((state) => state.fontSizePt);
   const headingNumbering = useEditorSettingsStore((state) => state.headingNumbering);
-  const documentStyle: DocumentStyle = { fontId, fontSizePt, headingNumbering };
+  const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
+  const documentStyle: DocumentStyle = { fontId, fontSizePt, headingNumbering, tableWidth };
 
   const [format, setFormat] = useState<ExportFormat>("pdf");
   const [name, setName] = useState("");

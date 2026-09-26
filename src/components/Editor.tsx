@@ -114,6 +114,10 @@ const EDITOR_IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bm
 // dark variant in App.css key off this exact name.
 const PAPER_SURFACE_CLASS = "editor-view__surface--paper";
 
+// Tables shrink to their content instead of spanning the text width
+// (useEditorSettingsStore.tableWidth); editor-content.css keys off this name.
+const TABLE_WIDTH_CONTENT_CLASS = "editor-view__surface--table-content";
+
 type EditorProps = {
   markdown: string;
   onMarkdownChange: (markdown: string) => void;
@@ -248,6 +252,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   onCanonicalMarkdownRef.current = onCanonicalMarkdown;
   const spellcheckEnabled = useEditorSettingsStore((state) => state.spellcheckEnabled);
   const paperSurface = useEditorSettingsStore((state) => state.paperSurface);
+  const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
   const detailsPanelVisible = useEditorSettingsStore((state) => state.detailsPanelVisible);
   const layout = useLayoutMode();
   // Phone and tablet show the panel as a sheet with its own switch (see the
@@ -1560,7 +1565,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       attributes: {
         class: cn(
           "editor-view__surface prose dark:prose-invert max-w-none",
-          paperSurface && PAPER_SURFACE_CLASS
+          paperSurface && PAPER_SURFACE_CLASS,
+          tableWidth === "content" && TABLE_WIDTH_CONTENT_CLASS
         ),
         "data-testid": "editor",
         spellcheck: String(spellcheckEnabled)
@@ -1582,6 +1588,10 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   useEffect(() => {
     editor?.view.dom.classList.toggle(PAPER_SURFACE_CLASS, paperSurface);
   }, [editor, paperSurface]);
+
+  useEffect(() => {
+    editor?.view.dom.classList.toggle(TABLE_WIDTH_CONTENT_CLASS, tableWidth === "content");
+  }, [editor, tableWidth]);
 
   // A tap on an image selects it without focusing the editor (see ImageView),
   // so there is no blur to clear that selection on. A pointer going down

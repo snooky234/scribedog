@@ -6,7 +6,8 @@ import {
   getFontScale,
   getReferencedFontName,
   type AppFontId,
-  type DocumentStyle
+  type DocumentStyle,
+  type TableWidth
 } from "@/lib/fonts";
 
 import type { ExportBlock, InlineRun } from "./markdownModel";
@@ -100,6 +101,9 @@ type OdtWriterState = {
   picturePaths: Map<string, string>;
   // Running counter for unique draw:name values on image frames.
   frameIndex: number;
+  // Mirrors the editor's table width setting; carried on the state because
+  // the table branch sits several levels down in blocksToOdtXml.
+  tableWidth: TableWidth;
 };
 
 function textStyleName(run: Extract<InlineRun, { kind: "text" }>): string | null {
@@ -291,7 +295,10 @@ function blocksToOdtXml(blocks: ExportBlock[], state: OdtWriterState, paragraphS
         }
 
         const columnCount = Math.max(...block.rows.map((row) => row.length));
-        xml += "<table:table>";
+        // TA_full spans the text width, TA_content leaves the table at the
+        // width its cells need (see buildContentXml's automatic styles).
+        const tableStyle = state.tableWidth === "content" ? "TA_content" : "TA_full";
+        xml += `<table:table table:style-name="${tableStyle}">`;
         xml += `<table:table-column table:number-columns-repeated="${columnCount}"/>`;
 
         for (const row of block.rows) {
@@ -393,6 +400,13 @@ function buildContentXml(
         `</style:style>`
     ),
     `<style:style style:name="P_task" style:family="paragraph" style:parent-style-name="Standard"><style:paragraph-properties fo:margin-left="0.635cm" fo:margin-top="0.05cm" fo:margin-bottom="0.15cm"/>${bodyFontProps}</style:style>`,
+    // Table width, mirroring the editor setting. rel-width is what the
+    // office suites honour for "as wide as the text"; align="margins"
+    // stretches it between them. Without a style a table defaults to the
+    // full width, so TA_content is the one that actually has to say
+    // something: auto width, left aligned.
+    '<style:style style:name="TA_full" style:family="table"><style:table-properties style:rel-width="100%" table:align="margins"/></style:style>',
+    '<style:style style:name="TA_content" style:family="table"><style:table-properties style:width="0cm" table:align="left"/></style:style>',
     '<style:style style:name="TC_body" style:family="table-cell"><style:table-cell-properties fo:border="0.018cm solid #c8c8c8" fo:padding="0.1cm"/></style:style>',
     '<style:style style:name="TC_header" style:family="table-cell"><style:table-cell-properties fo:border="0.018cm solid #c8c8c8" fo:padding="0.1cm" fo:background-color="#f0f0f0"/></style:style>',
     // Inline anchoring for image frames — see the draw:frame comment above.
@@ -485,7 +499,12 @@ export function renderOdtDocument(
     pictureFiles[path] = asset.pngBytes;
   }
 
-  const state: OdtWriterState = { images, picturePaths, frameIndex: 0 };
+  const state: OdtWriterState = {
+    images,
+    picturePaths,
+    frameIndex: 0,
+    tableWidth: style.tableWidth ?? "full"
+  };
 
   const archive: Zippable = {
     // Per ODF spec the mimetype entry must come first and stay uncompressed.

@@ -23,7 +23,8 @@ import {
   DEFAULT_DOCUMENT_STYLE,
   getFontScale,
   getReferencedFontName,
-  type DocumentStyle
+  type DocumentStyle,
+  type TableWidth
 } from "@/lib/fonts";
 
 import type {
@@ -139,7 +140,8 @@ function blocksToDocxElements(
   blocks: ExportBlock[],
   images: ExportImageMap,
   listContext: ListContext | null = null,
-  inQuote = false
+  inQuote = false,
+  tableWidth: TableWidth = "full"
 ): Array<Paragraph | Table> {
   const elements: Array<Paragraph | Table> = [];
 
@@ -205,7 +207,7 @@ function blocksToDocxElements(
         break;
       }
       case "blockquote":
-        elements.push(...blocksToDocxElements(block.children, images, listContext, true));
+        elements.push(...blocksToDocxElements(block.children, images, listContext, true, tableWidth));
         break;
       case "list": {
         for (const item of block.items) {
@@ -225,10 +227,13 @@ function blocksToDocxElements(
 
             const restBlocks = first?.kind === "paragraph" ? rest : item.children;
             elements.push(
-              ...blocksToDocxElements(restBlocks, images, {
-                ordered: false,
-                level: Math.min((listContext?.level ?? -1) + 1, 8)
-              })
+              ...blocksToDocxElements(
+                restBlocks,
+                images,
+                { ordered: false, level: Math.min((listContext?.level ?? -1) + 1, 8) },
+                false,
+                tableWidth
+              )
             );
             continue;
           }
@@ -238,12 +243,20 @@ function blocksToDocxElements(
 
           if (first?.kind === "paragraph") {
             elements.push(
-              ...blocksToDocxElements([first], images, { ordered: block.ordered, level })
+              ...blocksToDocxElements([first], images, { ordered: block.ordered, level }, false, tableWidth)
             );
-            elements.push(...blocksToDocxElements(rest, images, { ordered: block.ordered, level }));
+            elements.push(
+              ...blocksToDocxElements(rest, images, { ordered: block.ordered, level }, false, tableWidth)
+            );
           } else {
             elements.push(
-              ...blocksToDocxElements(item.children, images, { ordered: block.ordered, level })
+              ...blocksToDocxElements(
+                item.children,
+                images,
+                { ordered: block.ordered, level },
+                false,
+                tableWidth
+              )
             );
           }
         }
@@ -256,7 +269,12 @@ function blocksToDocxElements(
 
         elements.push(
           new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
+            // AUTO lets Word size the table to its contents; a percentage
+            // stretches it across the text width, as the editor setting does.
+            width:
+              tableWidth === "content"
+                ? { size: 0, type: WidthType.AUTO }
+                : { size: 100, type: WidthType.PERCENTAGE },
             rows: block.rows.map(
               (row) =>
                 new TableRow({
@@ -369,7 +387,7 @@ export async function renderDocxDocument(
     },
     sections: [
       {
-        children: blocksToDocxElements(blocks, images)
+        children: blocksToDocxElements(blocks, images, null, false, style.tableWidth ?? "full")
       }
     ]
   });

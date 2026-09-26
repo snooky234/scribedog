@@ -1,11 +1,17 @@
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 
-import { DEFAULT_DOCUMENT_STYLE, getFontScale, type DocumentStyle } from "@/lib/fonts";
+import {
+  DEFAULT_DOCUMENT_STYLE,
+  getFontScale,
+  type DocumentStyle,
+  type TableWidth
+} from "@/lib/fonts";
 
 import type { ExportBlock, InlineRun } from "./markdownModel";
 import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 import { splitEmojiSegments } from "./emojiSegments";
 import { registerPdfFont } from "./pdfFonts";
+import { maxWordLength, splitOverlongWords } from "./pdfTableFit";
 
 type PdfMakeModule = typeof import("pdfmake/build/pdfmake");
 
@@ -170,7 +176,44 @@ function runsToBlockContent(runs: InlineRun[], images: ExportImageMap, style?: s
   return result;
 }
 
-function blocksToPdfContent(blocks: ExportBlock[], images: ExportImageMap): Content[] {
+// What the block renderer needs from the document style, handed down
+// through nested quotes and lists.
+type PdfLayout = {
+  tableWidth: TableWidth;
+  // Body font size in pt, after the user's scale.
+  fontSize: number;
+};
+
+// Marks the words of a table cell that cannot fit their column, so pdfmake
+// breaks those inside the word instead of pushing the table off the page
+// (see pdfTableFit.ts). Images, emoji and line breaks pass through.
+function fitCellText(parts: Content[], maxLength: number, maxLengthWide: number): Content[] {
+  return parts.flatMap((part) => {
+    const item = part as { text?: unknown; font?: string; bold?: boolean; image?: string };
+
+    if (typeof item.text !== "string" || item.font === EMOJI_FONT || item.image) {
+      return [part];
+    }
+
+    const wide = item.bold === true || item.font === "Courier";
+    const segments = splitOverlongWords(item.text, wide ? maxLengthWide : maxLength);
+
+    if (segments.length === 1 && !segments[0].breakAll) {
+      return [part];
+    }
+
+    return segments.map(
+      (segment) =>
+        ({
+          ...item,
+          text: segment.text,
+          ...(segment.breakAll ? { wordBreak: "break-all" } : {})
+        }) as Content
+    );
+  });
+}
+
+function blocksToPdfContent(blocks: ExportBlock[], images: ExportImageMap, layout: PdfLayout): Content[] {
   const content: Content[] = [];
 
   for (const block of blocks) {
@@ -216,7 +259,7 @@ function blocksToPdfContent(blocks: ExportBlock[], images: ExportImageMap): Cont
             body: [
               [
                 { text: "", fillColor: BORDER_COLOR },
-                { stack: blocksToPdfContent(block.children, images), color: MUTED_COLOR }
+                { stack: blocksToPdfContent(block.children, images, layout), color: MUTED_COLOR }
               ]
             ]
           },
@@ -232,7 +275,7 @@ function blocksToPdfContent(blocks: ExportBlock[], images: ExportImageMap): Cont
         break;
       case "list": {
         const items: Content[] = block.items.map((item) => {
-          const stack = blocksToPdfContent(item.children, images);
+          const stack = blocksToPdfContent(item.children, images, layout);
 
           if (item.checked === null) {
             return stack.length === 1 ? stack[0] : { stack };
@@ -263,9 +306,19 @@ function blocksToPdfContent(blocks: ExportBlock[], images: ExportImageMap): Cont
         }
 
         const columnCount = Math.max(...block.rows.map((row) => row.length));
+        const maxLength = maxWordLength(columnCount, layout.fontSize, PAGE_CONTENT_WIDTH);
+        const maxLengthWide = maxWordLength(columnCount, layout.fontSize, PAGE_CONTENT_WIDTH, true);
         const body = block.rows.map((row) => {
           const cells: Content[] = row.map((cell) => ({
-            text: runsToPdfText(cell.runs, images),
+            // Header text is bold (set on the cell below), so it is measured
+            // as the wider face.
+            text: fitCellText(
+              runsToPdfText(cell.runs, images).map((part) =>
+                cell.header ? ({ ...(part as object), bold: true } as Content) : part
+              ),
+              maxLength,
+              maxLengthWide
+            ),
             bold: cell.header || undefined,
             fillColor: cell.header ? "#f0f0f0" : undefined,
             alignment: cell.align
@@ -281,7 +334,10 @@ function blocksToPdfContent(blocks: ExportBlock[], images: ExportImageMap): Cont
         content.push({
           table: {
             headerRows: block.rows[0]?.[0]?.header ? 1 : 0,
-            widths: Array(columnCount).fill("auto"),
+            // pdfmake: "auto" sizes a column to its content, "*" shares out the
+            // printable width. Both keep the relative sizing; "*" additionally
+            // stretches the table to the margins, which is the editor setting.
+            widths: Array(columnCount).fill(layout.tableWidth === "content" ? "auto" : "*"),
             body
           },
           layout: {
@@ -342,7 +398,7 @@ export async function renderPdfDocument(
       paragraph: { margin: [0, 2, 0, 6] },
       code: { fontSize: sized(9) }
     },
-    content: blocksToPdfContent(blocks, images)
+    content: blocksToPdfContent(blocks, images, { tableWidth: style.tableWidth ?? "full", fontSize: sized(10.5) })
   };
 
   const buffer = await pdfMake.createPdf(documentDefinition).getBuffer();

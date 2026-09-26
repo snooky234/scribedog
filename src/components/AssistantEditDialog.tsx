@@ -206,8 +206,9 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
                 layout="switch"
                 full
                 label={t("assistants.chatOnlyLabel")}
-                hint={t("assistants.chatOnlyHint")}
-                info={t("assistants.chatOnlyInfo")}
+                hint={
+                  chatOnly ? t("assistants.chatOnlyHintOn") : t("assistants.chatOnlyHintOff")
+                }
               >
                 <input
                   type="checkbox"

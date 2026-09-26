@@ -221,8 +221,8 @@ code { font-family: monospace; font-size: 0.9em; }
 mark { background: #fde68a; color: inherit; }
 pre { white-space: pre-wrap; background: #f6f8fa; padding: 0.6em; }
 blockquote { margin: 0.8em 1.2em; font-style: italic; }
-table { border-collapse: collapse; }
-th, td { border: 1px solid #999; padding: 0.3em 0.6em; }
+table { border-collapse: collapse; width: ${style.tableWidth === "content" ? "auto" : "100%"}; }
+th, td { border: 1px solid #999; padding: 0.3em 0.6em; overflow-wrap: anywhere; }
 hr { border: none; border-top: 1px solid #999; margin: 1.6em 0; }
 ul.task-list { list-style: none; padding-left: 1.2em; }
 .page-break { page-break-before: always; break-before: page; }
