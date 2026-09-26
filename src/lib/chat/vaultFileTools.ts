@@ -3,6 +3,7 @@ import { join } from "@/platform/paths";
 import { decodeEscapedLineBreaks } from "@/lib/editor/markdownNormalize";
 import { getRelativeDisplayPath, readMarkdownFile } from "@/lib/fileSystem";
 import { getFolderNoteFolderPath, isFolderNotePath } from "@/lib/folderNotes";
+import { mermaidNoteFor } from "@/lib/diagrams/mermaidDiagnostics";
 import { useAppStore } from "@/store/useAppStore";
 import { useStagedChangesStore } from "@/store/useStagedChangesStore";
 
@@ -409,7 +410,13 @@ async function readFile(args: Record<string, unknown>): Promise<FileToolResult> 
       "applied yet. Further edits build on the text above.]"
     : "";
 
-  return { content: `${relativePath}:\n\n${body}${note}` };
+  // Only on the whole file: a truncated body can cut a ```mermaid fence in half,
+  // and extractMermaidSources deliberately ignores an unclosed one — so the
+  // diagram that got cut would silently read as "fine" while a later one shifts
+  // its number. Saying nothing beats saying something wrong.
+  const diagrams = truncated ? "" : await mermaidNoteFor(body);
+
+  return { content: `${relativePath}:\n\n${body}${note}${diagrams}` };
 }
 
 async function writeFile(args: Record<string, unknown>): Promise<FileToolResult> {

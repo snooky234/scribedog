@@ -9,6 +9,7 @@ import { EDITING_TOOL_NAMES, FLAG_SUGGESTION_TOOL_NAME, type VaultSourceRef } fr
 import { normalizeImageSrc, resolveDocumentImagePath } from "@/lib/chat/imageAttachments";
 import { decodeEscapedLineBreaks, normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { executeFileTool } from "@/lib/chat/vaultFileTools";
+import { explainMermaidError, mermaidNoteFor, repairMermaidArgs } from "@/lib/diagrams/mermaidDiagnostics";
 import { mermaidSyntaxNote } from "@/lib/diagrams/mermaidToolCheck";
 import { isSemanticSearchActive, readNote, searchVault } from "@/lib/ragSearch";
 
@@ -691,22 +692,59 @@ const IMAGE_ONLY_PASSAGE = /^\s*!\[[^\]]*\]\([^)]*\)\s*$/;
 // UI never shows this text directly; it renders a localized status line
 // keyed off the tool call's name instead (see ChatPanel).
 export async function executeTool(name: string, args: Record<string, unknown>): Promise<ToolResult> {
-  const result = await runTool(name, args);
+  let effectiveArgs = args;
+  let repairedDiagrams = 0;
 
-  // Models write Mermaid well but not flawlessly, and a small local model's
-  // typical slip (an unquoted label with parentheses) only shows once the
-  // user looks at the drawing. Parsing it here hands the model Mermaid's own
-  // message while it can still fix it in the same turn.
+  // Repairing before the tool runs, so what lands in the document is the
+  // working diagram. The unquoted label with parentheses is the one slip small
+  // models cannot talk themselves out of: the rule is in the system prompt and
+  // in the warning below, and gemma-4-E4B still read the parser's message as
+  // "a limitation in the rendering engine, rather than a syntax error on my
+  // part" and offered a plain list instead. repairMermaidArgs re-parses its own
+  // output, so it either produces a diagram Mermaid accepts or leaves the text
+  // untouched.
+  if (WRITING_TOOL_NAMES.has(name)) {
+    const repair = await repairMermaidArgs(args);
+
+    if (repair) {
+      effectiveArgs = repair.args;
+      repairedDiagrams = repair.repaired;
+    }
+  }
+
+  const result = await runTool(name, effectiveArgs);
+
+  // Whatever the repair could not save — a label with a double quote in it, or
+  // a diagram broken in some other way. Parsing it here hands the model
+  // Mermaid's own message plus the corrected line while it can still act on it.
   if (result.content.startsWith("OK") && WRITING_TOOL_NAMES.has(name)) {
-    const note = await mermaidSyntaxNote(args, decodeEscapedLineBreaks, async (source) => {
+    const note = await mermaidSyntaxNote(effectiveArgs, decodeEscapedLineBreaks, async (source) => {
       const { validateMermaid } = await import("@/lib/diagrams/mermaidRenderer");
-      return validateMermaid(source);
+      const message = await validateMermaid(source);
+      return message === null ? null : explainMermaidError(source, message);
     }).catch(() => null);
 
     if (note) {
       return { ...result, content: `${result.content}
 
 ${note}` };
+    }
+
+    // Said out loud because the model is about to describe its own proposal to
+    // the user: without this it would quote the diagram it sent, not the one
+    // that is now in the document, and a follow-up edit would reintroduce the
+    // error it never learned about.
+    if (repairedDiagrams > 0) {
+      return {
+        ...result,
+        content:
+          `${result.content}
+
+[Note: ${repairedDiagrams} Mermaid diagram(s) in this text had unquoted ` +
+          "node labels, which do not parse. They were corrected automatically (labels wrapped in double " +
+          'quotes, e.g. A["Backen (45 Min.)"]) and the diagram now renders. Use that quoted form when you ' +
+          "write diagrams, and do not propose the unquoted version again.]"
+      };
     }
   }
 
@@ -775,7 +813,16 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<Too
     case "get_document": {
       const document = normalizeEscapedCheckboxes(bridge.getDocument());
 
-      return { content: (document.trim() ? document : EMPTY_DOCUMENT_NOTE) + pendingProposalNote() };
+      if (!document.trim()) {
+        return { content: EMPTY_DOCUMENT_NOTE + pendingProposalNote() };
+      }
+
+      // The red error box a broken diagram renders as lives in React state, not
+      // in the text — so reading the document is the one moment where the model
+      // can be told what the user is looking at.
+      return {
+        content: document + pendingProposalNote() + (await mermaidNoteFor(document))
+      };
     }
     case "get_selection":
       return { content: bridge.getSelection() || "(no selection)" };
