@@ -3,6 +3,20 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.0] - 2026-09-28
+
+### Highlights
+- Add configurable page size/margins with page break lines in the editor
+- Open notes on double-click and pin from the row
+- Show pins in the tree and ring the open note where focus is
+- Attach images to the chat and show them to vision models
+- Repair broken Mermaid diagrams before they reach the document
+
+### Bug Fixes
+- Apply grid column clamp at all viewport widths
+- Link a folder's note when it is dropped into the editor
+- Stop escaping `<` and `>` into entities when saving a note
+
 ## [0.17.0] - 2026-09-26
 
 ### Highlights
