@@ -50,9 +50,14 @@
   color: rgba(var(--muted-rgb),0.95);
 }
 
+/* The margin/padding pair gives the section toggles room for their -0.2rem
+   pull (below): overflow-y clips sideways too, which cut off their focus
+   outline and hover on the left. The content itself does not move. */
 .details-sidebar__scroll {
   flex: 1;
   min-height: 0;
+  margin-left: -0.2rem;
+  padding-left: 0.2rem;
   overflow-y: auto;
   scrollbar-gutter: stable;
 }
@@ -278,6 +283,12 @@ button.details-sidebar__outline-item:hover {
 
 .details-sidebar__outline-item:focus-visible {
   outline: none;
+}
+
+/* The ring the file tree and "In progress" carry (file-tree.css): the user is
+   in this list, not only looking at where the cursor is. */
+.details-sidebar__outline:focus-within .details-sidebar__outline-item[data-active="true"] .details-sidebar__item-label {
+  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85), inset 0 0 0 1px rgba(var(--accent-rgb),0.85);
 }
 
 /* Automatic heading number in front of the title, same muted tone as in the

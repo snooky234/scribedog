@@ -7,7 +7,8 @@ import {
   FileText,
   Folder,
   FolderOpen,
-  PawPrint
+  PawPrint,
+  Pin
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -21,6 +22,7 @@ import { getVaultIcon, type VaultIconMap } from "@/lib/vaultIcons";
 import type { SortMode } from "@/lib/vaultMeta";
 import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportDropStore";
 import { getVaultCapabilities } from "@/platform";
+import { normalizePathKey } from "@/store/appStore/pathUtils";
 import { useSearchStore } from "@/store/useSearchStore";
 
 import {
@@ -65,6 +67,8 @@ type TreeNodeRowProps = {
   folderNotesEnabled: boolean;
   activeFolderNotePath: string | null;
   dirtyFolderNotePaths: Set<string>;
+  /** Pinned "In progress" notes, absolute paths through normalizePathKey. */
+  pinnedKeys: Set<string>;
   activeKey: string | null;
   renamingTarget: RenamingTarget | null;
   renameDraft: string;
@@ -114,6 +118,17 @@ function RowIcon({ icon, fallback }: { icon: string | null; fallback: ReactNode 
   return <span className="file-tree__icon">{fallback}</span>;
 }
 
+/** The pin of the "In progress" list, same glyph and colour, so a pinned note reads alike in both. */
+function PinMark() {
+  const { t } = useTranslation();
+
+  return (
+    <Pin className="file-tree__pin" aria-label={t("workingSet.pinned")}>
+      <title>{t("workingSet.pinned")}</title>
+    </Pin>
+  );
+}
+
 /**
  * The row's context menu without a right-click. Only shown for a coarse
  * pointer (file-tree.css): a finger cannot right-click, and a long press is
@@ -159,6 +174,7 @@ export function TreeNodeRow({
   folderNotesEnabled,
   activeFolderNotePath,
   dirtyFolderNotePaths,
+  pinnedKeys,
   activeKey,
   renamingTarget,
   renameDraft,
@@ -311,6 +327,8 @@ export function TreeNodeRow({
     const isRenaming = renamingTarget?.kind === "folder" && renamingTarget.relativePath === node.relativePath;
     const isNoteActive = folderNotesEnabled && activeFolderNotePath === node.relativePath;
     const isNoteDirty = folderNotesEnabled && dirtyFolderNotePaths.has(node.relativePath);
+    const isNotePinned =
+      folderNotesEnabled && node.folderNotePath !== undefined && pinnedKeys.has(normalizePathKey(node.folderNotePath));
     // The ring says "something *inside*"; the folder's own note has the
     // filled dot for itself, so it is taken out of the count.
     const hasDirtyInside =
@@ -435,6 +453,7 @@ export function TreeNodeRow({
                 <title>{t("fileTree.stagedChangeFolder", { count: folderStagedCount })}</title>
               </PawPrint>
             ) : null}
+            {isNotePinned ? <PinMark /> : null}
             {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
             {hasDirtyInside ? (
               <span
@@ -476,6 +495,7 @@ export function TreeNodeRow({
                 folderNotesEnabled={folderNotesEnabled}
                 activeFolderNotePath={activeFolderNotePath}
                 dirtyFolderNotePaths={dirtyFolderNotePaths}
+                pinnedKeys={pinnedKeys}
                 activeKey={activeKey}
                 renamingTarget={renamingTarget}
                 renameDraft={renameDraft}
@@ -507,6 +527,7 @@ export function TreeNodeRow({
 
   const isSelected = node.filePath === selectedFilePath;
   const isDirty = dirtyFilePaths.includes(node.filePath);
+  const isPinned = pinnedKeys.has(normalizePathKey(node.filePath));
   const isRenaming = renamingTarget?.kind === "file" && renamingTarget.relativePath === node.relativePath;
 
   return (
@@ -594,6 +615,7 @@ export function TreeNodeRow({
               <title>{t("fileTree.stagedChange")}</title>
             </PawPrint>
           ) : null}
+          {isPinned ? <PinMark /> : null}
           {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
           {isDirty ? (
             <span

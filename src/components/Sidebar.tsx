@@ -733,6 +733,7 @@ export function Sidebar({
             selectedFilePath={selectedFilePath}
             dirtyFilePaths={dirtyFilePaths}
             workingSetFilePaths={workingSet.entries.map((entry) => entry.filePath)}
+            pinnedFilePaths={workingSet.entries.filter((entry) => entry.pinned).map((entry) => entry.filePath)}
             onPinWorkingSetEntry={workingSet.onPin}
             onUnpinWorkingSetEntry={workingSet.onUnpin}
             onCloseWorkingSetEntry={workingSet.onClose}

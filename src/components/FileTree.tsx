@@ -55,6 +55,8 @@ type FileTreeProps = {
   dirtyFilePaths: string[];
   /** Notes in the "In progress" list; decides between pin and unpin in the menu. */
   workingSetFilePaths: string[];
+  /** The listed notes the user pinned; their rows carry the same pin as the list. */
+  pinnedFilePaths: string[];
   onPinWorkingSetEntry: (filePath: string) => void;
   onUnpinWorkingSetEntry: (filePath: string) => void;
   /** Closes the note's entry (asking first when dirty); the tree's item in pin-only mode. */
@@ -122,6 +124,7 @@ export function FileTree({
   selectedFilePath,
   dirtyFilePaths,
   workingSetFilePaths,
+  pinnedFilePaths,
   onPinWorkingSetEntry,
   onUnpinWorkingSetEntry,
   onCloseWorkingSetEntry,
@@ -300,6 +303,8 @@ export function FileTree({
       ),
     [folderPath, dirtyFilePaths]
   );
+
+  const pinnedKeys = useMemo(() => new Set(pinnedFilePaths.map(normalizePathKey)), [pinnedFilePaths]);
 
   const folderMatchCounts = useMemo(
     () => buildFolderMatchCounts(treeNodes, fileMatchCounts),
@@ -750,6 +755,7 @@ export function FileTree({
             folderNotesEnabled={folderNotesEnabled}
             activeFolderNotePath={activeFolderNotePath}
             dirtyFolderNotePaths={dirtyFolderNotePaths}
+            pinnedKeys={pinnedKeys}
             activeKey={activeKey}
             renamingTarget={renamingTarget}
             renameDraft={renameDraft}
@@ -1016,7 +1022,9 @@ export function FileTree({
               ) : null}
 
               {contextMenu.kind === "file" ? (
-                workingSetFilePaths.some((path) => normalizePathKey(path) === normalizePathKey(contextMenu.filePath)) ? (
+                (autoAdmitWorkingSet
+                  ? pinnedKeys.has(normalizePathKey(contextMenu.filePath))
+                  : workingSetFilePaths.some((path) => normalizePathKey(path) === normalizePathKey(contextMenu.filePath))) ? (
                   <button
                     type="button"
                     role="menuitem"

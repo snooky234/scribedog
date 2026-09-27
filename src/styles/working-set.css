@@ -194,6 +194,11 @@
   box-shadow: inset 3px 0 0 rgba(var(--accent-rgb), 0.85);
 }
 
+/* Which of the two lists the user is in: see file-tree.css. */
+.working-set__list:focus-within .working-set__row.working-set__row--active {
+  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb), 0.85), inset 0 0 0 1px rgba(var(--accent-rgb), 0.85);
+}
+
 .working-set__row--active .working-set__name {
   font-weight: 600;
 }

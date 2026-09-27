@@ -70,6 +70,13 @@
   box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85);
 }
 
+/* The open note shows in both lists at once; the ring says which of the two
+   the user is in. Only on the open row, never on every focused one (see
+   :focus-visible above), and the same rule in working-set.css. */
+.file-tree:focus-within .file-tree__row.file-tree__row--active {
+  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85), inset 0 0 0 1px rgba(var(--accent-rgb),0.85);
+}
+
 .file-tree__row svg {
   flex-shrink: 0;
   width: 1rem;
@@ -326,6 +333,12 @@
   height: 0.85rem;
   color: rgb(var(--accent-rgb));
   opacity: 0.85;
+}
+
+.file-tree__row .file-tree__pin {
+  width: 0.8rem;
+  height: 0.8rem;
+  color: rgba(var(--muted-rgb), 0.8);
 }
 
 /* A file the agent has only proposed: it is in the tree, but not on disk yet. */
