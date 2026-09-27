@@ -1,4 +1,5 @@
 import { ABSOLUTE_URL_PATTERN, getRelativeDisplayPath } from "@/lib/fileSystem";
+import type { FileTreeNode } from "@/lib/fileTree";
 import { getNoteDisplayName } from "@/lib/folderNotes";
 
 /**
@@ -16,6 +17,14 @@ import { getNoteDisplayName } from "@/lib/folderNotes";
  * `dataTransfer.files`).
  */
 export const FILE_LINK_DRAG_MIME = "application/x-scribedog-file-paths";
+
+/**
+ * What every drag out of the tree carries, a row with nothing to link
+ * included: Firefox only starts a drag that sets some data. A type of its own
+ * rather than "text/plain", which any text field would accept and paste the
+ * row's internal key ("folder:Rezepte") into.
+ */
+export const TREE_NODE_DRAG_MIME = "application/x-scribedog-tree-node";
 
 export type VaultFileOption = {
   filePath: string;
@@ -152,6 +161,20 @@ export function resolveVaultRelativeFileLink(
   // The trailing separator stands in for the linking file whose folder
   // resolveFileLinkTarget strips off — here that folder is the vault root.
   return resolveFileLinkTarget(href, `${toPosixPath(folderPath)}/`, vaultFilePaths);
+}
+
+/**
+ * The note a tree row stands for when it is dropped into a document: a file
+ * itself, a folder its folder note. A folder whose note does not exist yet has
+ * nothing to link, and with folder notes switched off the note is not part of
+ * the tree at all, so a link to it would open a file the sidebar never shows.
+ */
+export function getLinkableFilePath(node: FileTreeNode, folderNotesEnabled: boolean): string | null {
+  if (node.kind === "file") {
+    return node.filePath;
+  }
+
+  return folderNotesEnabled ? node.folderNotePath ?? null : null;
 }
 
 /** Reads the dragged vault notes back out of a drop event's data transfer. */

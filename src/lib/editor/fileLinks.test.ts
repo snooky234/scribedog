@@ -4,10 +4,12 @@ import {
   buildFileLinkHref,
   filterVaultFileOptions,
   getFileLinkLabel,
+  getLinkableFilePath,
   isFileLinkHref,
   resolveFileLinkTarget,
   type VaultFileOption
 } from "./fileLinks";
+import type { FileTreeNode } from "@/lib/fileTree";
 
 // Windows paths (backslashes, case-insensitive) and vault-relative hrefs are
 // the two spellings of the same location that have to survive a round trip:
@@ -87,6 +89,43 @@ describe("getFileLinkLabel", () => {
   it("uses the file name without the extension", () => {
     expect(getFileLinkLabel("C:\\vault\\notes\\meeting.md")).toBe("meeting");
     expect(getFileLinkLabel("/vault/Notes.MD")).toBe("Notes");
+  });
+});
+
+describe("getLinkableFilePath", () => {
+  const file: FileTreeNode = {
+    kind: "file",
+    name: "meeting.md",
+    filePath: "C:\\vault\\notes\\meeting.md",
+    relativePath: "notes/meeting.md",
+    mtimeMs: 0
+  };
+  const folder = (folderNotePath?: string): FileTreeNode => ({
+    kind: "folder",
+    name: "Rezepte",
+    relativePath: "Rezepte",
+    children: [],
+    effectiveMtimeMs: 0,
+    folderNotePath
+  });
+  const folderNote = "C:\\vault\\Rezepte\\.scribedog-foldernote.md";
+
+  it("links a file to itself, whatever the folder note setting", () => {
+    expect(getLinkableFilePath(file, true)).toBe(file.filePath);
+    expect(getLinkableFilePath(file, false)).toBe(file.filePath);
+  });
+
+  it("links a folder to its folder note, named after the folder", () => {
+    expect(getLinkableFilePath(folder(folderNote), true)).toBe(folderNote);
+    expect(getFileLinkLabel(folderNote)).toBe("Rezepte");
+  });
+
+  it("has nothing to link for a folder without a note", () => {
+    expect(getLinkableFilePath(folder(), true)).toBeNull();
+  });
+
+  it("does not link a folder note while folder notes are switched off", () => {
+    expect(getLinkableFilePath(folder(folderNote), false)).toBeNull();
   });
 });
 

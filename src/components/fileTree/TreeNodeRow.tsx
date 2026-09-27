@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { vaultPathKey } from "@/lib/chat/vaultStaging";
 import { carriesExternalFiles } from "@/lib/dragDrop/droppedSources";
-import { FILE_LINK_DRAG_MIME } from "@/lib/editor/fileLinks";
+import { FILE_LINK_DRAG_MIME, getLinkableFilePath, TREE_NODE_DRAG_MIME } from "@/lib/editor/fileLinks";
 import { getNodeMtimeMs, type FileTreeFolderNode, type FileTreeNode } from "@/lib/fileTree";
 import { getNoteDisplayName } from "@/lib/folderNotes";
 import { getVaultIcon, type VaultIconMap } from "@/lib/vaultIcons";
@@ -233,10 +233,10 @@ export function TreeNodeRow({
       : "";
 
   // Reordering and moving inside the tree only works in manual sort mode; a
-  // file can always be dragged, because dropping it into the editor inserts a
-  // link to it (see lib/editor/fileLinks.ts).
+  // file, and a folder with a folder note, can always be dragged, because
+  // dropping it into the editor inserts a link to it (see lib/editor/fileLinks.ts).
   const isReorderEnabled = sortMode === "manual" && getVaultCapabilities().move;
-  const isDragEnabled = isReorderEnabled || node.kind === "file";
+  const isDragEnabled = isReorderEnabled || getLinkableFilePath(node, folderNotesEnabled) !== null;
   const isDragSource = dragSourceKeys.includes(key);
   const isMultiSelected = selectedKeys.has(key);
   const activeDropPosition = dropIndicator?.key === key ? dropIndicator.position : null;
@@ -248,9 +248,10 @@ export function TreeNodeRow({
           const draggedFilePaths = resolveDragFilePaths(node);
 
           event.dataTransfer.effectAllowed = isReorderEnabled ? "copyMove" : "copy";
-          event.dataTransfer.setData("text/plain", draggedFilePaths.join("\n") || key);
+          event.dataTransfer.setData(TREE_NODE_DRAG_MIME, key);
 
           if (draggedFilePaths.length > 0) {
+            event.dataTransfer.setData("text/plain", draggedFilePaths.join("\n"));
             event.dataTransfer.setData(FILE_LINK_DRAG_MIME, JSON.stringify(draggedFilePaths));
           }
 

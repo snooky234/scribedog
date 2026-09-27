@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { getVaultCapabilities, platform, vaultCapabilityHint } from "@/platform";
 import { dirname, join } from "@/platform/paths";
 import { carriesExternalFiles } from "@/lib/dragDrop/droppedSources";
+import { getLinkableFilePath } from "@/lib/editor/fileLinks";
 import { cn } from "@/lib/utils";
 
 import type { ExportMode } from "@/components/ExportDialog";
@@ -657,28 +658,29 @@ export function FileTree({
     }
   };
 
-  // What a drag out of the tree carries: the dragged file, or — when it is part
-  // of a multi-selection — every selected file. Folders carry nothing, since
-  // only files can be linked in a document.
+  // What a drag out of the tree carries: the note the dragged row stands for
+  // (a file, or a folder's folder note), or — when the row is part of a
+  // multi-selection — the notes of every selected row. A folder without a
+  // folder note carries nothing, since only files can be linked in a document.
   const resolveDragFilePaths = useCallback(
     (node: FileTreeNode): string[] => {
-      if (node.kind !== "file") {
-        return [];
-      }
-
       const key = getNodeKey(node);
 
       if (!selectedKeys.has(key) || selectedKeys.size <= 1) {
-        return [node.filePath];
+        const filePath = getLinkableFilePath(node, folderNotesEnabled);
+
+        return filePath ? [filePath] : [];
       }
 
-      return flatNodes.flatMap((candidate) =>
-        candidate.kind === "file" && selectedKeys.has(getNodeKey(candidate))
-          ? [candidate.filePath]
-          : []
-      );
+      return flatNodes.flatMap((candidate) => {
+        const filePath = selectedKeys.has(getNodeKey(candidate))
+          ? getLinkableFilePath(candidate, folderNotesEnabled)
+          : null;
+
+        return filePath ? [filePath] : [];
+      });
     },
-    [flatNodes, selectedKeys]
+    [flatNodes, folderNotesEnabled, selectedKeys]
   );
 
   const handleRowContextMenu = (node: FileTreeNode, x: number, y: number) => {
