@@ -9,12 +9,15 @@ import type {
 } from "react";
 
 import { ContextMenuSurface } from "@/components/fileTree/ContextMenuSurface";
+import { PinToggle } from "@/components/fileTree/PinToggle";
 import type { DropPosition } from "@/components/fileTree/types";
 import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
 import { FILE_LINK_DRAG_MIME } from "@/lib/editor/fileLinks";
 import { getRelativeDisplayPath } from "@/lib/fileSystem";
 import { getFolderNoteFolderPath, getNoteDisplayName, isFolderNotePath } from "@/lib/folderNotes";
+import { isCoarsePointer, singleClickOpens } from "@/lib/openGesture";
 import { cn } from "@/lib/utils";
+import { pinToggleAction, type PinToggleAction } from "@/store/appStore/workingSet";
 import type { WorkingSetEntry } from "@/store/useAppStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
@@ -44,13 +47,21 @@ export type WorkingSetPanelProps = {
 
 type EntryContextMenu = { x: number; y: number; filePath: string };
 
+const PIN_TOGGLE_LABEL_KEYS: Record<PinToggleAction, string> = {
+  pin: "workingSet.pin",
+  unpin: "workingSet.unpin",
+  close: "workingSet.closeShort"
+};
+
 type EntryDropIndicator = { filePath: string; position: Extract<DropPosition, "above" | "below"> };
 
 /**
  * The "In progress" section above the file tree (store/appStore/workingSet.ts
  * has the rules of who is in it). One row per note: name, its folder in
- * small type, the dirty dot the tree uses, a pin where the user put one, and
- * a close button that shows on hover and focus. The header stays when the
+ * small type, the dirty dot the tree uses, and the tree's pin, which takes
+ * the pin away again (under pin-only admission: closes the entry). No cross
+ * of its own: two ways out on one row, one of them only sometimes the same
+ * as the other, read as two different things. The header stays when the
  * section is folded, count and dot included, so a folded list still says
  * whether something is unsaved.
  */
@@ -81,6 +92,12 @@ export function WorkingSetPanel({
   // can enter on their own. The pin mark itself always shows: it is what
   // tells someone who double-clicked by accident how the entry got here.
   const showPins = useEditorSettingsStore((state) => state.autoAdmitWorkingSet);
+  const openOnDoubleClick = useEditorSettingsStore((state) => state.openOnDoubleClick);
+  const clickOpens = () => singleClickOpens(openOnDoubleClick, isCoarsePointer());
+  // With open on double-click, the row a click or an arrow key marked. The
+  // tree has its selection for this; here it only needs to show where the
+  // mouse left off, since the focus ring is the keyboard's.
+  const [markedFilePath, setMarkedFilePath] = useState<string | null>(null);
   const dirtySet = new Set(dirtyFilePaths);
   const hasDirty = entries.some((entry) => dirtySet.has(entry.filePath));
   const hasClosable = entries.some((entry) => !entry.pinned && !dirtySet.has(entry.filePath));
@@ -102,12 +119,48 @@ export function WorkingSetPanel({
 
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
 
+  const activateRow = (filePath: string) => {
+    if (clickOpens()) {
+      onSelect(filePath);
+    } else {
+      setMarkedFilePath(filePath);
+    }
+  };
+
+  // The pin and Shift+Enter, the same toggle as in the tree (workingSet.ts):
+  // under pin-only admission the pin is the entry, so it closes, asking first.
+  const togglePin = (filePath: string) => {
+    const action = pinToggleAction(entries, filePath, showPins);
+
+    if (action === "pin") {
+      onPin(filePath);
+    } else if (action === "unpin") {
+      onUnpin(filePath);
+    } else {
+      onClose(filePath);
+    }
+  };
+
   // Arrow keys behave like in the tree below: the focus moves and the note
-  // opens at once, no Enter needed. Home/End jump to the ends of the list.
+  // opens at once, no Enter needed, or with open on double-click is only
+  // marked until Enter. Home/End jump to the ends of the list.
   const handleRowKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, filePath: string) => {
     if (event.key === "Delete") {
       event.preventDefault();
       onClose(filePath);
+      return;
+    }
+
+    // Without the preventDefault the key would also fire the row's click.
+    if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      if (event.shiftKey) {
+        event.preventDefault();
+        togglePin(filePath);
+      } else if (!clickOpens()) {
+        event.preventDefault();
+        onSelect(filePath);
+      }
+
       return;
     }
 
@@ -130,7 +183,7 @@ export function WorkingSetPanel({
     }
 
     rowRefs.current.get(next.filePath)?.focus();
-    onSelect(next.filePath);
+    activateRow(next.filePath);
   };
 
   // Drag & drop reorders the list; the order is the user's from then on and
@@ -262,7 +315,7 @@ export function WorkingSetPanel({
                 )}
                 onDragOver={(event) => handleItemDragOver(event, entry.filePath)}
                 onDragLeave={(event) => {
-                  // Moving between the row and its close button is no leave.
+                  // Moving between the row and its "…" button is no leave.
                   if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
                     setDropIndicator((current) => (current?.filePath === entry.filePath ? null : current));
                   }
@@ -287,10 +340,19 @@ export function WorkingSetPanel({
                       rowRefs.current.delete(entry.filePath);
                     }
                   }}
-                  className={cn("working-set__row", isActive && "working-set__row--active")}
+                  className={cn(
+                    "working-set__row",
+                    isActive && "working-set__row--active",
+                    !isActive && markedFilePath === entry.filePath && "working-set__row--marked"
+                  )}
                   title={relativePath}
                   aria-current={isActive ? "true" : undefined}
-                  onClick={() => onSelect(entry.filePath)}
+                  onClick={() => activateRow(entry.filePath)}
+                  onDoubleClick={() => {
+                    if (!clickOpens()) {
+                      onSelect(entry.filePath);
+                    }
+                  }}
                   onPointerUp={(event) => handleRowPointerUp(event, entry.filePath)}
                   onAuxClick={(event) => event.preventDefault()}
                   onKeyDown={(event) => handleRowKeyDown(event, entry.filePath)}
@@ -313,11 +375,11 @@ export function WorkingSetPanel({
                     </span>
                     {folder ? <span className="working-set__folder">{folder}</span> : null}
                   </span>
-                  {entry.pinned ? (
-                    <Pin className="working-set__pin" aria-label={t("workingSet.pinned")}>
-                      <title>{t("workingSet.pinned")}</title>
-                    </Pin>
-                  ) : null}
+                  <PinToggle
+                    action={pinToggleAction(entries, entry.filePath, showPins)}
+                    labelKeys={PIN_TOGGLE_LABEL_KEYS}
+                    onToggle={() => togglePin(entry.filePath)}
+                  />
                   {isDirty ? (
                     <span
                       className="sidebar-panel__item-dirty"
@@ -325,18 +387,6 @@ export function WorkingSetPanel({
                       aria-label={t("fileTree.unsavedChanges")}
                     />
                   ) : null}
-                </button>
-                <button
-                  type="button"
-                  className="working-set__close"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onClose(entry.filePath);
-                  }}
-                  aria-label={t("workingSet.close", { name })}
-                  title={t("workingSet.closeShort")}
-                >
-                  <X aria-hidden="true" />
                 </button>
                 {/* Touch: no hover for the cross and no right-click, so the
                     same "…" the tree rows carry opens the menu as a sheet

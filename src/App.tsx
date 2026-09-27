@@ -940,6 +940,7 @@ function App() {
       workingSet={{
         entries: workingSet,
         onClose: workingSetActions.closeEntry,
+        onCloseMany: workingSetActions.closeEntries,
         onCloseOthers: workingSetActions.closeOthers,
         onCloseAll: workingSetActions.closeAll,
         onCloseSaved: closeSavedWorkingSetEntries,

@@ -313,9 +313,12 @@
     "restoreWorkingSet": "Restaurar as notas em andamento no próximo início",
     "restoreWorkingSetShort": "A lista \"Em andamento\" é lembrada por pasta.",
     "restoreWorkingSetHint": "Desligado: a lista começa vazia e só volta a se preencher ao fixar ou editar. Alterações não salvas voltam de qualquer maneira.",
+    "openOnDoubleClick": "Abrir notas com clique duplo",
+    "openOnDoubleClickShort": "Um clique na barra lateral apenas seleciona uma nota; um clique duplo ou Enter a abre.",
+    "openOnDoubleClickHint": "Útil quando você aponta para notas durante uma apresentação. Fixar passa então pelo alfinete que aparece ao passar o mouse sobre uma linha, Shift+Enter ou o menu de contexto. Se uma nota aberta entra em \"Em andamento\" depende da configuração abaixo. Numa tela sensível ao toque, um toque continua abrindo.",
     "autoAdmitWorkingSet": "Adicionar automaticamente notas editadas a \"Em andamento\"",
-    "autoAdmitWorkingSetShort": "Por padrão, só aparecem ali as notas fixadas (clique duplo ou Enter na árvore). Com esta opção, cada nota entra assim que for editada.",
-    "autoAdmitWorkingSetHint": "Alterações não salvas são mantidas de qualquer forma e aparecem como o ponto amarelo na árvore; um anel numa pasta recolhida indica que há algo não salvo dentro dela."
+    "autoAdmitWorkingSetShort": "Por padrão, só aparecem ali as notas fixadas. Com esta opção, cada nota entra assim que for editada.",
+    "autoAdmitWorkingSetHint": "Fixa-se pelo alfinete de uma linha na árvore, Shift+Enter ou o menu de contexto e, onde um clique abre as notas, também com clique duplo. Alterações não salvas são mantidas de qualquer forma e aparecem como o ponto amarelo na árvore; um anel numa pasta recolhida indica que há algo não salvo dentro dela."
   },
   "assistants": {
     "defaultName": "ScribeDog (Padrão)",
@@ -601,6 +604,7 @@
       "openFolder": "Abrir pasta",
       "newFile": "Criar novo arquivo",
       "renameEntry": "Renomear arquivo/pasta (na barra lateral)",
+      "togglePinEntry": "Fixar ou soltar uma nota em \"Em andamento\" (na barra lateral)",
       "saveFile": "Salvar arquivo",
       "printFile": "Imprimir arquivo",
       "findReplace": "Localizar e substituir",
@@ -709,6 +713,7 @@
     "stagedChange": "O agente propõe uma alteração",
     "stagedChangeFolder": "Alterações propostas nesta pasta: {{count}}",
     "openFolderNote": "{{path}} – um clique abre a nota da pasta, a seta expande e recolhe",
+    "openFolderNoteDoubleClick": "{{path}} – um clique duplo abre a nota da pasta, a seta expande e recolhe",
     "expandFolder": "Expandir",
     "collapseFolder": "Recolher",
     "moreActions": "Mais ações",
@@ -1295,7 +1300,6 @@
     "title": "Em andamento",
     "treeTitle": "Arquivos",
     "closeSaved": "Fechar as salvas",
-    "close": "Fechar {{name}}",
     "closeShort": "Fechar",
     "closeOthers": "Fechar as outras",
     "closeAll": "Fechar todas",

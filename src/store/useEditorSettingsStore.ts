@@ -48,6 +48,7 @@ export const TABLE_WIDTH_STORAGE_KEY = "scribedog-table-width";
 export const AUTO_SAVE_STORAGE_KEY = "scribedog-auto-save-enabled";
 export const RESTORE_WORKING_SET_STORAGE_KEY = "scribedog-restore-working-set";
 export const AUTO_ADMIT_WORKING_SET_STORAGE_KEY = "scribedog-auto-admit-working-set";
+export const OPEN_ON_DOUBLE_CLICK_STORAGE_KEY = "scribedog-open-on-double-click";
 export const PASTE_MARKDOWN_STORAGE_KEY = "scribedog-paste-markdown";
 export const AI_FEATURES_VISIBLE_STORAGE_KEY = "scribedog-ai-features-visible";
 
@@ -199,6 +200,24 @@ function getStoredAutoAdmitWorkingSet(): boolean {
 function persistAutoAdmitWorkingSet(enabled: boolean): void {
   try {
     window.localStorage.setItem(AUTO_ADMIT_WORKING_SET_STORAGE_KEY, String(enabled));
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
+// Off by default: a click opens a note, as it always has. See
+// lib/openGesture.ts for what the other mode changes.
+function getStoredOpenOnDoubleClick(): boolean {
+  try {
+    return window.localStorage.getItem(OPEN_ON_DOUBLE_CLICK_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function persistOpenOnDoubleClick(enabled: boolean): void {
+  try {
+    window.localStorage.setItem(OPEN_ON_DOUBLE_CLICK_STORAGE_KEY, String(enabled));
   } catch {
     // localStorage may be unavailable in some environments.
   }
@@ -395,11 +414,18 @@ type EditorSettingsState = {
   setRestoreWorkingSet: (enabled: boolean) => void;
   /**
    * Let a note into the "In progress" list the moment it is edited. Off, only
-   * pinning (double-click, Enter, context menu) admits a note; unsaved edits
-   * are kept and shown in the tree either way.
+   * pinning (the tree's pin, Shift+Enter, context menu, and a double-click
+   * where a click opens) admits a note; unsaved edits are kept and shown in
+   * the tree either way.
    */
   autoAdmitWorkingSet: boolean;
   setAutoAdmitWorkingSet: (enabled: boolean) => void;
+  /**
+   * A click in the sidebar only marks a note; double-click or Enter opens it
+   * (lib/openGesture.ts). Ignored on a touch screen.
+   */
+  openOnDoubleClick: boolean;
+  setOpenOnDoubleClick: (enabled: boolean) => void;
   /**
    * Convert plain-text clipboard content that looks like Markdown on paste
    * (see lib/editor/pasteMarkdown.ts). Ctrl+Shift+V bypasses it either way.
@@ -543,6 +569,11 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
   setAutoAdmitWorkingSet: (enabled: boolean) => {
     persistAutoAdmitWorkingSet(enabled);
     set({ autoAdmitWorkingSet: enabled });
+  },
+  openOnDoubleClick: getStoredOpenOnDoubleClick(),
+  setOpenOnDoubleClick: (enabled: boolean) => {
+    persistOpenOnDoubleClick(enabled);
+    set({ openOnDoubleClick: enabled });
   },
   pasteMarkdown: getStoredPasteMarkdown(),
   setPasteMarkdown: (enabled: boolean) => {

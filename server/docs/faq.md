@@ -133,15 +133,19 @@ rename a file outside ScribeDog and its icon is gone, the same way its place
 in a manual sort order is.
 
 **What is the "In progress" list above the file tree?**
-The notes you pinned as the ones you are working on (double-click, Enter or
-the context menu in the tree); it stays hidden until you pin the first one.
-A setting adds every note you edit as well, if you want that. The cross
-closes an entry; a note with unsaved changes asks whether to save or discard
-first. The list is stored in the vault
+The notes you pinned as the ones you are working on (the pin that shows
+when you hover a row in the tree, Shift+Enter, the context menu, or a
+double-click); it stays hidden until you pin the first one. A
+setting adds every note you edit as well, if you want that. Another one,
+"Open notes with a double-click", makes a click only select a note; a
+double-click or Enter opens it then, and a double-click no longer pins. On
+a touch screen a tap still opens. Taking the pin away closes an entry, and so do a
+middle-click, Delete and the context menu; a note with unsaved changes asks
+whether to save or discard first. The list is stored in the vault
 (`.scribedog/open-files.json`), so it is the same in every browser and
 desktop app that opens this vault; only the unsaved drafts themselves stay
 in the browser they were typed in. In the browser, Ctrl+W closes the tab,
-as it always does, not the entry; use the cross or the context menu.
+as it always does, not the entry; use the pin or the context menu.
 
 **Why is a note marked as changed after I reopen the tab?**
 You typed into it and did not save. The app keeps such unsaved edits as a

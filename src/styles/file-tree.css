@@ -70,10 +70,16 @@
   box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85);
 }
 
-/* The open note shows in both lists at once; the ring says which of the two
-   the user is in. Only on the open row, never on every focused one (see
-   :focus-visible above), and the same rule in working-set.css. */
-.file-tree:focus-within .file-tree__row.file-tree__row--active {
+/* The ring is where the cursor is: the row holding the focus, file or
+   folder alike, and only while the tree has it. The open note keeps its bar
+   and tint wherever the cursor goes, so the two answers never mix; and as
+   the open note shows in both lists at once, the ring also says which of the
+   two the user is in (the same rule in working-set.css). */
+.file-tree__row:focus {
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb),0.85);
+}
+
+.file-tree__row.file-tree__row--active:focus {
   box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85), inset 0 0 0 1px rgba(var(--accent-rgb),0.85);
 }
 
@@ -335,10 +341,55 @@
   opacity: 0.85;
 }
 
-.file-tree__row .file-tree__pin {
+/* The pin (fileTree/PinToggle.tsx), in the tree and in the "In progress"
+   list alike: always there on a pinned note, on the others only while the
+   mouse is over the row, so neither list grows a column of pins nobody set.
+   Keyboard focus does not show it: arrowing through the tree would flash an
+   unset pin on every row, which reads as "pinned"; Shift+Enter needs none. Hovering the pin itself of a pinned note turns it into
+   the pin-off it would do. */
+.pin-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: -0.15rem 0;
+  border-radius: 0.3rem;
+  color: rgba(var(--muted-rgb), 0.55);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.pin-toggle.pin-toggle--pinned,
+.file-tree__row:hover .pin-toggle,
+.working-set__row:hover .pin-toggle {
+  display: inline-flex;
+}
+
+.pin-toggle.pin-toggle--pinned {
+  color: rgba(var(--muted-rgb), 0.8);
+}
+
+.pin-toggle:hover {
+  background: rgba(var(--overlay-rgb), 0.14);
+  color: rgba(var(--text-rgb), 0.95);
+}
+
+/* Two classes: the rows' own "svg" rules would outrank one. */
+.pin-toggle .pin-toggle__glyph {
   width: 0.8rem;
   height: 0.8rem;
-  color: rgba(var(--muted-rgb), 0.8);
+  color: inherit;
+}
+
+.pin-toggle .pin-toggle__glyph--hover,
+.pin-toggle--pinned:hover .pin-toggle__glyph:not(.pin-toggle__glyph--hover) {
+  display: none;
+}
+
+.pin-toggle--pinned:hover .pin-toggle__glyph--hover {
+  display: block;
 }
 
 /* A file the agent has only proposed: it is in the tree, but not on disk yet. */

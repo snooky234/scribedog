@@ -312,9 +312,12 @@
     "restoreWorkingSet": "次回起動時に作業中のノートを復元する",
     "restoreWorkingSetShort": "「作業中」リストはフォルダーごとに記憶されます。",
     "restoreWorkingSetHint": "オフにすると、リストは起動時に空になり、ピン留めか編集で再び埋まります。未保存の変更はいずれにしても戻ります。",
+    "openOnDoubleClick": "ダブルクリックでノートを開く",
+    "openOnDoubleClickShort": "サイドバーでのクリックはノートを選択するだけになり、ダブルクリックまたは Enter で開きます。",
+    "openOnDoubleClickHint": "プレゼンテーション中にノートを指し示すときに便利です。ピン留めは、行にマウスを重ねると表示されるピン、Shift+Enter、またはコンテキストメニューで行います。開いたノートが「作業中」に入るかどうかは下の設定で決まります。タッチスクリーンでは、タップで引き続き開きます。",
     "autoAdmitWorkingSet": "編集したノートを自動的に「作業中」へ追加する",
-    "autoAdmitWorkingSetShort": "既定ではピン留めしたノートだけが表示されます（ツリーでダブルクリックまたは Enter）。このオプションを有効にすると、編集したノートがすぐに追加されます。",
-    "autoAdmitWorkingSetHint": "未保存の変更はどちらの場合も保持され、ツリーの黄色い点で分かります。折りたたまれたフォルダーのリングは、その中に未保存のものがあることを示します。"
+    "autoAdmitWorkingSetShort": "既定ではピン留めしたノートだけが表示されます。このオプションを有効にすると、編集したノートがすぐに追加されます。",
+    "autoAdmitWorkingSetHint": "ピン留めはツリーの行のピン、Shift+Enter、コンテキストメニューで行えます。クリックでノートが開く設定では、ダブルクリックでもピン留めされます。未保存の変更はどちらの場合も保持され、ツリーの黄色い点で分かります。折りたたまれたフォルダーのリングは、その中に未保存のものがあることを示します。"
   },
   "assistants": {
     "defaultName": "ScribeDog (デフォルト)",
@@ -600,6 +603,7 @@
       "openFolder": "フォルダーを開く",
       "newFile": "新規ファイルを作成",
       "renameEntry": "ファイル/フォルダーの名前を変更（サイドバー）",
+      "togglePinEntry": "「作業中」のノートをピン留め／ピン留め解除（サイドバー）",
       "saveFile": "ファイルを保存",
       "printFile": "ファイルを印刷",
       "findReplace": "検索と置換",
@@ -708,6 +712,7 @@
     "stagedChange": "エージェントが変更を提案しています",
     "stagedChangeFolder": "このフォルダー内の提案された変更：{{count}}",
     "openFolderNote": "{{path}} – クリックでフォルダーノートを開き、矢印で展開・折りたたみ",
+    "openFolderNoteDoubleClick": "{{path}} – ダブルクリックでフォルダーノートを開き、矢印で展開・折りたたみ",
     "expandFolder": "展開",
     "collapseFolder": "折りたたむ",
     "moreActions": "その他の操作",
@@ -1294,7 +1299,6 @@
     "title": "作業中",
     "treeTitle": "ファイル",
     "closeSaved": "保存済みを閉じる",
-    "close": "{{name}} を閉じる",
     "closeShort": "閉じる",
     "closeOthers": "他を閉じる",
     "closeAll": "すべて閉じる",

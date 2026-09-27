@@ -313,9 +313,12 @@
     "restoreWorkingSet": "Notizen in Arbeit beim nächsten Start wiederherstellen",
     "restoreWorkingSetShort": "Die Liste „In Arbeit“ wird pro Ordner gemerkt.",
     "restoreWorkingSetHint": "Aus bedeutet: Die Liste ist nach dem Start leer und füllt sich erst wieder durch Anheften oder Bearbeiten. Ungespeicherte Änderungen kommen unabhängig davon zurück.",
+    "openOnDoubleClick": "Notizen per Doppelklick öffnen",
+    "openOnDoubleClickShort": "Ein Klick in der Seitenleiste markiert eine Notiz nur, Doppelklick oder Enter öffnet sie.",
+    "openOnDoubleClickHint": "Praktisch, wenn du in einer Präsentation auf Notizen zeigst. Angeheftet wird dann über den Pin, der beim Überfahren einer Zeile erscheint, mit Umschalt+Enter oder über das Kontextmenü. Ob eine geöffnete Notiz in „In Arbeit“ landet, regelt die Einstellung darunter. Auf einem Touchscreen öffnet ein Tippen weiterhin.",
     "autoAdmitWorkingSet": "Bearbeitete Notizen automatisch in „In Arbeit“ aufnehmen",
-    "autoAdmitWorkingSetShort": "Standardmäßig stehen dort nur angeheftete Notizen (Doppelklick oder Enter im Baum). Mit dieser Option kommt jede Notiz dazu, sobald sie bearbeitet wird.",
-    "autoAdmitWorkingSetHint": "Ungespeicherte Änderungen bleiben unabhängig davon erhalten und sind im Baum am gelben Punkt zu erkennen; ein Ring am zugeklappten Ordner zeigt, dass darin etwas ungespeichert ist."
+    "autoAdmitWorkingSetShort": "Standardmäßig stehen dort nur angeheftete Notizen. Mit dieser Option kommt jede Notiz dazu, sobald sie bearbeitet wird.",
+    "autoAdmitWorkingSetHint": "Angeheftet wird über den Pin an einer Zeile im Baum, mit Umschalt+Enter oder über das Kontextmenü, und wo ein Klick Notizen öffnet, auch per Doppelklick. Ungespeicherte Änderungen bleiben unabhängig davon erhalten und sind im Baum am gelben Punkt zu erkennen; ein Ring am zugeklappten Ordner zeigt, dass darin etwas ungespeichert ist."
   },
   "assistants": {
     "defaultName": "ScribeDog (Standard)",
@@ -601,6 +604,7 @@
       "openFolder": "Ordner öffnen",
       "newFile": "Neue Datei anlegen",
       "renameEntry": "Datei/Ordner umbenennen (in der Seitenleiste)",
+      "togglePinEntry": "Notiz in „In Arbeit“ anheften oder lösen (in der Seitenleiste)",
       "saveFile": "Datei speichern",
       "printFile": "Datei drucken",
       "findReplace": "Suchen & Ersetzen",
@@ -709,6 +713,7 @@
     "stagedChange": "Der Agent schlägt eine Änderung vor",
     "stagedChangeFolder": "Vorgeschlagene Änderungen in diesem Ordner: {{count}}",
     "openFolderNote": "{{path}} – Klick öffnet die Ordnernotiz, der Pfeil klappt auf und zu",
+    "openFolderNoteDoubleClick": "{{path}} – Doppelklick öffnet die Ordnernotiz, der Pfeil klappt auf und zu",
     "expandFolder": "Aufklappen",
     "collapseFolder": "Zuklappen",
     "moreActions": "Weitere Aktionen",
@@ -1295,7 +1300,6 @@
     "title": "In Arbeit",
     "treeTitle": "Dateien",
     "closeSaved": "Gespeicherte schließen",
-    "close": "{{name}} schließen",
     "closeShort": "Schließen",
     "closeOthers": "Andere schließen",
     "closeAll": "Alle schließen",

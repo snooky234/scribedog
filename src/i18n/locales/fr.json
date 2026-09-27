@@ -313,9 +313,12 @@
     "restoreWorkingSet": "Restaurer les notes en cours au prochain démarrage",
     "restoreWorkingSetShort": "La liste « En cours » est mémorisée par dossier.",
     "restoreWorkingSetHint": "Désactivé : la liste démarre vide et ne se remplit qu'en épinglant ou en modifiant. Les modifications non enregistrées reviennent quoi qu'il arrive.",
+    "openOnDoubleClick": "Ouvrir les notes par double-clic",
+    "openOnDoubleClickShort": "Un clic dans la barre latérale sélectionne seulement une note ; un double-clic ou Entrée l'ouvre.",
+    "openOnDoubleClickHint": "Pratique pour montrer des notes pendant une présentation. L'épinglage passe alors par l'épingle qui apparaît au survol d'une ligne, Maj+Entrée ou le menu contextuel. Qu'une note ouverte rejoigne « En cours » dépend du réglage ci-dessous. Sur un écran tactile, un appui ouvre toujours.",
     "autoAdmitWorkingSet": "Ajouter automatiquement les notes modifiées à « En cours »",
-    "autoAdmitWorkingSetShort": "Par défaut, seules les notes épinglées y figurent (double-clic ou Entrée dans l'arborescence). Avec cette option, chaque note s'y ajoute dès qu'elle est modifiée.",
-    "autoAdmitWorkingSetHint": "Les modifications non enregistrées sont conservées dans tous les cas et signalées par le point jaune dans l'arborescence ; un anneau sur un dossier replié indique qu'il contient quelque chose de non enregistré."
+    "autoAdmitWorkingSetShort": "Par défaut, seules les notes épinglées y figurent. Avec cette option, chaque note s'y ajoute dès qu'elle est modifiée.",
+    "autoAdmitWorkingSetHint": "On épingle avec l'épingle d'une ligne de l'arborescence, Maj+Entrée ou le menu contextuel et, là où un clic ouvre les notes, aussi par double-clic. Les modifications non enregistrées sont conservées dans tous les cas et signalées par le point jaune dans l'arborescence ; un anneau sur un dossier replié indique qu'il contient quelque chose de non enregistré."
   },
   "assistants": {
     "defaultName": "ScribeDog (Par défaut)",
@@ -601,6 +604,7 @@
       "openFolder": "Ouvrir un dossier",
       "newFile": "Créer un nouveau fichier",
       "renameEntry": "Renommer un fichier/dossier (dans la barre latérale)",
+      "togglePinEntry": "Épingler ou détacher une note dans « En cours » (dans la barre latérale)",
       "saveFile": "Enregistrer le fichier",
       "printFile": "Imprimer le fichier",
       "findReplace": "Rechercher et remplacer",
@@ -709,6 +713,7 @@
     "stagedChange": "L’agent propose une modification",
     "stagedChangeFolder": "Modifications proposées dans ce dossier : {{count}}",
     "openFolderNote": "{{path}} – un clic ouvre la note du dossier, la flèche déplie et replie",
+    "openFolderNoteDoubleClick": "{{path}} – un double-clic ouvre la note du dossier, la flèche déplie et replie",
     "expandFolder": "Déplier",
     "collapseFolder": "Replier",
     "moreActions": "Autres actions",
@@ -1295,7 +1300,6 @@
     "title": "En cours",
     "treeTitle": "Fichiers",
     "closeSaved": "Fermer les enregistrées",
-    "close": "Fermer {{name}}",
     "closeShort": "Fermer",
     "closeOthers": "Fermer les autres",
     "closeAll": "Tout fermer",

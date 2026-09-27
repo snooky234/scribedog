@@ -60,6 +60,8 @@ import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportD
 export type WorkingSetHandlers = {
   entries: WorkingSetEntry[];
   onClose: (filePath: string) => void;
+  /** Several at once, asking note by note where one is dirty (tree multi-selection). */
+  onCloseMany: (filePaths: string[]) => void;
   onCloseOthers: (filePath: string) => void;
   onCloseAll: () => void;
   onCloseSaved: () => void;
@@ -732,11 +734,11 @@ export function Sidebar({
             emptyFolderPaths={emptyFolderPaths}
             selectedFilePath={selectedFilePath}
             dirtyFilePaths={dirtyFilePaths}
-            workingSetFilePaths={workingSet.entries.map((entry) => entry.filePath)}
-            pinnedFilePaths={workingSet.entries.filter((entry) => entry.pinned).map((entry) => entry.filePath)}
+            workingSetEntries={workingSet.entries}
             onPinWorkingSetEntry={workingSet.onPin}
             onUnpinWorkingSetEntry={workingSet.onUnpin}
             onCloseWorkingSetEntry={workingSet.onClose}
+            onCloseWorkingSetEntries={workingSet.onCloseMany}
             onDiscardChangesRequest={workingSet.onDiscardChanges}
             pendingEntryRename={pendingEntryRename}
             sortMode={sortMode}

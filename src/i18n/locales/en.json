@@ -313,9 +313,12 @@
     "restoreWorkingSet": "Restore notes in progress on the next start",
     "restoreWorkingSetShort": "The \"In progress\" list is remembered per folder.",
     "restoreWorkingSetHint": "Off means the list starts empty and fills again only by pinning or editing. Unsaved changes come back regardless.",
+    "openOnDoubleClick": "Open notes with a double-click",
+    "openOnDoubleClickShort": "A click in the sidebar only selects a note; a double-click or Enter opens it.",
+    "openOnDoubleClickHint": "Handy when you point at notes during a presentation. Pinning then goes through the pin that appears on a hovered row, Shift+Enter or the context menu. Whether an opened note joins \"In progress\" follows the setting below. On a touch screen a tap still opens.",
     "autoAdmitWorkingSet": "Add edited notes to \"In progress\" automatically",
-    "autoAdmitWorkingSetShort": "By default only pinned notes are listed there (double-click or Enter in the tree). With this option every note joins as soon as it is edited.",
-    "autoAdmitWorkingSetHint": "Unsaved changes are kept either way and show as the yellow dot in the tree; a ring on a collapsed folder means something inside it is unsaved."
+    "autoAdmitWorkingSetShort": "By default only pinned notes are listed there. With this option every note joins as soon as it is edited.",
+    "autoAdmitWorkingSetHint": "Pinning works through the pin on a row in the tree, Shift+Enter or the context menu, and where a click opens notes also through a double-click. Unsaved changes are kept either way and show as the yellow dot in the tree; a ring on a collapsed folder means something inside it is unsaved."
   },
   "assistants": {
     "defaultName": "ScribeDog (Default)",
@@ -601,6 +604,7 @@
       "openFolder": "Open folder",
       "newFile": "Create new file",
       "renameEntry": "Rename file/folder (in the sidebar)",
+      "togglePinEntry": "Pin or unpin a note in \"In progress\" (in the sidebar)",
       "saveFile": "Save file",
       "printFile": "Print file",
       "findReplace": "Find & replace",
@@ -709,6 +713,7 @@
     "stagedChange": "The agent proposes a change",
     "stagedChangeFolder": "Proposed changes in this folder: {{count}}",
     "openFolderNote": "{{path}} – click opens the folder note, the arrow expands and collapses",
+    "openFolderNoteDoubleClick": "{{path}} – double-click opens the folder note, the arrow expands and collapses",
     "expandFolder": "Expand",
     "collapseFolder": "Collapse",
     "moreActions": "More actions",
@@ -1295,7 +1300,6 @@
     "title": "In progress",
     "treeTitle": "Files",
     "closeSaved": "Close saved",
-    "close": "Close {{name}}",
     "closeShort": "Close",
     "closeOthers": "Close others",
     "closeAll": "Close all",

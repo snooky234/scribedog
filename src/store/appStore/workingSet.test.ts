@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   addWorkingSetEntry,
   closableWorkingSetEntries,
+  isShownAsPinned,
   moveWorkingSetEntry,
   normalizeStoredWorkingSet,
+  pinSelectionToggle,
+  pinToggleAction,
   pruneWorkingSet,
   remapWorkingSetPaths,
   removeWorkingSetEntry,
@@ -156,5 +159,48 @@ describe("stored form", () => {
         entries: [{ path: "A.md" }, { path: "a.md", pinned: true }, { pinned: true }, 7, { path: "" }]
       })
     ).toEqual({ version: 1, entries: [{ path: "A.md", pinned: false }] });
+  });
+});
+
+describe("pin toggle", () => {
+  const C = "D:\Vault\C.md";
+  // A pinned, B only admitted by editing, C not listed.
+  const entries: WorkingSetEntry[] = [
+    { filePath: A, pinned: true },
+    { filePath: B, pinned: false }
+  ];
+
+  it("with auto-admission, only a real pin counts, and the pin comes off without closing", () => {
+    expect(isShownAsPinned(entries, A, true)).toBe(true);
+    expect(isShownAsPinned(entries, B, true)).toBe(false);
+    expect(pinToggleAction(entries, A, true)).toBe("unpin");
+    expect(pinToggleAction(entries, B, true)).toBe("pin");
+    expect(pinToggleAction(entries, C, true)).toBe("pin");
+  });
+
+  it("with pin-only admission, being listed is being pinned, and the pin closes the entry", () => {
+    expect(isShownAsPinned(entries, B, false)).toBe(true);
+    expect(pinToggleAction(entries, A, false)).toBe("close");
+    expect(pinToggleAction(entries, B, false)).toBe("close");
+    expect(pinToggleAction(entries, C, false)).toBe("pin");
+  });
+
+  it("matches the path the way the list does", () => {
+    expect(pinToggleAction(entries, "d:/vault/a.md", true)).toBe("unpin");
+  });
+
+  it("pins the unpinned part of a mixed selection and takes no pin away", () => {
+    expect(pinSelectionToggle(entries, [A, B, C], true)).toEqual({ action: "pin", filePaths: [B, C] });
+    expect(pinSelectionToggle(entries, [A, B, C], false)).toEqual({ action: "pin", filePaths: [C] });
+  });
+
+  it("takes every pin away once the whole selection is pinned", () => {
+    const pinned: WorkingSetEntry[] = [
+      { filePath: A, pinned: true },
+      { filePath: B, pinned: true }
+    ];
+
+    expect(pinSelectionToggle(pinned, [A, B], true)).toEqual({ action: "unpin", filePaths: [A, B] });
+    expect(pinSelectionToggle(entries, [A, B], false)).toEqual({ action: "close", filePaths: [A, B] });
   });
 });

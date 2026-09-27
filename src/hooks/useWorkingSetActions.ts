@@ -111,6 +111,7 @@ export function useWorkingSetActions() {
   return {
     closeRequest,
     closeEntry,
+    closeEntries,
     closeOthers,
     closeAll,
     closeSelectedEntry,

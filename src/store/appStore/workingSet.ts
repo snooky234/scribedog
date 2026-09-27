@@ -8,7 +8,8 @@ import { normalizePathKey } from "./pathUtils";
  *
  * Two rules decide membership, and nothing else does: a note enters when it
  * becomes dirty (the user typed into it) or when the user pins it on purpose
- * (double-click, Enter, context menu). Selecting a note in the tree, arrow
+ * (the tree's pin, Shift+Enter, the context menu, and a double-click where
+ * a single click already opens). Selecting a note in the tree, arrow
  * keys included, never adds it, otherwise ten seconds of browsing would fill
  * the list with everything passed on the way. Saving never removes an entry
  * either: a row that vanishes while the note it stands for is on screen
@@ -130,6 +131,62 @@ export function pruneWorkingSet(
   isAlive: (filePath: string) => boolean
 ): WorkingSetEntry[] {
   return entries.filter((entry) => isAlive(entry.filePath));
+}
+
+/**
+ * Whether a note shows as pinned outside the list (the tree's pin) and what
+ * its pin toggles back to. With pin-only admission every entry got in by a
+ * pin, so being listed is being pinned, and taking the pin away means taking
+ * the entry out; the context menu has always read it that way.
+ */
+export function isShownAsPinned(
+  entries: readonly WorkingSetEntry[],
+  filePath: string,
+  autoAdmit: boolean
+): boolean {
+  const entry = findWorkingSetEntry(entries, filePath);
+
+  return autoAdmit ? entry?.pinned === true : entry !== undefined;
+}
+
+export type PinToggleAction = "pin" | "unpin" | "close";
+
+/**
+ * What the pin and Shift+Enter do to one note. "close" goes through the
+ * list's own close, which asks first when the note is dirty.
+ */
+export function pinToggleAction(
+  entries: readonly WorkingSetEntry[],
+  filePath: string,
+  autoAdmit: boolean
+): PinToggleAction {
+  if (!isShownAsPinned(entries, filePath, autoAdmit)) {
+    return "pin";
+  }
+
+  return autoAdmit ? "unpin" : "close";
+}
+
+/**
+ * Shift+Enter on a multi-selection, one toggle for all of it. A mixed
+ * selection has no single state to flip, so it goes towards pinned first:
+ * as long as one note lacks its pin, the notes without one get it and none
+ * loses one. Once every note is pinned, the next press takes all the pins
+ * away, which under pin-only admission closes the entries (the list's close
+ * queue, asking note by note where one is dirty).
+ */
+export function pinSelectionToggle(
+  entries: readonly WorkingSetEntry[],
+  filePaths: readonly string[],
+  autoAdmit: boolean
+): { action: PinToggleAction; filePaths: string[] } {
+  const unpinned = filePaths.filter((filePath) => !isShownAsPinned(entries, filePath, autoAdmit));
+
+  if (unpinned.length > 0) {
+    return { action: "pin", filePaths: unpinned };
+  }
+
+  return { action: autoAdmit ? "unpin" : "close", filePaths: [...filePaths] };
 }
 
 /** The clean entries that are not pinned; what "close saved" removes. */

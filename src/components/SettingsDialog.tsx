@@ -394,6 +394,8 @@ export function SettingsDialog({
   const setRestoreWorkingSet = useEditorSettingsStore((state) => state.setRestoreWorkingSet);
   const autoAdmitWorkingSet = useEditorSettingsStore((state) => state.autoAdmitWorkingSet);
   const setAutoAdmitWorkingSet = useEditorSettingsStore((state) => state.setAutoAdmitWorkingSet);
+  const openOnDoubleClick = useEditorSettingsStore((state) => state.openOnDoubleClick);
+  const setOpenOnDoubleClick = useEditorSettingsStore((state) => state.setOpenOnDoubleClick);
 
   const ragEnabled = useRagSettingsStore((state) => state.config.enabled);
 
@@ -613,6 +615,19 @@ export function SettingsDialog({
                       type="checkbox"
                       checked={reopenLastNote}
                       onChange={(event) => setReopenLastNote(event.target.checked)}
+                    />
+                  </SettingRow>
+
+                  <SettingRow
+                    layout="switch"
+                    label={t("settingsDialog.openOnDoubleClick")}
+                    hint={t("settingsDialog.openOnDoubleClickShort")}
+                    info={t("settingsDialog.openOnDoubleClickHint")}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={openOnDoubleClick}
+                      onChange={(event) => setOpenOnDoubleClick(event.target.checked)}
                     />
                   </SettingRow>
 

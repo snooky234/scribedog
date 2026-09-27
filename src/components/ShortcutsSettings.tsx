@@ -28,6 +28,11 @@ type KeyToken = { mod: "ctrl" | "alt" | "shift" } | { special: "esc" | "enter" |
 const FIXED_SHORTCUTS: { id: string; keys: KeyToken[]; descriptionKey: string; requiresAiFeatures?: boolean }[] = [
   { id: "renameEntry", keys: [{ literal: "F2" }], descriptionKey: "shortcutsDialog.items.renameEntry" },
   {
+    id: "togglePinEntry",
+    keys: [{ mod: "shift" }, { special: "enter" }],
+    descriptionKey: "shortcutsDialog.items.togglePinEntry"
+  },
+  {
     id: "aiEditContextMenu",
     keys: [{ special: "rightClick" }],
     descriptionKey: "shortcutsDialog.items.aiEditDialog",

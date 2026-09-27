@@ -313,9 +313,12 @@
     "restoreWorkingSet": "Restaurar las notas en curso en el próximo inicio",
     "restoreWorkingSetShort": "La lista «En curso» se recuerda por carpeta.",
     "restoreWorkingSetHint": "Desactivado significa que la lista empieza vacía y solo se vuelve a llenar al fijar o editar. Los cambios sin guardar vuelven de todos modos.",
+    "openOnDoubleClick": "Abrir notas con doble clic",
+    "openOnDoubleClickShort": "Un clic en la barra lateral solo selecciona una nota; un doble clic o Intro la abre.",
+    "openOnDoubleClickHint": "Útil cuando señalas notas durante una presentación. Para fijar se usa entonces el pin que aparece al pasar el ratón por una fila, Mayús+Intro o el menú contextual. Si una nota abierta entra en «En curso» depende del ajuste de abajo. En una pantalla táctil, un toque sigue abriendo.",
     "autoAdmitWorkingSet": "Añadir automáticamente las notas editadas a «En curso»",
-    "autoAdmitWorkingSetShort": "De forma predeterminada solo aparecen las notas fijadas (doble clic o Intro en el árbol). Con esta opción se añade cada nota en cuanto se edita.",
-    "autoAdmitWorkingSetHint": "Los cambios sin guardar se conservan en cualquier caso y se ven como el punto amarillo en el árbol; un anillo en una carpeta plegada indica que dentro hay algo sin guardar."
+    "autoAdmitWorkingSetShort": "De forma predeterminada solo aparecen las notas fijadas. Con esta opción se añade cada nota en cuanto se edita.",
+    "autoAdmitWorkingSetHint": "Se fija con el pin de una fila del árbol, Mayús+Intro o el menú contextual y, donde un clic abre las notas, también con doble clic. Los cambios sin guardar se conservan en cualquier caso y se ven como el punto amarillo en el árbol; un anillo en una carpeta plegada indica que dentro hay algo sin guardar."
   },
   "assistants": {
     "defaultName": "ScribeDog (Predeterminado)",
@@ -601,6 +604,7 @@
       "openFolder": "Abrir carpeta",
       "newFile": "Crear nuevo archivo",
       "renameEntry": "Renombrar archivo/carpeta (en la barra lateral)",
+      "togglePinEntry": "Fijar o soltar una nota en «En curso» (en la barra lateral)",
       "saveFile": "Guardar archivo",
       "printFile": "Imprimir archivo",
       "findReplace": "Buscar y reemplazar",
@@ -709,6 +713,7 @@
     "stagedChange": "El agente propone un cambio",
     "stagedChangeFolder": "Cambios propuestos en esta carpeta: {{count}}",
     "openFolderNote": "{{path}} – un clic abre la nota de la carpeta, la flecha la despliega y pliega",
+    "openFolderNoteDoubleClick": "{{path}} – un doble clic abre la nota de la carpeta, la flecha la despliega y pliega",
     "expandFolder": "Desplegar",
     "collapseFolder": "Plegar",
     "moreActions": "Más acciones",
@@ -1295,7 +1300,6 @@
     "title": "En curso",
     "treeTitle": "Archivos",
     "closeSaved": "Cerrar las guardadas",
-    "close": "Cerrar {{name}}",
     "closeShort": "Cerrar",
     "closeOthers": "Cerrar las demás",
     "closeAll": "Cerrar todas",

@@ -17,12 +17,18 @@ import { canDownloadFolderArchive, canDownloadMarkdown } from "@/lib/export/mark
 import { getRelativeDisplayPath, type MarkdownFileRecord } from "@/lib/fileSystem";
 import { buildFileTree, type FileTreeFolderNode, type FileTreeNode } from "@/lib/fileTree";
 import { getFolderNoteFolderPath, getFolderNotePath, isFolderNotePath } from "@/lib/folderNotes";
+import { isCoarsePointer, singleClickOpens } from "@/lib/openGesture";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
-import { normalizePathKey } from "@/store/appStore/pathUtils";
+import {
+  isShownAsPinned,
+  pinSelectionToggle,
+  pinToggleAction,
+  type PinToggleAction
+} from "@/store/appStore/workingSet";
 import { EmojiPickerPopover } from "@/components/EmojiPicker";
 import { getVaultIcon, type VaultIconMap } from "@/lib/vaultIcons";
 import { anchorForTrigger, type PopoverAnchor } from "@/lib/usePopoverOverflowAlign";
-import type { MoveTreeEntryInput } from "@/store/useAppStore";
+import type { MoveTreeEntryInput, WorkingSetEntry } from "@/store/useAppStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
 import { useStagedChangesStore } from "@/store/useStagedChangesStore";
@@ -53,14 +59,14 @@ type FileTreeProps = {
   emptyFolderPaths: string[];
   selectedFilePath: string | null;
   dirtyFilePaths: string[];
-  /** Notes in the "In progress" list; decides between pin and unpin in the menu. */
-  workingSetFilePaths: string[];
-  /** The listed notes the user pinned; their rows carry the same pin as the list. */
-  pinnedFilePaths: string[];
+  /** The "In progress" list; decides what a row's pin shows and toggles. */
+  workingSetEntries: WorkingSetEntry[];
   onPinWorkingSetEntry: (filePath: string) => void;
   onUnpinWorkingSetEntry: (filePath: string) => void;
   /** Closes the note's entry (asking first when dirty); the tree's item in pin-only mode. */
   onCloseWorkingSetEntry: (filePath: string) => void;
+  /** The same for a multi-selection, one question per dirty note. */
+  onCloseWorkingSetEntries: (filePaths: string[]) => void;
   /** Throws away a dirty note's unsaved edits without asking. */
   onDiscardChangesRequest: (filePath: string) => void;
   pendingEntryRename?: PendingEntryRename | null;
@@ -123,11 +129,11 @@ export function FileTree({
   emptyFolderPaths,
   selectedFilePath,
   dirtyFilePaths,
-  workingSetFilePaths,
-  pinnedFilePaths,
+  workingSetEntries,
   onPinWorkingSetEntry,
   onUnpinWorkingSetEntry,
   onCloseWorkingSetEntry,
+  onCloseWorkingSetEntries,
   onDiscardChangesRequest,
   pendingEntryRename,
   sortMode,
@@ -189,6 +195,9 @@ export function FileTree({
   // Pin-only admission: an entry is an entry, "unpin" has no meaning, so the
   // listed note offers "close" instead (see WorkingSetPanel).
   const autoAdmitWorkingSet = useEditorSettingsStore((state) => state.autoAdmitWorkingSet);
+  const openOnDoubleClick = useEditorSettingsStore((state) => state.openOnDoubleClick);
+  // Asked per gesture, not per render: the pointer can change under a tablet.
+  const clickOpens = () => singleClickOpens(openOnDoubleClick, isCoarsePointer());
 
   // What the agent has proposed, indexed the way the rows need it.
   //
@@ -303,8 +312,6 @@ export function FileTree({
       ),
     [folderPath, dirtyFilePaths]
   );
-
-  const pinnedKeys = useMemo(() => new Set(pinnedFilePaths.map(normalizePathKey)), [pinnedFilePaths]);
 
   const folderMatchCounts = useMemo(
     () => buildFolderMatchCounts(treeNodes, fileMatchCounts),
@@ -441,17 +448,69 @@ export function FileTree({
     void join(folderPath, node.relativePath).then(onOpenFolderNote);
   };
 
-  // Double-click, Enter: the deliberate way into "In progress" (a click
-  // only shows the note). A folder row stands in for its note when folder
-  // notes are on; without them a folder has nothing to pin.
-  const pinNode = (node: FileTreeNode) => {
+  // The note a row stands for: the file, or with folder notes on the
+  // folder's note, written or not yet. Without them a folder has none.
+  const resolveNotePath = async (node: FileTreeNode): Promise<string | null> => {
     if (node.kind === "file") {
-      onPinWorkingSetEntry(node.filePath);
-      return;
+      return node.filePath;
     }
 
-    if (folderNotesEnabled) {
-      void join(folderPath, node.relativePath).then((path) => onPinWorkingSetEntry(getFolderNotePath(path)));
+    if (!folderNotesEnabled) {
+      return null;
+    }
+
+    return node.folderNotePath ?? getFolderNotePath(await join(folderPath, node.relativePath));
+  };
+
+  // Double-click where a click opens: the deliberate way into
+  // "In progress" (a click only shows the note).
+  const pinNode = (node: FileTreeNode) => {
+    void resolveNotePath(node).then((path) => {
+      if (path) {
+        onPinWorkingSetEntry(path);
+      }
+    });
+  };
+
+  // With folder notes on, a folder row is a note row and behaves exactly
+  // like a file's. Without them it is only a place in the tree: the cursor
+  // may rest on it, but it is never marked the way a note is, so the open
+  // note keeps its marking and only the focus ring moves (file-tree.css).
+  const selectionFor = (node: FileTreeNode): Set<string> =>
+    node.kind === "folder" && !folderNotesEnabled ? new Set() : new Set([getNodeKey(node)]);
+
+  const openNode = (node: FileTreeNode) => {
+    if (node.kind === "file") {
+      void onSelectFilePath(node.filePath);
+    } else if (folderNotesEnabled) {
+      openFolderNoteOf(node);
+    }
+  };
+
+  const describePinToggle = (filePath: string): PinToggleAction =>
+    pinToggleAction(workingSetEntries, filePath, autoAdmitWorkingSet);
+
+  // The row's pin and Shift+Enter. Taking the pin away under pin-only
+  // admission closes the entry, through the list's close that asks first.
+  const togglePin = (filePath: string) => {
+    const action = describePinToggle(filePath);
+
+    if (action === "pin") {
+      onPinWorkingSetEntry(filePath);
+    } else if (action === "unpin") {
+      onUnpinWorkingSetEntry(filePath);
+    } else {
+      onCloseWorkingSetEntry(filePath);
+    }
+  };
+
+  // A double-click pins where the click before it has already opened the
+  // note, and opens where that click only marked it.
+  const handleRowDoubleClick = (node: FileTreeNode) => {
+    if (clickOpens()) {
+      pinNode(node);
+    } else {
+      openNode(node);
     }
   };
 
@@ -479,7 +538,7 @@ export function FileTree({
       setSelectedKeys(computeRangeKeys(flatNodes, activeKey, key));
       setRangeFocusKey(key);
 
-      if (node.kind === "file") {
+      if (node.kind === "file" && clickOpens()) {
         void onSelectFilePath(node.filePath);
       }
       return;
@@ -487,6 +546,14 @@ export function FileTree({
 
     setActiveKey(key);
     setRangeFocusKey(null);
+
+    // Open on double-click: the click marks the row the way the arrow keys
+    // do and leaves the editor alone. A folder without folder notes has no
+    // note to keep off the screen, so it still toggles.
+    if (!clickOpens() && (node.kind === "file" || folderNotesEnabled)) {
+      setSelectedKeys(new Set([key]));
+      return;
+    }
 
     if (node.kind === "folder") {
       // A plain click toggles the folder — it is not a request to select it,
@@ -498,6 +565,7 @@ export function FileTree({
       // With folder notes on, the name opens the folder's note instead and the
       // chevron (its own click target in the row) is what toggles.
       if (folderNotesEnabled) {
+        setSelectedKeys(new Set([key]));
         openFolderNoteOf(node);
       } else {
         toggleFolderNode(node);
@@ -541,11 +609,11 @@ export function FileTree({
       }
 
       setActiveKey(nextKey);
-      setSelectedKeys(new Set([nextKey]));
+      setSelectedKeys(selectionFor(nextNode));
       setRangeFocusKey(null);
 
-      if (nextNode.kind === "file") {
-        void onSelectFilePath(nextNode.filePath);
+      if (clickOpens()) {
+        openNode(nextNode);
       }
       return;
     }
@@ -565,9 +633,11 @@ export function FileTree({
       event.preventDefault();
 
       const moveTo = (targetKey: string) => {
+        const target = flatNodes.find((node) => getNodeKey(node) === targetKey);
+
         focusItem(targetKey);
         setActiveKey(targetKey);
-        setSelectedKeys(new Set([targetKey]));
+        setSelectedKeys(target ? selectionFor(target) : new Set([targetKey]));
         setRangeFocusKey(null);
       };
       const isExpandedFolder =
@@ -606,25 +676,52 @@ export function FileTree({
       onRequestEditorFocus?.();
     }
 
-    // Enter on a note opens and pins it. The row is a button, so without
-    // the preventDefault the key would also fire its click (a plain open).
-    // Only from a row itself: the "…" button in the row and the rename input
-    // have Enter meanings of their own.
+    // Enter on a note opens it and never pins: on the keyboard the pin is
+    // Shift+Enter's alone, one key for both directions. Shift+Enter leaves
+    // the note where it is; on a multi-selection it toggles all of it
+    // (pinSelectionToggle). The row is a button, so without the
+    // preventDefault the key would also fire its click. Only from a row
+    // itself: the "…" button in the row and the rename input have Enter
+    // meanings of their own.
     const isFromRow = event.target instanceof HTMLElement && event.target.getAttribute("role") === "treeitem";
 
     if (event.key === "Enter" && isFromRow && activeKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
       const activeNode = flatNodes.find((node) => getNodeKey(node) === activeKey);
 
+      if (event.shiftKey && selectedKeys.size > 1 && selectedKeys.has(activeKey)) {
+        event.preventDefault();
+
+        const filePaths = flatNodes.flatMap((node) => {
+          const filePath = selectedKeys.has(getNodeKey(node)) ? getLinkableFilePath(node, folderNotesEnabled) : null;
+
+          return filePath ? [filePath] : [];
+        });
+
+        const toggle = pinSelectionToggle(workingSetEntries, filePaths, autoAdmitWorkingSet);
+
+        if (toggle.action === "pin") {
+          toggle.filePaths.forEach(onPinWorkingSetEntry);
+        } else if (toggle.action === "unpin") {
+          toggle.filePaths.forEach(onUnpinWorkingSetEntry);
+        } else {
+          onCloseWorkingSetEntries(toggle.filePaths);
+        }
+        return;
+      }
+
       if (activeNode && (activeNode.kind === "file" || folderNotesEnabled)) {
         event.preventDefault();
 
-        if (activeNode.kind === "file") {
-          void onSelectFilePath(activeNode.filePath);
-        } else {
-          openFolderNoteOf(activeNode);
+        if (event.shiftKey) {
+          void resolveNotePath(activeNode).then((path) => {
+            if (path) {
+              togglePin(path);
+            }
+          });
+          return;
         }
 
-        pinNode(activeNode);
+        openNode(activeNode);
         return;
       }
     }
@@ -755,7 +852,9 @@ export function FileTree({
             folderNotesEnabled={folderNotesEnabled}
             activeFolderNotePath={activeFolderNotePath}
             dirtyFolderNotePaths={dirtyFolderNotePaths}
-            pinnedKeys={pinnedKeys}
+            describePinToggle={describePinToggle}
+            onTogglePin={togglePin}
+            openOnDoubleClick={openOnDoubleClick}
             activeKey={activeKey}
             renamingTarget={renamingTarget}
             renameDraft={renameDraft}
@@ -764,7 +863,7 @@ export function FileTree({
             dragSourceKeys={dragSourceKeys}
             dropIndicator={dropIndicator}
             onRowClick={handleRowClick}
-            onRowDoubleClick={pinNode}
+            onRowDoubleClick={handleRowDoubleClick}
             onToggleFolder={toggleFolderNode}
             onRowContextMenu={handleRowContextMenu}
             onRenameDraftChange={setRenameDraft}
@@ -1022,9 +1121,7 @@ export function FileTree({
               ) : null}
 
               {contextMenu.kind === "file" ? (
-                (autoAdmitWorkingSet
-                  ? pinnedKeys.has(normalizePathKey(contextMenu.filePath))
-                  : workingSetFilePaths.some((path) => normalizePathKey(path) === normalizePathKey(contextMenu.filePath))) ? (
+                isShownAsPinned(workingSetEntries, contextMenu.filePath, autoAdmitWorkingSet) ? (
                   <button
                     type="button"
                     role="menuitem"

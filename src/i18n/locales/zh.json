@@ -312,9 +312,12 @@
     "restoreWorkingSet": "下次启动时恢复进行中的笔记",
     "restoreWorkingSetShort": "“进行中”列表按文件夹记住。",
     "restoreWorkingSetHint": "关闭后，列表在启动时为空，只有固定或编辑才会再次填充。未保存的更改无论如何都会恢复。",
+    "openOnDoubleClick": "双击打开笔记",
+    "openOnDoubleClickShort": "在侧边栏中单击只会选中笔记，双击或按 Enter 才会打开。",
+    "openOnDoubleClickHint": "在演示时指向笔记很方便。此时通过悬停行时出现的图钉、Shift+Enter 或上下文菜单来固定。打开的笔记是否加入“进行中”由下方设置决定。在触摸屏上，点按仍会打开。",
     "autoAdmitWorkingSet": "自动把编辑过的笔记加入“进行中”",
-    "autoAdmitWorkingSetShort": "默认只列出固定的笔记（在树中双击或按 Enter）。启用此选项后，每篇笔记一经编辑即会加入。",
-    "autoAdmitWorkingSetHint": "未保存的更改无论如何都会保留，并在树中以黄点显示；折叠文件夹上的圆环表示其中有未保存的内容。"
+    "autoAdmitWorkingSetShort": "默认只列出固定的笔记。启用此选项后，每篇笔记一经编辑即会加入。",
+    "autoAdmitWorkingSetHint": "可通过树中行上的图钉、Shift+Enter 或上下文菜单固定；在单击即打开笔记的模式下，双击也会固定。未保存的更改无论如何都会保留，并在树中以黄点显示；折叠文件夹上的圆环表示其中有未保存的内容。"
   },
   "assistants": {
     "defaultName": "ScribeDog (默认)",
@@ -600,6 +603,7 @@
       "openFolder": "打开文件夹",
       "newFile": "新建文件",
       "renameEntry": "重命名文件/文件夹（在侧边栏中）",
+      "togglePinEntry": "在“进行中”固定或取消固定笔记（在侧边栏中）",
       "saveFile": "保存文件",
       "printFile": "打印文件",
       "findReplace": "查找和替换",
@@ -708,6 +712,7 @@
     "stagedChange": "代理提议了一处更改",
     "stagedChangeFolder": "此文件夹中提议的更改：{{count}}",
     "openFolderNote": "{{path}} – 点击打开文件夹笔记，箭头用于展开和折叠",
+    "openFolderNoteDoubleClick": "{{path}} – 双击打开文件夹笔记，箭头用于展开和折叠",
     "expandFolder": "展开",
     "collapseFolder": "折叠",
     "moreActions": "更多操作",
@@ -1294,7 +1299,6 @@
     "title": "进行中",
     "treeTitle": "文件",
     "closeSaved": "关闭已保存的",
-    "close": "关闭 {{name}}",
     "closeShort": "关闭",
     "closeOthers": "关闭其他",
     "closeAll": "全部关闭",

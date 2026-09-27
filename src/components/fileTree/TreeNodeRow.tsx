@@ -7,8 +7,7 @@ import {
   FileText,
   Folder,
   FolderOpen,
-  PawPrint,
-  Pin
+  PawPrint
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -22,7 +21,7 @@ import { getVaultIcon, type VaultIconMap } from "@/lib/vaultIcons";
 import type { SortMode } from "@/lib/vaultMeta";
 import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportDropStore";
 import { getVaultCapabilities } from "@/platform";
-import { normalizePathKey } from "@/store/appStore/pathUtils";
+import type { PinToggleAction } from "@/store/appStore/workingSet";
 import { useSearchStore } from "@/store/useSearchStore";
 
 import {
@@ -31,6 +30,7 @@ import {
   INDENT_BASE_REM,
   INDENT_STEP_REM
 } from "./treeNavigation";
+import { PinToggle } from "./PinToggle";
 import type { DropIndicator, DropPosition, RenamingTarget } from "./types";
 
 type TreeNodeRowProps = {
@@ -67,8 +67,11 @@ type TreeNodeRowProps = {
   folderNotesEnabled: boolean;
   activeFolderNotePath: string | null;
   dirtyFolderNotePaths: Set<string>;
-  /** Pinned "In progress" notes, absolute paths through normalizePathKey. */
-  pinnedKeys: Set<string>;
+  /** What the pin of the note at this absolute path would do (workingSet.ts). */
+  describePinToggle: (filePath: string) => PinToggleAction;
+  onTogglePin: (filePath: string) => void;
+  /** Only for the folder row's tooltip; FileTree decides what a click does. */
+  openOnDoubleClick: boolean;
   activeKey: string | null;
   renamingTarget: RenamingTarget | null;
   renameDraft: string;
@@ -79,7 +82,7 @@ type TreeNodeRowProps = {
   dragSourceKeys: string[];
   dropIndicator: DropIndicator | null;
   onRowClick: (node: FileTreeNode, event: React.MouseEvent) => void;
-  /** Double-click on a note (or a folder's note row): pins it to "In progress". */
+  /** Double-click on a note (or a folder's note row): pins it, or opens it where a click only marks. */
   onRowDoubleClick: (node: FileTreeNode) => void;
   /** The chevron's own click, once the row itself opens the note. */
   onToggleFolder: (node: FileTreeFolderNode) => void;
@@ -118,16 +121,11 @@ function RowIcon({ icon, fallback }: { icon: string | null; fallback: ReactNode 
   return <span className="file-tree__icon">{fallback}</span>;
 }
 
-/** The pin of the "In progress" list, same glyph and colour, so a pinned note reads alike in both. */
-function PinMark() {
-  const { t } = useTranslation();
-
-  return (
-    <Pin className="file-tree__pin" aria-label={t("workingSet.pinned")}>
-      <title>{t("workingSet.pinned")}</title>
-    </Pin>
-  );
-}
+const PIN_TOGGLE_LABEL_KEYS: Record<PinToggleAction, string> = {
+  pin: "fileTree.pinWorkingSet",
+  unpin: "fileTree.unpinWorkingSet",
+  close: "fileTree.closeWorkingSet"
+};
 
 /**
  * The row's context menu without a right-click. Only shown for a coarse
@@ -174,7 +172,9 @@ export function TreeNodeRow({
   folderNotesEnabled,
   activeFolderNotePath,
   dirtyFolderNotePaths,
-  pinnedKeys,
+  describePinToggle,
+  onTogglePin,
+  openOnDoubleClick,
   activeKey,
   renamingTarget,
   renameDraft,
@@ -327,8 +327,9 @@ export function TreeNodeRow({
     const isRenaming = renamingTarget?.kind === "folder" && renamingTarget.relativePath === node.relativePath;
     const isNoteActive = folderNotesEnabled && activeFolderNotePath === node.relativePath;
     const isNoteDirty = folderNotesEnabled && dirtyFolderNotePaths.has(node.relativePath);
-    const isNotePinned =
-      folderNotesEnabled && node.folderNotePath !== undefined && pinnedKeys.has(normalizePathKey(node.folderNotePath));
+    // Only a written folder note gets the pin on the row: offered on every
+    // folder it would pin notes that do not exist yet. Shift+Enter still can.
+    const folderNotePath = folderNotesEnabled ? node.folderNotePath : undefined;
     // The ring says "something *inside*"; the folder's own note has the
     // filled dot for itself, so it is taken out of the count.
     const hasDirtyInside =
@@ -392,7 +393,9 @@ export function TreeNodeRow({
             style={{ paddingLeft }}
             title={
               folderNotesEnabled
-                ? t("fileTree.openFolderNote", { path: node.relativePath })
+                ? t(openOnDoubleClick ? "fileTree.openFolderNoteDoubleClick" : "fileTree.openFolderNote", {
+                    path: node.relativePath
+                  })
                 : node.relativePath
             }
             {...{ [DROP_DIRECTORY_ATTRIBUTE]: dropDirectory }}
@@ -428,6 +431,8 @@ export function TreeNodeRow({
                     }
                   : undefined
               }
+              // Unfolding and folding again quickly is no double-click on the note.
+              onDoubleClick={folderNotesEnabled ? (event) => event.stopPropagation() : undefined}
             >
               {isExpanded ? <ChevronDown /> : <ChevronRight />}
             </span>
@@ -453,7 +458,13 @@ export function TreeNodeRow({
                 <title>{t("fileTree.stagedChangeFolder", { count: folderStagedCount })}</title>
               </PawPrint>
             ) : null}
-            {isNotePinned ? <PinMark /> : null}
+            {folderNotePath ? (
+              <PinToggle
+                action={describePinToggle(folderNotePath)}
+                labelKeys={PIN_TOGGLE_LABEL_KEYS}
+                onToggle={() => onTogglePin(folderNotePath)}
+              />
+            ) : null}
             {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
             {hasDirtyInside ? (
               <span
@@ -495,7 +506,9 @@ export function TreeNodeRow({
                 folderNotesEnabled={folderNotesEnabled}
                 activeFolderNotePath={activeFolderNotePath}
                 dirtyFolderNotePaths={dirtyFolderNotePaths}
-                pinnedKeys={pinnedKeys}
+                describePinToggle={describePinToggle}
+                onTogglePin={onTogglePin}
+                openOnDoubleClick={openOnDoubleClick}
                 activeKey={activeKey}
                 renamingTarget={renamingTarget}
                 renameDraft={renameDraft}
@@ -527,7 +540,6 @@ export function TreeNodeRow({
 
   const isSelected = node.filePath === selectedFilePath;
   const isDirty = dirtyFilePaths.includes(node.filePath);
-  const isPinned = pinnedKeys.has(normalizePathKey(node.filePath));
   const isRenaming = renamingTarget?.kind === "file" && renamingTarget.relativePath === node.relativePath;
 
   return (
@@ -615,7 +627,11 @@ export function TreeNodeRow({
               <title>{t("fileTree.stagedChange")}</title>
             </PawPrint>
           ) : null}
-          {isPinned ? <PinMark /> : null}
+          <PinToggle
+            action={describePinToggle(node.filePath)}
+            labelKeys={PIN_TOGGLE_LABEL_KEYS}
+            onToggle={() => onTogglePin(node.filePath)}
+          />
           {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
           {isDirty ? (
             <span
