@@ -25,6 +25,20 @@ describe("export font catalog", () => {
     expect(embeddableIds).toEqual([...expectedIds]);
   });
 
+  // The print reproduces the PDF's line spacing from these values
+  // (printLayout.ts); a wrong one shifts every printed page break.
+  for (const fontId of APP_FONT_IDS) {
+    it(`knows the line height pdfmake uses for ${fontId}`, async () => {
+      const { create } = await import("fontkit");
+      const regular = PDF_EMBEDDABLE_FONTS[fontId]?.normal;
+      // The system default falls back to pdfmake's bundled Roboto.
+      const path = regular ? toFilePath(regular) : "node_modules/pdfmake/fonts/Roboto/Roboto-Regular.ttf";
+      const font = create(readFileSync(path));
+
+      expect(APP_FONTS[fontId].pdfLineHeight).toBeCloseTo((font.ascent - font.descent) / font.unitsPerEm, 3);
+    });
+  }
+
   for (const fontId of APP_FONT_IDS) {
     const styles = PDF_EMBEDDABLE_FONTS[fontId];
 

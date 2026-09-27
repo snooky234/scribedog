@@ -4,6 +4,7 @@ import insPlugin from "markdown-it-ins";
 import markPlugin from "markdown-it-mark";
 
 import { calloutMarkdownItPlugin } from "@/lib/editor/extensions/callout";
+import { pageBreakMarkdownItPlugin } from "@/lib/editor/extensions/pageBreak";
 import { tableLineBreakMarkdownItPlugin } from "@/lib/editor/extensions/table";
 
 // Shared intermediate representation for the PDF/DOCX/ODT exporters: markdown
@@ -50,11 +51,19 @@ export type ExportBlock =
   | { kind: "codeBlock"; text: string; language?: string }
   | { kind: "blockquote"; children: ExportBlock[] }
   | { kind: "list"; ordered: boolean; start: number; items: ExportListItem[] }
-  | { kind: "table"; rows: TableCell[][] }
+  | {
+      kind: "table";
+      rows: TableCell[][];
+      // A part of a table split across pages (pagePlan.ts): the whole
+      // table's rows, which the column widths are measured from, so every
+      // part keeps the same columns.
+      columnSource?: TableCell[][];
+    }
   | { kind: "hr" }
-  // Never produced by markdown parsing — the manuscript compiler inserts these
-  // between chapters (see manuscript.ts). Each paged format turns it into its
-  // own hard page break; HTML/EPUB only break when printed.
+  // A manual page break in the note (the editor's pageBreak node, see
+  // extensions/pageBreak.ts), or one the manuscript compiler inserts between
+  // chapters (manuscript.ts). Only ever at the top level. Each paged format
+  // turns it into its own hard page break; HTML/EPUB only break when printed.
   | { kind: "pageBreak" };
 
 // Same underline mapping as the editor (Editor.tsx): "++text++" is parsed by
@@ -69,6 +78,8 @@ export function createExportMarkdownIt(): MarkdownIt {
   markdownIt.use(calloutMarkdownItPlugin);
   // The editor writes line breaks inside a table cell as "<br>" (table.ts).
   markdownIt.use(tableLineBreakMarkdownItPlugin);
+  // The manual page break line; without the rule it exports as visible text.
+  markdownIt.use(pageBreakMarkdownItPlugin);
   return markdownIt;
 }
 
@@ -307,6 +318,9 @@ function parseBlocks(state: ParserState, closeTokenType: string | null): ExportB
       case "hr":
         blocks.push({ kind: "hr" });
         break;
+      case "page_break":
+        blocks.push({ kind: "pageBreak" });
+        break;
       default:
         break;
     }
@@ -316,8 +330,75 @@ function parseBlocks(state: ParserState, closeTokenType: string | null): ExportB
 }
 
 export function parseMarkdownToBlocks(markdown: string): ExportBlock[] {
+  return parseMarkdownToBlocksWithLines(markdown).blocks;
+}
+
+// The tokens that open a top-level block in parseBlocks, one block each.
+const BLOCK_START_TOKENS = new Set([
+  "heading_open",
+  "paragraph_open",
+  "fence",
+  "code_block",
+  "blockquote_open",
+  "bullet_list_open",
+  "ordered_list_open",
+  "table_open",
+  "hr",
+  "page_break"
+]);
+
+/**
+ * The blocks plus the line of the markdown each top-level block starts on
+ * (0-based), which is how the editor's page lines find the node a block came
+ * from.
+ */
+export function parseMarkdownToBlocksWithLines(markdown: string): { blocks: ExportBlock[]; lines: number[] } {
   const markdownIt = createExportMarkdownIt();
   const tokens = markdownIt.parse(normalizeTaskListMarkdown(markdown), {});
+  const lines = tokens
+    .filter((token) => token.level === 0 && BLOCK_START_TOKENS.has(token.type))
+    .map((token) => token.map?.[0] ?? -1);
 
-  return parseBlocks({ tokens, index: 0 }, null);
+  return { blocks: parseBlocks({ tokens, index: 0 }, null), lines };
+}
+
+/**
+ * Drops the page breaks that would only produce an empty page: at the start
+ * and end of the document, and every one directly after another. Applied to
+ * the final block list rather than per note: a manuscript chapter that opens
+ * with a manual break and the chapter break in front of it collapse into one,
+ * and with chapter breaks switched off, that chapter still starts a new page.
+ */
+export function normalizePageBreaks(blocks: ExportBlock[]): ExportBlock[] {
+  const keep = pageBreakKeepMask(blocks);
+
+  return blocks.filter((_, index) => keep[index]);
+}
+
+/** Which blocks normalizePageBreaks keeps, by index. */
+export function pageBreakKeepMask(blocks: ExportBlock[]): boolean[] {
+  const keep = blocks.map(() => true);
+  let previousKept: ExportBlock | null = null;
+
+  blocks.forEach((block, index) => {
+    if (block.kind === "pageBreak" && (previousKept === null || previousKept.kind === "pageBreak")) {
+      keep[index] = false;
+    } else {
+      previousKept = block;
+    }
+  });
+
+  for (let index = blocks.length - 1; index >= 0; index--) {
+    if (!keep[index]) {
+      continue;
+    }
+
+    if (blocks[index].kind !== "pageBreak") {
+      break;
+    }
+
+    keep[index] = false;
+  }
+
+  return keep;
 }

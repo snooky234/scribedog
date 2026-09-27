@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { isValidHexColor } from "@/lib/color";
 import { findPresetTheme, PRESET_THEMES } from "@/lib/theme/presets";
 import { OUTLINE_DEPTH_MAX, OUTLINE_DEPTH_MIN } from "@/lib/editor/documentOutline";
+import {
+  PAGE_MARGIN_IDS,
+  PAGE_MARGIN_LABEL_KEYS,
+  PAGE_SIZE_IDS,
+  PAGE_SIZE_LABEL_KEYS,
+  type PageMarginId,
+  type PageSizeId
+} from "@/lib/pageSetup";
 import { DEFAULT_ACCENT_COLOR, useAccentColorStore } from "@/store/useAccentColorStore";
 import { useEditorSettingsStore, type TableWidth } from "@/store/useEditorSettingsStore";
 import {
@@ -24,7 +32,8 @@ type AppearanceSettingsProps = {
 };
 
 /**
- * Theme, paper surface, accent colour and outline depth. All of them apply
+ * Theme, paper surface, accent colour, table width, page setup and outline
+ * depth. All of them apply
  * through their own stores the moment they change. A custom theme brings its
  * own accent colour; while one is active, the accent field edits that
  * theme's accent instead of the app-wide setting. A shipped template is
@@ -46,6 +55,10 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
   const setPaperSurface = useEditorSettingsStore((state) => state.setPaperSurface);
   const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
   const setTableWidth = useEditorSettingsStore((state) => state.setTableWidth);
+  const pageSize = useEditorSettingsStore((state) => state.pageSize);
+  const setPageSize = useEditorSettingsStore((state) => state.setPageSize);
+  const pageMargins = useEditorSettingsStore((state) => state.pageMargins);
+  const setPageMargins = useEditorSettingsStore((state) => state.setPageMargins);
   const outlineMaxDepth = useEditorSettingsStore((state) => state.outlineMaxDepth);
   const setOutlineMaxDepth = useEditorSettingsStore((state) => state.setOutlineMaxDepth);
   const settingAccentColor = useAccentColorStore((state) => state.accentColor);
@@ -181,6 +194,30 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
         <select value={tableWidth} onChange={(event) => setTableWidth(event.target.value as TableWidth)}>
           <option value="full">{t("settingsDialog.tableWidthFull")}</option>
           <option value="content">{t("settingsDialog.tableWidthContent")}</option>
+        </select>
+      </SettingRow>
+
+      <SettingRow
+        label={t("settingsDialog.pageSize")}
+        hint={t("settingsDialog.pageSizeShort")}
+        info={t("settingsDialog.pageSizeHint")}
+      >
+        <select value={pageSize} onChange={(event) => setPageSize(event.target.value as PageSizeId)}>
+          {PAGE_SIZE_IDS.map((size) => (
+            <option key={size} value={size}>
+              {t(PAGE_SIZE_LABEL_KEYS[size])}
+            </option>
+          ))}
+        </select>
+      </SettingRow>
+
+      <SettingRow label={t("settingsDialog.pageMargins")} hint={t("settingsDialog.pageMarginsShort")}>
+        <select value={pageMargins} onChange={(event) => setPageMargins(event.target.value as PageMarginId)}>
+          {PAGE_MARGIN_IDS.map((margins) => (
+            <option key={margins} value={margins}>
+              {t(PAGE_MARGIN_LABEL_KEYS[margins])}
+            </option>
+          ))}
         </select>
       </SettingRow>
 

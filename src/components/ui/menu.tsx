@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react"
 import { Check } from "lucide-react"
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 
@@ -132,10 +133,15 @@ function MenuCheckboxItemIndicator({
   children,
   ...props
 }: MenuPrimitive.CheckboxItemIndicator.Props) {
+  // Drawn first in the row (order-first), in the column where the other
+  // items of the menu have their icon: the state reads before the text, the
+  // texts line up, and the shortcuts keep the right edge. Kept in place while
+  // unchecked, so the text does not move when the item is ticked.
   return (
     <MenuPrimitive.CheckboxItemIndicator
       data-slot="menu-checkbox-item-indicator"
-      className={cn("ml-auto flex size-4 items-center justify-center", className)}
+      keepMounted
+      className={cn("order-first flex size-4 shrink-0 items-center justify-center data-unchecked:invisible", className)}
       {...props}
     >
       {children ?? <Check className="size-4" />}
@@ -143,8 +149,20 @@ function MenuCheckboxItemIndicator({
   )
 }
 
+/** The key combination of a menu item, on its right edge. */
+function MenuShortcut({ className, ...props }: ComponentProps<"kbd">) {
+  return (
+    <kbd
+      data-slot="menu-shortcut"
+      className={cn("ml-auto pl-6 font-sans text-xs tracking-wide opacity-60", className)}
+      {...props}
+    />
+  )
+}
+
 export {
   Menu,
+  MenuShortcut,
   MenuTrigger,
   MenuPortal,
   MenuPositioner,

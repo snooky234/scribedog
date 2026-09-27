@@ -79,6 +79,8 @@ type DocumentPanelProps = {
   onAiPendingChange: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
   onZenModeRequest: () => void;
+  /** Zen mode hides the editor's page lines. */
+  isZenMode: boolean;
   onVersionDiffRequest: (version: FileVersion) => void;
   onVersionRestoreRequest: (version: FileVersion) => void;
 
@@ -179,6 +181,7 @@ export function DocumentPanel({
   onAiPendingChange,
   onAiSettingsRequest,
   onZenModeRequest,
+  isZenMode,
   onVersionDiffRequest,
   onVersionRestoreRequest,
   onOpenSidebar,
@@ -546,6 +549,7 @@ export function DocumentPanel({
                 onAiPendingChange={onAiPendingChange}
                 onAiSettingsRequest={onAiSettingsRequest}
                 onZenModeRequest={onZenModeRequest}
+                isZenMode={isZenMode}
                 toolbarContainer={layout === "desktop" ? toolbarSlot : null}
               />
             )}

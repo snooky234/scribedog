@@ -17,6 +17,7 @@
 //     subsetting happens — see loadStyles below.
 
 import type { HeadingNumberingSettings } from "@/lib/editor/headingNumbers";
+import type { PageMarginId, PageSizeId } from "@/lib/pageSetup";
 
 export const APP_FONT_IDS = [
   "system",
@@ -43,6 +44,13 @@ export type AppFontDefinition = {
   /** Full CSS stack for the editor, HTML and EPUB output. */
   cssStack: string;
   /**
+   * The face's own line height, (ascent - descent) / unitsPerEm, of the file
+   * the PDF embeds (Roboto for the system default). pdfmake multiplies its
+   * lineHeight with it, so the print needs it to reproduce the PDF's spacing.
+   * exportFonts.test.ts checks every value against the font files.
+   */
+  pdfLineHeight: number;
+  /**
    * Injects the @font-face rules for on-screen rendering. Loaded on demand so
    * six unused families cost nothing at startup; `null` for the system font,
    * whose face is already part of the app shell.
@@ -61,6 +69,7 @@ export const APP_FONTS: Record<AppFontId, AppFontDefinition> = {
     category: "sans",
     familyName: "Geist",
     cssStack: `"Geist Variable", ${SANS_FALLBACK}`,
+    pdfLineHeight: 1.1719,
     loadStyles: null
   },
   lato: {
@@ -69,6 +78,7 @@ export const APP_FONTS: Record<AppFontId, AppFontDefinition> = {
     category: "sans",
     familyName: "Lato",
     cssStack: `"Lato", ${SANS_FALLBACK}`,
+    pdfLineHeight: 1.2,
     loadStyles: () =>
       Promise.all([
         import("@fontsource/lato/latin-400.css"),
@@ -83,6 +93,7 @@ export const APP_FONTS: Record<AppFontId, AppFontDefinition> = {
     category: "sans",
     familyName: "Inter",
     cssStack: `"Inter", ${SANS_FALLBACK}`,
+    pdfLineHeight: 1.21,
     loadStyles: () =>
       Promise.all([
         import("@fontsource/inter/latin-400.css"),
@@ -97,6 +108,7 @@ export const APP_FONTS: Record<AppFontId, AppFontDefinition> = {
     category: "serif",
     familyName: "EB Garamond",
     cssStack: `"EB Garamond", ${SERIF_FALLBACK}`,
+    pdfLineHeight: 1.305,
     loadStyles: () =>
       Promise.all([
         import("@fontsource/eb-garamond/latin-400.css"),
@@ -111,6 +123,7 @@ export const APP_FONTS: Record<AppFontId, AppFontDefinition> = {
     category: "serif",
     familyName: "Libre Baskerville",
     cssStack: `"Libre Baskerville", ${SERIF_FALLBACK}`,
+    pdfLineHeight: 1.24,
     loadStyles: () =>
       Promise.all([
         import("@fontsource/libre-baskerville/latin-400.css"),
@@ -125,6 +138,7 @@ export const APP_FONTS: Record<AppFontId, AppFontDefinition> = {
     category: "serif",
     familyName: "Merriweather",
     cssStack: `"Merriweather", ${SERIF_FALLBACK}`,
+    pdfLineHeight: 1.257,
     loadStyles: () =>
       Promise.all([
         import("@fontsource/merriweather/latin-400.css"),
@@ -139,6 +153,7 @@ export const APP_FONTS: Record<AppFontId, AppFontDefinition> = {
     category: "mono",
     familyName: "Courier Prime",
     cssStack: `"Courier Prime", ${MONO_FALLBACK}`,
+    pdfLineHeight: 1.123,
     loadStyles: () =>
       Promise.all([
         import("@fontsource/courier-prime/latin-400.css"),
@@ -153,6 +168,7 @@ export const APP_FONTS: Record<AppFontId, AppFontDefinition> = {
     category: "mono",
     familyName: "JetBrains Mono",
     cssStack: `"JetBrains Mono", ${MONO_FALLBACK}`,
+    pdfLineHeight: 1.32,
     loadStyles: () =>
       Promise.all([
         import("@fontsource/jetbrains-mono/latin-400.css"),
@@ -218,6 +234,13 @@ export type DocumentStyle = {
    * the style rather than with the document. Omitted means "full".
    */
   tableWidth?: TableWidth;
+  /**
+   * Paper size and margin preset of every paged output (PDF, print, DOCX,
+   * ODT), from the app-wide page setup (lib/pageSetup.ts). Omitted means A4
+   * with normal margins, the PDF export's page before it was configurable.
+   */
+  pageSize?: PageSizeId;
+  pageMargins?: PageMarginId;
 };
 
 /** @see DocumentStyle.tableWidth */

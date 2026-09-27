@@ -26,6 +26,7 @@ import {
   type DocumentStyle,
   type TableWidth
 } from "@/lib/fonts";
+import { getPageLayout, ptToPx, ptToTwips } from "@/lib/pageSetup";
 
 import type {
   BlockAlign,
@@ -49,9 +50,13 @@ const MUTED_COLOR = "666666";
 // Heading sizes in half-points (docx unit), roughly matching the HTML export.
 const HEADING_SIZES_HALF_PT = [40, 34, 28, 24, 22, 21];
 
-// Word page content width in px at 96dpi (A4 minus 1" margins) — images are
-// scaled down to fit.
-const MAX_IMAGE_WIDTH_PX = 600;
+// What the block renderer needs from the document style, handed down through
+// nested quotes and lists.
+type DocxLayout = {
+  tableWidth: TableWidth;
+  // Width between the page margins in px at 96dpi; images are scaled down to it.
+  maxImageWidthPx: number;
+};
 
 const HEADING_BY_LEVEL = [
   HeadingLevel.HEADING_1,
@@ -65,6 +70,7 @@ const HEADING_BY_LEVEL = [
 function runsToDocxChildren(
   runs: InlineRun[],
   images: ExportImageMap,
+  maxImageWidthPx: number,
   forceBold = false
 ): ParagraphChild[] {
   const children: ParagraphChild[] = [];
@@ -79,7 +85,7 @@ function runsToDocxChildren(
       const asset = images.get(run.src);
 
       if (asset) {
-        const size = computeExportImageSize(asset, run.width, MAX_IMAGE_WIDTH_PX);
+        const size = computeExportImageSize(asset, run.width, maxImageWidthPx);
         children.push(
           new ImageRun({
             type: "png",
@@ -139,9 +145,9 @@ type ListContext = {
 function blocksToDocxElements(
   blocks: ExportBlock[],
   images: ExportImageMap,
-  listContext: ListContext | null = null,
-  inQuote = false,
-  tableWidth: TableWidth = "full"
+  listContext: ListContext | null,
+  inQuote: boolean,
+  layout: DocxLayout
 ): Array<Paragraph | Table> {
   const elements: Array<Paragraph | Table> = [];
 
@@ -171,7 +177,7 @@ function blocksToDocxElements(
           new Paragraph({
             heading: HEADING_BY_LEVEL[level - 1],
             alignment: docxAlignment(block.align),
-            children: runsToDocxChildren(block.runs, images)
+            children: runsToDocxChildren(block.runs, images, layout.maxImageWidthPx)
           })
         );
         break;
@@ -182,7 +188,7 @@ function blocksToDocxElements(
             ...quoteOptions(),
             ...listParagraphOptions(),
             alignment: docxAlignment(block.align),
-            children: runsToDocxChildren(block.runs, images)
+            children: runsToDocxChildren(block.runs, images, layout.maxImageWidthPx)
           })
         );
         break;
@@ -207,7 +213,7 @@ function blocksToDocxElements(
         break;
       }
       case "blockquote":
-        elements.push(...blocksToDocxElements(block.children, images, listContext, true, tableWidth));
+        elements.push(...blocksToDocxElements(block.children, images, listContext, true, layout));
         break;
       case "list": {
         for (const item of block.items) {
@@ -220,7 +226,7 @@ function blocksToDocxElements(
                 indent: { left: 360 * ((listContext?.level ?? 0) + 1) },
                 children: [
                   new TextRun({ text: item.checked ? "☑ " : "☐ " }),
-                  ...runsToDocxChildren(firstRuns, images)
+                  ...runsToDocxChildren(firstRuns, images, layout.maxImageWidthPx)
                 ]
               })
             );
@@ -232,7 +238,7 @@ function blocksToDocxElements(
                 images,
                 { ordered: false, level: Math.min((listContext?.level ?? -1) + 1, 8) },
                 false,
-                tableWidth
+                layout
               )
             );
             continue;
@@ -243,10 +249,10 @@ function blocksToDocxElements(
 
           if (first?.kind === "paragraph") {
             elements.push(
-              ...blocksToDocxElements([first], images, { ordered: block.ordered, level }, false, tableWidth)
+              ...blocksToDocxElements([first], images, { ordered: block.ordered, level }, false, layout)
             );
             elements.push(
-              ...blocksToDocxElements(rest, images, { ordered: block.ordered, level }, false, tableWidth)
+              ...blocksToDocxElements(rest, images, { ordered: block.ordered, level }, false, layout)
             );
           } else {
             elements.push(
@@ -255,7 +261,7 @@ function blocksToDocxElements(
                 images,
                 { ordered: block.ordered, level },
                 false,
-                tableWidth
+                layout
               )
             );
           }
@@ -272,13 +278,13 @@ function blocksToDocxElements(
             // AUTO lets Word size the table to its contents; a percentage
             // stretches it across the text width, as the editor setting does.
             width:
-              tableWidth === "content"
+              layout.tableWidth === "content"
                 ? { size: 0, type: WidthType.AUTO }
                 : { size: 100, type: WidthType.PERCENTAGE },
             rows: block.rows.map(
               (row) =>
                 new TableRow({
-                  children: row.map((cell) => modelCellToDocxCell(cell, images))
+                  children: row.map((cell) => modelCellToDocxCell(cell, images, layout.maxImageWidthPx))
                 })
             )
           })
@@ -307,7 +313,7 @@ function blocksToDocxElements(
   return elements;
 }
 
-function modelCellToDocxCell(cell: ModelTableCell, images: ExportImageMap): TableCell {
+function modelCellToDocxCell(cell: ModelTableCell, images: ExportImageMap, maxImageWidthPx: number): TableCell {
   return new TableCell({
     shading: cell.header ? { type: ShadingType.CLEAR, fill: "F0F0F0" } : undefined,
     margins: { top: 60, bottom: 60, left: 100, right: 100 },
@@ -319,7 +325,7 @@ function modelCellToDocxCell(cell: ModelTableCell, images: ExportImageMap): Tabl
             : cell.align === "right"
               ? AlignmentType.RIGHT
               : AlignmentType.LEFT,
-        children: runsToDocxChildren(cell.runs, images, cell.header)
+        children: runsToDocxChildren(cell.runs, images, maxImageWidthPx, cell.header)
       })
     ]
   });
@@ -335,6 +341,11 @@ export async function renderDocxDocument(
   const scale = getFontScale(style.fontSizePt);
   // docx sizes are in half-points and must stay whole numbers.
   const halfPoints = (value: number) => Math.round(value * scale);
+  const page = getPageLayout(style.pageSize, style.pageMargins);
+  const layout: DocxLayout = {
+    tableWidth: style.tableWidth ?? "full",
+    maxImageWidthPx: Math.floor(ptToPx(page.contentWidthPt))
+  };
 
   const document = new Document({
     title,
@@ -387,7 +398,20 @@ export async function renderDocxDocument(
     },
     sections: [
       {
-        children: blocksToDocxElements(blocks, images, null, false, style.tableWidth ?? "full")
+        // Set explicitly: the library's default is A4 with Word's margins,
+        // whatever the user chose.
+        properties: {
+          page: {
+            size: { width: ptToTwips(page.widthPt), height: ptToTwips(page.heightPt) },
+            margin: {
+              top: ptToTwips(page.margins.top),
+              right: ptToTwips(page.margins.right),
+              bottom: ptToTwips(page.margins.bottom),
+              left: ptToTwips(page.margins.left)
+            }
+          }
+        },
+        children: blocksToDocxElements(blocks, images, null, false, layout)
       }
     ]
   });

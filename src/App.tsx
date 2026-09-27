@@ -1114,6 +1114,7 @@ function App() {
               setIsAiSettingsOpen(true);
             }}
             onZenModeRequest={enterZenMode}
+            isZenMode={isZenMode}
             onVersionDiffRequest={handleVersionDiffRequest}
             onVersionRestoreRequest={(version) => void handleVersionRestore(version)}
             onOpenSidebar={() => setIsSidebarSheetOpen(true)}

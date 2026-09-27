@@ -9,6 +9,7 @@ import {
   type DocumentStyle,
   type TableWidth
 } from "@/lib/fonts";
+import { formatCm, getPageLayout, ptToPx, type PageLayout } from "@/lib/pageSetup";
 
 import type { ExportBlock, InlineRun } from "./markdownModel";
 import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
@@ -93,8 +94,6 @@ function pxToCm(px: number): string {
   return `${((px / 96) * 2.54).toFixed(3)}cm`;
 }
 
-const PAGE_CONTENT_WIDTH_PX = 604; // A4 minus 2cm margins at 96dpi.
-
 type OdtWriterState = {
   images: ExportImageMap;
   // Raw markdown src → picture path inside the archive.
@@ -104,9 +103,15 @@ type OdtWriterState = {
   // Mirrors the editor's table width setting; carried on the state because
   // the table branch sits several levels down in blocksToOdtXml.
   tableWidth: TableWidth;
+  // Width between the page margins in px at 96dpi; images are scaled down to it.
+  contentWidthPx: number;
 };
 
-function textStyleName(run: Extract<InlineRun, { kind: "text" }>): string | null {
+// Every text run gets a style, plain text too ("T_n"), and every style says
+// its weight and slant outright. ONLYOFFICE carries the bold of a span that
+// opens a paragraph over into the paragraph style and from there into every
+// later paragraph of that style; a run that states "normal" itself is immune.
+function textStyleName(run: Extract<InlineRun, { kind: "text" }>): string {
   const parts = [
     run.bold ? "b" : "",
     run.italic ? "i" : "",
@@ -116,7 +121,7 @@ function textStyleName(run: Extract<InlineRun, { kind: "text" }>): string | null
     run.code ? "c" : ""
   ].join("");
 
-  return parts ? `T_${parts}` : null;
+  return `T_${parts || "n"}`;
 }
 
 // Every used flag combination becomes one automatic text style.
@@ -126,11 +131,7 @@ function collectTextStyles(blocks: ExportBlock[]): string[] {
   const visitRuns = (runs: InlineRun[]) => {
     for (const run of runs) {
       if (run.kind === "text") {
-        const name = textStyleName(run);
-
-        if (name) {
-          names.add(name);
-        }
+        names.add(textStyleName(run));
       }
     }
   };
@@ -165,8 +166,8 @@ function collectTextStyles(blocks: ExportBlock[]): string[] {
 function textStyleXml(name: string): string {
   const flags = name.slice(2);
   const properties = [
-    flags.includes("b") ? 'fo:font-weight="bold"' : "",
-    flags.includes("i") ? 'fo:font-style="italic"' : "",
+    `fo:font-weight="${flags.includes("b") ? "bold" : "normal"}"`,
+    `fo:font-style="${flags.includes("i") ? "italic" : "normal"}"`,
     flags.includes("u") ? 'style:text-underline-style="solid" style:text-underline-width="auto"' : "",
     flags.includes("s") ? 'style:text-line-through-style="solid"' : "",
     flags.includes("h") ? 'fo:background-color="#fde68a"' : "",
@@ -194,7 +195,7 @@ function runsToOdtXml(runs: InlineRun[], state: OdtWriterState): string {
       const asset = state.images.get(run.src);
 
       if (picturePath && asset) {
-        const size = computeExportImageSize(asset, run.width, PAGE_CONTENT_WIDTH_PX);
+        const size = computeExportImageSize(asset, run.width, state.contentWidthPx);
         // draw:style-name + draw:name matter: without a graphic style Word's
         // ODT import treats the frame as page-anchored and floats it to the
         // top of the page instead of keeping it at its position in the text.
@@ -211,11 +212,7 @@ function runsToOdtXml(runs: InlineRun[], state: OdtWriterState): string {
     }
 
     let content = encodeOdtText(run.text);
-    const styleName = textStyleName(run);
-
-    if (styleName) {
-      content = `<text:span text:style-name="${styleName}">${content}</text:span>`;
-    }
+    content = `<text:span text:style-name="${textStyleName(run)}">${content}</text:span>`;
 
     if (run.link) {
       content = `<text:a xlink:type="simple" xlink:href="${escapeXml(run.link)}">${content}</text:a>`;
@@ -437,7 +434,23 @@ const fontFaceDecls = (bodyFont: string, genericFamily: string) =>
   '<style:font-face style:name="Consolas" svg:font-family="Consolas" style:font-family-generic="modern" style:font-pitch="fixed"/>' +
   "</office:font-face-decls>";
 
-function buildStylesXml(bodyFont: string, genericFamily: string, scale: number): string {
+// Without a page layout of its own, the document opens in whatever page the
+// office suite on the reading machine defaults to (Letter in the US, A4 with
+// 2cm margins elsewhere), not the one the user set up.
+function pageLayoutXml(page: PageLayout): string {
+  const { top, right, bottom, left } = page.margins;
+
+  return (
+    "<office:automatic-styles>" +
+    '<style:page-layout style:name="PL_page">' +
+    `<style:page-layout-properties fo:page-width="${formatCm(page.widthPt)}" fo:page-height="${formatCm(page.heightPt)}" style:print-orientation="portrait" fo:margin-top="${formatCm(top)}" fo:margin-right="${formatCm(right)}" fo:margin-bottom="${formatCm(bottom)}" fo:margin-left="${formatCm(left)}"/>` +
+    "</style:page-layout>" +
+    "</office:automatic-styles>" +
+    '<office:master-styles><style:master-page style:name="Standard" style:page-layout-name="PL_page"/></office:master-styles>'
+  );
+}
+
+function buildStylesXml(bodyFont: string, genericFamily: string, scale: number, page: PageLayout): string {
   const headingStyles = HEADING_SIZES_PT
     .map(
       (size, index) =>
@@ -457,6 +470,7 @@ function buildStylesXml(bodyFont: string, genericFamily: string, scale: number):
     `<style:style style:name="Standard" style:family="paragraph"><style:text-properties style:font-name="${bodyFont}" fo:font-family="${bodyFont}"/></style:style>` +
     headingStyles +
     "</office:styles>" +
+    pageLayoutXml(page) +
     "</office:document-styles>"
   );
 }
@@ -488,6 +502,7 @@ export function renderOdtDocument(
   const bodyFont = getReferencedFontName(style.fontId);
   const genericFamily = odfGenericFamily(style.fontId);
   const scale = getFontScale(style.fontSizePt);
+  const page = getPageLayout(style.pageSize, style.pageMargins);
   const picturePaths = new Map<string, string>();
   const pictureFiles: Record<string, Uint8Array> = {};
   let pictureIndex = 0;
@@ -503,7 +518,8 @@ export function renderOdtDocument(
     images,
     picturePaths,
     frameIndex: 0,
-    tableWidth: style.tableWidth ?? "full"
+    tableWidth: style.tableWidth ?? "full",
+    contentWidthPx: Math.floor(ptToPx(page.contentWidthPt))
   };
 
   const archive: Zippable = {
@@ -511,7 +527,7 @@ export function renderOdtDocument(
     mimetype: [strToU8(ODT_MIMETYPE), { level: 0 }],
     "META-INF/manifest.xml": strToU8(buildManifestXml(picturePaths.values())),
     "content.xml": strToU8(buildContentXml(blocks, state, bodyFont, genericFamily, scale)),
-    "styles.xml": strToU8(buildStylesXml(bodyFont, genericFamily, scale)),
+    "styles.xml": strToU8(buildStylesXml(bodyFont, genericFamily, scale, page)),
     ...pictureFiles
   };
 

@@ -972,3 +972,135 @@
 .editor-view__surface .callout--danger::before {
   content: "⛔";
 }
+
+/* Manual page break (extensions/pageBreak.ts): a dashed rule with its label
+   in the middle, drawn by the node view. An atom, so it is selected, moved
+   and deleted as a whole. */
+.editor-view__surface .page-break-node {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5em 0;
+  color: rgba(var(--muted-rgb), 0.9);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+  user-select: none;
+  cursor: default;
+}
+
+.editor-view__surface .page-break-node::before,
+.editor-view__surface .page-break-node::after {
+  content: "";
+  flex: 1;
+  border-top: 1px dashed rgba(var(--muted-rgb), 0.6);
+}
+
+.editor-view__surface .page-break-node.ProseMirror-selectednode {
+  outline: 2px solid rgba(var(--accent-rgb), 0.6);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* Page lines ("Show page breaks", lib/editor/pageLines.ts): where the pages
+   of the PDF export and the print end. In the accent colour with the label
+   on the right, so they read as a view of the export rather than as content
+   like the grey manual page break above. Between blocks a line in front of
+   the block; inside a paragraph or code block the line breaks the text at
+   the word or line the new page starts with; over a table row or list item
+   a line on top of it. Only a break inside a block taller than a page, which
+   is not planned, gets the rough marker drawn over the block. */
+.editor-view__surface .page-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.5em 0;
+  color: rgba(var(--accent-rgb), 0.85);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: normal;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: normal;
+  user-select: none;
+  cursor: default;
+}
+
+.editor-view__surface .page-line::before {
+  content: "";
+  flex: 1;
+  border-top: 1px dashed rgba(var(--accent-rgb), 0.5);
+}
+
+.editor-view__surface .page-line--inline {
+  margin: 0.35em 0;
+}
+
+.editor-view__surface tr.page-line-before > td,
+.editor-view__surface tr.page-line-before > th {
+  border-top: 2px dashed rgba(var(--accent-rgb), 0.7);
+}
+
+.editor-view__surface .page-line-label {
+  position: relative;
+}
+
+.editor-view__surface li.page-line-before {
+  margin-top: 1.4em;
+}
+
+.editor-view__surface .page-line-label::after {
+  content: attr(data-page-line);
+  position: absolute;
+  right: 0;
+  color: rgba(var(--accent-rgb), 0.85);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: normal;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.editor-view__surface td.page-line-label::after,
+.editor-view__surface th.page-line-label::after {
+  top: -0.55rem;
+  padding: 0 0.3rem;
+  background: rgb(var(--surface-rgb));
+}
+
+.editor-view__surface li.page-line-label::after {
+  top: -1.1em;
+  left: -1.6em;
+  padding-top: 0;
+  border-top: 1px dashed rgba(var(--accent-rgb), 0.5);
+  text-align: right;
+  line-height: 1.6;
+}
+
+.editor-view__surface .page-line-within {
+  position: relative;
+}
+
+.editor-view__surface .page-line-within::after {
+  content: attr(data-page-line);
+  position: absolute;
+  top: var(--page-line-at, 50%);
+  right: 0;
+  left: 0;
+  padding-top: 2px;
+  border-top: 1px dashed rgba(var(--accent-rgb), 0.5);
+  color: rgba(var(--accent-rgb), 0.85);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: normal;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-align: right;
+  pointer-events: none;
+}

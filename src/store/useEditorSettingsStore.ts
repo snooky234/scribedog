@@ -16,6 +16,13 @@ import {
 // value, and one definition keeps the two from drifting apart.
 export type { TableWidth };
 import { clampOutlineDepth, OUTLINE_DEPTH_MAX } from "@/lib/editor/documentOutline";
+import {
+  defaultPageSizeForLocale,
+  resolvePageMargins,
+  resolvePageSize,
+  type PageMarginId,
+  type PageSizeId
+} from "@/lib/pageSetup";
 import { clampZenFontSizePt } from "@/lib/zenFontZoom";
 import {
   DEFAULT_HEADING_NUMBERING,
@@ -31,6 +38,7 @@ import {
 import { setAutoAdmitWorkingSetProvider, setRestoreWorkingSetProvider } from "@/store/appStore/workingSetSlice";
 
 export const SPELLCHECK_STORAGE_KEY = "scribedog-spellcheck-enabled";
+export const PAGE_LINES_STORAGE_KEY = "scribedog-page-lines-enabled";
 export const REOPEN_LAST_NOTE_STORAGE_KEY = "scribedog-reopen-last-note";
 export const DETAILS_PANEL_STORAGE_KEY = "scribedog-details-panel-visible";
 export const OUTLINE_DEPTH_STORAGE_KEY = "scribedog-outline-max-depth";
@@ -45,6 +53,8 @@ export const FONT_STORAGE_KEY = "scribedog-font-id";
 export const FONT_SIZE_STORAGE_KEY = "scribedog-font-size-pt";
 export const PAPER_SURFACE_STORAGE_KEY = "scribedog-paper-surface";
 export const TABLE_WIDTH_STORAGE_KEY = "scribedog-table-width";
+export const PAGE_SIZE_STORAGE_KEY = "scribedog-page-size";
+export const PAGE_MARGINS_STORAGE_KEY = "scribedog-page-margins";
 export const AUTO_SAVE_STORAGE_KEY = "scribedog-auto-save-enabled";
 export const RESTORE_WORKING_SET_STORAGE_KEY = "scribedog-restore-working-set";
 export const AUTO_ADMIT_WORKING_SET_STORAGE_KEY = "scribedog-auto-admit-working-set";
@@ -136,6 +146,24 @@ function getStoredSpellcheckEnabled(): boolean {
     return window.localStorage.getItem(SPELLCHECK_STORAGE_KEY) === "true";
   } catch {
     return false;
+  }
+}
+
+// Off by default: the layout runs in the background after every pause in
+// typing, which nobody should pay for without asking.
+function getStoredPageLinesEnabled(): boolean {
+  try {
+    return window.localStorage.getItem(PAGE_LINES_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function persistPageLinesEnabled(enabled: boolean): void {
+  try {
+    window.localStorage.setItem(PAGE_LINES_STORAGE_KEY, String(enabled));
+  } catch {
+    // localStorage may be unavailable in some environments.
   }
 }
 
@@ -361,6 +389,47 @@ function persistTableWidth(width: TableWidth): void {
   }
 }
 
+// Until the user picks one, the paper size follows the region of the
+// system language on every start (Letter in the US, A4 in Germany), so it is
+// only written once it was chosen.
+function getStoredPageSize(): PageSizeId {
+  try {
+    const stored = resolvePageSize(window.localStorage.getItem(PAGE_SIZE_STORAGE_KEY));
+
+    if (stored) {
+      return stored;
+    }
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+
+  return defaultPageSizeForLocale(typeof navigator === "undefined" ? undefined : navigator.language);
+}
+
+function persistPageSize(size: PageSizeId): void {
+  try {
+    window.localStorage.setItem(PAGE_SIZE_STORAGE_KEY, size);
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
+function getStoredPageMargins(): PageMarginId {
+  try {
+    return resolvePageMargins(window.localStorage.getItem(PAGE_MARGINS_STORAGE_KEY));
+  } catch {
+    return resolvePageMargins(null);
+  }
+}
+
+function persistPageMargins(margins: PageMarginId): void {
+  try {
+    window.localStorage.setItem(PAGE_MARGINS_STORAGE_KEY, margins);
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
 function getStoredFontId(): AppFontId {
   try {
     return resolveFontId(window.localStorage.getItem(FONT_STORAGE_KEY));
@@ -397,6 +466,13 @@ function persistFontSizePt(sizePt: number): void {
 type EditorSettingsState = {
   spellcheckEnabled: boolean;
   setSpellcheckEnabled: (enabled: boolean) => void;
+  /**
+   * Show where the pages of the PDF export end, as lines in the editor
+   * (components/editor/usePageLines.ts). Display only: the export is the
+   * same either way.
+   */
+  pageLinesEnabled: boolean;
+  setPageLinesEnabled: (enabled: boolean) => void;
   /**
    * Save the open note on its own once typing has paused (see
    * hooks/useAutoSave.ts). App-wide, not per vault: it is a way of working,
@@ -471,6 +547,17 @@ type EditorSettingsState = {
    */
   tableWidth: TableWidth;
   setTableWidth: (width: TableWidth) => void;
+  /**
+   * Paper size of every paged output: PDF, direct print, DOCX and ODT
+   * (lib/pageSetup.ts). App-wide rather than per note, and not overridable in
+   * the export dialog, so the PDF, the print and the page lines agree.
+   * Starts from the region of the system language.
+   */
+  pageSize: PageSizeId;
+  setPageSize: (size: PageSizeId) => void;
+  /** Margin preset (Normal, Narrow, Wide) that goes with pageSize. */
+  pageMargins: PageMarginId;
+  setPageMargins: (margins: PageMarginId) => void;
   /**
    * Folder notes (see lib/folderNotes.ts): clicking a folder's name opens the
    * folder's own note. Controls only what the tree offers — the note files
@@ -555,6 +642,11 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
     persistSpellcheckEnabled(enabled);
     set({ spellcheckEnabled: enabled });
   },
+  pageLinesEnabled: getStoredPageLinesEnabled(),
+  setPageLinesEnabled: (enabled: boolean) => {
+    persistPageLinesEnabled(enabled);
+    set({ pageLinesEnabled: enabled });
+  },
   autoSaveEnabled: getStoredAutoSaveEnabled(),
   setAutoSaveEnabled: (enabled: boolean) => {
     persistAutoSaveEnabled(enabled);
@@ -613,6 +705,16 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
   setTableWidth: (width: TableWidth) => {
     persistTableWidth(width);
     set({ tableWidth: width });
+  },
+  pageSize: getStoredPageSize(),
+  setPageSize: (size: PageSizeId) => {
+    persistPageSize(size);
+    set({ pageSize: size });
+  },
+  pageMargins: getStoredPageMargins(),
+  setPageMargins: (margins: PageMarginId) => {
+    persistPageMargins(margins);
+    set({ pageMargins: margins });
   },
   folderNotesEnabled: false,
   setFolderNotesEnabled: (enabled: boolean) => {

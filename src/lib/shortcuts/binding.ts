@@ -171,7 +171,11 @@ export function couldBeShortcut(event: KeyboardEvent): boolean {
   return event.ctrlKey || event.metaKey || event.altKey;
 }
 
-export function formatBinding(t: TFunction, binding: ShortcutBinding): string {
+export function formatBinding(t: TFunction, binding: ShortcutBinding | null): string {
+  if (!binding) {
+    return t("shortcutsDialog.unassigned");
+  }
+
   const parts: string[] = [];
 
   if (binding.ctrl) {

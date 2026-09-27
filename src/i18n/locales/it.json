@@ -112,6 +112,7 @@
     "descriptionManuscript": "Unisce tutti i capitoli in un unico libro, nell'ordine mostrato dalla barra laterale.",
     "mergeIntoOneFile": "Unisci in un solo file",
     "mergeHint": "Tutte le note una dopo l'altra in un unico documento, invece di un file per nota.",
+    "pageSetupInfo": "Pagina: {{size}}, margini: {{margins}}. Si cambia in Impostazioni › Aspetto.",
     "descriptionFileDownload": "Scegli un formato e un nome file. Il browser salva il file.",
     "descriptionFolderDownload": "Tutte le note di questa cartella vengono esportate ricorsivamente in un archivio ZIP; la struttura delle cartelle viene mantenuta.",
     "descriptionMultipleDownload": "Tutte le note selezionate vengono esportate in un archivio ZIP; la struttura delle cartelle selezionate viene mantenuta.",
@@ -208,6 +209,18 @@
     "tableWidthHint": "La larghezza delle colonne segue sempre il contenuto, quindi una colonna breve resta stretta. Questa impostazione decide solo se la tabella arriva al margine del testo o se è larga soltanto quanto serve al suo contenuto. Una tabella più larga della pagina si può scorrere lateralmente. Le colonne di cui hai regolato tu la larghezza la mantengono.",
     "tableWidthFull": "Larghezza piena",
     "tableWidthContent": "Adatta al contenuto",
+    "pageSize": "Formato carta",
+    "pageSizeShort": "Dimensione della pagina per PDF, stampa, DOCX e ODT.",
+    "pageSizeHint": "Vale per tutte le uscite con pagine: esportazione PDF, stampa, DOCX e ODT. Finché non ne scegli uno segue la regione del sistema: US Letter per esempio negli Stati Uniti, in Canada e in Messico, A4 altrove. Quando stampi, scegli la stessa carta nella finestra di stampa.",
+    "pageSizeA4": "A4 (21 × 29,7 cm)",
+    "pageSizeLetter": "US Letter (8,5 × 11 in)",
+    "pageSizeA5": "A5 (14,8 × 21 cm)",
+    "pageSizeLegal": "US Legal (8,5 × 14 in)",
+    "pageMargins": "Margini",
+    "pageMarginsShort": "Spazio tra il testo e il bordo del foglio.",
+    "pageMarginsNormal": "Normali (2,54 cm)",
+    "pageMarginsNarrow": "Stretti (1,27 cm)",
+    "pageMarginsWide": "Larghi (3,18 cm a sinistra e a destra)",
     "outlineDepth": "Profondità della struttura nel pannello dei dettagli",
     "outlineDepthShort": "Quali livelli di intestazione elenca la struttura nel pannello dei dettagli.",
     "folderNotes": "Note di cartella",
@@ -620,6 +633,7 @@
       "insertFileLink": "Collega un file (elenco al cursore)",
       "aiCheckDialog": "Controlla ortografia/grammatica del testo selezionato o dell'intero documento",
       "toggleSpellcheck": "Attiva/disattiva il controllo ortografico (sottolineatura rossa)",
+      "togglePageLines": "Mostra o nascondi le interruzioni di pagina",
       "bold": "Grassetto",
       "italic": "Corsivo",
       "underline": "Sottolineato",
@@ -641,6 +655,7 @@
       "blockquote": "Citazione",
       "inlineCode": "Codice in linea",
       "codeBlock": "Blocco di codice",
+      "insertPageBreak": "Inserisci interruzione di pagina",
       "copy": "Copia",
       "paste": "Incolla",
       "undo": "Annulla",
@@ -670,7 +685,8 @@
       "ai": "IA",
       "format": "Formattazione",
       "fixed": "Scorciatoie fisse"
-    }
+    },
+    "unassigned": "Non assegnato"
   },
   "sidebar": {
     "filesLabel": "File Markdown",
@@ -798,6 +814,7 @@
     "calloutWarning": "Avviso",
     "calloutDanger": "Pericolo",
     "calloutRemove": "Rimuovi banner informativo",
+    "pageBreak": "Inserisci interruzione di pagina",
     "aiModel": "Modello IA",
     "aiModelPlaceholder": "Scegli modello…",
     "aiOpenSettings": "Impostazioni IA…",
@@ -813,6 +830,7 @@
     "autoSaveToggle": "Salvataggio automatico",
     "autoSaveToggleTitle": "Salva la nota da solo appena smetti di scrivere per un attimo",
     "spellcheckToggle": "Controllo ortografico (sottolineatura rossa)",
+    "pageLinesToggle": "Mostra interruzioni di pagina (PDF, {{size}})",
     "printButton": "Stampa",
     "downloadMarkdown": "Scarica come Markdown",
     "spellcheckDictionaryMissing": "Nessun dizionario ortografico trovato per \"{{code}}\". Installa un dizionario Hunspell (ad es. hunspell-{{code}}) tramite il gestore pacchetti."
@@ -954,7 +972,11 @@
     "stagedPreviewReadOnly": "Finché la proposta è aperta, il documento è in sola lettura.",
     "stagedPreviewMissing": "Non più trovate e saltate: {{count}}",
     "stagedPreviewAccept": "Applica",
-    "stagedPreviewDiscard": "Scarta"
+    "stagedPreviewDiscard": "Scarta",
+    "pageBreak": "Interruzione di pagina",
+    "pageLine": "Pagina {{page}}",
+    "pageLineApprox": "ca. pagina {{pages}}",
+    "pageLineHint": "Qui finiscono le pagine nell'esportazione PDF e in stampa. Solo un ridimensionamento nella finestra di stampa le sposta."
   },
   "editorContextMenu": {
     "aiEdit": "Riscrivi con l’IA",

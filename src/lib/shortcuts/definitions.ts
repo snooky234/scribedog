@@ -18,6 +18,7 @@ export type ShortcutActionId =
   | "findReplace"
   | "zenMode"
   | "toggleSpellcheck"
+  | "togglePageLines"
   | "zoomIn"
   | "zoomOut"
   | "zoomReset"
@@ -45,6 +46,7 @@ export type ShortcutActionId =
   | "blockquote"
   | "inlineCode"
   | "codeBlock"
+  | "insertPageBreak"
   | "heading1"
   | "heading2"
   | "heading3"
@@ -61,7 +63,8 @@ export type ShortcutDefinition = {
   scope: ShortcutScope;
   category: ShortcutCategory;
   descriptionKey: string;
-  defaultBinding: ShortcutBinding;
+  /** null: no combo out of the box; the user can assign one. */
+  defaultBinding: ShortcutBinding | null;
   /**
    * Extra combos accepted *only* while the action still uses its default —
    * they exist so the stock bindings keep working across keyboard layouts
@@ -144,6 +147,13 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     category: "app",
     descriptionKey: "shortcutsDialog.items.toggleSpellcheck",
     defaultBinding: letter({ ctrl: true, alt: true, shift: true }, "X")
+  },
+  {
+    id: "togglePageLines",
+    scope: "global",
+    category: "app",
+    descriptionKey: "shortcutsDialog.items.togglePageLines",
+    defaultBinding: null
   },
   {
     id: "zoomIn",
@@ -338,6 +348,16 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     category: "format",
     descriptionKey: "shortcutsDialog.items.codeBlock",
     defaultBinding: letter(CTRL, "K")
+  },
+  {
+    id: "insertPageBreak",
+    scope: "editor",
+    category: "format",
+    descriptionKey: "shortcutsDialog.items.insertPageBreak",
+    // The page break key of Word, LibreOffice and Google Docs. TipTap's own
+    // Mod-Enter (a hard line break) gives way; Shift+Enter still makes one.
+    // The key "enter" also matches the numpad's Enter.
+    defaultBinding: combo(CTRL, "Enter", "enter", "Enter")
   },
   {
     id: "heading1",

@@ -16,7 +16,7 @@ import {
   type ManuscriptOptions,
   type ManuscriptSource
 } from "./manuscript";
-import { parseMarkdownToBlocks, type ExportBlock } from "./markdownModel";
+import { normalizePageBreaks, parseMarkdownToBlocks, type ExportBlock } from "./markdownModel";
 import { addArchiveEntry, buildZipArchive, createArchive, mimeTypeFor } from "./zipArchive";
 
 /** Formats available when every note becomes its own file. */
@@ -133,7 +133,9 @@ async function renderBlocksAs(
 ): Promise<RenderedExport> {
   // Numbered once here, so every format below — and a merged manuscript,
   // whose chapters share one sequence — gets the same numbers as the editor.
-  const blocks = numberExportBlocks(sourceBlocks, style.headingNumbering);
+  // Page breaks are tidied on the final list, where a manuscript's chapter
+  // breaks and the notes' own breaks meet.
+  const blocks = numberExportBlocks(normalizePageBreaks(sourceBlocks), style.headingNumbering);
 
   switch (format) {
     case "html": {
@@ -695,8 +697,10 @@ export async function exportMergedNotes(input: MergedExportInput): Promise<Expor
           const { renderEpubDocument } = await import("./epubExport");
           // EPUB renders chapter by chapter, so the numbering runs over all of
           // them at once and hands each chapter its own numbered slice back.
+          // Each chapter is its own XHTML file, so a break at a chapter's
+          // start or end would only be an empty page in the reader.
           const chapterBlocks = numberExportBlockLists(
-            manuscript.chapters.map((chapter) => chapter.blocks),
+            manuscript.chapters.map((chapter) => normalizePageBreaks(chapter.blocks)),
             style.headingNumbering
           );
           const numberedManuscript: CompiledManuscript = {

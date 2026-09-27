@@ -7,7 +7,8 @@ import {
 } from "@/lib/shortcuts/definitions";
 import type { ShortcutOverrides } from "@/lib/shortcuts/storage";
 
-export function resolveBinding(overrides: ShortcutOverrides, id: ShortcutActionId): ShortcutBinding {
+/** The combo that triggers `id`, or null for an action without one. */
+export function resolveBinding(overrides: ShortcutOverrides, id: ShortcutActionId): ShortcutBinding | null {
   const override = overrides[id];
 
   if (override) {
@@ -27,7 +28,9 @@ export function isCustomBinding(overrides: ShortcutOverrides, id: ShortcutAction
   const override = overrides[id];
   const definition = SHORTCUT_DEFINITIONS_BY_ID.get(id);
 
-  return Boolean(override && definition && !bindingsEqual(override, definition.defaultBinding));
+  return Boolean(
+    override && definition && (!definition.defaultBinding || !bindingsEqual(override, definition.defaultBinding))
+  );
 }
 
 function matchesAction(
@@ -108,7 +111,9 @@ export function findConflict(
       continue;
     }
 
-    if (bindingsConflict(resolveBinding(overrides, definition.id), binding)) {
+    const existing = resolveBinding(overrides, definition.id);
+
+    if (existing && bindingsConflict(existing, binding)) {
       return definition.id;
     }
   }

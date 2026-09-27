@@ -1,7 +1,8 @@
 // fontkit ships no type declarations and is only reached from
 // exportFonts.test.ts, which uses it as pdfmake's font engine to prove every
-// catalog face can actually be subset. Declared narrowly — just the surface
-// that test touches — rather than pulling in a full ambient typing.
+// catalog face can actually be subset and to read the metrics the print
+// copies. Declared narrowly (just the surface that test touches) rather than
+// pulling in a full ambient typing.
 declare module "fontkit" {
   export type FontkitGlyph = { id: number };
 
@@ -12,6 +13,9 @@ declare module "fontkit" {
 
   export type FontkitFont = {
     postscriptName: string;
+    unitsPerEm: number;
+    ascent: number;
+    descent: number;
     layout: (text: string) => { glyphs: FontkitGlyph[] };
     createSubset: () => FontkitSubset;
   };

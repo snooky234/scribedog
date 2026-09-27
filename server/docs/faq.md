@@ -36,6 +36,14 @@ Delete `.scribedog/server/auth.json`, set `SCRIBEDOG_INIT_PASSWORD` and
 restart. Notes are untouched; stored AI API keys have to be entered again;
 desktop apps sign in again. See [Security](security.md).
 
+**Someone forgot their password on a multi-instance setup.**
+Each person is a separate container with a separate data folder, so this
+only touches that one instance. Delete `auth.json` in *that* person's data
+folder (e.g. `anna-data/.scribedog/server/auth.json`, not `bob-data/`), set
+their `PERSON<N>_INIT_PASSWORD` in `.env`, and restart only their service
+(`docker compose up -d scribedog-1`). Everyone else's container, password
+and sessions are untouched.
+
 **Why am I locked out after a few wrong tries?**
 Brute-force protection: a minute after five failures, then five, then
 fifteen. Wait, or fix the password. The numbers are configurable.
@@ -170,6 +178,21 @@ ZIP (Markdown files)** gives you the folder as it is on the server: notes,
 images and subfolders, without the `.scribedog` metadata.
 The rendering happens in the browser, so a very large folder export takes a
 moment; the Markdown ZIP comes straight from the server.
+
+**Where do I set the paper size and the margins?**
+In Settings › Appearance. Paper size (A4, US Letter, A5, US Legal) and
+margins (Normal, Narrow, Wide) apply to the PDF, DOCX and ODT export and to
+printing. Like the other appearance settings they are kept in the browser,
+so every device starts from the region of its own language setting (US
+Letter in the US, Canada and Mexico, A4 elsewhere) until you pick one there.
+A manual page break goes in with the toolbar button or Ctrl+Enter and is
+saved in the note as `<div style="page-break-after: always;"></div>`, the
+line Typora and browser printing understand too. **Show page breaks** in the
+editor's ⋮ menu draws where the pages end, updated after a pause in typing.
+The PDF export and printing both break exactly there: the pages are planned
+once and every page keeps a line free at the bottom, so the browser's print
+fits too. Scaling in the print dialog ("Fit to page", 90 %) is the one thing
+that still moves them.
 
 **Can I import files in the browser?**
 Not yet; the import runs in the desktop app, also with a server vault. In

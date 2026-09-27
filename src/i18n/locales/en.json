@@ -112,6 +112,7 @@
     "descriptionManuscript": "Compiles every chapter into one book, in the order the sidebar shows them.",
     "mergeIntoOneFile": "Merge into one file",
     "mergeHint": "All notes one after another in a single document instead of one file per note.",
+    "pageSetupInfo": "Page: {{size}}, margins: {{margins}}. Change it in Settings › Appearance.",
     "descriptionFileDownload": "Choose a format and file name. Your browser saves the file.",
     "descriptionFolderDownload": "All notes in this folder are exported recursively into a ZIP archive; the folder structure is preserved.",
     "descriptionMultipleDownload": "All selected notes are exported into a ZIP archive; folder structure within selected folders is preserved.",
@@ -208,6 +209,18 @@
     "tableWidthHint": "Column widths always follow the content, so a short column stays narrow. This setting only decides whether the table reaches the text margin or is just as wide as its content needs. A table wider than the page can be scrolled sideways. Columns whose width you dragged yourself keep it.",
     "tableWidthFull": "Full width",
     "tableWidthContent": "Fit to content",
+    "pageSize": "Paper size",
+    "pageSizeShort": "Page size for PDF, print, DOCX and ODT.",
+    "pageSizeHint": "Applies to every output with pages: PDF export, printing, DOCX and ODT. Until you choose one, it follows your system's region, US Letter in the US, Canada and Mexico for example, A4 elsewhere. When printing, pick the same paper in the print dialog.",
+    "pageSizeA4": "A4 (210 × 297 mm)",
+    "pageSizeLetter": "US Letter (8.5 × 11 in)",
+    "pageSizeA5": "A5 (148 × 210 mm)",
+    "pageSizeLegal": "US Legal (8.5 × 14 in)",
+    "pageMargins": "Page margins",
+    "pageMarginsShort": "Space between the text and the edge of the paper.",
+    "pageMarginsNormal": "Normal (1 in / 2.54 cm)",
+    "pageMarginsNarrow": "Narrow (0.5 in / 1.27 cm)",
+    "pageMarginsWide": "Wide (1.25 in / 3.18 cm left and right)",
     "outlineDepth": "Outline depth in the details panel",
     "outlineDepthShort": "Which heading levels the outline in the details panel lists.",
     "folderNotes": "Folder notes",
@@ -620,6 +633,7 @@
       "insertFileLink": "Link a file (picker at the cursor)",
       "aiCheckDialog": "Check selected text or the whole document for spelling/grammar",
       "toggleSpellcheck": "Toggle spellcheck (red underlines) on/off",
+      "togglePageLines": "Toggle page breaks on/off",
       "bold": "Bold",
       "italic": "Italic",
       "underline": "Underline",
@@ -641,6 +655,7 @@
       "blockquote": "Blockquote",
       "inlineCode": "Inline code",
       "codeBlock": "Code block",
+      "insertPageBreak": "Insert page break",
       "copy": "Copy",
       "paste": "Paste",
       "undo": "Undo",
@@ -670,7 +685,8 @@
       "ai": "AI",
       "format": "Formatting",
       "fixed": "Fixed shortcuts"
-    }
+    },
+    "unassigned": "Not assigned"
   },
   "sidebar": {
     "filesLabel": "Markdown files",
@@ -798,6 +814,7 @@
     "calloutWarning": "Warning",
     "calloutDanger": "Danger",
     "calloutRemove": "Remove hint banner",
+    "pageBreak": "Insert page break",
     "aiModel": "AI model",
     "aiModelPlaceholder": "Choose model…",
     "aiOpenSettings": "AI settings…",
@@ -813,6 +830,7 @@
     "autoSaveToggle": "Auto-save",
     "autoSaveToggleTitle": "Saves the note on its own once you pause typing",
     "spellcheckToggle": "Spell check (red underline)",
+    "pageLinesToggle": "Show page breaks (PDF, {{size}})",
     "printButton": "Print",
     "downloadMarkdown": "Download as Markdown",
     "spellcheckDictionaryMissing": "No spell-check dictionary found for \"{{code}}\". Install a Hunspell dictionary (e.g. hunspell-{{code}}) via your package manager."
@@ -954,7 +972,11 @@
     "stagedPreviewReadOnly": "While the proposal is open, the document is read-only.",
     "stagedPreviewMissing": "No longer found and skipped: {{count}}",
     "stagedPreviewAccept": "Apply",
-    "stagedPreviewDiscard": "Discard"
+    "stagedPreviewDiscard": "Discard",
+    "pageBreak": "Page break",
+    "pageLine": "Page {{page}}",
+    "pageLineApprox": "approx. page {{pages}}",
+    "pageLineHint": "This is where the pages end in the PDF export and when printing. Only scaling in the print dialog moves them."
   },
   "editorContextMenu": {
     "aiEdit": "Rewrite with AI",

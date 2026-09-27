@@ -10,6 +10,7 @@ import { CodeBlockLinks } from "@/lib/editor/codeBlockLinks";
 import { HeadingNumbering } from "@/lib/editor/headingNumbering";
 import { InactiveSelection } from "@/lib/inactiveSelection";
 import { OutlineHighlight } from "@/lib/editor/outlineHighlight";
+import { PageLines } from "@/lib/editor/pageLines";
 import { TableGrips } from "@/lib/editor/tableGrips";
 import { SearchHighlight } from "@/lib/searchHighlight";
 import { VoiceInsertWidget } from "@/lib/voiceInsertWidget";
@@ -19,6 +20,7 @@ import { CodeBlock } from "./codeBlock";
 import { Highlight } from "./highlight";
 import { EditorImage } from "./image";
 import { ListBackspace } from "./listBackspace";
+import { PageBreak } from "./pageBreak";
 import { HardBreak, Table, TableCell, TableHeader, TableRow } from "./table";
 import { TaskItem, TaskList, TaskListMarkdown } from "./taskList";
 import { Text } from "./text";
@@ -50,6 +52,7 @@ function buildContentExtensions(): Extensions {
     ListBackspace,
     HardBreak,
     Callout,
+    PageBreak,
     TaskList,
     TaskItem.configure({ nested: true }),
     TaskListMarkdown,
@@ -80,7 +83,7 @@ function buildContentExtensions(): Extensions {
 
 // The complete extension set of the editor. The widgets at the end (AI
 // stream/diff/suggestion, voice insert, search highlight, code block links,
-// table grips, inactive selection) are decoration-only and don't affect serialization. EditorImage lives here
+// table grips, inactive selection, page lines) are decoration-only and don't affect serialization. EditorImage lives here
 // rather than in the content set: its NodeView resolves vault-relative paths
 // into blob URLs, which only makes sense for a document that is actually open.
 export function buildEditorExtensions(): Extensions {
@@ -96,7 +99,8 @@ export function buildEditorExtensions(): Extensions {
     OutlineHighlight,
     HeadingNumbering,
     TableGrips,
-    InactiveSelection
+    InactiveSelection,
+    PageLines
   ];
 }
 

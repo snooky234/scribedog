@@ -16,6 +16,15 @@ let diagramCounter = 0;
 
 type RenderSvg = (source: string) => Promise<string>;
 
+type RenderedDiagram = { asset: ExportImageAsset; cssWidth: number };
+
+/**
+ * Rendered diagrams by their source, for a caller that embeds the same
+ * document again and again (the editor's page lines). null records a
+ * diagram that does not render.
+ */
+export type DiagramCache = Map<string, RenderedDiagram | null>;
+
 async function defaultRenderSvg(source: string): Promise<string> {
   const { renderMermaidSvg } = await import("@/lib/diagrams/mermaidRenderer");
   return renderMermaidSvg(source, "export");
@@ -45,7 +54,7 @@ export function withIntrinsicSize(svg: string): { svg: string; width: number; he
   return { svg: new XMLSerializer().serializeToString(root), width, height };
 }
 
-async function diagramAsset(svg: string): Promise<{ asset: ExportImageAsset; cssWidth: number } | null> {
+async function diagramAsset(svg: string): Promise<RenderedDiagram | null> {
   const sized = withIntrinsicSize(svg);
 
   if (!sized) {
@@ -75,8 +84,28 @@ async function diagramAsset(svg: string): Promise<{ asset: ExportImageAsset; css
 export async function embedDiagrams(
   blocks: ExportBlock[],
   images: ExportImageMap,
-  renderSvg: RenderSvg = defaultRenderSvg
+  renderSvg: RenderSvg = defaultRenderSvg,
+  cache?: DiagramCache
 ): Promise<ExportBlock[]> {
+  const render = async (source: string): Promise<RenderedDiagram | null> => {
+    const cached = cache?.get(source);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    let rendered: RenderedDiagram | null = null;
+
+    try {
+      rendered = await diagramAsset(await renderSvg(source));
+    } catch {
+      rendered = null;
+    }
+
+    cache?.set(source, rendered);
+    return rendered;
+  };
+
   const convert = async (list: ExportBlock[]): Promise<ExportBlock[]> => {
     const result: ExportBlock[] = [];
 
@@ -88,25 +117,21 @@ export async function embedDiagrams(
             break;
           }
 
-          try {
-            const rendered = await diagramAsset(await renderSvg(block.text));
+          const rendered = await render(block.text);
 
-            if (!rendered) {
-              result.push(block);
-              break;
-            }
-
-            diagramCounter += 1;
-            const src = `${DIAGRAM_SRC_PREFIX}${diagramCounter}`;
-            images.set(src, rendered.asset);
-            result.push({
-              kind: "paragraph",
-              align: "center",
-              runs: [{ kind: "image", src, alt: "Diagram", width: rendered.cssWidth }]
-            });
-          } catch {
+          if (!rendered) {
             result.push(block);
+            break;
           }
+
+          diagramCounter += 1;
+          const src = `${DIAGRAM_SRC_PREFIX}${diagramCounter}`;
+          images.set(src, rendered.asset);
+          result.push({
+            kind: "paragraph",
+            align: "center",
+            runs: [{ kind: "image", src, alt: "Diagram", width: rendered.cssWidth }]
+          });
           break;
         }
         case "blockquote":

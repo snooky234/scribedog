@@ -22,6 +22,7 @@ import { FileLinkSuggestionPopover } from "@/components/editor/FileLinkSuggestio
 import { DetailsPanel } from "@/components/editor/DetailsPanel";
 import { SelectionContextMenu, type SelectionContextMenuState } from "@/components/editor/SelectionContextMenu";
 import { StagedChangeBar } from "@/components/editor/StagedChangeBar";
+import { usePageLines } from "@/components/editor/usePageLines";
 import { MobileSheet } from "@/components/app/MobileSheet";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
 import {
@@ -133,6 +134,8 @@ type EditorProps = {
   onAiPendingChange?: (isPending: boolean) => void;
   onAiSettingsRequest: () => void;
   onZenModeRequest: () => void;
+  /** Zen mode hides the page lines (usePageLines). */
+  isZenMode?: boolean;
   /** Where the toolbar renders instead of inside the editor (the document
    *  panel's slot above the title row on desktop); null keeps it inline. */
   toolbarContainer?: HTMLElement | null;
@@ -230,6 +233,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onAiPendingChange,
     onAiSettingsRequest,
     onZenModeRequest,
+    isZenMode = false,
     toolbarContainer = null
   },
   ref
@@ -328,6 +332,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   });
   const { contextMenu: selectionMenu, setContextMenu: setSelectionMenu } =
     useContextMenuState<SelectionContextMenuState>();
+  const pageLinesEnabled = useEditorSettingsStore((state) => state.pageLinesEnabled);
 
   // Clipboard failures (a webview without clipboard permission, a browser
   // blocking the API) are reported on the editor's shared feedback channel,
@@ -1549,6 +1554,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           case "blockquote":
             chain()?.toggleBlockquote().run();
             break;
+          case "insertPageBreak":
+            if (view.editable) {
+              chain()?.setPageBreak().run();
+            }
+            break;
           case "insertLink":
             handleLinkRequest();
             break;
@@ -1604,6 +1614,14 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   if (editor) {
     editorRef.current = editor;
   }
+
+  // Not in Zen mode, and not while a staged proposal is shown: the document
+  // then holds the red/green review, not the text that will be exported.
+  usePageLines({
+    editor,
+    filePath,
+    enabled: pageLinesEnabled && !isZenMode && stagedPreviewStats === null
+  });
 
   // editorProps.attributes is only read once, at editor creation, so a
   // later toggle of the setting has to be applied to the live DOM node

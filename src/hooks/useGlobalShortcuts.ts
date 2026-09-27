@@ -150,6 +150,11 @@ export function useGlobalShortcuts({
           setSpellcheckEnabled(!spellcheckEnabled);
           return;
         }
+        case "togglePageLines": {
+          const { pageLinesEnabled, setPageLinesEnabled } = useEditorSettingsStore.getState();
+          setPageLinesEnabled(!pageLinesEnabled);
+          return;
+        }
         case "zoomIn": {
           const { zoomLevel, setZoomLevel } = useEditorSettingsStore.getState();
           setZoomLevel(zoomLevel + ZOOM_STEP);

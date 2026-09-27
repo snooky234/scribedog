@@ -36,6 +36,7 @@ import {
   Printer,
   Quote,
   Search,
+  SeparatorHorizontal,
   Sparkles,
   SpellCheck,
   Strikethrough,
@@ -59,11 +60,14 @@ import {
   MenuPopup,
   MenuPortal,
   MenuPositioner,
+  MenuShortcut,
   MenuTrigger
 } from "@/components/ui/menu";
 import { Toggle } from "@/components/ui/toggle";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
+import { useShortcutLabel } from "@/hooks/useShortcutLabel";
 import { EmojiPicker } from "@/components/EmojiPicker";
+import { PageLinesMenuItem } from "@/components/PageLinesMenuItem";
 import { TableGridPicker } from "@/components/TableGridPicker";
 import { TableMenu } from "@/components/TableMenu";
 import { ZoomControl } from "@/components/ZoomControl";
@@ -302,6 +306,8 @@ function EditorOptionsMenu({
   const setSpellcheckEnabled = useEditorSettingsStore((state) => state.setSpellcheckEnabled);
   const autoSaveEnabled = useEditorSettingsStore((state) => state.autoSaveEnabled);
   const setAutoSaveEnabled = useEditorSettingsStore((state) => state.setAutoSaveEnabled);
+  const spellcheckShortcut = useShortcutLabel("toggleSpellcheck");
+  const printShortcut = useShortcutLabel("printFile");
   const [missingDictionary, setMissingDictionary] = useState<MissingDictionary | null>(null);
 
   const handleSpellcheckChange = (checked: boolean) => {
@@ -356,11 +362,14 @@ function EditorOptionsMenu({
                 onCheckedChange={handleSpellcheckChange}
               >
                 {t("toolbar.spellcheckToggle")}
+                {spellcheckShortcut ? <MenuShortcut>{spellcheckShortcut}</MenuShortcut> : null}
                 <MenuCheckboxItemIndicator />
               </MenuCheckboxItem>
+              <PageLinesMenuItem />
               <MenuItem onClick={onPrintRequest}>
                 <Printer className="size-4" />
                 {t("toolbar.printButton")}
+                {printShortcut ? <MenuShortcut>{printShortcut}</MenuShortcut> : null}
               </MenuItem>
               {onDownloadMarkdownRequest ? (
                 <MenuItem onClick={onDownloadMarkdownRequest}>
@@ -908,6 +917,21 @@ export function Toolbar({
           <ImagePlus />
         </Button>
         <CalloutMenu editor={editor} />
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="outline"
+          aria-label={t("toolbar.pageBreak")}
+          title={`${t("toolbar.pageBreak")} (${t("common.keys.ctrl")}+${t("common.keys.enter")})`}
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
+          onClick={() => {
+            editor.chain().focus().setPageBreak().run();
+          }}
+        >
+          <SeparatorHorizontal />
+        </Button>
       </div>
 
       {/* View controls: on phone and tablet these live in the document

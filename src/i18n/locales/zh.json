@@ -112,6 +112,7 @@
     "descriptionManuscript": "按侧边栏显示的顺序，把所有章节合并成一本书。",
     "mergeIntoOneFile": "合并为一个文件",
     "mergeHint": "所有笔记依次排在同一个文档里，而不是每条笔记一个文件。",
+    "pageSetupInfo": "页面：{{size}}，页边距：{{margins}}。可在“设置 › 外观”中更改。",
     "descriptionFileDownload": "选择格式和文件名。文件由浏览器保存。",
     "descriptionFolderDownload": "此文件夹中的所有笔记会递归导出到一个 ZIP 压缩包；文件夹结构保持不变。",
     "descriptionMultipleDownload": "所有选中的笔记会导出到一个 ZIP 压缩包；所选文件夹内的文件夹结构保持不变。",
@@ -208,6 +209,18 @@
     "tableWidthHint": "列宽始终随内容而定，因此内容少的列会保持较窄。此选项只决定表格是延伸到文字边缘，还是只占内容所需的宽度。比页面更宽的表格可以横向滚动。你自己拖动过宽度的列会保持该宽度。",
     "tableWidthFull": "整宽",
     "tableWidthContent": "适应内容",
+    "pageSize": "纸张大小",
+    "pageSizeShort": "PDF、打印、DOCX 和 ODT 的页面大小。",
+    "pageSizeHint": "适用于所有分页输出：PDF 导出、打印、DOCX 和 ODT。在你选择之前，它取决于系统所在地区：例如美国、加拿大和墨西哥使用 US Letter，其他地区使用 A4。打印时，请在打印对话框中选择相同的纸张。",
+    "pageSizeA4": "A4（21 × 29.7 厘米）",
+    "pageSizeLetter": "US Letter（8.5 × 11 英寸）",
+    "pageSizeA5": "A5（14.8 × 21 厘米）",
+    "pageSizeLegal": "US Legal（8.5 × 14 英寸）",
+    "pageMargins": "页边距",
+    "pageMarginsShort": "文字与纸张边缘之间的距离。",
+    "pageMarginsNormal": "常规（2.54 厘米）",
+    "pageMarginsNarrow": "窄（1.27 厘米）",
+    "pageMarginsWide": "宽（左右 3.18 厘米）",
     "outlineDepth": "详情面板的大纲层级",
     "outlineDepthShort": "详情面板中的大纲显示哪些标题层级。",
     "folderNotes": "文件夹笔记",
@@ -619,6 +632,7 @@
       "insertFileLink": "链接文件（光标处的候选列表）",
       "aiCheckDialog": "检查所选文本或整个文档的拼写/语法",
       "toggleSpellcheck": "开启/关闭拼写检查（红色波浪线）",
+      "togglePageLines": "显示或隐藏分页",
       "bold": "粗体",
       "italic": "斜体",
       "underline": "下划线",
@@ -640,6 +654,7 @@
       "blockquote": "引用",
       "inlineCode": "行内代码",
       "codeBlock": "代码块",
+      "insertPageBreak": "插入分页符",
       "copy": "复制",
       "paste": "粘贴",
       "undo": "撤销",
@@ -669,7 +684,8 @@
       "ai": "AI",
       "format": "格式",
       "fixed": "固定快捷键"
-    }
+    },
+    "unassigned": "未设置"
   },
   "sidebar": {
     "filesLabel": "Markdown 文件",
@@ -797,6 +813,7 @@
     "calloutWarning": "警告",
     "calloutDanger": "危险",
     "calloutRemove": "移除提示横幅",
+    "pageBreak": "插入分页符",
     "aiModel": "AI 模型",
     "aiModelPlaceholder": "选择模型…",
     "aiOpenSettings": "AI 设置…",
@@ -812,6 +829,7 @@
     "autoSaveToggle": "自动保存",
     "autoSaveToggleTitle": "停止输入片刻后自动保存笔记",
     "spellcheckToggle": "拼写检查（红色波浪线）",
+    "pageLinesToggle": "显示分页（PDF，{{size}}）",
     "printButton": "打印",
     "downloadMarkdown": "下载为 Markdown",
     "spellcheckDictionaryMissing": "未找到“{{code}}”的拼写检查词典。请通过你的包管理器安装 Hunspell 词典（例如 hunspell-{{code}}）。"
@@ -953,7 +971,11 @@
     "stagedPreviewReadOnly": "建议未处理期间，文档为只读。",
     "stagedPreviewMissing": "已找不到并跳过：{{count}}",
     "stagedPreviewAccept": "应用",
-    "stagedPreviewDiscard": "放弃"
+    "stagedPreviewDiscard": "放弃",
+    "pageBreak": "分页符",
+    "pageLine": "第 {{page}} 页",
+    "pageLineApprox": "约第 {{pages}} 页",
+    "pageLineHint": "这里是 PDF 导出和打印时每页的结束位置。只有在打印对话框中缩放才会改变它们。"
   },
   "editorContextMenu": {
     "aiEdit": "用 AI 改写",

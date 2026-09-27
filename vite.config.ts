@@ -66,6 +66,11 @@ export default defineConfig(async ({ mode }) => {
       outDir: isWeb ? "dist-web" : "dist",
       emptyOutDir: true
     },
+    // The page map worker (src/lib/export/pageMapWorker.ts) loads pdfmake on
+    // demand, and only ES workers can split code.
+    worker: {
+      format: "es" as const
+    },
 
     // Only pure logic is covered (no component rendering), so node is the right
     // default; the few suites that parse markdown through a DOM opt into jsdom

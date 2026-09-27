@@ -32,6 +32,7 @@ import {
 } from "@/lib/export/manuscript";
 import type { MarkdownFileRecord } from "@/lib/fileSystem";
 import type { DocumentStyle } from "@/lib/fonts";
+import { PAGE_MARGIN_LABEL_KEYS, PAGE_SIZE_LABEL_KEYS } from "@/lib/pageSetup";
 import { readManuscriptSettings, writeManuscriptSettings } from "@/lib/vaultMeta";
 import { useAppStore } from "@/store/useAppStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
@@ -66,6 +67,9 @@ type PendingConflict = {
 
 type DialogPhase = "form" | "exporting" | "done" | "error";
 
+// The formats that are laid out on pages and so follow the page setup.
+const PAGED_FORMATS = new Set<ExportFormat>(["pdf", "docx", "odt"]);
+
 const FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",
   docx: "DOCX (Word)",
@@ -86,7 +90,9 @@ export function ExportDialog({
   const fontSizePt = useEditorSettingsStore((state) => state.fontSizePt);
   const headingNumbering = useEditorSettingsStore((state) => state.headingNumbering);
   const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
-  const documentStyle: DocumentStyle = { fontId, fontSizePt, headingNumbering, tableWidth };
+  const pageSize = useEditorSettingsStore((state) => state.pageSize);
+  const pageMargins = useEditorSettingsStore((state) => state.pageMargins);
+  const documentStyle: DocumentStyle = { fontId, fontSizePt, headingNumbering, tableWidth, pageSize, pageMargins };
 
   const [format, setFormat] = useState<ExportFormat>("pdf");
   const [name, setName] = useState("");
@@ -488,6 +494,16 @@ export function ExportDialog({
                     </option>
                   ))}
                 </select>
+                {/* Shown, not chosen here: the page setup is one app-wide
+                    setting, so the PDF, the print and DOCX/ODT agree. */}
+                {PAGED_FORMATS.has(format) ? (
+                  <span className="export-dialog__hint">
+                    {t("exportDialog.pageSetupInfo", {
+                      size: t(PAGE_SIZE_LABEL_KEYS[pageSize]),
+                      margins: t(PAGE_MARGIN_LABEL_KEYS[pageMargins])
+                    })}
+                  </span>
+                ) : null}
               </label>
 
               <label className="export-dialog__field">

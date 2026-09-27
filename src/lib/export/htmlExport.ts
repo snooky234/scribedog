@@ -8,6 +8,24 @@ import {
 
 import type { BlockAlign, ExportBlock, InlineRun } from "./markdownModel";
 import type { ExportImageMap } from "./imageAssets";
+import { computePagedImageSize } from "./imageSize";
+import { captionAfter, isImageOnlyParagraph, isShortBlock } from "./keepTogether";
+import { PDF_IMAGE_MARGIN } from "./pdfTypography";
+import { computeColumnShares, rowsFitWhole } from "./tableColumns";
+
+/**
+ * For the direct print (lib/print.ts), which lays the body out on pages like
+ * the PDF: images get the size the PDF gives them, a full-width table the
+ * PDF's column split, and what the PDF keeps on one page is marked so.
+ */
+export type PagedHtmlOptions = {
+  contentWidthPt: number;
+  contentHeightPt: number;
+  fontSizePt: number;
+  /** Height of a line of body text, as the PDF sets it. */
+  lineHeightPt: number;
+  tableWidth: TableWidth;
+};
 
 // Standalone HTML export: one self-contained file, styles inlined, local
 // images embedded as data URIs (the exported file must work without the
@@ -87,7 +105,7 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function renderRuns(runs: InlineRun[], images: ExportImageMap): string {
+function renderRuns(runs: InlineRun[], images: ExportImageMap, paged?: PagedHtmlOptions): string {
   let html = "";
 
   for (const run of runs) {
@@ -99,7 +117,16 @@ function renderRuns(runs: InlineRun[], images: ExportImageMap): string {
     if (run.kind === "image") {
       const asset = images.get(run.src);
 
-      if (asset) {
+      if (asset && paged) {
+        // The PDF reads the image's pixel width as points (pdfExport.ts).
+        const { width } = computePagedImageSize(
+          asset,
+          run.width,
+          paged.contentWidthPt,
+          paged.contentHeightPt - 2 * PDF_IMAGE_MARGIN
+        );
+        html += `<img src="${asset.originalDataUrl}" alt="${escapeHtml(run.alt)}" style="width:${Math.round(width * 100) / 100}pt" />`;
+      } else if (asset) {
         const widthAttr = run.width ? ` width="${run.width}"` : "";
         html += `<img src="${asset.originalDataUrl}" alt="${escapeHtml(run.alt)}"${widthAttr} />`;
       } else if (run.alt) {
@@ -143,25 +170,58 @@ function alignAttribute(align: BlockAlign | undefined): string {
   return align && align !== "left" ? ` style="text-align:${align}"` : "";
 }
 
-function renderBlocks(blocks: ExportBlock[], images: ExportImageMap): string {
+function tableOpenTag(block: Extract<ExportBlock, { kind: "table" }>, paged?: PagedHtmlOptions): string {
+  const classes = paged
+    ? [
+        isShortBlock(block) ? "print-keep" : "",
+        rowsFitWhole(block.rows, paged.contentWidthPt, paged.fontSizePt, paged.lineHeightPt, paged.contentHeightPt)
+          ? "print-rows-whole"
+          : ""
+      ].filter(Boolean)
+    : [];
+
+  // A part of a table split across pages keeps the whole table's columns,
+  // whatever the table width, as it does in the PDF.
+  if (!paged || (paged.tableWidth === "content" && !block.columnSource)) {
+    return classes.length > 0 ? `<table class="${classes.join(" ")}">\n` : "<table>\n";
+  }
+
+  const columns = computeColumnShares(block.columnSource ?? block.rows, paged.contentWidthPt, paged.fontSizePt)
+    .map((share) => `<col style="width:${Math.round(share * 100000) / 1000}%" />`)
+    .join("");
+
+  return `<table class="${["print-table--full", ...classes].join(" ")}"><colgroup>${columns}</colgroup>\n`;
+}
+
+function renderBlocks(blocks: ExportBlock[], images: ExportImageMap, paged?: PagedHtmlOptions): string {
   let html = "";
 
-  for (const block of blocks) {
+  for (let index = 0; index < blocks.length; index++) {
+    const block = blocks[index];
+    const caption = paged ? captionAfter(blocks, index, images) : null;
+
+    // The PDF moves an image and its caption to the next page together.
+    if (caption) {
+      html += `<div class="print-keep">\n${renderBlocks([block], images, paged)}${renderBlocks([caption], images, paged)}</div>\n`;
+      index += 1;
+      continue;
+    }
+
     switch (block.kind) {
       case "heading": {
         const level = Math.min(Math.max(block.level, 1), 6);
         const align = alignAttribute(block.align);
-        html += `<h${level}${align}>${renderRuns(block.runs, images)}</h${level}>\n`;
+        html += `<h${level}${align}>${renderRuns(block.runs, images, paged)}</h${level}>\n`;
         break;
       }
       case "paragraph":
-        html += `<p${alignAttribute(block.align)}>${renderRuns(block.runs, images)}</p>\n`;
+        html += `<p${alignAttribute(block.align)}${paged && isImageOnlyParagraph(block.runs, images) ? ' class="print-image"' : ""}>${renderRuns(block.runs, images, paged)}</p>\n`;
         break;
       case "codeBlock":
-        html += `<pre><code>${escapeHtml(block.text)}</code></pre>\n`;
+        html += `<pre${paged && isShortBlock(block) ? ' class="print-keep"' : ""}><code>${escapeHtml(block.text)}</code></pre>\n`;
         break;
       case "blockquote":
-        html += `<blockquote>\n${renderBlocks(block.children, images)}</blockquote>\n`;
+        html += `<blockquote>\n${renderBlocks(block.children, images, paged)}</blockquote>\n`;
         break;
       case "list": {
         const isTaskList = block.items.some((item) => item.checked !== null);
@@ -183,28 +243,41 @@ function renderBlocks(blocks: ExportBlock[], images: ExportImageMap): string {
           // element forces a line break right after the checkbox/bullet.
           const [first, ...rest] = item.children;
           const inlineFirst =
-            first?.kind === "paragraph" ? renderRuns(first.runs, images) : "";
+            first?.kind === "paragraph" ? renderRuns(first.runs, images, paged) : "";
           const remaining = first?.kind === "paragraph" ? rest : item.children;
 
-          html += `<li>${checkbox}${inlineFirst}${renderBlocks(remaining, images)}</li>\n`;
+          html += `<li>${checkbox}${inlineFirst}${renderBlocks(remaining, images, paged)}</li>\n`;
         }
 
         html += `</${tag}>\n`;
         break;
       }
       case "table": {
-        html += "<table>\n";
+        html += tableOpenTag(block, paged);
 
-        for (const row of block.rows) {
+        // On paper the header row repeats on every page the table runs
+        // onto, as pdfmake's headerRows does; the browser only repeats a
+        // <thead>.
+        const headInPrint = Boolean(paged && block.rows[0]?.[0]?.header);
+
+        for (const [index, row] of block.rows.entries()) {
+          if (headInPrint && index === 0) {
+            html += "<thead>";
+          }
+
           html += "<tr>";
 
           for (const cell of row) {
             const tag = cell.header ? "th" : "td";
             const alignAttr = cell.align !== "left" ? ` style="text-align:${cell.align}"` : "";
-            html += `<${tag}${alignAttr}>${renderRuns(cell.runs, images)}</${tag}>`;
+            html += `<${tag}${alignAttr}>${renderRuns(cell.runs, images, paged)}</${tag}>`;
           }
 
           html += "</tr>\n";
+
+          if (headInPrint && index === 0) {
+            html += "</thead>\n";
+          }
         }
 
         html += "</table>\n";
@@ -224,8 +297,8 @@ function renderBlocks(blocks: ExportBlock[], images: ExportImageMap): string {
 
 // Body-only variant for consumers that place the rendered blocks inside an
 // existing document (the in-app print flow) instead of a standalone file.
-export function renderHtmlBody(blocks: ExportBlock[], images: ExportImageMap): string {
-  return renderBlocks(blocks, images);
+export function renderHtmlBody(blocks: ExportBlock[], images: ExportImageMap, paged?: PagedHtmlOptions): string {
+  return renderBlocks(blocks, images, paged);
 }
 
 export function renderHtmlDocument(

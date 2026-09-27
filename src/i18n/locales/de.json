@@ -112,6 +112,7 @@
     "descriptionManuscript": "Fügt alle Kapitel in der Reihenfolge der Seitenleiste zu einem Buch zusammen.",
     "mergeIntoOneFile": "In eine Datei zusammenfassen",
     "mergeHint": "Alle Notizen hintereinander in einem Dokument statt je eine Datei pro Notiz.",
+    "pageSetupInfo": "Seite: {{size}}, Ränder: {{margins}}. Änderbar unter Einstellungen › Darstellung.",
     "descriptionFileDownload": "Format und Dateinamen wählen. Der Browser speichert die Datei.",
     "descriptionFolderDownload": "Alle Notizen in diesem Ordner werden rekursiv in ein ZIP-Archiv exportiert; die Ordnerstruktur bleibt erhalten.",
     "descriptionMultipleDownload": "Alle ausgewählten Notizen werden in ein ZIP-Archiv exportiert; die Ordnerstruktur innerhalb ausgewählter Ordner bleibt erhalten.",
@@ -208,6 +209,18 @@
     "tableWidthHint": "Die Spaltenbreiten richten sich immer nach dem Inhalt, eine kurze Spalte bleibt also schmal. Diese Einstellung entscheidet nur, ob die Tabelle bis zum Textrand reicht oder nur so breit ist, wie ihr Inhalt es braucht. Eine Tabelle, die breiter ist als die Seite, lässt sich seitlich schieben. Spalten, deren Breite du selbst gezogen hast, behalten sie.",
     "tableWidthFull": "Volle Breite",
     "tableWidthContent": "An Inhalt anpassen",
+    "pageSize": "Papierformat",
+    "pageSizeShort": "Seitengröße für PDF, Druck, DOCX und ODT.",
+    "pageSizeHint": "Gilt für alle Ausgaben mit Seiten: PDF-Export, Drucken, DOCX und ODT. Solange du nichts wählst, richtet es sich nach der Region deines Systems, US Letter etwa in den USA, Kanada und Mexiko, sonst A4. Beim Drucken sollte im Druckdialog dasselbe Papier eingestellt sein.",
+    "pageSizeA4": "A4 (21 × 29,7 cm)",
+    "pageSizeLetter": "US Letter (8,5 × 11 Zoll)",
+    "pageSizeA5": "A5 (14,8 × 21 cm)",
+    "pageSizeLegal": "US Legal (8,5 × 14 Zoll)",
+    "pageMargins": "Seitenränder",
+    "pageMarginsShort": "Abstand des Textes zum Papierrand.",
+    "pageMarginsNormal": "Normal (2,54 cm)",
+    "pageMarginsNarrow": "Schmal (1,27 cm)",
+    "pageMarginsWide": "Breit (3,18 cm links und rechts)",
     "outlineDepth": "Gliederungstiefe im Details-Panel",
     "outlineDepthShort": "Welche Überschriftenebenen die Gliederung im Details-Panel auflistet.",
     "folderNotes": "Ordnernotizen",
@@ -620,6 +633,7 @@
       "insertFileLink": "Datei verlinken (Auswahlliste am Cursor)",
       "aiCheckDialog": "Ausgewählten Text oder ganzes Dokument auf Rechtschreibung/Grammatik prüfen",
       "toggleSpellcheck": "Rechtschreibprüfung (rote Unterringelung) ein-/ausschalten",
+      "togglePageLines": "Seitenumbrüche anzeigen ein-/ausschalten",
       "bold": "Fett",
       "italic": "Kursiv",
       "underline": "Unterstrichen",
@@ -641,6 +655,7 @@
       "blockquote": "Zitat",
       "inlineCode": "Inline-Code",
       "codeBlock": "Code-Block",
+      "insertPageBreak": "Seitenumbruch einfügen",
       "copy": "Kopieren",
       "paste": "Einfügen",
       "undo": "Rückgängig",
@@ -670,7 +685,8 @@
       "ai": "KI",
       "format": "Formatierung",
       "fixed": "Feste Tastenkürzel"
-    }
+    },
+    "unassigned": "Nicht belegt"
   },
   "sidebar": {
     "filesLabel": "Markdown-Dateien",
@@ -798,6 +814,7 @@
     "calloutWarning": "Warnung",
     "calloutDanger": "Gefahr",
     "calloutRemove": "Hinweisbanner entfernen",
+    "pageBreak": "Seitenumbruch einfügen",
     "aiModel": "KI-Modell",
     "aiModelPlaceholder": "Modell wählen…",
     "aiOpenSettings": "KI-Einstellungen…",
@@ -813,6 +830,7 @@
     "autoSaveToggle": "Automatisch speichern",
     "autoSaveToggleTitle": "Speichert die Notiz von selbst, sobald du kurz nicht tippst",
     "spellcheckToggle": "Rechtschreibprüfung (rote Unterringelung)",
+    "pageLinesToggle": "Seitenumbrüche anzeigen (PDF, {{size}})",
     "printButton": "Drucken",
     "downloadMarkdown": "Als Markdown herunterladen",
     "spellcheckDictionaryMissing": "Kein Rechtschreib-Wörterbuch für „{{code}}\" gefunden. Installiere z. B. ein Hunspell-Wörterbuch (etwa hunspell-{{code}}) über deinen Paketmanager."
@@ -954,7 +972,11 @@
     "stagedPreviewReadOnly": "Solange der Vorschlag offen ist, ist das Dokument schreibgeschützt.",
     "stagedPreviewMissing": "Nicht mehr auffindbar und übersprungen: {{count}}",
     "stagedPreviewAccept": "Übernehmen",
-    "stagedPreviewDiscard": "Verwerfen"
+    "stagedPreviewDiscard": "Verwerfen",
+    "pageBreak": "Seitenumbruch",
+    "pageLine": "Seite {{page}}",
+    "pageLineApprox": "ca. Seite {{pages}}",
+    "pageLineHint": "Hier enden die Seiten im PDF-Export und beim Drucken. Nur eine Skalierung im Druckdialog verschiebt sie."
   },
   "editorContextMenu": {
     "aiEdit": "Mit KI überarbeiten",

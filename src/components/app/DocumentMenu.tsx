@@ -6,7 +6,6 @@ import {
   FileCode,
   Focus,
   History,
-  PanelRight,
   Printer,
   Search,
   Type,
@@ -17,11 +16,14 @@ import { useTranslation } from "react-i18next";
 
 import type { EditorHandle } from "@/components/Editor";
 import type { SelectionRange } from "@/lib/editor/selectionClipboard";
+import { PageLinesMenuItem } from "@/components/PageLinesMenuItem";
+import { useShortcutLabel } from "@/hooks/useShortcutLabel";
 import { Button } from "@/components/ui/button";
 import {
   Menu,
   MenuCheckboxItem,
   MenuCheckboxItemIndicator,
+  MenuShortcut,
   MenuItem,
   MenuPopup,
   MenuPortal,
@@ -65,6 +67,8 @@ export function DocumentMenu({
 }: DocumentMenuProps) {
   const { t } = useTranslation();
   const openFindPanel = useSearchStore((state) => state.openPanel);
+  const spellcheckShortcut = useShortcutLabel("toggleSpellcheck");
+  const printShortcut = useShortcutLabel("printFile");
   // Taken as the menu opens, because that is the last moment the editor still
   // has the selection: the focus moves into the popup and ProseMirror
   // collapses its selection when the editor is blurred.
@@ -161,7 +165,6 @@ export function DocumentMenu({
               checked={detailsSheetOpen}
               onCheckedChange={(checked) => setDetailsSheetOpen(checked)}
             >
-              <PanelRight className="size-4" />
               {t("toolbar.detailsPanel")}
               <MenuCheckboxItemIndicator />
             </MenuCheckboxItem>
@@ -206,11 +209,14 @@ export function DocumentMenu({
               onCheckedChange={(checked) => setSpellcheckEnabled(checked)}
             >
               {t("toolbar.spellcheckToggle")}
+              {spellcheckShortcut ? <MenuShortcut>{spellcheckShortcut}</MenuShortcut> : null}
               <MenuCheckboxItemIndicator />
             </MenuCheckboxItem>
+            <PageLinesMenuItem />
             <MenuItem onClick={() => editorHandleRef.current?.printDocument()}>
               <Printer className="size-4" />
               {t("toolbar.printButton")}
+              {printShortcut ? <MenuShortcut>{printShortcut}</MenuShortcut> : null}
             </MenuItem>
           </MenuPopup>
         </MenuPositioner>
