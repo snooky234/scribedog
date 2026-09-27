@@ -526,6 +526,14 @@
   color: rgba(var(--text-rgb), 0.55);
 }
 
+/* The variant carrying a spinner: something is still running, even though the
+   turn itself is over and the composer is free. */
+.chat-panel__hint--working {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 /* The selected passage riding along with the next message. One line, ellipsized:
    the chip announces the context, it isn't a second view of the document. */
 .chat-panel__selection {
@@ -591,6 +599,149 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* The chip previews the picture itself rather than an icon: what it shows is
+   byte for byte what the model is sent, so a wrong thumbnail would be a wrong
+   promise. Square-cropped so a panorama and a portrait line up in one row. */
+.chat-panel__attachment-thumb {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex-shrink: 0;
+  border-radius: 0.25rem;
+  object-fit: cover;
+  background: rgba(var(--overlay-rgb), 0.1);
+}
+
+/* Thumbnail and name together open the picture. Styled as part of the chip
+   rather than as a button of its own: it sits inside one, and a second border
+   around two thirds of a chip reads as a nested control. */
+.chat-panel__attachment-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* No underline: the chip is a chip, not a link, and underlining two thirds of
+   it reads as one. The cursor already says it is clickable, so the hover only
+   has to confirm it — hence the lift in contrast rather than a decoration. */
+.chat-panel__attachment-open:hover .chat-panel__attachment-name {
+  color: rgba(var(--text-rgb), 1);
+}
+
+.chat-panel__attachment-open:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.6);
+  outline-offset: 2px;
+  border-radius: 0.3rem;
+}
+
+/* --- The attached picture, full size ------------------------------------ */
+
+/* Above the app's other dialogs' z-index: this one can be opened from a dialog
+   that is itself open (an attachment reviewed while a settings panel sits
+   behind it), and appearing *under* that one would look like nothing happened. */
+.image-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(var(--backdrop-rgb), 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.image-preview__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: min(100%, 72rem);
+  max-height: 100%;
+  min-height: 0;
+}
+
+.image-preview__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(var(--text-rgb), 0.85);
+  font-size: 0.8rem;
+}
+
+.image-preview__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.image-preview__close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  appearance: none;
+  border: 1px solid rgba(var(--overlay-rgb), 0.16);
+  border-radius: 9999px;
+  background: rgba(var(--surface-rgb), 0.74);
+  color: rgba(var(--text-rgb), 0.8);
+  cursor: pointer;
+}
+
+.image-preview__close:hover {
+  border-color: rgba(var(--overlay-rgb), 0.3);
+}
+
+.image-preview__close:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.6);
+  outline-offset: 1px;
+}
+
+/* Fits the viewport in both directions: an attachment is scaled to 1568px on
+   its longest edge, which is wider than most windows, and a picture that needs
+   scrolling to be seen defeats the point of opening it. */
+.image-preview__image {
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  background: rgba(var(--overlay-rgb), 0.08);
+}
+
+/* Matches the mic button next to it in the same row (see voice.css) — the two
+   are the composer's attach controls and should not read as two kinds of thing. */
+.chat-panel__attach-image {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(var(--overlay-rgb), 0.16);
+  border-radius: 9999px;
+  background: rgba(var(--surface-rgb), 0.74);
+  color: rgba(var(--text-rgb), 0.8);
+  cursor: pointer;
+}
+
+.chat-panel__attach-image:hover {
+  border-color: rgba(var(--overlay-rgb), 0.3);
+}
+
+.chat-panel__attach-image:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.6);
+  outline-offset: 1px;
 }
 
 .chat-panel__attach-error {

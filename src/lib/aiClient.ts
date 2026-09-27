@@ -1,6 +1,7 @@
 import { platform } from "@/platform";
 
 import i18n, { getCurrentLanguageEnglishName } from "@/i18n";
+import { recoverInlineToolCall } from "@/lib/chat/inlineToolCalls";
 import { type AiProvider, type AiSettings, type AiThinkingMode } from "@/store/useAiSettingsStore";
 
 export type AiActionMode = "insert" | "rewrite" | "check";
@@ -1246,7 +1247,6 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
  */
 export function canonicalToolName(name: string): string {
   const normalized = name.trim().toLowerCase();
-
   return TOOL_NAME_ALIASES[normalized] ?? normalized;
 }
 
@@ -1287,8 +1287,15 @@ export type AiChatMessage =
       // while the file stays attached and is folded into the request from there
       // — see src/lib/chat/attachedFiles.ts.
       attachedFileNames?: string[];
-      // The same images with their payload, filled in per request by
-      // attachImageData. Absent in the stored history.
+      // Names of the images the user had attached when this turn was sent
+      // (persisted). Same split as attachedFileNames, and for the same reason
+      // squared: the payloads are megabytes of base64 that live in the chat
+      // store only — see inlineAttachedImages.
+      attachedImageNames?: string[];
+      // The images with their payload, filled in per request: by
+      // inlineAttachedImages for what the user attached, and by attachImageData
+      // for what get_image resolved from imagePaths. Absent in the stored
+      // history either way.
       images?: AiChatImage[];
     }
   | {
@@ -1774,6 +1781,32 @@ const FILE_TOOL_SPECS = [
  */
 export const PLAN_TOOL_NAMES: readonly string[] = ["create_plan", "update_plan", "complete_step"];
 
+/**
+ * Whether a name is one of the agent's documented tools.
+ *
+ * Used as the gate on recovering a tool call a model printed into its answer
+ * text (see src/lib/chat/inlineToolCalls.ts): a JSON object naming something
+ * that is not a tool stays text, where the "invented tool" answer deals with
+ * it. Deliberately the full set rather than the tools offered for one request
+ * — the consent switches are re-checked where the tools run, and a recovered
+ * call reaches exactly the same gates as one that arrived properly.
+ */
+export function isDocumentedToolName(name: string): boolean {
+  return (
+    EDITING_TOOL_NAMES.includes(name) ||
+    VAULT_TOOL_NAMES.includes(name) ||
+    FILE_TOOL_NAMES.includes(name) ||
+    STAGING_TOOL_NAMES.includes(name) ||
+    PLAN_TOOL_NAMES.includes(name) ||
+    name === FLAG_SUGGESTION_TOOL_NAME ||
+    name === "get_document" ||
+    name === "get_selection" ||
+    name === "get_image" ||
+    name === "set_image_width" ||
+    name === "get_outline"
+  );
+}
+
 const PLAN_TOOL_SPECS = [
   {
     name: "create_plan",
@@ -2001,6 +2034,15 @@ const AGENT_INSTRUCTION =
   "7. When the request is about an image in the document, call get_image with the path from the " +
   "![alt](path) markdown. Never claim you cannot see images and never describe an image from its " +
   "file name or alt text — call get_image first and describe what you actually see.\n" +
+  "7b. An image the user ATTACHED to the chat is a different thing: it is already in this " +
+  "conversation as a picture you can see, so look at it and answer directly. get_image cannot " +
+  "reach it — that tool reads images out of the document. When the user asks you to write " +
+  "what an attached image shows into a note, that is a WRITING request like rule 2a, not a " +
+  "transcription you answer with: deliver the text with insert_at_cursor (for the open note) or " +
+  "write_file (for another one), and never spell it out in your reply instead. Reading a picture " +
+  "aloud in the chat leaves the user copying it over by hand, which is the work they asked you " +
+  "to do. And never say you inserted, added or wrote something unless you actually called the " +
+  "tool in this turn — a claim without a call is the one failure the user cannot see.\n" +
   "8. To make an image bigger or smaller, call set_image_width with that same path — never try to " +
   "edit an image's markdown with replace_passage, it cannot work. \"A bit bigger\" is scale 1.25, " +
   "\"much bigger\" scale 1.75, and the same factors below 1 for smaller. One call is enough: the new " +
@@ -2498,6 +2540,17 @@ export async function generateAiChatStep(
   request: AiChatRequest,
   signal?: AbortSignal
 ): Promise<AiChatStep> {
+  // Wrapped rather than applied at each of the three provider branches below:
+  // the recovery has to hold for every provider, and a branch that forgets it
+  // is a bug that only shows on whichever endpoint nobody tested.
+  return withRecoveredToolCall(await generateAiChatStepRaw(settings, request, signal));
+}
+
+async function generateAiChatStepRaw(
+  settings: AiSettings,
+  request: AiChatRequest,
+  signal?: AbortSignal
+): Promise<AiChatStep> {
   assertValidEndpoint(settings.provider, settings.apiUrl, settings.apiKey);
 
   if (!settings.model.trim()) {
@@ -2964,6 +3017,31 @@ async function streamOpenAiCompatibleChatStep(
  * without them (see IMAGE_UNSUPPORTED_NOTE): one picture in the document must
  * not cost the user the whole answer.
  */
+/**
+ * Turns a tool call the model printed into its answer into a real one.
+ *
+ * Only when the turn produced no tool calls of its own: a model that called a
+ * tool properly and also wrote about it is describing what it did, and running
+ * that description again would do the work twice.
+ */
+function withRecoveredToolCall(step: AiChatStep): AiChatStep {
+  if (step.toolCalls.length > 0 || !step.text.trim()) {
+    return step;
+  }
+
+  const recovered = recoverInlineToolCall(step.text, isDocumentedToolName);
+
+  if (!recovered) {
+    return step;
+  }
+
+  return {
+    ...step,
+    text: recovered.text,
+    toolCalls: [{ ...recovered.call, name: canonicalToolName(recovered.call.name) }]
+  };
+}
+
 export async function streamAiChatStep(
   settings: AiSettings,
   request: AiChatRequest,
@@ -2991,7 +3069,7 @@ export async function streamAiChatStep(
       return generateAiChatStep(settings, stepRequest, signal);
     }
 
-    return step;
+    return withRecoveredToolCall(step);
   };
 
   if (!hasChatImages(request.messages)) {

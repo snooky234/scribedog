@@ -85,14 +85,19 @@ function question(userRequest: string, assistantReply: string, canInsert: boolea
       "corrects an existing passage, describes a rewrite it is ready to make, or asks whether it should " +
       `apply one${canInsert ? "" : ", or it wrote new text for the document"}. Then call ` +
       `${FLAG_SUGGESTION_TOOL_NAME}; the user gets a button for it.`,
-    "(c) Neither: the reply answers a question, explains or discusses something, reports what the document " +
-      'says, asks the user what they want, or confirms a change that is already done. Then reply with just "no".'
+    "(c) Neither: the reply answers a question, explains or discusses something, reports what the " +
+      'document says, or asks the user what they want. Then reply with just "no".'
   ].filter(Boolean);
 
   return [
     "A writing assistant is helping the user write and edit their document. It can put text into the " +
       "document as a proposal the user reviews, but in the turn below it proposed nothing — it only " +
       "replied with text in the chat.",
+    "",
+    "IMPORTANT: the reply may CLAIM the text was already written into the document (\"I have inserted " +
+      "it\", \"I added the text to the file\", \"done\"). That claim is false — nothing was written, " +
+      "which is why you are being asked. Judge only by whether the reply CONTAINS text that belongs in " +
+      "the document, never by what it says it did.",
     "",
     `The user asked:\n"""\n${excerpt(userRequest, REQUEST_EXCERPT_CHARS)}\n"""`,
     "",

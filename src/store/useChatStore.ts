@@ -45,7 +45,12 @@ import {
 import { isKnowledgeBaseReady } from "@/lib/ragSearch";
 import { resolveUnflaggedReply } from "@/lib/chat/pendingSuggestion";
 import { selectMessagesForModel } from "@/lib/chat/contextWindow";
-import { attachImageData } from "@/lib/chat/imageAttachments";
+import {
+  attachImageData,
+  inlineAttachedImages,
+  MAX_ATTACHED_IMAGES_PER_CHAT,
+  type AttachedChatImage
+} from "@/lib/chat/imageAttachments";
 import { clampSelection, inlineSelectionContext } from "@/lib/chat/selectionContext";
 import {
   MAX_SESSIONS,
@@ -84,6 +89,13 @@ type ChatState = {
   // arrives in the stream until its result is in, so the wait is narrated
   // rather than spent on a row of dots.
   streamingActivity: string | null;
+  // The session whose reply is still being judged (see resolveUnflaggedReply),
+  // null when nothing is. On a local model that second request takes tens of
+  // seconds, and without a sign of it the proposal appears out of nowhere long
+  // after the turn looked done — or the user retries, thinking it failed. Keyed
+  // by session rather than a plain flag, so the line shows up in the chat it
+  // belongs to and not in whichever one the user navigated to meanwhile.
+  checkingReplySessionId: string | null;
   error: string | null;
   // The passage currently selected in the editor, mirrored here by the editor on
   // every selection change: the composer shows it as a chip, and the next turn
@@ -102,12 +114,21 @@ type ChatState = {
   // written into chat-sessions.json once per turn, and the turn itself already
   // records which files it was asked with.
   attachedFiles: AttachedChatFile[];
+  // Images the user dropped, pasted or picked in the composer. Same lifetime as
+  // attachedFiles, and never persisted for the same reason squared: a picture is
+  // megabytes of base64 that would be written into chat-sessions.json once per
+  // turn — see src/lib/chat/imageAttachments.ts.
+  attachedImages: AttachedChatImage[];
 
   setUseKnowledgeBase: (value: boolean) => void;
   // Answers with how many of the offered files were actually taken on, so the
   // panel can tell the user when the limit swallowed the rest.
   attachFiles: (files: AttachedChatFile[]) => number;
   removeAttachedFile: (id: string) => void;
+  // Same contract as attachFiles: the count is what lets the panel distinguish
+  // "already attached" from "the limit is full".
+  attachImages: (images: AttachedChatImage[]) => number;
+  removeAttachedImage: (id: string) => void;
   setEditorSelection: (text: string) => void;
   openPanel: () => void;
   closePanel: () => void;
@@ -235,6 +256,28 @@ function withPendingProposalNote(messages: AiChatMessage[]): AiChatMessage[] {
   return messages;
 }
 
+/**
+ * "image.png" → "image 2.png", counting up until the name is free. Only ever
+ * used on an attachment whose name already clashes, so an ordinary file keeps
+ * the name it was dropped with.
+ */
+function nextFreeName(name: string, existing: readonly { name: string }[]): string {
+  const taken = new Set(existing.map((entry) => entry.name.toLowerCase()));
+  const dot = name.lastIndexOf(".");
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const extension = dot > 0 ? name.slice(dot) : "";
+
+  for (let index = 2; index < 100; index += 1) {
+    const candidate = `${stem} ${index}${extension}`;
+
+    if (!taken.has(candidate.toLowerCase())) {
+      return candidate;
+    }
+  }
+
+  return name;
+}
+
 function persist(state: ChatState): void {
   if (!state.loadedFolderPath) {
     return;
@@ -263,10 +306,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
   loadedFolderPath: null,
   isStreaming: false,
   ...IDLE_STREAM_VIEW,
+  checkingReplySessionId: null,
   error: null,
   editorSelection: "",
   useKnowledgeBase: true,
   attachedFiles: [],
+  attachedImages: [],
 
   setUseKnowledgeBase: (value) => set({ useKnowledgeBase: value }),
 
@@ -300,6 +345,43 @@ export const useChatStore = create<ChatState>((set, get) => ({
   removeAttachedFile: (id) =>
     set((state) => ({ attachedFiles: state.attachedFiles.filter((file) => file.id !== id) })),
 
+  attachImages: (images) => {
+    const current = get().attachedImages;
+    // Compared by content, not by name: every screenshot pasted from the
+    // clipboard is called "image.png", so a name comparison would take the
+    // second one for a duplicate of the first and silently swallow it — which
+    // made the whole feature look like it allowed a single picture. The encoded
+    // payload is already in hand here, so it costs nothing to be exact.
+    const seen = new Set(current.map((image) => image.base64));
+    const added: AttachedChatImage[] = [];
+
+    for (const image of images) {
+      if (seen.has(image.base64) || current.length + added.length >= MAX_ATTACHED_IMAGES_PER_CHAT) {
+        continue;
+      }
+
+      seen.add(image.base64);
+      // Clipboard screenshots all arrive as "image.png", and the name is what
+      // the chip shows AND what the model is told the picture is called (see
+      // buildImageAttachmentNote). Two attachments the user cannot tell apart —
+      // and cannot refer to in a question — are worse than a numbered name.
+      const clashes = [...current, ...added].some(
+        (existing) => existing.name.toLowerCase() === image.name.toLowerCase()
+      );
+
+      added.push(clashes ? { ...image, name: nextFreeName(image.name, [...current, ...added]) } : image);
+    }
+
+    if (added.length > 0) {
+      set({ attachedImages: [...current, ...added] });
+    }
+
+    return added.length;
+  },
+
+  removeAttachedImage: (id) =>
+    set((state) => ({ attachedImages: state.attachedImages.filter((image) => image.id !== id) })),
+
   // Pushed on every editor selection change, so the no-op case (typing, with
   // nothing selected before or after) must not re-render the panel.
   setEditorSelection: (text) => {
@@ -326,7 +408,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // The attachments belong to the chat they were dropped into; a fresh one
       // starts without them (same reasoning everywhere the session changes
       // below).
-      attachedFiles: []
+      attachedFiles: [],
+      attachedImages: []
     });
   },
   closePanel: () => set({ isOpen: false }),
@@ -338,7 +421,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
   showOverview: () => set({ view: "overview", error: null }),
-  openSession: (id) => set({ activeSessionId: id, view: "chat", error: null, attachedFiles: [] }),
+  openSession: (id) =>
+    set({
+      activeSessionId: id,
+      view: "chat",
+      error: null,
+      attachedFiles: [],
+      attachedImages: []
+    }),
   newSession: () => {
     get().cancel();
     set({
@@ -346,7 +436,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       view: "chat",
       ...IDLE_STREAM_VIEW,
       error: null,
-      attachedFiles: []
+      attachedFiles: [],
+      attachedImages: []
     });
   },
   deleteSession: (id) => {
@@ -384,7 +475,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
         view: "chat",
         ...IDLE_STREAM_VIEW,
         error: null,
-        attachedFiles: []
+        attachedFiles: [],
+        attachedImages: []
       });
       return;
     }
@@ -398,7 +490,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       view: "chat",
       ...IDLE_STREAM_VIEW,
       error: null,
-      attachedFiles: []
+      attachedFiles: [],
+      attachedImages: []
     });
   },
   sendMessage: async (text, action) => {
@@ -427,13 +520,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // assembled per request from the live attachment list, so detaching a file
     // takes effect immediately instead of being frozen into the history.
     const attachedFileNames = get().attachedFiles.map((file) => file.path || file.name);
+    const attachedImageNames = get().attachedImages.map((image) => image.name);
 
     const userMessage: AiChatMessage = {
       role: "user",
       content,
       ...(action ? { action } : {}),
       ...(selection ? { selection } : {}),
-      ...(attachedFileNames.length > 0 ? { attachedFileNames } : {})
+      ...(attachedFileNames.length > 0 ? { attachedFileNames } : {}),
+      ...(attachedImageNames.length > 0 ? { attachedImageNames } : {})
     };
 
     // Resolve the target session, creating one on the first message.
@@ -475,9 +570,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // preference, which would silently strip the running request. Once the user
     // has navigated away, the turn keeps what it was sent with.
     const attachedAtSend = get().attachedFiles;
+    const attachedImagesAtSend = get().attachedImages;
     const useKnowledgeBaseAtSend = get().useKnowledgeBase;
     const isOnScreen = () => get().activeSessionId === session.id;
     const currentAttachedFiles = () => (isOnScreen() ? get().attachedFiles : attachedAtSend);
+    const currentAttachedImages = () =>
+      isOnScreen() ? get().attachedImages : attachedImagesAtSend;
     const currentUseKnowledgeBase = () =>
       isOnScreen() ? get().useKnowledgeBase : useKnowledgeBaseAtSend;
 
@@ -784,10 +882,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
               // along with it. Re-read per iteration like the history itself, so
               // a file detached mid-turn is gone from the next step's request
               // (see currentAttachedFiles for the one case that does not hold).
-              inlineAttachedFiles(
-                inlineSelectionContext(history),
-                currentAttachedFiles(),
-                aiSettings.contextLength
+              inlineAttachedImages(
+                inlineAttachedFiles(
+                  inlineSelectionContext(history),
+                  currentAttachedFiles(),
+                  aiSettings.contextLength
+                ),
+                currentAttachedImages()
               ),
               systemEstimate,
               aiSettings.contextLength
@@ -1154,12 +1255,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
         useAppStore.getState().selectedFilePath
       ) {
         const pending = unflaggedReply.value;
-        const verdict = await resolveUnflaggedReply(
-          aiSettings,
-          content,
-          pending.text,
-          abortController.signal
-        );
+
+        // Said out loud for as long as it runs: on a local model this is a full
+        // second request, and a proposal that appears half a minute after the
+        // turn looked finished reads as the app doing something behind the
+        // user's back. The composer stays free — they are not waiting for it.
+        set({ checkingReplySessionId: session.id });
+
+        let verdict;
+
+        try {
+          verdict = await resolveUnflaggedReply(
+            aiSettings,
+            content,
+            pending.text,
+            abortController.signal
+          );
+        } finally {
+          set({ checkingReplySessionId: null });
+        }
 
         // Text the user asked to have written goes into the document, not onto
         // a button that asks them to ask again. The proposal can still be

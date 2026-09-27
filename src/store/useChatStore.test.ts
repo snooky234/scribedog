@@ -48,7 +48,9 @@ vi.mock("@/lib/chat/pendingSuggestion", () => ({
   resolveUnflaggedReply: async () => ({ kind: "none" })
 }));
 vi.mock("@/lib/chat/imageAttachments", () => ({
-  attachImageData: async (messages: unknown) => messages
+  attachImageData: async (messages: unknown) => messages,
+  inlineAttachedImages: (messages: unknown) => messages,
+  MAX_ATTACHED_IMAGES_PER_CHAT: 4
 }));
 
 // No note is open, so the turn never reaches the editor-proposal bookkeeping.

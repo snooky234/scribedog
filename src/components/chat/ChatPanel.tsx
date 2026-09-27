@@ -29,6 +29,7 @@ import { join } from "@/platform/paths";
 
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
+import { ImagePreviewDialog } from "@/components/chat/ImagePreviewDialog";
 import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
@@ -47,6 +48,14 @@ import {
   readVaultAttachment,
   type AttachedChatFile
 } from "@/lib/chat/attachedFiles";
+import {
+  imagePreviewUrl,
+  isAttachableImageName,
+  MAX_ATTACHED_IMAGES_PER_CHAT,
+  readAttachedImageFile,
+  type AttachedChatImage,
+  type ImageAttachmentError
+} from "@/lib/chat/imageAttachments";
 import {
   carriesExternalFiles,
   readDropPayload,
@@ -861,6 +870,14 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   // Converting a PDF takes seconds, so the drop hint stays up and says so
   // instead of leaving the panel looking like nothing happened.
   const [isAttaching, setIsAttaching] = useState(false);
+  // The image picker: a plain file input rather than the native dialog, because
+  // the bytes come with the pick and nothing has to be read off disk — so it
+  // needs no fs capability and works identically in the browser build.
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  // The attachment being viewed full size, or null. Holds the attachment rather
+  // than its id, so the dialog keeps showing the picture through the closing
+  // animation even if it is detached while open.
+  const [previewImage, setPreviewImage] = useState<AttachedChatImage | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
@@ -909,6 +926,10 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   const streamingText = useChatStore((state) => state.streamingText);
   const streamingThinking = useChatStore((state) => state.streamingThinking);
   const streamingActivity = useChatStore((state) => state.streamingActivity);
+  // Only for the chat on screen: the check belongs to the turn that started it.
+  const isCheckingReply = useChatStore(
+    (state) => state.checkingReplySessionId !== null && state.checkingReplySessionId === state.activeSessionId
+  );
   const error = useChatStore((state) => state.error);
   const loadedFolderPath = useChatStore((state) => state.loadedFolderPath);
   const editorSelection = useChatStore((state) => state.editorSelection);
@@ -927,6 +948,9 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   const attachedFiles = useChatStore((state) => state.attachedFiles);
   const attachFiles = useChatStore((state) => state.attachFiles);
   const removeAttachedFile = useChatStore((state) => state.removeAttachedFile);
+  const attachedImages = useChatStore((state) => state.attachedImages);
+  const attachImages = useChatStore((state) => state.attachImages);
+  const removeAttachedImage = useChatStore((state) => state.removeAttachedImage);
   const vaultFolderPath = useAppStore((state) => state.folderPath);
   const vaultFilePaths = useAppStore((state) => state.filePaths);
   const ragConfig = useRagSettingsStore((state) => state.config);
@@ -1081,8 +1105,70 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
     );
   };
 
+  // The image counterpart of commitAttachments. Kept apart rather than folded
+  // in: the two lists have their own caps, and a rejected image needs its own
+  // sentence — "not readable, attachable are text, PDF and Word files" is the
+  // wrong advice for a 30 MB photo.
+  const commitImages = (
+    images: AttachedChatImage[],
+    rejected: string[],
+    reason: ImageAttachmentError | null
+  ) => {
+    const added = attachImages(images);
+
+    if (rejected.length > 0) {
+      setAttachError(
+        reason === "tooLarge"
+          ? t("chat.imageAttachmentTooLarge", { files: rejected.join(", ") })
+          : t("chat.imageAttachmentRejected", { files: rejected.join(", ") })
+      );
+      return;
+    }
+
+    // Fewer taken on than offered also happens for a picture that is already
+    // attached, which needs no warning — only a full list does.
+    setAttachError(
+      added < images.length &&
+        useChatStore.getState().attachedImages.length >= MAX_ATTACHED_IMAGES_PER_CHAT
+        ? t("chat.imageAttachmentLimit", { max: MAX_ATTACHED_IMAGES_PER_CHAT })
+        : null
+    );
+  };
+
+  // Images handed over by the webview: dropped from outside, pasted from the
+  // clipboard or picked in the dialog. All three carry their bytes with them, so
+  // they take the same path.
+  const takeImageFiles = async (files: readonly File[]) => {
+    const images: AttachedChatImage[] = [];
+    const rejected: string[] = [];
+    let reason: ImageAttachmentError | null = null;
+
+    setIsAttaching(true);
+
+    try {
+      for (const file of files) {
+        const result = await readAttachedImageFile(file);
+
+        if (result.ok) {
+          images.push(result.attachment);
+        } else {
+          rejected.push(file.name || t("chat.imageAttachmentUnnamed"));
+          reason = result.reason;
+        }
+      }
+    } finally {
+      setIsAttaching(false);
+    }
+
+    commitImages(images, rejected, reason);
+  };
+
   // Notes dragged out of the file tree. Files coming from the OS take the
   // native route below instead — they never reach a React drag event.
+  // No image branch here on purpose: the file tree lists notes only, and
+  // getDraggedVaultFilePaths filters the payload down to *.md on top of that, so
+  // a picture can never arrive this way. Images from the vault are attached
+  // through the picker or by dragging them out of the file manager.
   const takeVaultPaths = async (vaultPaths: string[]) => {
     const attachments: AttachedChatFile[] = [];
     const rejected: string[] = [];
@@ -1105,12 +1191,16 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
   const takeDroppedFiles = async (payload: DropPayload) => {
     const attachments: AttachedChatFile[] = [];
     const rejected: string[] = [];
-    // A folder and a missing model are worth their own sentence: the first has
-    // a place to go, the second is one setting away from working.
+    // A folder is worth its own sentence: it has a place to go.
     const folderNames = new Set(
       payload.entries.filter((entry) => entry.isDirectory).map((entry) => entry.name)
     );
     let notice = folderNames.size > 0 ? t("chat.attachmentFolder") : undefined;
+    // Images take the vision path instead of the OCR converter: the point of
+    // attaching one is to have the model *look* at it.
+    const images: AttachedChatImage[] = [];
+    const rejectedImages: string[] = [];
+    let imageReason: ImageAttachmentError | null = null;
 
     setIsAttaching(true);
 
@@ -1120,12 +1210,23 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
           continue;
         }
 
+        if (isAttachableImageName(file.name) || file.type.startsWith("image/")) {
+          const imageResult = await readAttachedImageFile(file);
+
+          if (imageResult.ok) {
+            images.push(imageResult.attachment);
+          } else {
+            rejectedImages.push(file.name);
+            imageReason = imageResult.reason;
+          }
+
+          continue;
+        }
+
         const result = await readDroppedAttachment(file);
 
         if (result.ok) {
           attachments.push(result.attachment);
-        } else if (result.reason === "ocrNoModel") {
-          notice = t("chat.attachmentOcrNoModel");
         } else {
           rejected.push(file.name);
         }
@@ -1134,7 +1235,16 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
       setIsAttaching(false);
     }
 
-    commitAttachments(attachments, rejected, notice);
+    if (images.length > 0 || rejectedImages.length > 0) {
+      commitImages(images, rejectedImages, imageReason);
+    }
+
+    // Second, so that with a mixed drop the file-side message is the one left
+    // standing: it carries the folder notice, which is the more actionable of
+    // the two.
+    if (attachments.length > 0 || rejected.length > 0 || notice) {
+      commitAttachments(attachments, rejected, notice);
+    }
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLElement>) => {
@@ -1180,6 +1290,35 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
 
     if (payload) {
       void takeDroppedFiles(payload);
+    }
+  };
+
+  // Ctrl+V with a screenshot in the clipboard — the most direct way to ask about
+  // something on screen, and the reason the picker below is only the fallback.
+  const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const images = Array.from(event.clipboardData?.files ?? []).filter((file) =>
+      file.type.startsWith("image/")
+    );
+
+    if (images.length === 0) {
+      return;
+    }
+
+    // Only once a picture is actually in the payload: a clipboard carrying both
+    // text and an image (copying from a web page does) must still paste its text.
+    event.preventDefault();
+    void takeImageFiles(images);
+  };
+
+  const handleImagePick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+
+    // Cleared right away, so picking the same file twice in a row fires change
+    // again instead of looking like nothing happened.
+    event.target.value = "";
+
+    if (files.length > 0) {
+      void takeImageFiles(files);
     }
   };
 
@@ -1359,6 +1498,20 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
                 </div>
               ) : null}
 
+              {/* Likewise for the pictures. Only the names survive in the
+                  history: the payloads live in the store while the image stays
+                  attached, so a reopened transcript can say what was asked about
+                  without carrying megabytes of base64. */}
+              {message.attachedImageNames?.length ? (
+                <div
+                  className="chat-message__attachments"
+                  title={message.attachedImageNames.join("\n")}
+                >
+                  <ImageIcon className="size-3 shrink-0" />
+                  <span>{message.attachedImageNames.map(fileNameFromPath).join(", ")}</span>
+                </div>
+              ) : null}
+
               {/* The passage this turn was asked about. It is not part of the
                   message the user typed, so it stays a quote above the bubble —
                   the same passage the model received as context. */}
@@ -1412,6 +1565,16 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
           <p className="chat-panel__hint">{t("chat.otherSessionBusy")}</p>
         ) : null}
 
+        {/* The turn is over and the composer is free, but the reply is still
+            being judged. On a local model that takes tens of seconds, and a
+            proposal arriving out of nowhere afterwards is what this prevents. */}
+        {isCheckingReply ? (
+          <p className="chat-panel__hint chat-panel__hint--working">
+            <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+            <span>{t("chat.checkingReply")}</span>
+          </p>
+        ) : null}
+
         <StagedChangesCard
           changes={stagedChanges}
           isApplying={isApplyingStaged}
@@ -1456,6 +1619,49 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
                   onClick={() => {
                     setAttachError(null);
                     removeAttachedFile(file.id);
+                  }}
+                >
+                  <X className="size-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {/* The pictures this chat is asked about. Same row and same lifetime as
+            the file chips above, with a thumbnail instead of an icon: what the
+            chip shows is byte for byte what the model is sent. */}
+        {attachedImages.length > 0 ? (
+          <div
+            className="chat-panel__attachments"
+            aria-label={t("chat.imageAttachmentsLabel")}
+          >
+            {attachedImages.map((image) => (
+              <span key={image.id} className="chat-panel__attachment">
+                {/* Thumbnail and name are one button, so the whole chip opens
+                    the picture while the X beside it stays its own target. */}
+                <button
+                  type="button"
+                  className="chat-panel__attachment-open"
+                  title={t("chat.imageAttachmentView", { name: image.name })}
+                  aria-label={t("chat.imageAttachmentView", { name: image.name })}
+                  onClick={() => setPreviewImage(image)}
+                >
+                  <img
+                    className="chat-panel__attachment-thumb"
+                    src={imagePreviewUrl(image)}
+                    alt=""
+                  />
+                  <span className="chat-panel__attachment-name">{image.name}</span>
+                </button>
+                <button
+                  type="button"
+                  className="chat-panel__selection-drop"
+                  aria-label={t("chat.imageAttachmentDetach", { name: image.name })}
+                  title={t("chat.imageAttachmentDetach", { name: image.name })}
+                  onClick={() => {
+                    setAttachError(null);
+                    removeAttachedImage(image.id);
                   }}
                 >
                   <X className="size-3" />
@@ -1516,6 +1722,7 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
             readOnly={isRecording || isTranscribing}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
           />
           {isAnswering ? (
             <Button
@@ -1544,6 +1751,26 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
 
         <div className="chat-panel__controls">
           <AssistantSelect onAssistantSettingsRequest={onAssistantSettingsRequest} />
+          {/* Drop and paste are the quick ways in, but both are invisible until
+              someone tries them — this is what makes attaching a picture
+              discoverable at all. */}
+          <button
+            type="button"
+            className="chat-panel__attach-image"
+            title={t("chat.attachImage")}
+            aria-label={t("chat.attachImage")}
+            onClick={() => imageInputRef.current?.click()}
+          >
+            <ImageIcon className="size-4" aria-hidden="true" />
+          </button>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/gif,image/webp,image/bmp"
+            multiple
+            hidden
+            onChange={handleImagePick}
+          />
           {platform.features.voiceInput ? (
             <button
               type="button"
@@ -1602,6 +1829,12 @@ export function ChatPanel({ canEditDocument, onAssistantSettingsRequest }: ChatP
             void useStagedChangesStore.getState().revertTo(target);
           }
         }}
+      />
+
+      <ImagePreviewDialog
+        src={previewImage ? imagePreviewUrl(previewImage) : null}
+        name={previewImage?.name ?? ""}
+        onClose={() => setPreviewImage(null)}
       />
 
       <VoiceModelDownloadDialog

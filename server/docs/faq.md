@@ -184,6 +184,13 @@ Not yet: the server only forwards to the cloud providers, and a browser
 reaches a local model server directly. The desktop app with a server vault
 uses the model on your computer, as always.
 
+**Can I show the chat an image?**
+Yes: drag it onto the chat panel, paste it from the clipboard, or use the
+image button below the input field. The model has to support images, though;
+without that it says so instead of answering. An attached image lives in the
+browser tab, not in the vault, so it is gone after a reload while the
+conversation stays. See [AI](ai.md#the-chat-agent).
+
 **I don't use AI. Can I get rid of the buttons?**
 Yes: Settings → Application → Show AI features. It hides the toolbar
 buttons, the chat and the AI settings pages in that browser; your AI

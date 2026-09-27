@@ -158,6 +158,16 @@ export async function attachImageData(messages: AiChatMessage[]): Promise<AiChat
   const result = [...messages];
   let remaining = MAX_ATTACHED_IMAGES;
 
+  // Images the composer already hung on a turn (see inlineAttachedImages) are
+  // payloads in this very request, so they are charged against the cap first —
+  // otherwise the two halves of this module would each spend the whole budget
+  // and one request would carry twice what the cap allows.
+  for (const message of result) {
+    if (message.role === "user" && message.images?.length) {
+      remaining -= message.images.length;
+    }
+  }
+
   for (let i = result.length - 1; i >= 0 && remaining > 0; i -= 1) {
     const message = result[i];
 
@@ -177,9 +187,225 @@ export async function attachImageData(messages: AiChatMessage[]): Promise<AiChat
 
     if (images.length > 0) {
       remaining -= images.length;
-      result[i] = { ...message, images };
+      // Appended, never assigned: a turn can carry both an attached image and
+      // one get_image resolved, and the attached one was here first.
+      result[i] = { ...message, images: [...(message.images ?? []), ...images] };
     }
   }
 
   return result;
+}
+
+// --- Images the user attached to the chat -------------------------------------
+//
+// The other half of this module: pictures the user dropped, pasted or picked in
+// the composer, as opposed to the ones above that a model asked for with
+// get_image.
+//
+// The two cannot share the path-based model. An image from get_image is by
+// definition embedded in a vault document, so a path is all the history needs
+// and re-reading it per request is the *right* behaviour. An image the user
+// pasted from the clipboard has no path at all — the webview hands over bytes
+// and nothing else — and one dropped from the Explorer sits outside the vault,
+// where the fs capability does not reach. So these carry their payload with
+// them, live in the chat store for as long as they stay attached (same
+// lifetime as the attached files next door) and are folded into the outgoing
+// request from there.
+//
+// Consequently nothing here is written to disk: not into the vault, and not
+// into chat-sessions.json. The history keeps the *names* so a reopened
+// transcript can still say what a question was asked about, which is the same
+// split attachedFiles.ts uses for its content.
+
+/** An image attached to the chat, already encoded for a vision request. */
+export type AttachedChatImage = {
+  // Stable per attachment so the chip's remove button addresses one entry even
+  // when two folders hold a picture of the same name.
+  id: string;
+  name: string;
+  // Already through encodeImageForVision, so what the chip previews is byte for
+  // byte what the model is sent — a thumbnail of a different image than the one
+  // being asked about is the confusing failure here.
+  base64: string;
+  mimeType: string;
+};
+
+/**
+ * How many images one chat can carry. Deliberately the same number as
+ * MAX_ATTACHED_IMAGES above, and charged against the same budget: both kinds
+ * end up as vision payloads in one request, and it is the total that makes a
+ * local model crawl.
+ */
+export const MAX_ATTACHED_IMAGES_PER_CHAT = MAX_ATTACHED_IMAGES;
+
+// Refused before decoding. encodeImageForVision scales everything down to
+// 1568px, so a file this large is not a picture someone means to ask about, and
+// decoding it would freeze the UI for seconds before the pixels are thrown away.
+const MAX_IMAGE_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+
+function createId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `image-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+// SVG is deliberately absent: it is markup, no vision model takes it, and
+// createImageBitmap refuses it in the webview too — so it would be attached,
+// silently fail to encode and be reported as unreadable. Everything else
+// guessImageMimeType knows is a raster format a provider accepts.
+const ATTACHABLE_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp"];
+
+function isAttachableImageMimeType(mimeType: string): boolean {
+  return ATTACHABLE_IMAGE_MIME_TYPES.includes(mimeType);
+}
+
+/** Whether this file name is one of the image formats a vision request takes. */
+export function isAttachableImageName(name: string): boolean {
+  return isAttachableImageMimeType(guessImageMimeType(name));
+}
+
+/** The data: URL that previews an attachment in its chip. */
+export function imagePreviewUrl(image: AttachedChatImage): string {
+  return `data:${image.mimeType};base64,${image.base64}`;
+}
+
+export type ImageAttachmentError = "unsupported" | "tooLarge" | "failed";
+
+export type ImageAttachmentResult =
+  | { ok: true; attachment: AttachedChatImage }
+  | { ok: false; reason: ImageAttachmentError };
+
+async function encodeAttachment(
+  name: string,
+  bytes: Uint8Array,
+  mimeType: string
+): Promise<ImageAttachmentResult> {
+  try {
+    const encoded = await encodeImageForVision(bytes, mimeType);
+
+    return {
+      ok: true,
+      attachment: {
+        id: createId(),
+        name,
+        base64: encoded.base64,
+        mimeType: encoded.mimeType
+      }
+    };
+  } catch {
+    return { ok: false, reason: "failed" };
+  }
+}
+
+/**
+ * Reads an image handed over by the webview — dropped from outside the app,
+ * pasted from the clipboard or picked in the file dialog.
+ *
+ * Needs no filesystem permission at all: the drop, paste or pick *is* the user
+ * handing the picture over, and the bytes come with it. Same reasoning as
+ * readDroppedAttachment in attachedFiles.ts.
+ */
+export async function readAttachedImageFile(file: File): Promise<ImageAttachmentResult> {
+  // A pasted screenshot arrives as "image.png" or with no useful name at all,
+  // so the type the clipboard reports decides and the extension is only the
+  // fallback for a file dragged in from the Explorer.
+  const mimeType = isAttachableImageMimeType(file.type)
+    ? file.type
+    : guessImageMimeType(file.name);
+
+  if (!isAttachableImageMimeType(mimeType)) {
+    return { ok: false, reason: "unsupported" };
+  }
+
+  if (file.size > MAX_IMAGE_ATTACHMENT_BYTES) {
+    return { ok: false, reason: "tooLarge" };
+  }
+
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+
+    return await encodeAttachment(file.name || "image", bytes, mimeType);
+  } catch {
+    return { ok: false, reason: "failed" };
+  }
+}
+
+/**
+ * Model-facing English, like the note inlineAttachedFiles builds next door.
+ *
+ * Without it the turn carries raw image blocks and nothing that says where they
+ * came from, and a small model meets them with "please upload the image" — the
+ * transcript that prompted this. Saying the picture is already here, and that
+ * there is no upload step and nothing to fetch, is what turns it into something
+ * the model acts on instead of asking about.
+ */
+function buildImageAttachmentNote(images: readonly AttachedChatImage[]): string {
+  const isSingle = images.length === 1;
+  const names = images.map((image) => image.name).join(", ");
+
+  return (
+    `[Attached image${isSingle ? "" : "s"}: the user attached ${isSingle ? "this picture" : "these pictures"} ` +
+    `to the conversation (${names}), and ${isSingle ? "it is" : "they are"} included in this message as ` +
+    `${isSingle ? "an image you can see" : "images you can see"}. There is nothing to upload, nothing to ` +
+    "fetch and no path to look up: look at the picture and answer from what is in it. Never ask the user " +
+    "to send or upload it, and never say you cannot see it — if you genuinely cannot, say that your model " +
+    `has no vision support. get_image does not apply here; that tool reads images out of the open ` +
+    "document, not the ones attached to the chat.]"
+  );
+}
+
+/**
+ * Derived view of the history with the attached images hung on the newest user
+ * turn, mirroring inlineAttachedFiles.
+ *
+ * Only that one turn carries them: they are the same pictures for every turn of
+ * the conversation, so repeating them per turn would spend the whole context
+ * window — and several megabytes of base64 — on the same image. Never
+ * persisted: detaching an image in the composer is enough to make the next
+ * request go out without it.
+ *
+ * Runs before attachImageData, which then tops the turn up with whatever
+ * get_image resolved, up to the shared cap.
+ */
+export function inlineAttachedImages(
+  messages: AiChatMessage[],
+  images: readonly AttachedChatImage[]
+): AiChatMessage[] {
+  if (images.length === 0) {
+    return messages;
+  }
+
+  const taken = images.slice(0, MAX_ATTACHED_IMAGES_PER_CHAT);
+  const attached: AiChatImage[] = taken.map((image) => ({
+    path: image.name,
+    base64: image.base64,
+    mimeType: image.mimeType
+  }));
+  const note = buildImageAttachmentNote(taken);
+
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+
+    // Never the turn that only exists to carry an image the agent asked for:
+    // the user did not write it, and its own images are resolved from
+    // imagePaths. Same guard as inlineAttachedFiles.
+    if (message.role !== "user" || message.imagePaths?.length) {
+      continue;
+    }
+
+    const expanded = [...messages];
+    expanded[i] = {
+      ...message,
+      content: `${note}
+
+${message.content}`,
+      images: [...attached, ...(message.images ?? [])]
+    };
+
+    return expanded;
+  }
+
+  return messages;
 }

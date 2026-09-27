@@ -41,10 +41,27 @@ sessions live in the vault, next to the notes: open proposals in
 open the same server from another device, or from the desktop app, and the
 pending proposals and the undo history are there.
 
+You can hand the chat files and images: drag them onto the panel, paste an
+image from the clipboard, or use the image button below the input field. Files
+become the chat's primary source, images are shown to the model itself, so a
+model with vision support can read a screenshot and write what it says into a
+note. Both belong to the one chat you attached them to and are kept in the
+browser tab only, not in the vault: they are gone when you reload the page or
+switch to another chat, while the conversation itself stays. The turn keeps the
+names, so an older chat still shows what it was asked about.
+
 Each step of an agent run is one request through the server to the provider,
 and each note the agent reads is one request to the server, so a long run
 over many notes takes a little longer over Wi-Fi than on the desktop; it does
 not need anything else.
+
+Small models sometimes answer a request to write something by putting the
+text in the chat and saying they wrote it into the note, without actually
+doing it. The app catches that: it asks the model once more what its reply
+was, and puts the text into the document as a proposal after all. That second
+question takes a moment on a local model, and the chat says "Checking the
+reply" while it runs, so a proposal that appears a little later is not
+something going wrong.
 
 ## A model on your own device
 
