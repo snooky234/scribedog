@@ -10,8 +10,14 @@
   overflow: clip;
 }
 
+/* The explicit column matters: the implicit `auto` one grows to the widest
+   child's min-content, and the clip then cuts off text and toolbar instead
+   of letting them wrap. A table sized to its content (tableWidth "content")
+   reports its whole unwrapped width there, and .tableWrapper's own scroll
+   cannot catch it, because the column grows before the wrapper is sized. */
 .detail-panel__card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 0.85rem;
   min-height: 100%;

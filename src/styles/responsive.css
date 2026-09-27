@@ -89,12 +89,7 @@
     max-width: none;
   }
 
-  /* The implicit `auto` column would grow to the widest child (a long
-     title, the toolbar row) and push the card past the viewport; a track
-     that may shrink to nothing keeps everything at viewport width and lets
-     the title ellipsize and the toolbar scroll. */
   .detail-panel__card {
-    grid-template-columns: minmax(0, 1fr);
     padding: 1rem;
   }
 
