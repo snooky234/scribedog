@@ -21,6 +21,7 @@ import { EditorImage } from "./image";
 import { ListBackspace } from "./listBackspace";
 import { HardBreak, Table, TableCell, TableHeader, TableRow } from "./table";
 import { TaskItem, TaskList, TaskListMarkdown } from "./taskList";
+import { Text } from "./text";
 import { Underline } from "./underline";
 
 // Everything that defines the document model itself, in the order TipTap loads
@@ -39,8 +40,12 @@ function buildContentExtensions(): Extensions {
       codeBlock: false,
       hardBreak: false,
       link: false,
+      text: false,
       underline: false
     }),
+    // Replaces StarterKit's text node: tiptap-markdown's serializer for it
+    // would escape "<" and ">" into entities on every save (text.ts).
+    Text,
     CodeBlock,
     ListBackspace,
     HardBreak,

@@ -259,8 +259,9 @@ const LINE_BREAK_SPLIT_PATTERN = /(<br\s*\/?>)/i;
 // Turns a literal "<br>" inside a table cell into a hard break. With
 // `html: false` markdown-it keeps the tag as text, so the line breaks the
 // serializer writes would come back as "<br>" on screen. A "<br>" the user
-// typed into a cell is written as "&lt;br&gt;" by the text serializer and
-// stays text, so the two can't be confused. Exported for the export
+// typed into a cell is written as "&lt;br&gt;" by the text serializer (the
+// one tag it still escapes, and only in a cell: text.ts) and stays text,
+// so the two can't be confused. Exported for the export
 // pipeline, which parses the same files with its own markdown-it.
 export function tableLineBreakMarkdownItPlugin(md: MarkdownIt): void {
   md.core.ruler.after("inline", "scribedog_table_line_break", (state) => {

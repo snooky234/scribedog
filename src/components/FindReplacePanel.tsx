@@ -195,10 +195,19 @@ export function FindReplacePanel({
           continue;
         }
 
+        const document = fileDocuments[path];
+        // Only *unsaved* edits make the in-memory copy the better source.
+        // A document that is merely open holds the editor's serialized form,
+        // which is a faithful but not character-for-character copy of the
+        // file. Searching it made a hit disappear the moment its file had
+        // been opened once, while the same query still found it everywhere
+        // else. The file on disk is what the user is searching.
+        const hasUnsavedEdits = document !== undefined && document.content !== document.baseContent;
+
         let content: string;
 
         try {
-          content = fileDocuments[path]?.content ?? (await readMarkdownFile(path));
+          content = hasUnsavedEdits ? document.content : await readMarkdownFile(path);
         } catch {
           continue;
         }
