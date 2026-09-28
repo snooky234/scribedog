@@ -21,7 +21,9 @@
     zoom: 1 !important;
   }
 
-  html.scribedog-printing #root {
+  /* Not only #root: the phone sheets (sidebar, chat, details), menus and
+     popovers are portalled straight into body and would print over the note. */
+  html.scribedog-printing body > :not(.print-root) {
     display: none !important;
   }
 
