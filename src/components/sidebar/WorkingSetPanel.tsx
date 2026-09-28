@@ -94,10 +94,6 @@ export function WorkingSetPanel({
   const showPins = useEditorSettingsStore((state) => state.autoAdmitWorkingSet);
   const openOnDoubleClick = useEditorSettingsStore((state) => state.openOnDoubleClick);
   const clickOpens = () => singleClickOpens(openOnDoubleClick, isCoarsePointer());
-  // With open on double-click, the row a click or an arrow key marked. The
-  // tree has its selection for this; here it only needs to show where the
-  // mouse left off, since the focus ring is the keyboard's.
-  const [markedFilePath, setMarkedFilePath] = useState<string | null>(null);
   const dirtySet = new Set(dirtyFilePaths);
   const hasDirty = entries.some((entry) => dirtySet.has(entry.filePath));
   const hasClosable = entries.some((entry) => !entry.pinned && !dirtySet.has(entry.filePath));
@@ -119,11 +115,12 @@ export function WorkingSetPanel({
 
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
 
+  // With open on double-click a click only focuses the row, and the focus
+  // ring marks it, as in the tree. A tint of its own outlived the click: it
+  // stayed on the row after it had been opened and left again.
   const activateRow = (filePath: string) => {
     if (clickOpens()) {
       onSelect(filePath);
-    } else {
-      setMarkedFilePath(filePath);
     }
   };
 
@@ -338,11 +335,7 @@ export function WorkingSetPanel({
                       rowRefs.current.delete(entry.filePath);
                     }
                   }}
-                  className={cn(
-                    "working-set__row",
-                    isActive && "working-set__row--active",
-                    !isActive && markedFilePath === entry.filePath && "working-set__row--marked"
-                  )}
+                  className={cn("working-set__row", isActive && "working-set__row--active")}
                   title={relativePath}
                   aria-current={isActive ? "true" : undefined}
                   onClick={() => activateRow(entry.filePath)}

@@ -181,19 +181,10 @@
   background: rgba(var(--surface-hover-rgb), 0.92);
 }
 
+/* No tint of its own for the focused row: the ring below marks it, and the
+   grey belongs to the open note (--active), as in the tree. */
 .working-set__row:focus-visible {
   outline: none;
-  background: rgba(var(--selection-rgb), 0.14);
-}
-
-/* Open on double-click: the row a click marked without opening it, the
-   tree's --selected tint. */
-.working-set__row.working-set__row--marked {
-  background: rgba(var(--selection-rgb), 0.14);
-}
-
-.working-set__row.working-set__row--marked:hover {
-  background: rgba(var(--selection-rgb), 0.18);
 }
 
 /* Same marker as the open note in the tree (file-tree.css --active, and the
