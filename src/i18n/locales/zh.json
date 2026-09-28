@@ -597,7 +597,9 @@
   "versioningSettings": {
     "scope": "此开关对整个应用程序生效。版本本身保存在当前打开的文件夹的 .scribedog 中。",
     "enable": "启用版本管理",
-    "enableShort": "每次保存都会先保留文件之前的内容。",
+    "enableShort": "每次保存都会把保存的内容记为一个版本，之后可以随时恢复。",
+    "enableShortAutoSave": "开启自动保存时，只有在离开笔记（切换到其他笔记或文件夹、关闭应用）或按 {{keys}} 保存时才会创建版本。",
+    "enableShortAutoSaveUnbound": "开启自动保存时，只有在离开笔记（切换到其他笔记或文件夹、关闭应用）或手动保存时才会创建版本。",
     "enableHint": "没有改动的保存不会创建重复版本。关闭版本管理只会停止创建新版本；现有的历史记录会保留。",
     "maxVersions": "每个文件保留的版本数",
     "maxVersionsShort": "达到上限后，该文件最旧的版本会被删除。",
@@ -903,7 +905,10 @@
     "buttonTitle": "缩放（Ctrl++ / Ctrl+-）",
     "zoomIn": "放大（Ctrl++）",
     "zoomOut": "缩小（Ctrl+-）",
-    "reset": "重置缩放（Ctrl+0）"
+    "reset": "重置缩放（Ctrl+0）",
+    "zoomInLabel": "放大",
+    "zoomOutLabel": "缩小",
+    "resetLabel": "重置缩放"
   },
   "tableMenu": {
     "options": "表格选项",

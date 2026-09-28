@@ -68,6 +68,7 @@ import { sourceFromPath } from "@/lib/import/convert";
 import { IMPORT_FILE_EXTENSIONS, type ImportSource } from "@/lib/import/importer";
 import { cn } from "@/lib/utils";
 import { normalizePathKey } from "@/store/appStore/pathUtils";
+import { flushPendingFileVersions } from "@/store/appStore/versioning";
 import { useAppStore } from "@/store/useAppStore";
 import type { Assistant } from "@/store/useAssistantsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
@@ -278,11 +279,14 @@ function App() {
   useAutoSave({ isAiActionPending, isSelectedFileStaged, isSelectedFileMissing });
   useDraftFlush({
     // Closing the app with auto-save on saves the open note the way leaving
-    // it would; without auto-save the draft is what comes back.
+    // it would, and so takes the version that leaving it would take; without
+    // auto-save the draft is what comes back.
     onBeforeClose: async () => {
       if (isDirty && autoSaveEnabled && !isAiActionPending && !isSelectedFileStaged && !isSelectedFileMissing) {
         await saveSelectedFile({ trigger: "auto" });
       }
+
+      await flushPendingFileVersions();
     }
   });
   useWindowReveal();

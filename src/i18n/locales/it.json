@@ -598,7 +598,9 @@
   "versioningSettings": {
     "scope": "L'interruttore vale per tutta l'applicazione. Le versioni stesse sono conservate nella cartella aperta, in .scribedog.",
     "enable": "Attiva il versionamento",
-    "enableShort": "A ogni salvataggio viene conservato il contenuto precedente del file.",
+    "enableShort": "A ogni salvataggio lo stato salvato viene conservato come versione a cui puoi tornare in seguito.",
+    "enableShortAutoSave": "Con il salvataggio automatico, una versione viene creata solo quando lasci la nota (un'altra nota, un'altra cartella, chiusura dell'app) o salvi con {{keys}}.",
+    "enableShortAutoSaveUnbound": "Con il salvataggio automatico, una versione viene creata solo quando lasci la nota (un'altra nota, un'altra cartella, chiusura dell'app) o salvi a mano.",
     "enableHint": "Un salvataggio senza modifiche non crea una versione doppia. Disattivare il versionamento interrompe solo la creazione di nuove versioni; la cronologia esistente viene mantenuta.",
     "maxVersions": "Versioni per file",
     "maxVersionsShort": "Al raggiungimento del limite viene eliminata la versione più vecchia di quel file.",
@@ -904,7 +906,10 @@
     "buttonTitle": "Zoom (Ctrl++ / Ctrl+-)",
     "zoomIn": "Aumenta lo zoom (Ctrl++)",
     "zoomOut": "Riduci lo zoom (Ctrl+-)",
-    "reset": "Reimposta lo zoom (Ctrl+0)"
+    "reset": "Reimposta lo zoom (Ctrl+0)",
+    "zoomInLabel": "Aumenta lo zoom",
+    "zoomOutLabel": "Riduci lo zoom",
+    "resetLabel": "Reimposta lo zoom"
   },
   "tableMenu": {
     "options": "Opzioni tabella",

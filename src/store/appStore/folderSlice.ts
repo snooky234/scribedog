@@ -54,7 +54,7 @@ import {
   resolveTargetDirectoryInVault
 } from "./pathUtils";
 import type { AppSlice, FileDocumentState, FolderSlice } from "./types";
-import { deleteFolderVersionHistory, moveFolderVersionHistory } from "./versioning";
+import { deleteFolderVersionHistory, flushPendingFileVersions, moveFolderVersionHistory } from "./versioning";
 import { pruneWorkingSet } from "./workingSet";
 import { persistWorkingSet } from "./workingSetSlice";
 
@@ -71,8 +71,11 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
       }
 
       // The document map is about to be replaced; nothing may still sit in
-      // the draft timer when it goes.
+      // the draft timer when it goes, and a version auto-save held back for
+      // the open note has to reach this vault before the next one's storage
+      // is installed.
       await flushDrafts();
+      await flushPendingFileVersions();
       await allowMarkdownFolderAccess(folderPath);
       const markdownFiles = await listMarkdownFiles(folderPath);
       const loadedState = await createLoadedFolderState(folderPath, markdownFiles);
@@ -106,6 +109,7 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
 
     try {
       await flushDrafts();
+      await flushPendingFileVersions();
       await allowMarkdownFolderAccess(folderPath);
       const markdownFiles = await listMarkdownFiles(folderPath);
       const loadedState = await createLoadedFolderState(folderPath, markdownFiles);
@@ -148,6 +152,7 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
     // Pending drafts carry their own vault path, so they can still go out
     // after the store has forgotten the folder.
     void flushDrafts();
+    void flushPendingFileVersions();
     setActiveVaultStorage(null);
     clearLastOpenedFolderPath();
     set({ ...initialAppData });

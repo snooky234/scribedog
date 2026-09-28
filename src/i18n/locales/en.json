@@ -598,7 +598,9 @@
   "versioningSettings": {
     "scope": "The switch applies to the whole application. The versions themselves live in whichever folder is open, under .scribedog.",
     "enable": "Enable versioning",
-    "enableShort": "Every save keeps the file's previous content first.",
+    "enableShort": "Every save stores the saved state as a version you can go back to later.",
+    "enableShortAutoSave": "With auto-save on, a version is only created when you leave the note (another note, another folder, closing the app) or save with {{keys}}.",
+    "enableShortAutoSaveUnbound": "With auto-save on, a version is only created when you leave the note (another note, another folder, closing the app) or save by hand.",
     "enableHint": "A save that changes nothing does not create a duplicate version. Turning versioning off only stops new versions from being created; the existing history is kept.",
     "maxVersions": "Versions to keep per file",
     "maxVersionsShort": "Once the limit is reached, the oldest version of that file is dropped.",
@@ -904,7 +906,10 @@
     "buttonTitle": "Zoom (Ctrl++ / Ctrl+-)",
     "zoomIn": "Zoom in (Ctrl++)",
     "zoomOut": "Zoom out (Ctrl+-)",
-    "reset": "Reset zoom (Ctrl+0)"
+    "reset": "Reset zoom (Ctrl+0)",
+    "zoomInLabel": "Zoom in",
+    "zoomOutLabel": "Zoom out",
+    "resetLabel": "Reset zoom"
   },
   "tableMenu": {
     "options": "Table options",

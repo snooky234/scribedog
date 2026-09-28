@@ -8,6 +8,8 @@ import {
 } from "@/lib/fileVersions";
 import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
 
+import { isPathInsideFolder } from "./pathUtils";
+
 /**
  * Bridges the store slices to the version storage. Creating versions is gated
  * by the setting; keeping an *existing* history in sync with renames, moves
@@ -27,68 +29,112 @@ import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
 /**
  * Auto-save writes after every pause in typing. Snapshotting each of those
  * would push the states worth going back to out of a capped history within
- * minutes, so throttled snapshots are taken at most this often per file. A
- * deliberate save resets the clock, since it is itself a snapshot.
+ * minutes, and a snapshot taken on a timer catches a note mid-sentence. So an
+ * auto-save only remembers what it wrote, and the version is taken when the
+ * user leaves the note (another note, another folder, closing the app): the
+ * state they were done with. A deliberate save supersedes the pending state,
+ * since it is itself a snapshot of something newer.
+ *
+ * Keyed by the note's path as the store spells it; the vault root travels
+ * along, so a pending version still lands in its own vault after a switch.
  */
-export const AUTO_SAVE_SNAPSHOT_INTERVAL_MS = 5 * 60_000;
+type PendingVersion = { folderPath: string; content: string };
 
-const lastSnapshotAtByFile = new Map<string, number>();
+const pendingVersionByFile = new Map<string, PendingVersion>();
+
+function writeVersion(folderPath: string, filePath: string, content: string): Promise<boolean> {
+  const { maxVersionsPerFile } = useVersioningSettingsStore.getState();
+
+  return createFileVersion(
+    folderPath,
+    getRelativeDisplayPath(folderPath, filePath),
+    content,
+    maxVersionsPerFile
+  ).catch(() => false);
+}
 
 export function snapshotFileVersion(
   folderPath: string | null,
   filePath: string,
   content: string,
-  options?: { throttle?: boolean }
+  options?: { deferred?: boolean }
 ): void {
-  const { versioningEnabled, maxVersionsPerFile } = useVersioningSettingsStore.getState();
+  const { versioningEnabled } = useVersioningSettingsStore.getState();
 
   if (!folderPath || !versioningEnabled) {
     return;
   }
 
-  const now = Date.now();
-  const lastSnapshotAt = lastSnapshotAtByFile.get(filePath);
-
-  if (
-    options?.throttle &&
-    lastSnapshotAt !== undefined &&
-    now - lastSnapshotAt < AUTO_SAVE_SNAPSHOT_INTERVAL_MS
-  ) {
+  if (options?.deferred) {
+    pendingVersionByFile.set(filePath, { folderPath, content });
     return;
   }
 
-  lastSnapshotAtByFile.set(filePath, now);
+  // Anything else that writes the note (replace across the vault, an image
+  // path rewrite) must not swallow the state the user left there; the
+  // pending version goes first, into the same queue, so the order holds.
+  void flushPendingFileVersion(filePath);
+  void writeVersion(folderPath, filePath, content);
+}
 
-  void createFileVersion(
-    folderPath,
-    getRelativeDisplayPath(folderPath, filePath),
-    content,
-    maxVersionsPerFile
-  ).catch(() => undefined);
+/**
+ * A deliberate save snapshots the newer state right after this; the pending
+ * one would only be a near-duplicate a second older.
+ */
+export function discardPendingFileVersion(filePath: string): void {
+  pendingVersionByFile.delete(filePath);
+}
+
+/** Leaving a note: what auto-save last wrote there becomes a version. */
+export async function flushPendingFileVersion(filePath: string): Promise<void> {
+  const pending = pendingVersionByFile.get(filePath);
+
+  if (!pending) {
+    return;
+  }
+
+  pendingVersionByFile.delete(filePath);
+
+  if (!useVersioningSettingsStore.getState().versioningEnabled) {
+    return;
+  }
+
+  await writeVersion(pending.folderPath, filePath, pending.content);
+}
+
+/**
+ * Closing the app or switching the vault. Awaited there: a vault switch
+ * installs another storage, and a version written after it would go to the
+ * wrong place.
+ */
+export async function flushPendingFileVersions(): Promise<void> {
+  await Promise.all([...pendingVersionByFile.keys()].map(flushPendingFileVersion));
+}
+
+function movePendingVersion(oldFilePath: string, newFilePath: string): void {
+  const pending = pendingVersionByFile.get(oldFilePath);
+
+  if (pending) {
+    pendingVersionByFile.delete(oldFilePath);
+    pendingVersionByFile.set(newFilePath, pending);
+  }
 }
 
 /**
  * The one snapshot that is awaited: the disk version about to be overwritten
  * by a save over an external change. Fire-and-forget would race the write it
- * is meant to protect against. Same gate as snapshotFileVersion, no throttle.
+ * is meant to protect against. Same gate as snapshotFileVersion, never deferred.
  */
 export async function snapshotFileVersionNow(
   folderPath: string | null,
   filePath: string,
   content: string
 ): Promise<void> {
-  const { versioningEnabled, maxVersionsPerFile } = useVersioningSettingsStore.getState();
-
-  if (!folderPath || !versioningEnabled) {
+  if (!folderPath || !useVersioningSettingsStore.getState().versioningEnabled) {
     return;
   }
 
-  await createFileVersion(
-    folderPath,
-    getRelativeDisplayPath(folderPath, filePath),
-    content,
-    maxVersionsPerFile
-  ).catch(() => undefined);
+  await writeVersion(folderPath, filePath, content);
 }
 
 export function moveFileVersionHistory(
@@ -96,6 +142,9 @@ export function moveFileVersionHistory(
   oldFilePath: string,
   newFilePath: string
 ): void {
+  // Renaming or moving the open note does not leave it.
+  movePendingVersion(oldFilePath, newFilePath);
+
   if (!folderPath) {
     return;
   }
@@ -112,6 +161,12 @@ export function moveFolderVersionHistory(
   oldFolderPath: string,
   newFolderPath: string
 ): void {
+  for (const filePath of [...pendingVersionByFile.keys()]) {
+    if (isPathInsideFolder(filePath, oldFolderPath)) {
+      movePendingVersion(filePath, `${newFolderPath}${filePath.slice(oldFolderPath.length)}`);
+    }
+  }
+
   if (!folderPath) {
     return;
   }
@@ -124,6 +179,8 @@ export function moveFolderVersionHistory(
 }
 
 export function deleteFileVersionHistory(folderPath: string | null, filePath: string): void {
+  pendingVersionByFile.delete(filePath);
+
   if (!folderPath) {
     return;
   }
@@ -137,6 +194,12 @@ export function deleteFolderVersionHistory(
   folderPath: string | null,
   deletedFolderPath: string
 ): void {
+  for (const filePath of [...pendingVersionByFile.keys()]) {
+    if (isPathInsideFolder(filePath, deletedFolderPath)) {
+      pendingVersionByFile.delete(filePath);
+    }
+  }
+
   if (!folderPath) {
     return;
   }

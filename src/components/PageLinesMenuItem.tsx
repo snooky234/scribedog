@@ -8,9 +8,10 @@ import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 /**
  * "Show page breaks (PDF, A4)" in the editor's options menu and the document
  * menu. The label names the paper, so a line on screen is never read against
- * a different format than the one the PDF will have.
+ * a different format than the one the PDF will have. `showShortcut` is off in
+ * the touch-screen document menu, which names no key combinations.
  */
-export function PageLinesMenuItem() {
+export function PageLinesMenuItem({ showShortcut = true }: { showShortcut?: boolean }) {
   const { t } = useTranslation();
   const pageLinesEnabled = useEditorSettingsStore((state) => state.pageLinesEnabled);
   const setPageLinesEnabled = useEditorSettingsStore((state) => state.setPageLinesEnabled);
@@ -25,7 +26,7 @@ export function PageLinesMenuItem() {
       title={t("editor.pageLineHint")}
     >
       {t("toolbar.pageLinesToggle", { size: PAGE_SIZE_SHORT_LABELS[pageSize] })}
-      {shortcut ? <MenuShortcut>{shortcut}</MenuShortcut> : null}
+      {showShortcut && shortcut ? <MenuShortcut>{shortcut}</MenuShortcut> : null}
       <MenuCheckboxItemIndicator />
     </MenuCheckboxItem>
   );

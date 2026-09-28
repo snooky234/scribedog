@@ -44,7 +44,7 @@ type UseAutoSaveOptions = {
  * Saves the open note on its own once typing has paused, when the setting is
  * on. Goes through saveSelectedFile like Ctrl+S, so versioning, image cleanup
  * and the tree update happen the same way; the "auto" trigger only tells the
- * version history to throttle its snapshots.
+ * version history to take its snapshot when the note is left.
  *
  * Keyed on the content rather than on isDirty: every keystroke restarts the
  * timer, so the write lands after the pause, not one second into it. The

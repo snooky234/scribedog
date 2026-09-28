@@ -40,6 +40,7 @@ import { addWorkingSetEntry, hasWorkingSetEntry, remapWorkingSetPaths, removeWor
 import { persistWorkingSet, shouldAutoAdmitWorkingSet } from "./workingSetSlice";
 import {
   deleteFileVersionHistory,
+  discardPendingFileVersion,
   moveFileVersionHistory,
   snapshotFileVersion,
   snapshotFileVersionNow
@@ -340,9 +341,12 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       // following save would see its own write as someone else's change.
       const writtenMtimeMs = await readMarkdownFileMtime(selectedFilePath);
 
-      snapshotFileVersion(folderPath, selectedFilePath, selectedFileContent, {
-        throttle: options?.trigger === "auto"
-      });
+      if (options?.trigger === "auto") {
+        snapshotFileVersion(folderPath, selectedFilePath, selectedFileContent, { deferred: true });
+      } else {
+        discardPendingFileVersion(selectedFilePath);
+        snapshotFileVersion(folderPath, selectedFilePath, selectedFileContent);
+      }
 
       if (folderPath) {
         void cleanupOrphanedImages(

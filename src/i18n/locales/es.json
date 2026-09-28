@@ -598,7 +598,9 @@
   "versioningSettings": {
     "scope": "El interruptor vale para toda la aplicación. Las versiones en sí se guardan en la carpeta abierta, dentro de .scribedog.",
     "enable": "Activar el control de versiones",
-    "enableShort": "Cada vez que guardas, se conserva el contenido anterior del archivo.",
+    "enableShort": "Cada vez que guardas, el estado guardado se conserva como una versión a la que puedes volver más tarde.",
+    "enableShortAutoSave": "Con el guardado automático, solo se crea una versión al salir de la nota (otra nota, otra carpeta, cerrar la aplicación) o al guardar con {{keys}}.",
+    "enableShortAutoSaveUnbound": "Con el guardado automático, solo se crea una versión al salir de la nota (otra nota, otra carpeta, cerrar la aplicación) o al guardar a mano.",
     "enableHint": "Guardar sin cambios no crea una versión duplicada. Desactivar el control de versiones solo impide crear versiones nuevas; el historial existente se conserva.",
     "maxVersions": "Versiones por archivo",
     "maxVersionsShort": "Al alcanzar el límite, se elimina la versión más antigua de ese archivo.",
@@ -904,7 +906,10 @@
     "buttonTitle": "Zoom (Ctrl++ / Ctrl+-)",
     "zoomIn": "Acercar (Ctrl++)",
     "zoomOut": "Alejar (Ctrl+-)",
-    "reset": "Restablecer el zoom (Ctrl+0)"
+    "reset": "Restablecer el zoom (Ctrl+0)",
+    "zoomInLabel": "Acercar",
+    "zoomOutLabel": "Alejar",
+    "resetLabel": "Restablecer el zoom"
   },
   "tableMenu": {
     "options": "Opciones de la tabla",

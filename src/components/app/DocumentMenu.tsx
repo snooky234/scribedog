@@ -17,13 +17,11 @@ import { useTranslation } from "react-i18next";
 import type { EditorHandle } from "@/components/Editor";
 import type { SelectionRange } from "@/lib/editor/selectionClipboard";
 import { PageLinesMenuItem } from "@/components/PageLinesMenuItem";
-import { useShortcutLabel } from "@/hooks/useShortcutLabel";
 import { Button } from "@/components/ui/button";
 import {
   Menu,
   MenuCheckboxItem,
   MenuCheckboxItemIndicator,
-  MenuShortcut,
   MenuItem,
   MenuPopup,
   MenuPortal,
@@ -53,7 +51,8 @@ type DocumentMenuProps = {
  * screen, which is why none of them is left out, and by the same rule the two
  * ways of copying a selection that the system's own copy button does not
  * cover. Hidden at desktop width (responsive.css); the phone-only entries are
- * hidden on the tablet.
+ * hidden on the tablet. No entry names its key combination: on a touch screen
+ * there is usually no keyboard to press it on.
  */
 export function DocumentMenu({
   editorHandleRef,
@@ -67,8 +66,6 @@ export function DocumentMenu({
 }: DocumentMenuProps) {
   const { t } = useTranslation();
   const openFindPanel = useSearchStore((state) => state.openPanel);
-  const spellcheckShortcut = useShortcutLabel("toggleSpellcheck");
-  const printShortcut = useShortcutLabel("printFile");
   // Taken as the menu opens, because that is the last moment the editor still
   // has the selection: the focus moves into the popup and ProseMirror
   // collapses its selection when the editor is blurred.
@@ -180,7 +177,7 @@ export function DocumentMenu({
               onClick={() => setZoomLevel(zoomLevel + ZOOM_STEP)}
             >
               <ZoomIn className="size-4" />
-              {t("zoomControl.zoomIn")}
+              {t("zoomControl.zoomInLabel")}
             </MenuItem>
             <MenuItem
               closeOnClick={false}
@@ -188,11 +185,11 @@ export function DocumentMenu({
               onClick={() => setZoomLevel(zoomLevel - ZOOM_STEP)}
             >
               <ZoomOut className="size-4" />
-              {t("zoomControl.zoomOut")}
+              {t("zoomControl.zoomOutLabel")}
             </MenuItem>
             <MenuItem disabled={zoomLevel === 0} onClick={() => setZoomLevel(0)}>
               <span className="size-4" aria-hidden="true" />
-              {t("zoomControl.reset")}
+              {t("zoomControl.resetLabel")}
             </MenuItem>
             <div className="editor-toolbar__menu-separator" role="separator" />
 
@@ -209,14 +206,12 @@ export function DocumentMenu({
               onCheckedChange={(checked) => setSpellcheckEnabled(checked)}
             >
               {t("toolbar.spellcheckToggle")}
-              {spellcheckShortcut ? <MenuShortcut>{spellcheckShortcut}</MenuShortcut> : null}
               <MenuCheckboxItemIndicator />
             </MenuCheckboxItem>
-            <PageLinesMenuItem />
+            <PageLinesMenuItem showShortcut={false} />
             <MenuItem onClick={() => editorHandleRef.current?.printDocument()}>
               <Printer className="size-4" />
               {t("toolbar.printButton")}
-              {printShortcut ? <MenuShortcut>{printShortcut}</MenuShortcut> : null}
             </MenuItem>
           </MenuPopup>
         </MenuPositioner>

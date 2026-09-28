@@ -9,7 +9,10 @@ import {
   MAX_VERSIONS_PER_FILE_MAX,
   MAX_VERSIONS_PER_FILE_MIN
 } from "@/lib/fileVersions";
+import { formatBinding } from "@/lib/shortcuts/binding";
+import { resolveBinding } from "@/lib/shortcuts/resolve";
 import { useAppStore } from "@/store/useAppStore";
+import { useShortcutsStore } from "@/store/useShortcutsStore";
 import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
 
 /**
@@ -20,6 +23,11 @@ import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
 export function VersioningSettings() {
   const { t } = useTranslation();
   const folderPath = useAppStore((state) => state.folderPath);
+  // Auto-save changes when a version is taken. The rule is always shown, not
+  // only while auto-save is on: it is toggled per session, and whoever turns
+  // it on later should already have read what it does to the history.
+  const shortcutOverrides = useShortcutsStore((state) => state.overrides);
+  const saveBinding = resolveBinding(shortcutOverrides, "saveFile");
   const versioningEnabled = useVersioningSettingsStore((state) => state.versioningEnabled);
   const setVersioningEnabled = useVersioningSettingsStore((state) => state.setVersioningEnabled);
   const maxVersionsPerFile = useVersioningSettingsStore((state) => state.maxVersionsPerFile);
@@ -121,7 +129,11 @@ export function VersioningSettings() {
         <SettingRow
           layout="switch"
           label={t("versioningSettings.enable")}
-          hint={t("versioningSettings.enableShort")}
+          hint={`${t("versioningSettings.enableShort")} ${
+            saveBinding
+              ? t("versioningSettings.enableShortAutoSave", { keys: formatBinding(t, saveBinding) })
+              : t("versioningSettings.enableShortAutoSaveUnbound")
+          }`}
           info={t("versioningSettings.enableHint")}
         >
           <input

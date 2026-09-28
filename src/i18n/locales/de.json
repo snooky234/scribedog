@@ -598,7 +598,9 @@
   "versioningSettings": {
     "scope": "Der Schalter gilt für die ganze Anwendung. Die Versionen selbst liegen im jeweils geöffneten Ordner unter .scribedog.",
     "enable": "Versionierung aktivieren",
-    "enableShort": "Bei jedem Speichern wird die vorherige Fassung der Datei aufgehoben.",
+    "enableShort": "Bei jedem Speichern wird der gespeicherte Stand als Version gesichert, zu der du später zurückkehren kannst.",
+    "enableShortAutoSave": "Mit automatischem Speichern entsteht eine Version erst, wenn du die Notiz verlässt (andere Notiz, anderer Ordner, App schließen) oder mit {{keys}} speicherst.",
+    "enableShortAutoSaveUnbound": "Mit automatischem Speichern entsteht eine Version erst, wenn du die Notiz verlässt (andere Notiz, anderer Ordner, App schließen) oder von Hand speicherst.",
     "enableHint": "Speichern ohne Änderung legt keine doppelte Version an. Wird die Versionierung ausgeschaltet, entstehen keine neuen Versionen, der vorhandene Verlauf bleibt erhalten.",
     "maxVersions": "Versionen pro Datei",
     "maxVersionsShort": "Ist das Limit erreicht, wird jeweils die älteste Version dieser Datei gelöscht.",
@@ -904,7 +906,10 @@
     "buttonTitle": "Zoom (Strg++ / Strg+-)",
     "zoomIn": "Vergrößern (Strg++)",
     "zoomOut": "Verkleinern (Strg+-)",
-    "reset": "Zoom zurücksetzen (Strg+0)"
+    "reset": "Zoom zurücksetzen (Strg+0)",
+    "zoomInLabel": "Vergrößern",
+    "zoomOutLabel": "Verkleinern",
+    "resetLabel": "Zoom zurücksetzen"
   },
   "tableMenu": {
     "options": "Tabellenoptionen",

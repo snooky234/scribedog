@@ -97,8 +97,9 @@ export type FileSlice = {
   /**
    * Writes the open note. An auto-save (hooks/useAutoSave.ts) says so, because
    * it fires after every pause in typing and would otherwise fill the version
-   * history with keystroke-sized snapshots; the versioning bridge throttles
-   * those, a deliberate save is always snapshotted.
+   * history with keystroke-sized snapshots; the versioning bridge holds the
+   * last one back until the note is left, a deliberate save is always
+   * snapshotted.
    *
    * Before writing, the file's mtime is compared with the one its baseline was
    * read at. A file someone changed outside the app in the meantime is not

@@ -598,7 +598,9 @@
   "versioningSettings": {
     "scope": "L'interrupteur vaut pour toute l'application. Les versions elles-mêmes sont conservées dans le dossier ouvert, sous .scribedog.",
     "enable": "Activer le versionnage",
-    "enableShort": "À chaque enregistrement, le contenu précédent du fichier est conservé.",
+    "enableShort": "Chaque enregistrement conserve l'état enregistré comme une version à laquelle vous pourrez revenir plus tard.",
+    "enableShortAutoSave": "Avec l'enregistrement automatique, une version n'est créée que lorsque vous quittez la note (autre note, autre dossier, fermeture de l'application) ou enregistrez avec {{keys}}.",
+    "enableShortAutoSaveUnbound": "Avec l'enregistrement automatique, une version n'est créée que lorsque vous quittez la note (autre note, autre dossier, fermeture de l'application) ou enregistrez manuellement.",
     "enableHint": "Un enregistrement sans changement ne crée pas de version en double. Désactiver le versionnage empêche seulement la création de nouvelles versions ; l'historique existant est conservé.",
     "maxVersions": "Versions conservées par fichier",
     "maxVersionsShort": "Une fois la limite atteinte, la version la plus ancienne de ce fichier est supprimée.",
@@ -904,7 +906,10 @@
     "buttonTitle": "Zoom (Ctrl++ / Ctrl+-)",
     "zoomIn": "Zoom avant (Ctrl++)",
     "zoomOut": "Zoom arrière (Ctrl+-)",
-    "reset": "Réinitialiser le zoom (Ctrl+0)"
+    "reset": "Réinitialiser le zoom (Ctrl+0)",
+    "zoomInLabel": "Zoom avant",
+    "zoomOutLabel": "Zoom arrière",
+    "resetLabel": "Réinitialiser le zoom"
   },
   "tableMenu": {
     "options": "Options du tableau",
