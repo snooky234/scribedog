@@ -384,7 +384,7 @@ const MODE_DEFAULTS: Record<ThemeMode, Record<string, string>> = {
     "--success-bg-rgb": "18, 34, 24",
     "--warning-bg-rgb": "69, 49, 7",
     "--info-bg-rgb": "15, 33, 62",
-    "--highlight-bg": "rgba(202, 138, 4, 0.42)",
+    "--highlight-bg": "rgba(231, 189, 17, 0.18)",
     "--diff-removed-bg": "rgba(248, 113, 113, 0.26)",
     "--diff-removed-accent": "rgba(252, 165, 165, 0.7)",
     "--diff-added-bg": "rgba(74, 222, 128, 0.22)",
@@ -500,7 +500,7 @@ const ADVANCED_TOKENS: Record<AdvancedColorKey, Record<string, AdvancedToken>> =
     "--highlight-bg": {
       format: "rgba",
       light: { from: "marker", reference: "rgba(253, 224, 71, 0.55)" },
-      dark: { from: "marker", reference: "rgba(202, 138, 4, 0.42)" }
+      dark: { from: "marker", reference: "rgba(202, 138, 4, 0.2)" }
     }
   },
   findMatch: { "--find-match-rgb": both({ from: "findMatch", reference: STATUS_COLORS["--find-match-rgb"] }, "triplet") },
