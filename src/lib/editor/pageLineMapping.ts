@@ -33,8 +33,15 @@ export function locateNodeLines(wholeMarkdown: string, nodeMarkdowns: string[]):
       return null;
     }
 
+    // Compared without surrounding whitespace: the trim above takes a
+    // paragraph's leading or trailing spaces off the node's own text, while
+    // the same line in the whole document keeps them. Freshly typed or
+    // pasted text has those often (a space before Enter); a note parsed from
+    // disk never does, so without this the lines only showed after reopening.
+    const firstLine = lines[0].trim();
+
     for (let line = cursor; line < wholeLines.length; line++) {
-      if (wholeLines[line] === lines[0]) {
+      if (wholeLines[line].trim() === firstLine) {
         cursor = line + lines.length;
         return { startLine: line, endLine: line + lines.length };
       }

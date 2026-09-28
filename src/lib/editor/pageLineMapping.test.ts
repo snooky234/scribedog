@@ -18,6 +18,15 @@ describe("locateNodeLines", () => {
     expect(locateNodeLines("Text", ["", "Text"])).toEqual([null, { startLine: 0, endLine: 1 }]);
   });
 
+  it("finds a node whose text has leading or trailing spaces", () => {
+    // Freshly typed text keeps them; the node's own serialization is trimmed.
+    expect(locateNodeLines("First \n\n   Second\n\nThird", ["First ", "   Second", "Third"])).toEqual([
+      { startLine: 0, endLine: 1 },
+      { startLine: 2, endLine: 3 },
+      { startLine: 4, endLine: 5 }
+    ]);
+  });
+
   it("gives up on a node it cannot find without losing its place", () => {
     expect(locateNodeLines("A\n\nB", ["X", "B"])).toEqual([null, { startLine: 2, endLine: 3 }]);
   });
