@@ -76,7 +76,7 @@ export function InfoPopover({ text, link }: InfoPopoverProps) {
 
   useEffect(() => cancelScheduledClose, []);
 
-  useDismissablePopover(isOpen, close);
+  useDismissablePopover(isOpen, close, popoverRef);
 
   // The settings dialog closes on Escape through its own window listener.
   // While the popover is up, Escape belongs to the popover — caught in the

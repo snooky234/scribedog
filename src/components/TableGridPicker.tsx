@@ -39,7 +39,7 @@ export function TableGridPicker({ editor }: TableGridPickerProps) {
     setHovered(null);
   };
 
-  useDismissablePopover(isOpen, close);
+  useDismissablePopover(isOpen, close, popoverRef);
   usePopoverOverflowAlign(anchor, popoverRef, setAlign, setValign);
 
   const insertTable = (rows: number, cols: number) => {

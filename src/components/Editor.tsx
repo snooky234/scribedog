@@ -330,8 +330,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     isDiffActive: ai.isDiffActive,
     isBusyForDictation: ai.isBusyForDictation
   });
-  const { contextMenu: selectionMenu, setContextMenu: setSelectionMenu } =
-    useContextMenuState<SelectionContextMenuState>();
+  const {
+    contextMenu: selectionMenu,
+    setContextMenu: setSelectionMenu,
+    menuRef: selectionMenuRef
+  } = useContextMenuState<SelectionContextMenuState>();
   const pageLinesEnabled = useEditorSettingsStore((state) => state.pageLinesEnabled);
 
   // Clipboard failures (a webview without clipboard permission, a browser
@@ -2017,6 +2020,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         <SelectionContextMenu
           x={selectionMenu.x}
           y={selectionMenu.y}
+          menuRef={selectionMenuRef}
           canAiEdit={Boolean(editor?.isEditable) && !ai.isDiffActive()}
           showAiEdit={aiFeaturesVisible}
           onAiEdit={ai.openAiDraftFromSelection}

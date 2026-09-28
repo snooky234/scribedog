@@ -86,7 +86,7 @@ export function WorkingSetPanel({
   onMove
 }: WorkingSetPanelProps) {
   const { t } = useTranslation();
-  const { contextMenu, setContextMenu } = useContextMenuState<EntryContextMenu>();
+  const { contextMenu, setContextMenu, menuRef: contextMenuRef } = useContextMenuState<EntryContextMenu>();
   // With pin-only admission every entry is pinned, so the pin/unpin items
   // and "close saved" would say nothing; they show only once edited notes
   // can enter on their own. The pin mark itself always shows: it is what
@@ -436,6 +436,7 @@ export function WorkingSetPanel({
         <ContextMenuSurface
           x={contextMenu.x}
           y={contextMenu.y}
+          menuRef={contextMenuRef}
           title={describe(contextEntry.filePath).name}
           onClick={(event) => event.stopPropagation()}
         >

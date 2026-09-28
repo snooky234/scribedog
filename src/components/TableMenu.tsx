@@ -77,7 +77,7 @@ export function TableMenu({ editor }: TableMenuProps) {
   const isOpen = anchor !== null;
   const close = () => setAnchor(null);
 
-  useDismissablePopover(isOpen, close);
+  useDismissablePopover(isOpen, close, popoverRef);
   usePopoverOverflowAlign(anchor, popoverRef, setAlign, setValign);
 
   const isInHeaderRow = editor.isActive("tableHeader");

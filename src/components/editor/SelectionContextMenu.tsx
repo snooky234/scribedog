@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ContextMenuSurface } from "@/components/fileTree/ContextMenuSurface";
@@ -9,6 +10,7 @@ import { useShortcutsStore } from "@/store/useShortcutsStore";
 export type SelectionContextMenuState = { x: number; y: number };
 
 type SelectionContextMenuProps = SelectionContextMenuState & {
+  menuRef: RefObject<HTMLDivElement | null>;
   /** False while a diff review or a staged preview locks the document. */
   canAiEdit: boolean;
   /** False when the AI features are hidden in the settings: no entry at all. */
@@ -28,6 +30,7 @@ type SelectionContextMenuProps = SelectionContextMenuState & {
 export function SelectionContextMenu({
   x,
   y,
+  menuRef,
   canAiEdit,
   showAiEdit,
   onAiEdit,
@@ -75,7 +78,7 @@ export function SelectionContextMenu({
   ];
 
   return (
-    <ContextMenuSurface x={x} y={y} onMouseDown={(event) => event.preventDefault()}>
+    <ContextMenuSurface x={x} y={y} menuRef={menuRef} onMouseDown={(event) => event.preventDefault()}>
       {items.map((item) => (
         <button
           key={item.id}

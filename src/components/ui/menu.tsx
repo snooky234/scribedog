@@ -37,12 +37,16 @@ function MenuPositioner({
   )
 }
 
+// Capped at the room Base UI measured next to the trigger and scrolling in
+// itself: an uncapped menu on a phone grows past the screen and the page
+// scrolls instead, and a touch swipe that is not inside the popup counts as
+// the "swipe outside" that closes it.
 function MenuPopup({ className, ...props }: MenuPrimitive.Popup.Props) {
   return (
     <MenuPrimitive.Popup
       data-slot="menu-popup"
       className={cn(
-        "z-50 min-w-40 origin-(--transform-origin) rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+        "z-50 max-h-(--available-height) min-w-40 origin-(--transform-origin) overflow-y-auto overscroll-contain rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
         className
       )}
       {...props}

@@ -40,6 +40,7 @@ import {
 import { FileTree, type BatchEntry, type PendingEntryRename } from "@/components/FileTree";
 import type { VaultIconMap } from "@/lib/vaultIcons";
 import { WorkingSetPanel } from "@/components/sidebar/WorkingSetPanel";
+import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStoredCollapsed, useWorkingSetHeight } from "@/hooks/useWorkingSetHeight";
 import {
@@ -227,7 +228,13 @@ export function Sidebar({
   );
   const capabilities = getVaultCapabilities();
   const capabilityHint = vaultCapabilityHint();
-  const [rootContextMenu, setRootContextMenu] = useState<{ x: number; y: number } | null>(null);
+  // Same dismissal rules as the tree's own menu: any click, a competing
+  // right-click, a scroll outside the menu or Escape closes it.
+  const {
+    contextMenu: rootContextMenu,
+    setContextMenu: setRootContextMenu,
+    menuRef: rootContextMenuRef
+  } = useContextMenuState<{ x: number; y: number }>();
 
   // The "In progress" section and the tree's own header exist only while
   // the list has entries; both fold states and the list's height ceiling
@@ -322,33 +329,6 @@ export function Sidebar({
     // dropped is taken out of it here and only walked afterwards.
     onFilesDropped(readDropPayload(event.dataTransfer), directory);
   };
-
-  // Same dismissal rules as the tree's own menu (useTreeContextMenu): any
-  // click, a competing right-click, a scroll or Escape closes it.
-  useEffect(() => {
-    if (!rootContextMenu) {
-      return;
-    }
-
-    const close = () => setRootContextMenu(null);
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        close();
-      }
-    };
-
-    window.addEventListener("click", close);
-    window.addEventListener("contextmenu", close, true);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("click", close);
-      window.removeEventListener("contextmenu", close, true);
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [rootContextMenu]);
 
   return (
     <aside
@@ -586,6 +566,7 @@ export function Sidebar({
       {rootContextMenu && folderPath !== null && (offersExport || offersVaultArchive)
         ? createPortal(
             <div
+              ref={rootContextMenuRef}
               className="file-tree-context-menu"
               role="menu"
               style={{ top: rootContextMenu.y, left: rootContextMenu.x }}

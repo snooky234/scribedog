@@ -174,7 +174,7 @@ export function FileTree({
   const offersRevealInFileManager = platform.shell.openFolderInFileManager !== null;
   const { expandedFolderPaths, toggleFolder, expandAncestorsOf, expandFolders } =
     useExpandedFolders(folderPath);
-  const { contextMenu, setContextMenu } = useTreeContextMenu();
+  const { contextMenu, setContextMenu, menuRef: contextMenuRef } = useTreeContextMenu();
   // The entry whose icon is being picked, kept after the menu that opened it
   // has closed.
   const [iconPicker, setIconPicker] = useState<{
@@ -915,6 +915,7 @@ export function FileTree({
         <ContextMenuSurface
           x={contextMenu.x}
           y={contextMenu.y}
+          menuRef={contextMenuRef}
           title={contextMenuTitle}
           onClick={(event) => event.stopPropagation()}
         >

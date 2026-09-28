@@ -1,15 +1,24 @@
 import { useEffect, type RefObject } from "react";
 
+/**
+ * Whether a scroll event should close a popover. The listener runs in the
+ * capture phase on window, so it also sees the popover's own content
+ * scrolling (a long menu, the version list, a phone sheet); only scrolling
+ * outside the popover closes it.
+ */
+export function isScrollOutside(target: EventTarget | null, container: HTMLElement | null): boolean {
+  return !(container && target instanceof Node && container.contains(target));
+}
+
 // Closes a button-opened popover (grid picker, context menu, ...) on
-// click/right-click outside, on scroll, or with Escape. Mirrors the context
-// menu behavior in FileTree.tsx, but without being tied to mouse events.
+// click/right-click outside, on scroll, or with Escape.
 //
 // The scroll listener runs in the capture phase so it sees scrolling of any
-// ancestor, but that also catches the popover's own content scrolling (e.g. a
-// long version list) since capture-phase listeners on window see every scroll
-// event regardless of bubbling. containerRef lets callers whose popover body
-// can scroll internally opt out of dismissing for scrolls that originate
-// inside it.
+// ancestor, but that also catches the popover's own content scrolling, since
+// capture-phase listeners on window see every scroll event regardless of
+// bubbling. containerRef names the popover element, so a scroll inside it
+// keeps it open: on a phone the popovers become sheets with a height limit,
+// and a sheet that closed on the first swipe could never be scrolled.
 export function useDismissablePopover(
   active: boolean,
   onDismiss: () => void,
@@ -23,13 +32,15 @@ export function useDismissablePopover(
     const dismiss = () => onDismiss();
 
     const dismissOnScroll = (event: Event) => {
-      if (containerRef?.current && event.target instanceof Node && containerRef.current.contains(event.target)) {
-        return;
+      if (isScrollOutside(event.target, containerRef?.current ?? null)) {
+        dismiss();
       }
-      dismiss();
     };
 
     window.addEventListener("click", dismiss);
+    // Capture phase: must run before a new right-click on a target (bubble
+    // phase) opens a fresh menu, otherwise this handler would immediately
+    // close the new one again.
     window.addEventListener("contextmenu", dismiss, true);
     window.addEventListener("scroll", dismissOnScroll, true);
 

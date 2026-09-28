@@ -151,7 +151,7 @@ export function EmojiPickerPopover({
   const popoverRef = useRef<HTMLDivElement>(null);
   const isSheet = useLayoutMode() === "phone";
 
-  useDismissablePopover(true, onClose);
+  useDismissablePopover(true, onClose, popoverRef);
   usePopoverOverflowAlign(requestedAnchor, popoverRef, setAlign, setValign);
 
   return createPortal(
@@ -195,7 +195,7 @@ export function EmojiPicker({ editor, onSelect, trigger }: EmojiPickerProps) {
     setAnchor(null);
   };
 
-  useDismissablePopover(isOpen, close);
+  useDismissablePopover(isOpen, close, popoverRef);
   usePopoverOverflowAlign(anchor, popoverRef, setAlign, setValign);
 
   const insertEmoji = (emoji: EmojiSelection) => {

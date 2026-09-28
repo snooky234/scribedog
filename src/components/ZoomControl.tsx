@@ -32,7 +32,7 @@ export function ZoomControl() {
     setAnchor(null);
   };
 
-  useDismissablePopover(isOpen, close);
+  useDismissablePopover(isOpen, close, popoverRef);
   usePopoverOverflowAlign(anchor, popoverRef, setAlign);
 
   return (
