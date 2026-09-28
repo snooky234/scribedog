@@ -34,12 +34,10 @@
   background: rgba(var(--surface-hover-rgb),0.92);
 }
 
-/* Keyboard focus and "selected in the tree" (rename/delete/batch target —
-   any row, folders included) share this tint: it answers "where is the
-   cursor", which is not the same question as --active below. No outline —
-   a hard ring around every selected row (especially a folder, selected just
-   by clicking to expand it) read as heavier than that answer needs to be;
-   the background tint alone still says "here" without the extra edge.
+/* "Selected in the tree" (a batch, or the target of an open context menu;
+   FileTree's showSelectionTint) gets this tint. A lone selection that only
+   follows the cursor does not: the focus ring below already marks it, and a
+   tint of its own put a second grey row next to the open note (--active).
    --selection-rgb already carries the right weight in each theme (a muted
    slate in light, a light grey in dark — see tokens.css), so one set of
    alpha values below reads consistently in both without a dark-mode

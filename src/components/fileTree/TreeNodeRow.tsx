@@ -57,6 +57,13 @@ type TreeNodeRowProps = {
   stagedDeletedKeys: Set<string>;
   selectedFilePath: string | null;
   selectedKeys: Set<string>;
+  /**
+   * Whether the selection is drawn as a tint. A single selection that only
+   * follows the cursor (a click or an arrow key with open on double-click)
+   * is left to the focus ring, so the grey stays with the open note; a batch
+   * and the target of an open context menu keep it.
+   */
+  showSelectionTint: boolean;
   dirtyFilePaths: string[];
   /**
    * Folder notes (lib/folderNotes.ts). With them on, a folder row is also the
@@ -168,6 +175,7 @@ export function TreeNodeRow({
   stagedDeletedKeys,
   selectedFilePath,
   selectedKeys,
+  showSelectionTint,
   dirtyFilePaths,
   folderNotesEnabled,
   activeFolderNotePath,
@@ -383,7 +391,7 @@ export function TreeNodeRow({
               "file-tree__row file-tree__row--folder",
               folderNotesEnabled && "file-tree__row--folder-note",
               isNoteActive && "file-tree__row--active",
-              isMultiSelected && "file-tree__row--selected",
+              isMultiSelected && showSelectionTint && "file-tree__row--selected",
               isDragSource && "file-tree__row--drag-source",
               activeDropPosition === "above" && "file-tree__row--drop-above",
               activeDropPosition === "below" && "file-tree__row--drop-below",
@@ -502,6 +510,7 @@ export function TreeNodeRow({
                 stagedDeletedKeys={stagedDeletedKeys}
                 selectedFilePath={selectedFilePath}
                 selectedKeys={selectedKeys}
+                showSelectionTint={showSelectionTint}
                 dirtyFilePaths={dirtyFilePaths}
                 folderNotesEnabled={folderNotesEnabled}
                 activeFolderNotePath={activeFolderNotePath}
@@ -585,7 +594,7 @@ export function TreeNodeRow({
             isStagedNew && "file-tree__row--staged-new",
             isStagedDeleted && "file-tree__row--staged-deleted",
             isSelected && "file-tree__row--active",
-            isMultiSelected && "file-tree__row--selected",
+            isMultiSelected && showSelectionTint && "file-tree__row--selected",
             isDragSource && "file-tree__row--drag-source",
             activeDropPosition === "above" && "file-tree__row--drop-above",
             activeDropPosition === "below" && "file-tree__row--drop-below"

@@ -356,6 +356,12 @@ export function FileTree({
   });
 
   const clearSelection = useCallback(() => setSelectedKeys(new Set()), [setSelectedKeys]);
+  // A lone selection is where the cursor is, and the focus ring already says
+  // that; tinting it as well put a second grey row next to the open note. It
+  // keeps the tint while a context menu (or the icon picker it opened) is up,
+  // since that takes the focus and the tint is then the only mark of the row
+  // it acts on.
+  const showSelectionTint = selectedKeys.size > 1 || contextMenu !== null || iconPicker !== null;
 
   const {
     dragSourceKeys,
@@ -579,7 +585,10 @@ export function FileTree({
 
       event.preventDefault();
 
-      const anchorForMovement = event.shiftKey ? (rangeFocusKey ?? activeKey) : activeKey;
+      // Always from where the ring is: the moving end of a Shift range, or
+      // the active row. Without Shift a step from the anchor would jump back
+      // to where the range began instead of one row on from the ring.
+      const anchorForMovement = rangeFocusKey ?? activeKey;
       const currentIndex = anchorForMovement
         ? flatNodes.findIndex((node) => getNodeKey(node) === anchorForMovement)
         : -1;
@@ -841,6 +850,7 @@ export function FileTree({
             stagedDeletedKeys={staged.deletedKeys}
             selectedFilePath={selectedFilePath}
             selectedKeys={selectedKeys}
+            showSelectionTint={showSelectionTint}
             dirtyFilePaths={dirtyFilePaths}
             folderNotesEnabled={folderNotesEnabled}
             activeFolderNotePath={activeFolderNotePath}
