@@ -1,7 +1,64 @@
 import { Extension } from "@tiptap/core";
-import type { EditorState } from "@tiptap/pm/state";
+import { TextSelection } from "@tiptap/pm/state";
+import type { EditorState, Transaction } from "@tiptap/pm/state";
 
 const LIST_ITEM_TYPES = ["listItem", "taskItem"];
+const LIST_TYPES = ["bulletList", "orderedList", "taskList"];
+
+// Backspace in an empty paragraph directly after a list: the line goes away
+// and the caret moves to the end of the list's last line, the way the Delete
+// key from that line already behaves. If the same kind of list follows, the
+// two become one again. This is the second Backspace on an empty checkbox
+// (the first lifts it out, which splits the list around an empty paragraph),
+// and the Backspace after Enter twice left a list.
+//
+// TipTap's ListKeymap handles this case by moving the paragraph to the end of
+// the last list *item*, not of its last line. Since an item holds block
+// content, the empty paragraph became a second block inside that item: a gap
+// under it that only goes away by clicking into the invisible line.
+function removeEmptyLineAfterList(tr: Transaction): boolean {
+  const { selection } = tr;
+  const { $from } = selection;
+
+  if (!selection.empty || $from.parent.type.name !== "paragraph" || $from.parent.content.size > 0) {
+    return false;
+  }
+
+  const depth = $from.depth;
+  const index = $from.index(depth - 1);
+  const container = $from.node(depth - 1);
+  const listBefore = index > 0 ? container.child(index - 1) : null;
+
+  if (!listBefore || !LIST_TYPES.includes(listBefore.type.name)) {
+    return false;
+  }
+
+  const paragraphStart = $from.before(depth);
+
+  // The last line inside the list, however deep: an item can end with a
+  // nested list, an image or a code block.
+  const caret = TextSelection.findFrom(tr.doc.resolve(paragraphStart - 1), -1, true);
+
+  if (!caret) {
+    return false;
+  }
+
+  const listAfter = index + 1 < container.childCount ? container.child(index + 1) : null;
+
+  tr.delete(paragraphStart, $from.after(depth));
+
+  // Two adjacent lists of one kind can't stay apart in Markdown anyway: they
+  // would come back as one list after reopening. A different kind stays
+  // separate (canJoin alone would merge a bullet into an ordered list).
+  if (listAfter?.type === listBefore.type) {
+    tr.join(paragraphStart);
+  }
+
+  // Everything that changed lies after the caret, so its position holds.
+  tr.setSelection(TextSelection.create(tr.doc, caret.head)).scrollIntoView();
+
+  return true;
+}
 
 // Depth of the list item the cursor sits in, or -1 outside any list.
 function listItemDepth(state: EditorState): number {
@@ -43,6 +100,15 @@ export const ListBackspace = Extension.create({
 
       if (!selection.empty) {
         return false;
+      }
+
+      // The check runs on a throwaway transaction. Typing "- " and Backspace
+      // right away still undoes the input rule.
+      if (removeEmptyLineAfterList(state.tr)) {
+        return this.editor.commands.first(({ commands }) => [
+          () => commands.undoInputRule(),
+          () => commands.command(({ tr }) => removeEmptyLineAfterList(tr))
+        ]);
       }
 
       const depth = listItemDepth(state);
