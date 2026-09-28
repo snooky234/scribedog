@@ -16,6 +16,8 @@ export function getEditorMarkdown(editor: TipTapEditor, fallback: string): strin
   return storage.markdown?.getMarkdown?.() ?? fallback;
 }
 
+const LIST_TYPES = new Set(["bulletList", "orderedList", "taskList"]);
+
 /** The current selection serialized to markdown, or "" if it can't be. */
 export function getSelectionMarkdown(editor: TipTapEditor, from: number, to: number): string {
   const storage = editor.storage as MarkdownStorage;
@@ -26,7 +28,11 @@ export function getSelectionMarkdown(editor: TipTapEditor, from: number, to: num
   }
 
   try {
-    const content = editor.state.doc.slice(from, to).content;
+    const { doc } = editor.state;
+    const content = doc.slice(from, to).content;
+    const $from = doc.resolve(from);
+    const sharedDepth = $from.sharedDepth(to);
+    const shared = $from.node(sharedDepth);
 
     // A range inside a single block comes back as bare inline nodes, and the
     // serializer applies marks while rendering a *block*: handed the inline
@@ -35,9 +41,22 @@ export function getSelectionMarkdown(editor: TipTapEditor, from: number, to: num
     // puts them back where the marks are rendered. Block content already
     // arrives as blocks and goes through unchanged.
     const inlineContent = content.firstChild?.isInline === true;
-    const serializable = inlineContent
-      ? editor.schema.topNodeType.create(null, editor.schema.nodes.paragraph.create(null, content))
-      : content;
+    //
+    // A range across several items of one list is cut at the list, so the
+    // items come without it and the serializer writes them as bare paragraphs:
+    // no "1." or "- ", and a blank line between each. The list goes back
+    // around them, an ordered one counting from the first selected item.
+    let serializable: unknown = content;
+
+    if (inlineContent) {
+      serializable = editor.schema.topNodeType.create(null, editor.schema.nodes.paragraph.create(null, content));
+    } else if (LIST_TYPES.has(shared.type.name)) {
+      const attrs =
+        shared.type.name === "orderedList"
+          ? { ...shared.attrs, start: (Number(shared.attrs.start) || 1) + $from.index(sharedDepth) }
+          : shared.attrs;
+      serializable = editor.schema.topNodeType.create(null, shared.type.create(attrs, content));
+    }
 
     return serializer.serialize(serializable).trim();
   } catch {

@@ -79,6 +79,7 @@ import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { looksLikeMarkdown, pasteMarkdown } from "@/lib/editor/pasteMarkdown";
 import { normalizePastedSlice } from "@/lib/editor/pasteNormalize";
 import { adoptPastedImages } from "@/lib/editor/pastedImages";
+import { selectionPlainText } from "@/lib/editor/plainTextClipboard";
 import { getEditorMarkdown, getSelectionMarkdown } from "@/lib/editor/markdownStorage";
 import { serializeGuarded } from "@/lib/editor/serializationGuard";
 import {
@@ -1215,6 +1216,10 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       updateOutlineHighlight(currentEditor, null);
     },
     editorProps: {
+      // The text/plain half of Ctrl+C, for editors that take no HTML. A view
+      // prop wins over TipTap's own serializer, which left blank lines
+      // between every list item.
+      clipboardTextSerializer: (_slice, view) => selectionPlainText(view.state),
       handleDrop: (view, event, _slice, moved) => {
         if (moved) {
           return false;

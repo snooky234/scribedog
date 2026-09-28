@@ -1,6 +1,7 @@
 import type { Editor as TipTapEditor } from "@tiptap/react";
 
 import { getSelectionMarkdown } from "@/lib/editor/markdownStorage";
+import { plainTextBetween } from "@/lib/editor/plainTextClipboard";
 
 /**
  * Copies whatever a one-shot `copy` listener puts into the event. This is the
@@ -92,7 +93,7 @@ export async function copySelectionAsPlainText(
     return false;
   }
 
-  return writeClipboardText(editor.state.doc.textBetween(range.from, range.to, "\n"));
+  return writeClipboardText(plainTextBetween(editor.state.doc, [range]));
 }
 
 /**
