@@ -23,7 +23,7 @@ x-scribedog: &scribedog
   build:
     context: ../../..
     dockerfile: server/Dockerfile
-  image: ${SCRIBEDOG_IMAGE:-scribedog-server:0.18.0}
+  image: ${SCRIBEDOG_IMAGE:-scribedog-server:0.18.1}
   restart: unless-stopped
   expose:
     - "3000"

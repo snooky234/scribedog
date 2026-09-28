@@ -3,6 +3,25 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.1] - 2026-09-29
+
+### Highlights
+- Take auto-save versions when the note is left
+
+### Improvements
+- Load the emoji picker data on idle instead of at startup
+- Make the dark-mode text highlight more transparent
+
+### Bug Fixes
+- Show page lines for freshly typed paragraphs
+- Unpin an entry out of "In progress" and bring back the cross
+- Keep menus open while scrolling inside them on touch
+- Hide portalled mobile sheets in the print preview
+- Copy lists as plain text without blank lines between items, keep list markers when copying items of one list as markdown
+- Drop the leftover tint on a row opened by double-click
+- Remove an emptied checkbox without leaving a gap in the list
+- Separate the cursor from the open note in the file tree
+
 ## [0.18.0] - 2026-09-28
 
 ### Highlights
