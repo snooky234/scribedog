@@ -2,32 +2,12 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { Smile } from "lucide-react";
-import { Picker } from "emoji-mart";
-import emojiI18nDe from "@emoji-mart/data/i18n/de.json";
-import emojiI18nEn from "@emoji-mart/data/i18n/en.json";
-import emojiI18nFr from "@emoji-mart/data/i18n/fr.json";
-import emojiI18nEs from "@emoji-mart/data/i18n/es.json";
-import emojiI18nZh from "@emoji-mart/data/i18n/zh.json";
-import emojiI18nJa from "@emoji-mart/data/i18n/ja.json";
-import emojiI18nPt from "@emoji-mart/data/i18n/pt.json";
-import emojiI18nRu from "@emoji-mart/data/i18n/ru.json";
-import emojiI18nIt from "@emoji-mart/data/i18n/it.json";
-import emojiI18nUk from "@emoji-mart/data/i18n/uk.json";
-import emojiDataEn from "@emoji-mart/data";
 import { useTranslation } from "react-i18next";
 
 import type { Editor } from "@tiptap/react";
 
 import { Button } from "@/components/ui/button";
-import { emojiDataDe } from "@/lib/emojiKeywordsDe";
-import { emojiDataFr } from "@/lib/emojiKeywordsFr";
-import { emojiDataEs } from "@/lib/emojiKeywordsEs";
-import { emojiDataZh } from "@/lib/emojiKeywordsZh";
-import { emojiDataJa } from "@/lib/emojiKeywordsJa";
-import { emojiDataPt } from "@/lib/emojiKeywordsPt";
-import { emojiDataRu } from "@/lib/emojiKeywordsRu";
-import { emojiDataIt } from "@/lib/emojiKeywordsIt";
-import { emojiDataUk } from "@/lib/emojiKeywordsUk";
+import { loadEmojiPickerResources } from "@/lib/emojiPickerData";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
 import { useDismissablePopover } from "@/lib/useDismissablePopover";
 import {
@@ -37,32 +17,6 @@ import {
   type PopoverAnchor
 } from "@/lib/usePopoverOverflowAlign";
 import type { SupportedLanguage } from "@/i18n";
-
-const EMOJI_DATA: Record<SupportedLanguage, unknown> = {
-  de: emojiDataDe,
-  en: emojiDataEn,
-  fr: emojiDataFr,
-  es: emojiDataEs,
-  zh: emojiDataZh,
-  ja: emojiDataJa,
-  pt: emojiDataPt,
-  ru: emojiDataRu,
-  it: emojiDataIt,
-  uk: emojiDataUk,
-};
-
-const EMOJI_I18N: Record<SupportedLanguage, unknown> = {
-  de: emojiI18nDe,
-  en: emojiI18nEn,
-  fr: emojiI18nFr,
-  es: emojiI18nEs,
-  zh: emojiI18nZh,
-  ja: emojiI18nJa,
-  pt: emojiI18nPt,
-  ru: emojiI18nRu,
-  it: emojiI18nIt,
-  uk: emojiI18nUk,
-};
 
 type EmojiPickerProps = {
   // Toolbar mode: the picked emoji is inserted into the document.
@@ -90,6 +44,9 @@ type EmojiMartPickerProps = {
 // support. The picker is created once per mount — the popover unmounts on close,
 // so every open builds a fresh one — and the select handler is read through a
 // ref so a re-render (e.g. the overflow re-align) never tears it down.
+// emoji-mart and its data are loaded on demand (usually already by the idle
+// preload); until they are there the popover stays empty, and the overflow
+// check re-measures once the picker has grown to its size.
 function EmojiMartPicker({ language, onEmojiSelect }: EmojiMartPickerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const selectRef = useRef(onEmojiSelect);
@@ -105,20 +62,31 @@ function EmojiMartPicker({ language, onEmojiSelect }: EmojiMartPickerProps) {
       return;
     }
 
-    new Picker({
-      parent: host,
-      data: EMOJI_DATA[language],
-      i18n: EMOJI_I18N[language],
-      locale: language,
-      theme: "dark",
-      set: "native",
-      autoFocus: true,
-      previewPosition: "none",
-      skinTonePosition: "search",
-      onEmojiSelect: (emoji: EmojiSelection) => selectRef.current(emoji),
-    });
+    let cancelled = false;
+
+    void loadEmojiPickerResources(language)
+      .then(({ Picker, data, i18n }) => {
+        if (cancelled) {
+          return;
+        }
+
+        new Picker({
+          parent: host,
+          data,
+          i18n,
+          locale: language,
+          theme: "dark",
+          set: "native",
+          autoFocus: true,
+          previewPosition: "none",
+          skinTonePosition: "search",
+          onEmojiSelect: (emoji: EmojiSelection) => selectRef.current(emoji),
+        });
+      })
+      .catch(() => undefined);
 
     return () => {
+      cancelled = true;
       host.innerHTML = "";
     };
   }, [language]);

@@ -43,6 +43,7 @@ import { useViewportHeight } from "@/hooks/useViewportHeight";
 import { useWorkingSetActions } from "@/hooks/useWorkingSetActions";
 import { useWebviewZoom } from "@/hooks/useWebviewZoom";
 import { useWindowReveal } from "@/hooks/useWindowReveal";
+import { useEmojiPickerPreload } from "@/hooks/useEmojiPickerPreload";
 import { useZenMode } from "@/hooks/useZenMode";
 import { getRecentFolderPaths, getRelativeDisplayPath } from "@/lib/fileSystem";
 import {
@@ -290,6 +291,7 @@ function App() {
     }
   });
   useWindowReveal();
+  useEmojiPickerPreload();
   useViewportHeight();
 
   const layout = useLayoutMode();
