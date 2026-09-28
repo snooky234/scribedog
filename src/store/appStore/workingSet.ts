@@ -154,6 +154,12 @@ export type PinToggleAction = "pin" | "unpin" | "close";
 /**
  * What the pin and Shift+Enter do to one note. "close" goes through the
  * list's own close, which asks first when the note is dirty.
+ *
+ * Taking a pin away always takes the entry out of the list, in either mode:
+ * a pin that leaves the row where it was looks like it did nothing, and the
+ * pin is the only reason the user put that row there. What a note admitted
+ * by editing does *not* get is this: its way out is the cross next to the
+ * pin, so nothing the user never pinned disappears from a pin.
  */
 export function pinToggleAction(
   entries: readonly WorkingSetEntry[],
@@ -164,7 +170,7 @@ export function pinToggleAction(
     return "pin";
   }
 
-  return autoAdmit ? "unpin" : "close";
+  return "close";
 }
 
 /**
@@ -172,8 +178,8 @@ export function pinToggleAction(
  * selection has no single state to flip, so it goes towards pinned first:
  * as long as one note lacks its pin, the notes without one get it and none
  * loses one. Once every note is pinned, the next press takes all the pins
- * away, which under pin-only admission closes the entries (the list's close
- * queue, asking note by note where one is dirty).
+ * away, which closes the entries (the list's close queue, asking note by
+ * note where one is dirty).
  */
 export function pinSelectionToggle(
   entries: readonly WorkingSetEntry[],
@@ -186,7 +192,7 @@ export function pinSelectionToggle(
     return { action: "pin", filePaths: unpinned };
   }
 
-  return { action: autoAdmit ? "unpin" : "close", filePaths: [...filePaths] };
+  return { action: "close", filePaths: [...filePaths] };
 }
 
 /** The clean entries that are not pinned; what "close saved" removes. */

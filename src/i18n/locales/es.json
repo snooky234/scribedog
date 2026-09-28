@@ -326,7 +326,7 @@
     "restoreWorkingSet": "Restaurar las notas en curso en el próximo inicio",
     "restoreWorkingSetShort": "La lista «En curso» se recuerda por carpeta.",
     "restoreWorkingSetHint": "Desactivado significa que la lista empieza vacía y solo se vuelve a llenar al fijar o editar. Los cambios sin guardar vuelven de todos modos.",
-    "openOnDoubleClick": "Abrir notas con doble clic",
+    "openOnDoubleClick": "Abrir notas con doble clic (solo con ratón)",
     "openOnDoubleClickShort": "Un clic en la barra lateral solo selecciona una nota; un doble clic o Intro la abre.",
     "openOnDoubleClickHint": "Útil cuando señalas notas durante una presentación. Para fijar se usa entonces el pin que aparece al pasar el ratón por una fila, Mayús+Intro o el menú contextual. Si una nota abierta entra en «En curso» depende del ajuste de abajo. En una pantalla táctil, un toque sigue abriendo.",
     "autoAdmitWorkingSet": "Añadir automáticamente las notas editadas a «En curso»",

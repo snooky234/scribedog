@@ -326,7 +326,7 @@
     "restoreWorkingSet": "Restaurar as notas em andamento no próximo início",
     "restoreWorkingSetShort": "A lista \"Em andamento\" é lembrada por pasta.",
     "restoreWorkingSetHint": "Desligado: a lista começa vazia e só volta a se preencher ao fixar ou editar. Alterações não salvas voltam de qualquer maneira.",
-    "openOnDoubleClick": "Abrir notas com clique duplo",
+    "openOnDoubleClick": "Abrir notas com clique duplo (apenas com rato)",
     "openOnDoubleClickShort": "Um clique na barra lateral apenas seleciona uma nota; um clique duplo ou Enter a abre.",
     "openOnDoubleClickHint": "Útil quando você aponta para notas durante uma apresentação. Fixar passa então pelo alfinete que aparece ao passar o mouse sobre uma linha, Shift+Enter ou o menu de contexto. Se uma nota aberta entra em \"Em andamento\" depende da configuração abaixo. Numa tela sensível ao toque, um toque continua abrindo.",
     "autoAdmitWorkingSet": "Adicionar automaticamente notas editadas a \"Em andamento\"",

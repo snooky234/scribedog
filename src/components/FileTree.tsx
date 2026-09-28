@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Copy, Download, Eraser, ExternalLink, FileDown, FilePlus, FolderArchive, FolderInput, FolderPlus, Pencil, Pin, PinOff, Printer, Smile, Trash2, Undo2, X } from "lucide-react";
+import { BookOpen, Copy, Download, Eraser, ExternalLink, FileDown, FilePlus, FolderArchive, FolderInput, FolderPlus, Pencil, Pin, PinOff, Printer, Smile, Trash2, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getVaultCapabilities, platform, vaultCapabilityHint } from "@/platform";
 import { dirname, join } from "@/platform/paths";
@@ -62,7 +62,6 @@ type FileTreeProps = {
   /** The "In progress" list; decides what a row's pin shows and toggles. */
   workingSetEntries: WorkingSetEntry[];
   onPinWorkingSetEntry: (filePath: string) => void;
-  onUnpinWorkingSetEntry: (filePath: string) => void;
   /** Closes the note's entry (asking first when dirty); the tree's item in pin-only mode. */
   onCloseWorkingSetEntry: (filePath: string) => void;
   /** The same for a multi-selection, one question per dirty note. */
@@ -131,7 +130,6 @@ export function FileTree({
   dirtyFilePaths,
   workingSetEntries,
   onPinWorkingSetEntry,
-  onUnpinWorkingSetEntry,
   onCloseWorkingSetEntry,
   onCloseWorkingSetEntries,
   onDiscardChangesRequest,
@@ -490,18 +488,15 @@ export function FileTree({
   const describePinToggle = (filePath: string): PinToggleAction =>
     pinToggleAction(workingSetEntries, filePath, autoAdmitWorkingSet);
 
-  // The row's pin and Shift+Enter. Taking the pin away under pin-only
-  // admission closes the entry, through the list's close that asks first.
+  // The row's pin and Shift+Enter. Taking the pin away takes the entry out
+  // of the list, through the close that asks first where the note is dirty.
   const togglePin = (filePath: string) => {
-    const action = describePinToggle(filePath);
-
-    if (action === "pin") {
+    if (describePinToggle(filePath) === "pin") {
       onPinWorkingSetEntry(filePath);
-    } else if (action === "unpin") {
-      onUnpinWorkingSetEntry(filePath);
-    } else {
-      onCloseWorkingSetEntry(filePath);
+      return;
     }
+
+    onCloseWorkingSetEntry(filePath);
   };
 
   // A double-click pins where the click before it has already opened the
@@ -701,8 +696,6 @@ export function FileTree({
 
         if (toggle.action === "pin") {
           toggle.filePaths.forEach(onPinWorkingSetEntry);
-        } else if (toggle.action === "unpin") {
-          toggle.filePaths.forEach(onUnpinWorkingSetEntry);
         } else {
           onCloseWorkingSetEntries(toggle.filePaths);
         }
@@ -1127,17 +1120,12 @@ export function FileTree({
                     role="menuitem"
                     className="file-tree-context-menu__item"
                     onClick={() => {
-                      if (autoAdmitWorkingSet) {
-                        onUnpinWorkingSetEntry(contextMenu.filePath);
-                      } else {
-                        onCloseWorkingSetEntry(contextMenu.filePath);
-                      }
-
+                      onCloseWorkingSetEntry(contextMenu.filePath);
                       setContextMenu(null);
                     }}
                   >
-                    {autoAdmitWorkingSet ? <PinOff aria-hidden="true" /> : <X aria-hidden="true" />}
-                    {autoAdmitWorkingSet ? t("fileTree.unpinWorkingSet") : t("fileTree.closeWorkingSet")}
+                    <PinOff aria-hidden="true" />
+                    {t("fileTree.unpinWorkingSet")}
                   </button>
                 ) : (
                   <button

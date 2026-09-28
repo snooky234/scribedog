@@ -10,7 +10,6 @@ import {
   moveWorkingSetEntry,
   removeWorkingSetEntry,
   resolveStoredWorkingSet,
-  setWorkingSetPinned,
   toStoredWorkingSet,
   type WorkingSetEntry
 } from "./workingSet";
@@ -103,13 +102,6 @@ export const createWorkingSetSlice: AppSlice<WorkingSetSlice> = (set, get) => ({
   pinWorkingSetEntry: (filePath: string) => {
     const { workingSet, folderPath } = get();
     const next = addWorkingSetEntry(workingSet, filePath, true);
-
-    set({ workingSet: next });
-    persistWorkingSet(folderPath, next);
-  },
-  unpinWorkingSetEntry: (filePath: string) => {
-    const { workingSet, folderPath } = get();
-    const next = setWorkingSetPinned(workingSet, filePath, false);
 
     set({ workingSet: next });
     persistWorkingSet(folderPath, next);

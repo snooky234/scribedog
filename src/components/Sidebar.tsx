@@ -66,7 +66,6 @@ export type WorkingSetHandlers = {
   onCloseAll: () => void;
   onCloseSaved: () => void;
   onPin: (filePath: string) => void;
-  onUnpin: (filePath: string) => void;
   /** Drag & drop in the list: the entry goes in front of the one at `beforeIndex`. */
   onMove: (filePath: string, beforeIndex: number) => void;
   /** Discard a note's unsaved edits (tree context menu); asks nothing. */
@@ -690,7 +689,6 @@ export function Sidebar({
             onCloseSaved={workingSet.onCloseSaved}
             onRevealInTree={revealInTree}
             onPin={workingSet.onPin}
-            onUnpin={workingSet.onUnpin}
             onMove={workingSet.onMove}
           />
         ) : null}
@@ -736,7 +734,6 @@ export function Sidebar({
             dirtyFilePaths={dirtyFilePaths}
             workingSetEntries={workingSet.entries}
             onPinWorkingSetEntry={workingSet.onPin}
-            onUnpinWorkingSetEntry={workingSet.onUnpin}
             onCloseWorkingSetEntry={workingSet.onClose}
             onCloseWorkingSetEntries={workingSet.onCloseMany}
             onDiscardChangesRequest={workingSet.onDiscardChanges}

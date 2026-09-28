@@ -325,7 +325,7 @@
     "restoreWorkingSet": "下次启动时恢复进行中的笔记",
     "restoreWorkingSetShort": "“进行中”列表按文件夹记住。",
     "restoreWorkingSetHint": "关闭后，列表在启动时为空，只有固定或编辑才会再次填充。未保存的更改无论如何都会恢复。",
-    "openOnDoubleClick": "双击打开笔记",
+    "openOnDoubleClick": "双击打开笔记（仅限鼠标）",
     "openOnDoubleClickShort": "在侧边栏中单击只会选中笔记，双击或按 Enter 才会打开。",
     "openOnDoubleClickHint": "在演示时指向笔记很方便。此时通过悬停行时出现的图钉、Shift+Enter 或上下文菜单来固定。打开的笔记是否加入“进行中”由下方设置决定。在触摸屏上，点按仍会打开。",
     "autoAdmitWorkingSet": "自动把编辑过的笔记加入“进行中”",

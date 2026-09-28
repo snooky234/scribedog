@@ -216,6 +216,74 @@
   font-weight: 600;
 }
 
+/* Pin and cross sit next to each other, and neither ever stands in for the
+   other: the pin only pins or unpins, the cross only takes the entry out. */
+.working-set__row-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+/* The pin is the anchor of this pair: it holds its slot whether or not it is
+   set, so it never moves while the cross appears and disappears to its left.
+   In the tree it may collapse (file-tree.css), nothing follows it there. */
+.working-set__row-actions .pin-toggle {
+  display: inline-flex;
+  visibility: hidden;
+}
+
+.working-set__row-actions .pin-toggle.pin-toggle--pinned,
+.working-set__row:hover .working-set__row-actions .pin-toggle,
+.working-set__row:focus .working-set__row-actions .pin-toggle,
+.working-set__row:focus-visible .working-set__row-actions .pin-toggle {
+  visibility: visible;
+}
+
+/* The cross sits left of the pin and collapses when it is not shown, so a
+   row whose pin is set does not carry an empty square next to it. The pin is
+   the last thing in the row and keeps its place either way, which is what
+   makes this safe: what grows to the left of it is the cross, so nothing
+   moves out from under the pointer that came for the pin. */
+.working-set__close {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: -0.15rem 0;
+  border-radius: 0.3rem;
+  color: rgba(var(--muted-rgb), 0.55);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.working-set__row:hover .working-set__close,
+.working-set__row:focus .working-set__close,
+.working-set__row:focus-visible .working-set__close {
+  display: inline-flex;
+}
+
+.working-set__close:hover {
+  background: rgba(var(--overlay-rgb), 0.14);
+  color: rgba(var(--text-rgb), 0.95);
+}
+
+.working-set__close .working-set__close-glyph {
+  width: 0.8rem;
+  height: 0.8rem;
+  color: inherit;
+}
+
+/* Touch has no hover: the "…" sheet carries close, so the cross would only
+   eat width next to a two-line row. */
+@media (pointer: coarse) {
+  .working-set__close {
+    display: none;
+  }
+}
+
 .working-set__text {
   display: flex;
   flex: 1;

@@ -40,17 +40,18 @@ export type WorkingSetPanelProps = {
   onCloseSaved: () => void;
   onRevealInTree: (filePath: string) => void;
   onPin: (filePath: string) => void;
-  onUnpin: (filePath: string) => void;
   /** Drag & drop: the entry goes in front of the one at `beforeIndex`. */
   onMove: (filePath: string, beforeIndex: number) => void;
 };
 
 type EntryContextMenu = { x: number; y: number; filePath: string };
 
+// The pin shows the pin-off glyph for both ways out of the list, so both
+// read as "unpin"; the cross beside it is the one that says "close".
 const PIN_TOGGLE_LABEL_KEYS: Record<PinToggleAction, string> = {
   pin: "workingSet.pin",
   unpin: "workingSet.unpin",
-  close: "workingSet.closeShort"
+  close: "workingSet.unpin"
 };
 
 type EntryDropIndicator = { filePath: string; position: Extract<DropPosition, "above" | "below"> };
@@ -82,7 +83,6 @@ export function WorkingSetPanel({
   onCloseSaved,
   onRevealInTree,
   onPin,
-  onUnpin,
   onMove
 }: WorkingSetPanelProps) {
   const { t } = useTranslation();
@@ -127,18 +127,16 @@ export function WorkingSetPanel({
     }
   };
 
-  // The pin and Shift+Enter, the same toggle as in the tree (workingSet.ts):
-  // under pin-only admission the pin is the entry, so it closes, asking first.
+  // The pin, Shift+Enter and the context menu, the same toggle as in the
+  // tree (workingSet.ts): taking the pin away takes the entry out, asking
+  // first where the note is dirty.
   const togglePin = (filePath: string) => {
-    const action = pinToggleAction(entries, filePath, showPins);
-
-    if (action === "pin") {
+    if (pinToggleAction(entries, filePath, showPins) === "pin") {
       onPin(filePath);
-    } else if (action === "unpin") {
-      onUnpin(filePath);
-    } else {
-      onClose(filePath);
+      return;
     }
+
+    onClose(filePath);
   };
 
   // Arrow keys behave like in the tree below: the focus moves and the note
@@ -375,11 +373,33 @@ export function WorkingSetPanel({
                     </span>
                     {folder ? <span className="working-set__folder">{folder}</span> : null}
                   </span>
-                  <PinToggle
-                    action={pinToggleAction(entries, entry.filePath, showPins)}
-                    labelKeys={PIN_TOGGLE_LABEL_KEYS}
-                    onToggle={() => togglePin(entry.filePath)}
-                  />
+                  {/* The pin is on every row and only ever pins or unpins;
+                      taking it away takes the entry out, so a pinned row
+                      needs nothing else. The cross is for the rows the pin
+                      cannot reach: the ones admitted by editing, which have
+                      no pin to take away. Both ask first where the note is
+                      dirty. */}
+                  <span className="working-set__row-actions">
+                    {showPins && !entry.pinned ? (
+                      <span
+                        className="working-set__close"
+                        title={t("workingSet.closeShort")}
+                        data-testid="row-close"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onClose(entry.filePath);
+                        }}
+                        onDoubleClick={(event) => event.stopPropagation()}
+                      >
+                        <X className="working-set__close-glyph" aria-label={t("workingSet.closeShort")} />
+                      </span>
+                    ) : null}
+                    <PinToggle
+                      action={pinToggleAction(entries, entry.filePath, showPins)}
+                      labelKeys={PIN_TOGGLE_LABEL_KEYS}
+                      onToggle={() => togglePin(entry.filePath)}
+                    />
+                  </span>
                   {isDirty ? (
                     <span
                       className="sidebar-panel__item-dirty"
@@ -475,7 +495,7 @@ export function WorkingSetPanel({
               role="menuitem"
               className="file-tree-context-menu__item"
               onClick={() => {
-                onUnpin(contextEntry.filePath);
+                togglePin(contextEntry.filePath);
                 setContextMenu(null);
               }}
             >

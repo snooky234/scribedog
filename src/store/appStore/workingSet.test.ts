@@ -170,10 +170,12 @@ describe("pin toggle", () => {
     { filePath: B, pinned: false }
   ];
 
-  it("with auto-admission, only a real pin counts, and the pin comes off without closing", () => {
+  it("with auto-admission, only a real pin counts, and taking it away closes the entry", () => {
     expect(isShownAsPinned(entries, A, true)).toBe(true);
     expect(isShownAsPinned(entries, B, true)).toBe(false);
-    expect(pinToggleAction(entries, A, true)).toBe("unpin");
+    expect(pinToggleAction(entries, A, true)).toBe("close");
+    // B is in the list by editing, not by a pin: its pin pins, it does not
+    // close, and the row's cross is what takes it out.
     expect(pinToggleAction(entries, B, true)).toBe("pin");
     expect(pinToggleAction(entries, C, true)).toBe("pin");
   });
@@ -186,7 +188,7 @@ describe("pin toggle", () => {
   });
 
   it("matches the path the way the list does", () => {
-    expect(pinToggleAction(entries, "d:/vault/a.md", true)).toBe("unpin");
+    expect(pinToggleAction(entries, "d:/vault/a.md", true)).toBe("close");
   });
 
   it("pins the unpinned part of a mixed selection and takes no pin away", () => {
@@ -200,7 +202,7 @@ describe("pin toggle", () => {
       { filePath: B, pinned: true }
     ];
 
-    expect(pinSelectionToggle(pinned, [A, B], true)).toEqual({ action: "unpin", filePaths: [A, B] });
+    expect(pinSelectionToggle(pinned, [A, B], true)).toEqual({ action: "close", filePaths: [A, B] });
     expect(pinSelectionToggle(entries, [A, B], false)).toEqual({ action: "close", filePaths: [A, B] });
   });
 });

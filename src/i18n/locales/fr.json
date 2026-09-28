@@ -326,7 +326,7 @@
     "restoreWorkingSet": "Restaurer les notes en cours au prochain démarrage",
     "restoreWorkingSetShort": "La liste « En cours » est mémorisée par dossier.",
     "restoreWorkingSetHint": "Désactivé : la liste démarre vide et ne se remplit qu'en épinglant ou en modifiant. Les modifications non enregistrées reviennent quoi qu'il arrive.",
-    "openOnDoubleClick": "Ouvrir les notes par double-clic",
+    "openOnDoubleClick": "Ouvrir les notes par double-clic (souris uniquement)",
     "openOnDoubleClickShort": "Un clic dans la barre latérale sélectionne seulement une note ; un double-clic ou Entrée l'ouvre.",
     "openOnDoubleClickHint": "Pratique pour montrer des notes pendant une présentation. L'épinglage passe alors par l'épingle qui apparaît au survol d'une ligne, Maj+Entrée ou le menu contextuel. Qu'une note ouverte rejoigne « En cours » dépend du réglage ci-dessous. Sur un écran tactile, un appui ouvre toujours.",
     "autoAdmitWorkingSet": "Ajouter automatiquement les notes modifiées à « En cours »",

@@ -124,7 +124,7 @@ function RowIcon({ icon, fallback }: { icon: string | null; fallback: ReactNode 
 const PIN_TOGGLE_LABEL_KEYS: Record<PinToggleAction, string> = {
   pin: "fileTree.pinWorkingSet",
   unpin: "fileTree.unpinWorkingSet",
-  close: "fileTree.closeWorkingSet"
+  close: "fileTree.unpinWorkingSet"
 };
 
 /**

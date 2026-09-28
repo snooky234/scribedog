@@ -151,7 +151,6 @@ export type TreeSlice = {
 /** The "In progress" list: admission by pin, removal, and discard for any note. */
 export type WorkingSetSlice = {
   pinWorkingSetEntry: (filePath: string) => void;
-  unpinWorkingSetEntry: (filePath: string) => void;
   /** Drag & drop in the list: the entry goes in front of the one at `beforeIndex`. */
   moveWorkingSetEntry: (filePath: string, beforeIndex: number) => void;
   /** Removes the entry; a dirty note has to be saved or discarded first (the UI asks). */

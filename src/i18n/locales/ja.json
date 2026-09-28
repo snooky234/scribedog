@@ -325,7 +325,7 @@
     "restoreWorkingSet": "次回起動時に作業中のノートを復元する",
     "restoreWorkingSetShort": "「作業中」リストはフォルダーごとに記憶されます。",
     "restoreWorkingSetHint": "オフにすると、リストは起動時に空になり、ピン留めか編集で再び埋まります。未保存の変更はいずれにしても戻ります。",
-    "openOnDoubleClick": "ダブルクリックでノートを開く",
+    "openOnDoubleClick": "ダブルクリックでノートを開く（マウス操作のみ）",
     "openOnDoubleClickShort": "サイドバーでのクリックはノートを選択するだけになり、ダブルクリックまたは Enter で開きます。",
     "openOnDoubleClickHint": "プレゼンテーション中にノートを指し示すときに便利です。ピン留めは、行にマウスを重ねると表示されるピン、Shift+Enter、またはコンテキストメニューで行います。開いたノートが「作業中」に入るかどうかは下の設定で決まります。タッチスクリーンでは、タップで引き続き開きます。",
     "autoAdmitWorkingSet": "編集したノートを自動的に「作業中」へ追加する",

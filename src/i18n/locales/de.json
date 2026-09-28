@@ -326,7 +326,7 @@
     "restoreWorkingSet": "Notizen in Arbeit beim nächsten Start wiederherstellen",
     "restoreWorkingSetShort": "Die Liste „In Arbeit“ wird pro Ordner gemerkt.",
     "restoreWorkingSetHint": "Aus bedeutet: Die Liste ist nach dem Start leer und füllt sich erst wieder durch Anheften oder Bearbeiten. Ungespeicherte Änderungen kommen unabhängig davon zurück.",
-    "openOnDoubleClick": "Notizen per Doppelklick öffnen",
+    "openOnDoubleClick": "Notizen per Doppelklick öffnen (nur mit Maus)",
     "openOnDoubleClickShort": "Ein Klick in der Seitenleiste markiert eine Notiz nur, Doppelklick oder Enter öffnet sie.",
     "openOnDoubleClickHint": "Praktisch, wenn du in einer Präsentation auf Notizen zeigst. Angeheftet wird dann über den Pin, der beim Überfahren einer Zeile erscheint, mit Umschalt+Enter oder über das Kontextmenü. Ob eine geöffnete Notiz in „In Arbeit“ landet, regelt die Einstellung darunter. Auf einem Touchscreen öffnet ein Tippen weiterhin.",
     "autoAdmitWorkingSet": "Bearbeitete Notizen automatisch in „In Arbeit“ aufnehmen",

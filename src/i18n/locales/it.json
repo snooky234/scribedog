@@ -326,7 +326,7 @@
     "restoreWorkingSet": "Ripristina le note in lavorazione al prossimo avvio",
     "restoreWorkingSetShort": "L'elenco «In lavorazione» viene ricordato per cartella.",
     "restoreWorkingSetHint": "Disattivata: l'elenco parte vuoto e si riempie di nuovo solo fissando o modificando. Le modifiche non salvate tornano comunque.",
-    "openOnDoubleClick": "Apri le note con un doppio clic",
+    "openOnDoubleClick": "Apri le note con un doppio clic (solo con il mouse)",
     "openOnDoubleClickShort": "Un clic nella barra laterale seleziona soltanto una nota; un doppio clic o Invio la apre.",
     "openOnDoubleClickHint": "Utile quando indichi delle note durante una presentazione. Per fissarle si usa allora la puntina che compare passando sopra una riga, Maiusc+Invio o il menu contestuale. Se una nota aperta entra in «In lavorazione» dipende dall'impostazione qui sotto. Su uno schermo touch un tocco apre comunque.",
     "autoAdmitWorkingSet": "Aggiungere automaticamente le note modificate a «In lavorazione»",
