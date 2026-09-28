@@ -92,6 +92,7 @@ notes — fluently, privately, and for free.
 | 🔍 Details panel | Live outline to jump between headings, links and backlinks, word count, reading time and edit dates | `Ctrl+Shift+D` / toolbar |
 | 📥 Import | Bring in Word, PDF, HTML, or images (via AI OCR) as clean Markdown | Sidebar import |
 | 📤 Export | Export notes or whole folders to PDF, DOCX, ODT, or HTML | Right-click → Export… |
+| 📄 Page breaks & page setup | Manual page breaks, A4 / US Letter / A5 / US Legal with three margin presets, and optional page lines in the editor that show exactly where the PDF and printed pages end | `Ctrl+Enter` · Settings → Appearance · Toolbar options |
 | 📂 File management | File tree, create/rename/delete, flexible sorting, live filesystem sync | Sidebar |
 | 📱 Mobile access & sync | Plain `.md` files work with any sync service and mobile Markdown app | Bring your own sync |
 | 🎨 Customizable UI | Light/dark and four more built-in themes, your own colour themes, 10 languages, fully remappable keyboard shortcuts | `Ctrl+#` (shortcuts cheat sheet) |
@@ -233,6 +234,10 @@ notes — fluently, privately, and for free.
 - Right-click any file or folder in the sidebar and choose **Export…** — to **PDF, DOCX, ODT, or HTML**
 - **Whole folders export recursively**, preserving your subfolder structure — turn a project folder into a set of shareable documents in one go
 - Embedded images and emoji come along, rendered in a clean sans-serif document style
+- **Page setup** under *Settings → Appearance*: A4, US Letter, A5 or US Legal with normal, narrow or wide margins, used by PDF, print, DOCX and ODT alike. Until you pick one, the paper follows your system's region
+- **Manual page breaks** with `Ctrl+Enter` or the toolbar, stored as `<div style="page-break-after: always;"></div>`, the line Typora and browser printing understand too, so other Markdown tools just show an empty line. Headings stay with the text that follows them, and an image stays with its caption (an italic line right below it)
+- **Show page breaks** (toolbar options, off by default) draws the ends of the pages right into the editor. The PDF export and printing break at exactly those places: every page keeps one line free at the bottom, so the browser's print fits too. Only scaling in the print dialog moves them
+- Printing uses the same font, sizes and table layout as the PDF, so paper and PDF look alike
 - Safe by design: existing files are never silently overwritten — you're asked per file, with an "apply to all" option, and the last export destination is remembered
 
 ### 📂 File management built in
