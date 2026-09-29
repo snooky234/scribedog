@@ -46,6 +46,10 @@ describe("printLayoutCss", () => {
     expect(css()).toContain("padding: 2pt 0 6pt 10.8pt;");
   });
 
+  it("breaks a word longer than the line, as pdfmake does", () => {
+    expect(css()).toContain(".print-root { overflow-wrap: break-word; }");
+  });
+
   it("sets bold in the PDF's weight", () => {
     expect(css(11, "system")).toContain(".print-root strong, .print-root b, .print-root th { font-weight: 500; }");
   });

@@ -104,6 +104,10 @@ export function printLayoutCss({ font, fontSizePt, listIndentPt }: PrintLayoutOp
     // Chromium's own default of two lines at either edge of a page comes
     // closest to the PDF's paragraph rules (pdfPageRules.ts).
     ".print-root * { orphans: 2; widows: 2; }",
+    // pdfmake breaks a word longer than the line (a URL, a path, a hash) at
+    // the line's end. Chromium lets it run off the paper instead, cut off, so
+    // the page held fewer lines than planned and ended in a gap.
+    ".print-root { overflow-wrap: break-word; }",
     // In a list the PDF splits an item wherever the page ends.
     ".print-root li { orphans: 1; widows: 1; }",
     // What the PDF keeps on one page: an image with its caption, a short
