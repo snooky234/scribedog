@@ -34,10 +34,12 @@
   background: rgba(var(--surface-hover-rgb),0.92);
 }
 
-/* "Selected in the tree" (a batch, or the target of an open context menu;
-   FileTree's showSelectionTint) gets this tint. A lone selection that only
-   follows the cursor does not: the focus ring below already marks it, and a
-   tint of its own put a second grey row next to the open note (--active).
+/* "Selected in the tree" (a batch, a row left selected away from the cursor,
+   or the target of an open context menu; FileTree's showSelectionTint) gets
+   this tint and a thin neutral frame. The frame is what keeps a selection
+   visible on the open note, whose own tint would cover a tint alone; neutral,
+   so it never reads as the accent focus ring. A lone selection that only
+   follows the cursor gets neither: the focus ring below already marks it.
    --selection-rgb already carries the right weight in each theme (a muted
    slate in light, a light grey in dark — see tokens.css), so one set of
    alpha values below reads consistently in both without a dark-mode
@@ -47,11 +49,12 @@
 }
 
 .file-tree__row--selected {
-  background: rgba(var(--selection-rgb), 0.14);
+  background: rgba(var(--selection-rgb), 0.1);
+  box-shadow: inset 0 0 0 1px rgba(var(--selection-rgb), 0.55);
 }
 
 .file-tree__row--selected:hover {
-  background: rgba(var(--selection-rgb), 0.18);
+  background: rgba(var(--selection-rgb), 0.13);
 }
 
 /* The open note, and only the open note, carries the accent bar — the same
@@ -68,6 +71,11 @@
   box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85);
 }
 
+/* The open note inside a selection: bar and selection frame together. */
+.file-tree__row.file-tree__row--active.file-tree__row--selected {
+  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85), inset 0 0 0 1px rgba(var(--selection-rgb), 0.55);
+}
+
 /* The ring is where the cursor is: the row holding the focus, file or
    folder alike, and only while the tree has it. The open note keeps its bar
    and tint wherever the cursor goes, so the two answers never mix; and as
@@ -77,7 +85,8 @@
   box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb),0.85);
 }
 
-.file-tree__row.file-tree__row--active:focus {
+.file-tree__row.file-tree__row--active:focus,
+.file-tree__row.file-tree__row--active.file-tree__row--selected:focus {
   box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85), inset 0 0 0 1px rgba(var(--accent-rgb),0.85);
 }
 
@@ -328,6 +337,15 @@
   box-shadow: inset 0 0 0 1px rgb(var(--unsaved-rgb)), 0 0 0 4px rgba(var(--unsaved-rgb), 0.12);
 }
 
+/* On a light page the halo needs more weight to show at all. */
+:root:not(.dark) .sidebar-panel__item-dirty {
+  box-shadow: 0 0 0 4px rgba(var(--unsaved-rgb), 0.28);
+}
+
+:root:not(.dark) .sidebar-panel__item-dirty--inside {
+  box-shadow: inset 0 0 0 1px rgb(var(--unsaved-rgb)), 0 0 0 4px rgba(var(--unsaved-rgb), 0.28);
+}
+
 /* The vault agent's paw: a file (or a collapsed folder holding one) has a
    change waiting for review. Deliberately quieter than the dirty dot — a
    proposal is not something the user has to act on right now. */
@@ -363,6 +381,20 @@
 .file-tree__row:hover .pin-toggle,
 .working-set__row:hover .pin-toggle {
   display: inline-flex;
+}
+
+/* A row with the unsaved dot keeps the pin's slot even while the pin is not
+   shown, so the dot sits in one column next to the pins instead of sliding
+   into the pin's place on an unpinned note. Rows without the dot still
+   collapse the slot and keep the width for long names. */
+.sidebar-panel__item-dirty + .pin-toggle {
+  display: inline-flex;
+  visibility: hidden;
+}
+
+.sidebar-panel__item-dirty + .pin-toggle.pin-toggle--pinned,
+.file-tree__row:hover .sidebar-panel__item-dirty + .pin-toggle {
+  visibility: visible;
 }
 
 .pin-toggle.pin-toggle--pinned {

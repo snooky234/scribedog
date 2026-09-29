@@ -356,12 +356,19 @@ export function FileTree({
   });
 
   const clearSelection = useCallback(() => setSelectedKeys(new Set()), [setSelectedKeys]);
-  // A lone selection is where the cursor is, and the focus ring already says
-  // that; tinting it as well put a second grey row next to the open note. It
-  // keeps the tint while a context menu (or the icon picker it opened) is up,
-  // since that takes the focus and the tint is then the only mark of the row
-  // it acts on.
-  const showSelectionTint = selectedKeys.size > 1 || contextMenu !== null || iconPicker !== null;
+  // A lone selection on the row under the cursor is left to the focus ring;
+  // tinting it as well put a second grey row next to the open note. Any other
+  // selection is drawn: a batch, and a single row the cursor has moved away
+  // from (Ctrl-click the second of two rows off again), which F2 or Delete
+  // would still act on. So is the target of a context menu (or the icon
+  // picker it opened), since that takes the focus and the tint is then the
+  // only mark of the row it acts on.
+  const cursorKey = rangeFocusKey ?? activeKey;
+  const showSelectionTint =
+    selectedKeys.size > 1 ||
+    (selectedKeys.size === 1 && (cursorKey === null || !selectedKeys.has(cursorKey))) ||
+    contextMenu !== null ||
+    iconPicker !== null;
 
   const {
     dragSourceKeys,

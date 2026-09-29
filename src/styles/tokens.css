@@ -102,8 +102,9 @@
   --warning-strong-rgb: 202, 138, 4;
   --info-soft-rgb: 147, 197, 253;
   --info-rgb: 59, 130, 246;
-  /* The unsaved-changes dot in the file tree and zen mode. */
-  --unsaved-rgb: 253, 230, 138;
+  /* The unsaved-changes dot in the file tree and zen mode. Amber on a light
+     page: the pale yellow of the dark theme all but vanishes on white. */
+  --unsaved-rgb: 245, 158, 11;
   /* Find & replace: every match, and the current one. */
   --find-match-rgb: 250, 204, 21;
   --find-current-rgb: 249, 115, 22;
@@ -184,6 +185,7 @@
   --success-bg-rgb: 18, 34, 24;
   --warning-bg-rgb: 69, 49, 7;
   --info-bg-rgb: 15, 33, 62;
+  --unsaved-rgb: 253, 230, 138;
   /* Darker, less saturated than the light value: full yellow behind light
      text on a near-black page glares and drops the contrast. */
   --highlight-bg: rgba(231, 189, 17, 0.18);

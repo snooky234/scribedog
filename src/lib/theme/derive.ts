@@ -337,7 +337,6 @@ const STATUS_COLORS: Record<string, string> = {
   "--warning-strong-rgb": "202, 138, 4",
   "--info-soft-rgb": "147, 197, 253",
   "--info-rgb": "59, 130, 246",
-  "--unsaved-rgb": "253, 230, 138",
   "--find-match-rgb": "250, 204, 21",
   "--find-current-rgb": "249, 115, 22",
   "--on-accent-rgb": "245, 240, 255"
@@ -359,6 +358,7 @@ const MODE_DEFAULTS: Record<ThemeMode, Record<string, string>> = {
     "--success-bg-rgb": "220, 252, 231",
     "--warning-bg-rgb": "255, 251, 235",
     "--info-bg-rgb": "239, 246, 255",
+    "--unsaved-rgb": "245, 158, 11",
     "--highlight-bg": "rgba(253, 224, 71, 0.55)",
     "--diff-removed-bg": "rgba(220, 38, 38, 0.16)",
     "--diff-removed-accent": "rgba(185, 28, 28, 0.55)",
@@ -384,6 +384,7 @@ const MODE_DEFAULTS: Record<ThemeMode, Record<string, string>> = {
     "--success-bg-rgb": "18, 34, 24",
     "--warning-bg-rgb": "69, 49, 7",
     "--info-bg-rgb": "15, 33, 62",
+    "--unsaved-rgb": "253, 230, 138",
     "--highlight-bg": "rgba(231, 189, 17, 0.18)",
     "--diff-removed-bg": "rgba(248, 113, 113, 0.26)",
     "--diff-removed-accent": "rgba(252, 165, 165, 0.7)",

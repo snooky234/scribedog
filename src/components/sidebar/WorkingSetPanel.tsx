@@ -387,19 +387,23 @@ export function WorkingSetPanel({
                         <X className="working-set__close-glyph" aria-label={t("workingSet.closeShort")} />
                       </span>
                     ) : null}
+                    {/* The unsaved dot between cross and pin: right next to
+                        the pin, as in the tree, so the dots of every row
+                        stand in one column. The cross grows to its left on
+                        hover and moves neither of them. */}
+                    {isDirty ? (
+                      <span
+                        className="sidebar-panel__item-dirty"
+                        title={t("fileTree.unsavedChanges")}
+                        aria-label={t("fileTree.unsavedChanges")}
+                      />
+                    ) : null}
                     <PinToggle
                       action={pinToggleAction(entries, entry.filePath, showPins)}
                       labelKeys={PIN_TOGGLE_LABEL_KEYS}
                       onToggle={() => togglePin(entry.filePath)}
                     />
                   </span>
-                  {isDirty ? (
-                    <span
-                      className="sidebar-panel__item-dirty"
-                      title={t("fileTree.unsavedChanges")}
-                      aria-label={t("fileTree.unsavedChanges")}
-                    />
-                  ) : null}
                 </button>
                 {/* Touch: no hover for the cross and no right-click, so the
                     same "…" the tree rows carry opens the menu as a sheet

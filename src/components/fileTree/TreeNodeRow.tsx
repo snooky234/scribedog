@@ -466,14 +466,8 @@ export function TreeNodeRow({
                 <title>{t("fileTree.stagedChangeFolder", { count: folderStagedCount })}</title>
               </PawPrint>
             ) : null}
-            {folderNotePath ? (
-              <PinToggle
-                action={describePinToggle(folderNotePath)}
-                labelKeys={PIN_TOGGLE_LABEL_KEYS}
-                onToggle={() => onTogglePin(folderNotePath)}
-              />
-            ) : null}
-            {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
+            {/* The unsaved dot sits before the pin, so the pins of all rows
+                line up in one column whether a note is dirty or not. */}
             {hasDirtyInside ? (
               <span
                 className="sidebar-panel__item-dirty sidebar-panel__item-dirty--inside"
@@ -488,6 +482,14 @@ export function TreeNodeRow({
                 aria-label={t("fileTree.unsavedChanges")}
               />
             ) : null}
+            {folderNotePath ? (
+              <PinToggle
+                action={describePinToggle(folderNotePath)}
+                labelKeys={PIN_TOGGLE_LABEL_KEYS}
+                onToggle={() => onTogglePin(folderNotePath)}
+              />
+            ) : null}
+            {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
           </button>
         )}
         {!isRenaming ? (
@@ -636,12 +638,7 @@ export function TreeNodeRow({
               <title>{t("fileTree.stagedChange")}</title>
             </PawPrint>
           ) : null}
-          <PinToggle
-            action={describePinToggle(node.filePath)}
-            labelKeys={PIN_TOGGLE_LABEL_KEYS}
-            onToggle={() => onTogglePin(node.filePath)}
-          />
-          {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
+          {/* Before the pin, as in the folder row above. */}
           {isDirty ? (
             <span
               className="sidebar-panel__item-dirty"
@@ -649,6 +646,12 @@ export function TreeNodeRow({
               aria-label={t("fileTree.unsavedChanges")}
             />
           ) : null}
+          <PinToggle
+            action={describePinToggle(node.filePath)}
+            labelKeys={PIN_TOGGLE_LABEL_KEYS}
+            onToggle={() => onTogglePin(node.filePath)}
+          />
+          {modifiedLabel ? <span className="file-tree__mtime">{modifiedLabel}</span> : null}
         </button>
       )}
       {!isRenaming ? (

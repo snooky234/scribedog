@@ -81,6 +81,11 @@
   opacity: 0.75;
 }
 
+/* The dot's halo reaches 4px past it and ate most of the gap to the count. */
+.working-set__toggle .sidebar-panel__item-dirty {
+  margin-left: 0.3rem;
+}
+
 .working-set__header-action {
   display: inline-flex;
   flex-shrink: 0;
@@ -254,6 +259,13 @@
 .working-set__row:focus .working-set__close,
 .working-set__row:focus-visible .working-set__close {
   display: inline-flex;
+}
+
+/* The unsaved dot sits between cross and pin; the row's own gap, not the
+   pair's tighter one, so its halo does not touch either of them and it
+   stands as far from the pin as in the tree. */
+.working-set__row-actions .sidebar-panel__item-dirty {
+  margin: 0 0.25rem;
 }
 
 .working-set__close:hover {
