@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import { isCloseRequestFromPrintPreview } from "@/lib/printSession";
 import { platform } from "@/platform";
 import { flushDrafts } from "@/store/appStore/drafts";
 
@@ -15,7 +16,8 @@ import { flushDrafts } from "@/store/appStore/drafts";
  * and then destroyed, flush failed or not, because the app must always let
  * itself be closed. Nothing else is asked at that point; the drafts are what
  * make the question unnecessary. `onBeforeClose` runs first, for the save
- * that auto-save would have made a moment later.
+ * that auto-save would have made a moment later. The one request dropped is
+ * a click made while the print preview blocked the page (printSession.ts).
  */
 export function useDraftFlush({ onBeforeClose }: { onBeforeClose?: () => Promise<void> } = {}): void {
   // The close handler is registered once; the ref keeps it on the latest
@@ -42,6 +44,12 @@ export function useDraftFlush({ onBeforeClose }: { onBeforeClose?: () => Promise
 
     void platform.window
       .onCloseRequested(async () => {
+        // A click on the close button while the print preview was open,
+        // delivered only now that it is closed (printSession.ts).
+        if (isCloseRequestFromPrintPreview()) {
+          return false;
+        }
+
         await onBeforeCloseRef.current?.().catch(() => undefined);
         await flushDrafts();
       })

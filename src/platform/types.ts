@@ -409,11 +409,19 @@ export type WindowApi = {
   /**
    * Runs `handler` when the user closes the window, and closes it once the
    * handler has settled, whether it resolved or rejected: the app must always
-   * let itself be closed. Desktop only; in the browser a tab closes without
-   * asking, and the pending work is written on `pagehide` instead. Resolves
-   * to the function that removes the handler.
+   * let itself be closed. The one exception is a handler resolving to
+   * `false`, which drops that request as if it had never been made (a click
+   * queued while the print preview was open). Desktop only; in the browser a
+   * tab closes without asking, and the pending work is written on `pagehide`
+   * instead. Resolves to the function that removes the handler.
    */
-  onCloseRequested(handler: () => Promise<void>): Promise<() => void>;
+  onCloseRequested(handler: () => Promise<boolean | void>): Promise<() => void>;
+  /**
+   * Tells the shell that the print preview opens or has closed, so the
+   * window's close button cancels the preview instead of waiting on a page
+   * the preview blocks. A no-op where there is no such window.
+   */
+  setPrintPreviewOpen(open: boolean): Promise<void>;
 };
 
 export type PlatformFeatures = {

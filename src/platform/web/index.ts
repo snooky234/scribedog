@@ -135,6 +135,8 @@ export const platform: Platform = {
     // A tab has no close request to intercept; hooks that need the moment
     // before unload listen to pagehide themselves.
     onCloseRequested: async () => () => undefined,
+    // The browser's own print preview; no window button waits on the page.
+    setPrintPreviewOpen: async () => undefined,
     isFullscreen: async () => document.fullscreenElement !== null,
     setFullscreen: async (fullscreen) => {
       if (fullscreen) {

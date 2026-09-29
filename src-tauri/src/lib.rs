@@ -1,4 +1,5 @@
 mod portable;
+mod print_preview;
 mod rag;
 mod remote_vault;
 mod voice;
@@ -380,6 +381,7 @@ pub fn run() {
         .manage(voice::VoiceState::default())
         .manage(rag::RagState::default())
         .manage(remote_vault::RemoteVaultState::default())
+        .manage(print_preview::PrintPreviewState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init());
@@ -423,6 +425,21 @@ pub fn run() {
                     });
                 }
 
+                // Windows only: that is where the preview blocks the page and
+                // where the Escape can be sent (print_preview.rs).
+                #[cfg(windows)]
+                {
+                    let handle = app.handle().clone();
+                    window.on_window_event(move |event| {
+                        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                            if print_preview::take_open(&handle.state::<print_preview::PrintPreviewState>()) {
+                                api.prevent_close();
+                                print_preview::cancel();
+                            }
+                        }
+                    });
+                }
+
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_secs(5));
                     let _ = window.show();
@@ -442,6 +459,7 @@ pub fn run() {
             check_spellcheck_dictionary,
             store_api_key,
             get_api_key,
+            print_preview::set_print_preview_open,
             remote_vault::allow_remote_vault_origin,
             remote_vault::remote_vault_request,
             remote_vault::store_remote_vault_token,

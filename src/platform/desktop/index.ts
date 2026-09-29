@@ -123,15 +123,21 @@ export const platform: Platform = {
         }
 
         closing = true;
+        let dropped = false;
 
         try {
-          await handler();
+          dropped = (await handler()) === false;
         } finally {
-          // destroy(), not close(): close() would raise this event again.
-          await appWindow.destroy();
+          if (dropped) {
+            closing = false;
+          } else {
+            // destroy(), not close(): close() would raise this event again.
+            await appWindow.destroy();
+          }
         }
       });
-    }
+    },
+    setPrintPreviewOpen: (open) => invoke("set_print_preview_open", { open })
   },
   credentials: {
     storeApiKey: (id, apiKey) => invoke("store_api_key", { provider: id, apiKey }),

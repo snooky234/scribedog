@@ -11,6 +11,8 @@ import {
   type PrintFont
 } from "@/lib/export/printLayout";
 import { getPageLayout, pageCssRule } from "@/lib/pageSetup";
+import { runPrintDialog } from "@/lib/printSession";
+import { platform } from "@/platform";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 // Prints the rendered Markdown content only — never the raw source and never
@@ -94,7 +96,16 @@ export async function printMarkdown(markdown: string, markdownFilePath: string |
   // asynchronously from data URIs) before opening the print dialog.
   await new Promise((resolve) => window.setTimeout(resolve, 50));
 
-  window.print();
+  // The flag lets the window's close button cancel the preview (the shell
+  // cannot reach the page while the preview blocks it). Failing to set it
+  // only costs that convenience, never the print.
+  await platform.window.setPrintPreviewOpen(true).catch(() => undefined);
+
+  try {
+    runPrintDialog(() => window.print());
+  } finally {
+    void platform.window.setPrintPreviewOpen(false).catch(() => undefined);
+  }
 }
 
 // The pages end where the PDF's end: the same page plan cuts the document and
