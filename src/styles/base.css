@@ -63,8 +63,15 @@ body {
 
 .detail-panel p,
 .sidebar-panel p {
-  margin: 0;
   color: rgba(var(--text-rgb),var(--text-default-alpha));
+}
+
+/* Not in the note: the editor sits inside .detail-panel, and this rule, out
+   of any layer, beat the paragraph spacing of Tailwind's prose (utilities
+   layer), so the editor showed no space between paragraphs. */
+.detail-panel p:not(.editor-view__surface *),
+.sidebar-panel p {
+  margin: 0;
 }
 
 .workspace-grid {

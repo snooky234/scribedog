@@ -894,6 +894,22 @@
   font-size: 0.875rem;
 }
 
+/* Space between paragraphs, tighter than prose's 1.25em. Top level only;
+   :where() keeps it below the first/last-child rules that follow. */
+.editor-view__surface > :where(p) {
+  margin-top: 0.55em;
+  margin-bottom: 0.55em;
+}
+
+/* A paragraph inside a list item, a task, a quote adds no space of its own:
+   the item spacing is the list's. The way these always looked (a rule in
+   base.css zeroed every paragraph in the editor until it was scoped out). A
+   callout's own spacing below still wins, being more specific. */
+.editor-view__surface > * p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .editor-view__surface > :first-child {
   margin-top: 0;
 }
