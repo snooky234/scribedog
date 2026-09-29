@@ -1,5 +1,6 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { TextSelection } from "@tiptap/pm/state";
 import type MarkdownIt from "markdown-it";
 
 // A "callout" is a colored hint banner (success/info/warning/danger). It stores
@@ -138,6 +139,7 @@ export function calloutMarkdownItPlugin(md: MarkdownIt): void {
 
 type MarkdownSerializerState = {
   write: (content: string) => void;
+  ensureNewLine: () => void;
   wrapBlock: (
     delim: string,
     firstDelim: string | null,
@@ -194,8 +196,43 @@ export const Callout = Node.create({
     return {
       setCallout:
         (attributes) =>
-        ({ commands }) =>
-          commands.wrapIn(this.name, attributes),
+        ({ tr, dispatch, commands }) => {
+          if (commands.wrapIn(this.name, attributes)) {
+            return true;
+          }
+
+          // The first paragraph of a list or task item cannot be wrapped: the
+          // item's schema requires a paragraph as its first child. Put an empty
+          // banner right below that paragraph, inside the same item, instead.
+          const { $from } = tr.selection;
+
+          if (!$from.parent.isTextblock || $from.depth < 1) {
+            return false;
+          }
+
+          const container = $from.node(-1);
+          const index = $from.index(-1) + 1;
+
+          if (!container.canReplaceWith(index, index, this.type)) {
+            return false;
+          }
+
+          const callout = this.type.createAndFill(attributes);
+
+          if (!callout) {
+            return false;
+          }
+
+          if (dispatch) {
+            const insertPos = $from.after();
+
+            tr.insert(insertPos, callout);
+            tr.setSelection(TextSelection.create(tr.doc, insertPos + 2));
+            tr.scrollIntoView();
+          }
+
+          return true;
+        },
       toggleCallout:
         (attributes) =>
         ({ commands }) =>
@@ -214,7 +251,14 @@ export const Callout = Node.create({
           const variant = normalizeVariant(node.attrs.variant);
           const marker = CALLOUT_MARKERS[variant];
 
-          state.wrapBlock("> ", `> [!${marker}]\n> `, node, () => state.renderContent(node));
+          // The marker gets its own write so the line break after it picks up
+          // the enclosing indentation. Baked into the first delimiter, the
+          // second line lost a list item's indent and left the list.
+          state.wrapBlock("> ", null, node, () => {
+            state.write(`[!${marker}]`);
+            state.ensureNewLine();
+            state.renderContent(node);
+          });
         },
         parse: {
           setup(markdownit: MarkdownIt) {
