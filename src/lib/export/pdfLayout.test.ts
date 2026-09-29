@@ -162,6 +162,22 @@ describe("planned pages", () => {
     expect(text.slice(offset)).toMatch(/^\S/);
   });
 
+  it("breaks a list of few main points between its sub-points", async () => {
+    const filler = Array.from({ length: 12 }, (_, index) => `Line ${index}`).join("\n\n");
+    const points = [0, 1]
+      .map((point) =>
+        [`- Point ${point}`, ...Array.from({ length: 20 }, (_, sub) => `  - Sub-point ${sub} of point ${point}`)].join("\n")
+      )
+      .join("\n");
+    const { map, pdf, paged, blocks } = await planned(`${filler}\n\n${points}\n`, { pageSize: "a5" });
+    const list = blocks.findIndex((block) => block.kind === "list");
+
+    // The list begins on the page the filler ends on, and is cut between sub-points.
+    expect(map.pageStarts.some((start) => start.blockIndex === list && !start.withinBlock)).toBe(false);
+    expect(map.pageStarts.some((start) => start.at?.kind === "listItem" && start.at.within)).toBe(true);
+    expect(pageCount(pdf)).toBe(paged.blocks.filter((block) => block.kind === "pageBreak").length + 1);
+  });
+
   it("keeps an image together with its italic caption", () => {
     const pixel =
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";

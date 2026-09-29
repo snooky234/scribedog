@@ -69,19 +69,30 @@ export function createInnerResolver(doc: ProseMirrorNode): InnerResolver {
       }
       case "tableRow":
       case "listItem": {
-        const index = at.kind === "tableRow" ? at.row : at.item;
+        let container = target;
+        let containerPos = node.pos;
+        let index = at.kind === "tableRow" ? at.row : at.item;
 
-        if (index >= target.childCount) {
+        // A cut inside a nested list: down through the item to that list.
+        for (let within = at.kind === "listItem" ? at.within : undefined; within; within = within.within) {
+          const item = index < container.childCount ? container.child(index) : null;
+          const list = item && within.child < item.childCount ? item.child(within.child) : null;
+
+          if (!item || !list || list.isTextblock) {
+            return null;
+          }
+
+          containerPos = childPosition(item, childPosition(container, containerPos, index), within.child);
+          container = list;
+          index = within.item;
+        }
+
+        if (index >= container.childCount) {
           return null;
         }
 
-        let pos = node.pos + 1;
-
-        for (let child = 0; child < index; child++) {
-          pos += target.child(child).nodeSize;
-        }
-
-        const row = target.child(index);
+        const pos = childPosition(container, containerPos, index);
+        const row = container.child(index);
         // The label goes on the row's last cell (a <tr> draws nothing of its own).
         const labelPos = at.kind === "tableRow" && row.childCount > 0 ? pos + row.nodeSize - 1 - row.lastChild!.nodeSize : pos;
         const labelEnd = at.kind === "tableRow" && row.childCount > 0 ? pos + row.nodeSize - 1 : pos + row.nodeSize;
@@ -92,6 +103,17 @@ export function createInnerResolver(doc: ProseMirrorNode): InnerResolver {
         return null;
     }
   };
+}
+
+// The document position of child `index` of the node at `nodePos`.
+function childPosition(parent: ProseMirrorNode, nodePos: number, index: number): number {
+  let pos = nodePos + 1;
+
+  for (let child = 0; child < index; child++) {
+    pos += parent.child(child).nodeSize;
+  }
+
+  return pos;
 }
 
 // The document position at character `offset` of a textblock's text.

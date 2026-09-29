@@ -235,7 +235,7 @@ function renderBlocks(blocks: ExportBlock[], images: ExportImageMap, paged?: Pag
 
         for (const item of block.items) {
           const checkbox =
-            item.checked === null
+            item.checked === null || item.continued
               ? ""
               : `<input type="checkbox" disabled${item.checked ? " checked" : ""} /> `;
 
@@ -246,7 +246,11 @@ function renderBlocks(blocks: ExportBlock[], images: ExportImageMap, paged?: Pag
             first?.kind === "paragraph" ? renderRuns(first.runs, images, paged) : "";
           const remaining = first?.kind === "paragraph" ? rest : item.children;
 
-          html += `<li>${checkbox}${inlineFirst}${renderBlocks(remaining, images, paged)}</li>\n`;
+          // The rest of an item cut across pages (pagePlan.ts) draws no
+          // marker; as a list item it still counts, so the numbers go on.
+          const open = item.continued ? '<li class="list-continued">' : "<li>";
+
+          html += `${open}${checkbox}${inlineFirst}${renderBlocks(remaining, images, paged)}</li>\n`;
         }
 
         html += `</${tag}>\n`;

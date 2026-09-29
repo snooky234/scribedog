@@ -21,6 +21,7 @@ import {
   SHORT_BLOCK_LINES,
   type FlowCandidate,
   type FlowLayout,
+  type ListCut,
   type PagedDocument
 } from "./pagePlan";
 import { splitEmojiSegments } from "./emojiSegments";
@@ -377,8 +378,23 @@ function blocksToPdfContent(
         });
         break;
       case "list": {
-        const items: Content[] = block.items.map((item) => {
-          const stack = blocksToPdfContent(item.children, images, layout);
+        // What each child block of each item produced, for the flow reader
+        // to find the nested lists in (listChildContent).
+        const childContent: Content[][][] = [];
+        const items: Content[] = block.items.map((item, itemIndex) => {
+          const produced: Content[][] = [];
+          const stack = blocksToPdfContent(item.children, images, layout, (child, childItems) => {
+            produced[child] = childItems;
+          });
+          childContent[itemIndex] = produced;
+
+          // The rest of an item cut across pages: same indent, no marker of
+          // its own. As a stack, so pdfmake still counts it in an ordered list.
+          if (item.continued) {
+            return item.checked === null
+              ? { stack, listType: "none" }
+              : { columns: [{ text: "", width: 12 }, { stack, width: "*" }], columnGap: 4 };
+          }
 
           if (item.checked === null) {
             return stack.length === 1 ? stack[0] : { stack };
@@ -400,6 +416,7 @@ function blocksToPdfContent(
             ? { stack: items, margin: [4, PDF_LIST_MARGIN.top, 0, PDF_LIST_MARGIN.bottom] }
             : { ul: items, margin: [0, PDF_LIST_MARGIN.top, 0, PDF_LIST_MARGIN.bottom] };
 
+        listChildContent.set(listContent as object, childContent);
         content.push(listContent);
         break;
       }
@@ -606,6 +623,38 @@ export function readPageMap(definition: TDocumentDefinitions): PageMap {
 
 type Positioned = { positions?: Array<{ top: number }> };
 
+// A list's content node -> per item, per child block, the content that block
+// produced. Filled while building, read back from the laid-out flow to find
+// the nested lists a page may break inside.
+const listChildContent = new WeakMap<object, Content[][][]>();
+
+type ListNode = { ul?: unknown[]; ol?: unknown[]; stack?: unknown[] };
+
+function listNodeItems(node: unknown): unknown[] {
+  const list = node as ListNode;
+  return list.ul ?? list.ol ?? list.stack ?? [];
+}
+
+// The top of every laid-out line of text inside `node`.
+function textLineTops(node: unknown, tops: number[] = []): number[] {
+  if (!node || typeof node !== "object") {
+    return tops;
+  }
+
+  const candidate = node as Positioned & ListNode & { text?: unknown; columns?: unknown[] };
+
+  if (candidate.text !== undefined) {
+    tops.push(...(candidate.positions ?? []).map((line) => line.top));
+    return tops;
+  }
+
+  for (const child of [...(candidate.stack ?? []), ...(candidate.columns ?? []), ...(candidate.ul ?? []), ...(candidate.ol ?? [])]) {
+    textLineTops(child, tops);
+  }
+
+  return tops;
+}
+
 /** What the flow layout needs to be read back after pdfmake has laid it out. */
 export type FlowRecording = {
   entries: Array<{ blockIndex: number; block: ExportBlock; marker: Content; items: Content[]; mandatory: boolean }>;
@@ -666,14 +715,14 @@ function firstTop(node: unknown): number | undefined {
     return undefined;
   }
 
-  const candidate = node as Positioned & { stack?: unknown[]; columns?: unknown[] };
+  const candidate = node as Positioned & ListNode & { columns?: unknown[] };
   const own = candidate.positions?.[0]?.top;
 
   if (own !== undefined) {
     return own;
   }
 
-  for (const child of [...(candidate.stack ?? []), ...(candidate.columns ?? [])]) {
+  for (const child of [...(candidate.stack ?? []), ...(candidate.columns ?? []), ...(candidate.ul ?? []), ...(candidate.ol ?? [])]) {
     const top = firstTop(child);
 
     if (top !== undefined) {
@@ -682,6 +731,40 @@ function firstTop(node: unknown): number | undefined {
   }
 
   return undefined;
+}
+
+/**
+ * Where each item of a laid-out list begins, nested items included, in
+ * document order. Never before the first item of a list: a nested list's
+ * first sub-point stays with the point above it, as a heading does with its
+ * text.
+ */
+function listItemStarts(listNode: unknown, list: Extract<ExportBlock, { kind: "list" }>): Array<{ top: number; cut: ListCut }> {
+  const items = listNodeItems(listNode);
+  const children = listChildContent.get(listNode as object);
+  const starts: Array<{ top: number; cut: ListCut }> = [];
+
+  list.items.forEach((item, index) => {
+    const top = firstTop(items[index]);
+
+    if (index > 0 && top !== undefined) {
+      starts.push({ top, cut: { item: index } });
+    }
+
+    item.children.forEach((child, childIndex) => {
+      const produced = children?.[index]?.[childIndex];
+
+      if (child.kind !== "list" || produced?.length !== 1) {
+        return;
+      }
+
+      for (const nested of listItemStarts(produced[0], child)) {
+        starts.push({ top: nested.top, cut: { item: index, within: { ...nested.cut, child: childIndex } } });
+      }
+    });
+  });
+
+  return starts;
 }
 
 /** The candidates for a page break, read off a laid-out flow definition. */
@@ -794,27 +877,29 @@ export function readFlowLayout(recording: FlowRecording): FlowLayout {
         return;
       }
       case "list": {
-        const listItems = ((item as { ul?: unknown[]; ol?: unknown[]; stack?: unknown[] }).ul ??
-          (item as { ol?: unknown[] }).ol ??
-          (item as { stack?: unknown[] }).stack ??
-          []) as unknown[];
+        const lines = textLineTops(item);
 
-        if (listItems.length < SHORT_BLOCK_LINES) {
+        // Counted in lines, not items: two lines stay on either page, and a
+        // list shorter than that moves whole. A few main points with many
+        // sub-points are a long list, and break between the sub-points.
+        if (lines.length < SHORT_BLOCK_LINES) {
           return;
         }
 
-        for (let index = MIN_LINES_AT_PAGE_EDGE; index <= listItems.length - MIN_LINES_AT_PAGE_EDGE; index++) {
-          const top = firstTop(listItems[index]);
+        for (const { top, cut } of listItemStarts(item, block)) {
+          const linesBefore = lines.filter((line) => line < top).length;
 
-          if (top !== undefined) {
-            candidates.push({
-              y: y(top - PDF_PARAGRAPH_MARGIN.top),
-              blockIndex,
-              inner: { kind: "listItem", item: index },
-              tailExtra: PDF_LIST_MARGIN.bottom,
-              topExtra: PDF_LIST_MARGIN.top
-            });
+          if (linesBefore < MIN_LINES_AT_PAGE_EDGE || lines.length - linesBefore < MIN_LINES_AT_PAGE_EDGE) {
+            continue;
           }
+
+          candidates.push({
+            y: y(top - PDF_PARAGRAPH_MARGIN.top),
+            blockIndex,
+            inner: { kind: "listItem", ...cut },
+            tailExtra: PDF_LIST_MARGIN.bottom,
+            topExtra: PDF_LIST_MARGIN.top
+          });
         }
         return;
       }

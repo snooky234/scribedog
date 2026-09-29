@@ -10,8 +10,8 @@ import type { ExportBlock, ExportListItem, InlineRun } from "./markdownModel";
 // still leave one line of room at the bottom (the safety zone: Chromium sets
 // text a line longer or shorter than pdfmake now and then, and the print has
 // to fit too). applyPagePlan then cuts the document at exactly those points
-// (a paragraph at a word, a table before a row, a list before an item, a code
-// block before a line) and puts a hard page break into each cut. The PDF is
+// (a paragraph at a word, a table before a row, a list before an item at any
+// depth, a code block before a line) and puts a hard page break into each cut. The PDF is
 // rendered from that, and so is the print; nothing is written into the note.
 
 /** A block shorter than this many lines (or rows) is never split. */
@@ -27,8 +27,16 @@ export type InnerBreak =
   /** At character `offset` of the paragraph's text (runs joined, a break counts as one character). */
   | { kind: "paragraph"; offset: number }
   | { kind: "tableRow"; row: number }
-  | { kind: "listItem"; item: number }
+  | ({ kind: "listItem" } & ListCut)
   | { kind: "codeLine"; line: number };
+
+/**
+ * Before item `item` of a list, or, with `within`, inside that item: before
+ * an item of the nested list that is the item's child block `child`. So a
+ * list with few main points and many sub-points can break between the
+ * sub-points, not only as a whole.
+ */
+export type ListCut = { item: number; within?: ListCut & { child: number } };
 
 /** A point where a page may begin, measured in the flow layout. */
 export type FlowCandidate = {
@@ -258,14 +266,23 @@ function splitBlock(block: ExportBlock, cuts: ResolvedInner[]): ExportBlock[] {
       }));
     }
     case "list": {
-      const items = cuts.flatMap((cut) => (cut.kind === "listItem" ? [cut.item] : []));
-      const bounds = [0, ...items, block.items.length];
+      const parts: ExportBlock[] = [];
+      let rest: ListBlock = block;
 
-      return bounds.slice(0, -1).map((from, index) => ({
-        ...block,
-        start: block.start + from,
-        items: block.items.slice(from, bounds[index + 1]) as ExportListItem[]
-      }));
+      // From the last cut back: what is left in front of a cut is untouched,
+      // so the indices of the earlier cuts still hold in it.
+      for (const cut of [...cuts].reverse()) {
+        if (cut.kind !== "listItem") {
+          continue;
+        }
+
+        const [before, after] = splitList(rest, cut);
+        parts.unshift(after);
+        rest = before;
+      }
+
+      parts.unshift(rest);
+      return parts;
     }
     case "codeBlock": {
       const lines = block.text.split("\n");
@@ -280,6 +297,39 @@ function splitBlock(block: ExportBlock, cuts: ResolvedInner[]): ExportBlock[] {
     default:
       return [block];
   }
+}
+
+type ListBlock = Extract<ExportBlock, { kind: "list" }>;
+
+/**
+ * A list cut in two. Cut inside an item, the item's rest opens the second
+ * part as a continuation: no bullet, number or checkbox of its own, since it
+ * is still the same point (it keeps its number, so the next item's is right).
+ */
+function splitList(list: ListBlock, cut: ListCut): [ListBlock, ListBlock] {
+  const item = list.items[cut.item];
+  const nested = cut.within && item?.children[cut.within.child];
+
+  if (!cut.within || !item || nested?.kind !== "list") {
+    return [
+      { ...list, items: list.items.slice(0, cut.item) },
+      { ...list, start: list.start + cut.item, items: list.items.slice(cut.item) }
+    ];
+  }
+
+  const { child } = cut.within;
+  const [nestedBefore, nestedAfter] = splitList(nested, cut.within);
+  const head: ExportListItem = { ...item, children: [...item.children.slice(0, child), nestedBefore] };
+  const continuation: ExportListItem = {
+    ...item,
+    children: [nestedAfter, ...item.children.slice(child + 1)],
+    continued: true
+  };
+
+  return [
+    { ...list, items: [...list.items.slice(0, cut.item), head] },
+    { ...list, start: list.start + cut.item, items: [continuation, ...list.items.slice(cut.item + 1)] }
+  ];
 }
 
 /**

@@ -36,6 +36,9 @@ export type ExportListItem = {
   // null = regular list item, true/false = task list checkbox state.
   checked: boolean | null;
   children: ExportBlock[];
+  // The rest of an item cut across pages (pagePlan.ts): drawn without its
+  // own bullet, number or checkbox. Only the PDF and the print see it.
+  continued?: boolean;
 };
 
 // Markdown itself never produces an alignment — it stays undefined for every

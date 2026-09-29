@@ -121,6 +121,10 @@ export function printLayoutCss({ font, fontSizePt, listIndentPt }: PrintLayoutOp
     // The PDF draws the box 12pt wide with a 4pt gap (pdfExport.ts).
     ".print-root ul.task-list { padding-left: 4pt; }",
     ".print-root ul.task-list input[type=\"checkbox\"] { width: 12pt; height: 12pt; margin: 0 4pt 0 0; }",
+    // The rest of an item cut across pages (pagePlan.ts): no marker of its
+    // own, and in a task list the room the checkbox took.
+    ".print-root li.list-continued { list-style: none; }",
+    ".print-root ul.task-list li.list-continued { padding-left: 16pt; }",
     `.print-root table { margin: ${pt(PDF_BLOCK_MARGIN.top)} 0 ${pt(PDF_BLOCK_MARGIN.bottom)}; }`,
     ".print-root table.print-table--full { width: 100%; table-layout: fixed; }",
     `.print-root th, .print-root td { padding: ${pt(PDF_TABLE_CELL_PADDING.vertical)} ${pt(PDF_TABLE_CELL_PADDING.horizontal)}; border-width: 1pt; vertical-align: top; }`,

@@ -145,6 +145,35 @@ describe("applyPagePlan", () => {
     ]);
   });
 
+  it("splits a list inside an item and continues that item without a marker", () => {
+    const blocks = parseMarkdownToBlocks("1. a\n   - x\n   - y\n   - z\n2. b\n");
+    const cut = { kind: "listItem" as const, item: 0, within: { child: 1, item: 2 } };
+    const paged = applyPagePlan(blocks, [block(0, 0, { inner: cut })]);
+    const lists = paged.blocks.filter((item) => item.kind === "list") as Extract<ExportBlock, { kind: "list" }>[];
+    const nested = (list: Extract<ExportBlock, { kind: "list" }>, index: number, child: number) =>
+      list.items[index].children[child] as Extract<ExportBlock, { kind: "list" }>;
+
+    expect(lists).toHaveLength(2);
+    expect(lists[0].items).toHaveLength(1);
+    expect(nested(lists[0], 0, 1).items).toHaveLength(2);
+    expect(lists[1].start).toBe(1);
+    expect(lists[1].items.map((item) => item.continued ?? false)).toEqual([true, false]);
+    expect(nested(lists[1], 0, 0).items).toHaveLength(1);
+    expect(paged.origins[2]).toEqual({ blockIndex: 0, part: cut });
+  });
+
+  it("cuts one list at several depths", () => {
+    const blocks = parseMarkdownToBlocks("- a\n  - x\n  - y\n- b\n- c\n");
+    const paged = applyPagePlan(blocks, [
+      block(0, 0, { inner: { kind: "listItem", item: 0, within: { child: 1, item: 1 } } }),
+      block(0, 10, { inner: { kind: "listItem", item: 2 } })
+    ]);
+    const lists = paged.blocks.filter((item) => item.kind === "list") as Extract<ExportBlock, { kind: "list" }>[];
+
+    expect(lists.map((list) => list.items.length)).toEqual([1, 2, 1]);
+    expect(lists[1].items[0].continued).toBe(true);
+  });
+
   it("splits a code block before a line", () => {
     const blocks = parseMarkdownToBlocks("```\na\nb\nc\nd\n```\n");
     const paged = applyPagePlan(blocks, [block(0, 0, { inner: { kind: "codeLine", line: 3 } })]);

@@ -158,6 +158,17 @@ describe("createInnerResolver", () => {
     expect(doc.textBetween(code.pos + 1, line!.pos)).toBe("a = 1\nb = 2\n");
   });
 
+  it("finds a sub-point inside a nested list", () => {
+    const editor = createEditor("- one\n  - a\n  - b\n- two\n");
+    const { nodes } = serializeTopLevelNodes(editor);
+    const doc = editor.state.doc;
+    const item = createInnerResolver(doc)(nodes[0], { kind: "listItem", item: 0, within: { child: 1, item: 1 } });
+
+    expect(item?.kind).toBe("before");
+    expect(doc.nodeAt(item!.pos)?.type.name).toBe("listItem");
+    expect(doc.nodeAt(item!.pos)?.textContent).toBe("b");
+  });
+
   it("draws a line inside the text and on a table row", () => {
     const editor = createEditor("One two three four.\n\n| A |\n| - |\n| 1 |\n| 2 |\n");
     const { nodes } = serializeTopLevelNodes(editor);
