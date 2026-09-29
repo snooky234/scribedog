@@ -1153,6 +1153,40 @@
   color: var(--dialog-hint);
 }
 
+.font-setting__size-hint {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.font-setting__size-hint .font-setting__hint {
+  margin: 0;
+}
+
+/* The zoomed editor view, next to the hint while it differs (useFontZoom). */
+.font-setting__view-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  font-size: var(--dialog-hint-size);
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--accent-rgb));
+}
+
+.font-setting__view-reset {
+  display: inline-flex;
+  padding: 0.15rem;
+  border-radius: 0.35rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.font-setting__view-reset:hover {
+  background: rgba(var(--overlay-rgb), 0.08);
+}
+
 .font-setting__size input[type="range"] {
   width: 100%;
   accent-color: rgb(var(--accent-rgb));

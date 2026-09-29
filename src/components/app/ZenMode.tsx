@@ -1,7 +1,9 @@
 import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { useZenFontZoom } from "@/hooks/useZenFontZoom";
+import { useFontZoom } from "@/hooks/useFontZoom";
+import { cn } from "@/lib/utils";
+import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 type ZenModeProps = {
   onExit: () => void;
@@ -10,7 +12,10 @@ type ZenModeProps = {
 
 export function ZenMode({ onExit, isDirty }: ZenModeProps) {
   const { t } = useTranslation();
-  const readoutSizePt = useZenFontZoom(true);
+  const readoutSizePt = useFontZoom("zen", true);
+  // The readout floats over the page; on the paper surface it takes the
+  // page's palette (tokens.css).
+  const paperSurface = useEditorSettingsStore((state) => state.paperSurface);
 
   return (
     <>
@@ -25,7 +30,7 @@ export function ZenMode({ onExit, isDirty }: ZenModeProps) {
       </button>
 
       {readoutSizePt !== null ? (
-        <output className="zen-font-readout" aria-live="polite">
+        <output className={cn("zen-font-readout", paperSurface && "paper-palette")} aria-live="polite">
           {t("settingsDialog.fontSizeValue", { size: readoutSizePt })}
         </output>
       ) : null}

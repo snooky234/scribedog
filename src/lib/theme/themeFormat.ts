@@ -302,7 +302,7 @@ export function themeStylesheet(resolved: ResolvedTheme): string {
   }
   if (resolved.paper) {
     rules.push(
-      `html.dark .editor-view__surface--paper { ${toCssDeclarations(resolved.paper.palette)} }`,
+      `html.dark .editor-view__surface--paper, html.dark .paper-palette { ${toCssDeclarations(resolved.paper.palette)} }`,
       `html.dark .editor-view__surface--paper.prose { ${toCssDeclarations(resolved.paper.prose)} }`
     );
   }

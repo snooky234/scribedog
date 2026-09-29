@@ -13,17 +13,20 @@ import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 const READOUT_MS = 900;
 
 /**
- * Reader-style text zoom in Zen mode: a two-finger pinch on a touch screen
- * or Ctrl+wheel (Cmd+wheel on a Mac) resizes the document text and nothing
- * else. Both gestures are claimed here so the webview does not zoom the
- * page instead, which is also why the touch listener is not passive.
+ * Reader-style text zoom: Ctrl+wheel (Cmd+wheel on a Mac) resizes the
+ * document text and nothing else, and in Zen mode a two-finger pinch on a
+ * touch screen does too. The gestures are claimed here so the webview does
+ * not zoom the page instead, which is also why the touch listener is not
+ * passive.
  *
- * The size lands in `zenFontSizePt`, which only the Zen column reads; the
- * normal view and the exports keep the document size from the settings.
- * Returns the size to show in a readout while a gesture is in progress,
- * `null` once it has faded.
+ * `"zen"` writes `zenFontSizePt`, which only the Zen column reads. `"view"`
+ * writes `viewFontSizePt` for the normal editor, only for a wheel over the
+ * editor itself, and without the pinch: there it would fight scrolling and
+ * selecting text on a tablet. Neither reaches the exports, which keep the
+ * document size from the settings. Returns the size to show in a readout
+ * while a gesture is in progress, `null` once it has faded.
  */
-export function useZenFontZoom(enabled: boolean): number | null {
+export function useFontZoom(mode: "zen" | "view", enabled: boolean): number | null {
   const [readoutSizePt, setReadoutSizePt] = useState<number | null>(null);
 
   useEffect(() => {
@@ -34,13 +37,20 @@ export function useZenFontZoom(enabled: boolean): number | null {
     let readoutTimer: ReturnType<typeof setTimeout> | null = null;
 
     const currentSizePt = () => {
-      const { zenFontSizePt, fontSizePt } = useEditorSettingsStore.getState();
-      return zenFontSizePt ?? fontSizePt;
+      const { zenFontSizePt, viewFontSizePt, fontSizePt } = useEditorSettingsStore.getState();
+      return (mode === "zen" ? zenFontSizePt : viewFontSizePt) ?? fontSizePt;
     };
 
     const commit = (sizePt: number) => {
-      useEditorSettingsStore.getState().setZenFontSizePt(sizePt);
-      setReadoutSizePt(useEditorSettingsStore.getState().zenFontSizePt);
+      const store = useEditorSettingsStore.getState();
+
+      if (mode === "zen") {
+        store.setZenFontSizePt(sizePt);
+      } else {
+        store.setViewFontSizePt(sizePt);
+      }
+
+      setReadoutSizePt(currentSizePt());
 
       if (readoutTimer !== null) {
         clearTimeout(readoutTimer);
@@ -89,6 +99,11 @@ export function useZenFontZoom(enabled: boolean): number | null {
         return;
       }
 
+      // Over the sidebar, the chat or a dialog the wheel is not about the note.
+      if (mode === "view" && !(event.target instanceof Element && event.target.closest(".editor-view__scroll"))) {
+        return;
+      }
+
       event.preventDefault();
       // Re-read the size in case a pinch or the settings changed it meanwhile.
       wheel = applyWheelZoom({ ...wheel, sizePt: currentSizePt() }, event.deltaY);
@@ -100,12 +115,17 @@ export function useZenFontZoom(enabled: boolean): number | null {
       event.preventDefault();
     };
 
-    document.addEventListener("touchstart", handleTouchStart, { passive: true });
-    document.addEventListener("touchmove", handleTouchMove, { passive: false });
-    document.addEventListener("touchend", handleTouchEnd);
-    document.addEventListener("touchcancel", handleTouchEnd);
+    const pinch = mode === "zen";
+
+    if (pinch) {
+      document.addEventListener("touchstart", handleTouchStart, { passive: true });
+      document.addEventListener("touchmove", handleTouchMove, { passive: false });
+      document.addEventListener("touchend", handleTouchEnd);
+      document.addEventListener("touchcancel", handleTouchEnd);
+      document.addEventListener("gesturestart", preventGesture);
+    }
+
     document.addEventListener("wheel", handleWheel, { passive: false });
-    document.addEventListener("gesturestart", preventGesture);
 
     return () => {
       if (readoutTimer !== null) {
@@ -120,7 +140,7 @@ export function useZenFontZoom(enabled: boolean): number | null {
       document.removeEventListener("gesturestart", preventGesture);
       setReadoutSizePt(null);
     };
-  }, [enabled]);
+  }, [mode, enabled]);
 
   return readoutSizePt;
 }

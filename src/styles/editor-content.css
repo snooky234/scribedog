@@ -1169,3 +1169,21 @@ body.is-resizing-page {
   cursor: col-resize;
   user-select: none;
 }
+
+/* Current view size while Ctrl+wheeling over the note (useFontZoom), centred
+   at the top of the editor pane like Zen mode's readout; gone a moment later. */
+.font-zoom-readout {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--text-rgb));
+  background: rgba(var(--overlay-rgb), 0.08);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}

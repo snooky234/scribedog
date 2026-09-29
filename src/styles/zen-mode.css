@@ -103,7 +103,7 @@
   box-shadow: 0 0 0 4px rgba(var(--unsaved-rgb), 0.12);
 }
 
-/* Current text size while pinching or Ctrl+wheeling (useZenFontZoom),
+/* Current text size while pinching or Ctrl+wheeling (useFontZoom),
    centred at the top like a reader's zoom readout; gone a moment later. */
 .zen-font-readout {
   position: fixed;

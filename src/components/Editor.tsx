@@ -22,6 +22,7 @@ import { FileLinkSuggestionPopover } from "@/components/editor/FileLinkSuggestio
 import { DetailsPanel } from "@/components/editor/DetailsPanel";
 import { SelectionContextMenu, type SelectionContextMenuState } from "@/components/editor/SelectionContextMenu";
 import { PageWidthHandles } from "@/components/editor/PageWidthHandles";
+import { useFontZoom } from "@/hooks/useFontZoom";
 import { StagedChangeBar } from "@/components/editor/StagedChangeBar";
 import { usePageLines } from "@/components/editor/usePageLines";
 import { MobileSheet } from "@/components/app/MobileSheet";
@@ -343,6 +344,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   } = useContextMenuState<SelectionContextMenuState>();
   const pageLinesEnabled = useEditorSettingsStore((state) => state.pageLinesEnabled);
   const pageWidthEm = useEditorSettingsStore((state) => state.pageWidthEm);
+  // Ctrl+wheel over the note; Zen mode has its own (ZenMode.tsx).
+  const viewZoomReadoutPt = useFontZoom("view", !isZenMode);
 
   // Clipboard failures (a webview without clipboard permission, a browser
   // blocking the API) are reported on the editor's shared feedback channel,
@@ -1958,6 +1961,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
                 }}
               />
             </ScrollArea>
+
+            {viewZoomReadoutPt !== null ? (
+              <output className={cn("font-zoom-readout", paperSurface && "paper-palette")} aria-live="polite">
+                {t("settingsDialog.fontSizeValue", { size: viewZoomReadoutPt })}
+              </output>
+            ) : null}
 
             {isZenMode ? (
               <PageWidthHandles editor={editor} zen />

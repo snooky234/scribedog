@@ -136,7 +136,7 @@ describe("themeStylesheet", () => {
     const css = themeStylesheet(resolveTheme(theme));
 
     expect(css).toContain(".editor-view__surface.prose {");
-    expect(css).toContain("html.dark .editor-view__surface--paper { ");
+    expect(css).toContain("html.dark .editor-view__surface--paper, html.dark .paper-palette { ");
     expect(css).toContain("--surface-rgb: 244, 236, 216;");
     expect(css).toContain("html.dark .editor-view__surface--paper.prose {");
   });

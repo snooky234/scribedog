@@ -51,6 +51,7 @@ export const ZOOM_STORAGE_KEY = "scribedog-zoom-level";
 export const ZEN_WIDTH_STORAGE_KEY = "scribedog-zen-width";
 export const PAGE_WIDTH_STORAGE_KEY = "scribedog-page-width";
 export const ZEN_FONT_SIZE_STORAGE_KEY = "scribedog-zen-font-size-pt";
+export const VIEW_FONT_SIZE_STORAGE_KEY = "scribedog-view-font-size-pt";
 export const FONT_STORAGE_KEY = "scribedog-font-id";
 export const FONT_SIZE_STORAGE_KEY = "scribedog-font-size-pt";
 export const PAPER_SURFACE_STORAGE_KEY = "scribedog-paper-surface";
@@ -141,9 +142,9 @@ function persistZenWidth(width: number): void {
   }
 }
 
-function getStoredZenFontSizePt(): number | null {
+function getStoredZoomFontSizePt(key: string): number | null {
   try {
-    const raw = window.localStorage.getItem(ZEN_FONT_SIZE_STORAGE_KEY);
+    const raw = window.localStorage.getItem(key);
     const parsed = raw === null ? Number.NaN : Number.parseFloat(raw);
     return Number.isFinite(parsed) ? clampZenFontSizePt(parsed) : null;
   } catch {
@@ -151,12 +152,12 @@ function getStoredZenFontSizePt(): number | null {
   }
 }
 
-function persistZenFontSizePt(sizePt: number | null): void {
+function persistZoomFontSizePt(key: string, sizePt: number | null): void {
   try {
     if (sizePt === null) {
-      window.localStorage.removeItem(ZEN_FONT_SIZE_STORAGE_KEY);
+      window.localStorage.removeItem(key);
     } else {
-      window.localStorage.setItem(ZEN_FONT_SIZE_STORAGE_KEY, String(sizePt));
+      window.localStorage.setItem(key, String(sizePt));
     }
   } catch {
     // localStorage may be unavailable in some environments.
@@ -638,6 +639,14 @@ type EditorSettingsState = {
    */
   zenFontSizePt: number | null;
   setZenFontSizePt: (sizePt: number | null) => void;
+  /**
+   * Text size of the normal editor's view, set by Ctrl+wheel over it
+   * (useFontZoom). `null` follows fontSizePt; moving the settings slider
+   * returns to it. Apart from fontSizePt for the reason the Zen size is:
+   * a size picked to read must not resize the exported page.
+   */
+  viewFontSizePt: number | null;
+  setViewFontSizePt: (sizePt: number | null) => void;
 };
 
 // Two custom properties drive every editing surface (normal view, Zen mode,
@@ -722,7 +731,9 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
   setFontSizePt: (sizePt: number) => {
     const clamped = clampFontSizePt(sizePt);
     persistFontSizePt(clamped);
-    set({ fontSizePt: clamped });
+    // Choosing the document size is also the way back from a zoomed view.
+    persistZoomFontSizePt(VIEW_FONT_SIZE_STORAGE_KEY, null);
+    set({ fontSizePt: clamped, viewFontSizePt: null });
     applyDocumentFontScale(clamped);
   },
   paperSurface: getStoredPaperSurface(),
@@ -832,11 +843,17 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
     persistPageWidthEm(clamped);
     set({ pageWidthEm: clamped });
   },
-  zenFontSizePt: getStoredZenFontSizePt(),
+  zenFontSizePt: getStoredZoomFontSizePt(ZEN_FONT_SIZE_STORAGE_KEY),
   setZenFontSizePt: (sizePt: number | null) => {
     const clamped = sizePt === null ? null : clampZenFontSizePt(sizePt);
-    persistZenFontSizePt(clamped);
+    persistZoomFontSizePt(ZEN_FONT_SIZE_STORAGE_KEY, clamped);
     set({ zenFontSizePt: clamped });
+  },
+  viewFontSizePt: getStoredZoomFontSizePt(VIEW_FONT_SIZE_STORAGE_KEY),
+  setViewFontSizePt: (sizePt: number | null) => {
+    const clamped = sizePt === null ? null : clampZenFontSizePt(sizePt);
+    persistZoomFontSizePt(VIEW_FONT_SIZE_STORAGE_KEY, clamped);
+    set({ viewFontSizePt: clamped });
   }
 }));
 

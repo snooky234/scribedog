@@ -271,6 +271,7 @@ function App() {
 
   const zenWidth = useEditorSettingsStore((state) => state.zenWidth);
   const zenFontSizePt = useEditorSettingsStore((state) => state.zenFontSizePt);
+  const viewFontSizePt = useEditorSettingsStore((state) => state.viewFontSizePt);
   const autoSaveEnabled = useEditorSettingsStore((state) => state.autoSaveEnabled);
   const { isZenMode, enterZenMode, exitZenMode, toggleZenMode } = useZenMode({
     canEnter: () => selectedFilePath !== null
@@ -1026,10 +1027,14 @@ function App() {
       style={
         {
           "--zen-width": `${zenWidth}px`,
-          // Overrides the root's document scale for the Zen column only; the
-          // normal view and the exports keep fontSizePt (useEditorSettingsStore).
+          // Overrides the root's document scale for what is on screen only,
+          // the Zen column or the zoomed editor view; the exports keep
+          // fontSizePt (useEditorSettingsStore).
           ...(isZenMode && zenFontSizePt !== null
             ? { "--document-font-scale": getZenFontScale(zenFontSizePt) }
+            : {}),
+          ...(!isZenMode && viewFontSizePt !== null
+            ? { "--document-font-scale": getZenFontScale(viewFontSizePt) }
             : {})
         } as React.CSSProperties
       }

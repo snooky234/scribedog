@@ -33,7 +33,7 @@
 /* No pinch zoom of the page on phone and tablet: the layout is built for
    the width it has, and a zoomed-in shell leaves the toolbar and sheets
    half off screen. The viewport meta says the same for the browsers that
-   read it there. Zen mode has its own pinch (useZenFontZoom) that resizes
+   read it there. Zen mode has its own pinch (useFontZoom) that resizes
    the text instead, the way a reader does. */
 @media (max-width: 920px), (pointer: coarse) and (max-width: 1400px) {
   html {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Eye, EyeOff, Info, RefreshCw } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, Info, RefreshCw, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -267,6 +267,8 @@ function FontSetting() {
   const setFontId = useEditorSettingsStore((state) => state.setFontId);
   const fontSizePt = useEditorSettingsStore((state) => state.fontSizePt);
   const setFontSizePt = useEditorSettingsStore((state) => state.setFontSizePt);
+  const viewFontSizePt = useEditorSettingsStore((state) => state.viewFontSizePt);
+  const setViewFontSizePt = useEditorSettingsStore((state) => state.setViewFontSizePt);
 
   // Every family's faces are needed at once here, since the list shows each
   // option in its own font rather than in the UI font.
@@ -321,6 +323,27 @@ function FontSetting() {
             {t("settingsDialog.fontSizeValue", { size: fontSizePt })}
           </output>
         </label>
+        <div className="font-setting__size-hint">
+          <p className="font-setting__hint">
+            {t("settingsDialog.fontSizeShort", { ctrl: t("common.keys.ctrl") })}
+          </p>
+          {/* Only while Ctrl+wheel has the editor at another size: says why
+              the note looks bigger than the preview below, and undoes it. */}
+          {viewFontSizePt !== null && viewFontSizePt !== fontSizePt ? (
+            <span className="font-setting__view-size">
+              {t("settingsDialog.fontSizeView", { size: viewFontSizePt })}
+              <button
+                type="button"
+                className="font-setting__view-reset"
+                onClick={() => setViewFontSizePt(null)}
+                aria-label={t("settingsDialog.fontSizeViewReset")}
+                title={t("settingsDialog.fontSizeViewReset")}
+              >
+                <RotateCcw className="size-3.5" aria-hidden="true" />
+              </button>
+            </span>
+          ) : null}
+        </div>
 
         <input
           id="settings-font-size"

@@ -48,9 +48,12 @@
    (prose, task-list checkboxes, AI review widgets, their buttons) resolves
    to the light values by inheritance. One selector list rather than a copy,
    so a token added here cannot be forgotten there. The Tailwind dark variant
-   in App.css skips the same subtree for the same reason. */
+   in App.css skips the same subtree for the same reason. The third selector
+   is for what floats over the page from outside it, like the text size
+   readout (Editor.tsx, ZenMode.tsx): it has to read as part of the page. */
 :root,
-.dark .editor-view__surface--paper {
+.dark .editor-view__surface--paper,
+.dark .paper-palette {
   color-scheme: light;
 
   --overlay-rgb: 15, 23, 42;

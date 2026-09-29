@@ -38,7 +38,7 @@ const css = readFileSync("src/styles/tokens.css", "utf8")
   .replace(/\r\n/g, "\n")
   .replace(/\/\*[\s\S]*?\*\//g, "");
 const rootOnly = declarations(css, ":root");
-const lightPalette = declarations(css, ":root,\n.dark .editor-view__surface--paper");
+const lightPalette = declarations(css, ":root,\n.dark .editor-view__surface--paper,\n.dark .paper-palette");
 const darkPalette = declarations(css, ".dark");
 
 const builtIn: Record<ThemeMode, Record<string, string>> = {

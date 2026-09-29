@@ -1,7 +1,7 @@
 /**
- * Pure math for the Zen-mode text zoom: a pinch on a touch screen or
- * Ctrl+wheel on the desktop scales the document text the way an e-book
- * reader does, without touching the page zoom. The hook (`useZenFontZoom`)
+ * Pure math for the text zoom of Zen mode and the normal editor's view: a
+ * pinch (Zen only) or Ctrl+wheel scales the document text the way an e-book
+ * reader does, without touching the page zoom. The hook (`useFontZoom`)
  * only feeds it touch points and wheel deltas, so the rules live here where
  * they can be tested without a browser.
  */
