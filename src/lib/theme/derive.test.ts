@@ -33,7 +33,10 @@ function declarations(css: string, selector: string): Record<string, string> {
   return result;
 }
 
-const css = readFileSync("src/styles/tokens.css", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+// A Windows checkout with core.autocrlf has CRLF; the selectors below are LF.
+const css = readFileSync("src/styles/tokens.css", "utf8")
+  .replace(/\r\n/g, "\n")
+  .replace(/\/\*[\s\S]*?\*\//g, "");
 const rootOnly = declarations(css, ":root");
 const lightPalette = declarations(css, ":root,\n.dark .editor-view__surface--paper");
 const darkPalette = declarations(css, ".dark");

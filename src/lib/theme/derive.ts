@@ -109,7 +109,7 @@ export const DEFAULT_ADVANCED_COLORS: Record<ThemeMode, Record<AdvancedColorKey,
     success: "#22c55e",
     warning: "#eab308",
     info: "#3b82f6",
-    marker: "#ca8a04",
+    marker: "#e7bd11",
     findMatch: "#facc15",
     findCurrent: "#f97316",
     diffRemoved: "#f87171",
@@ -501,7 +501,7 @@ const ADVANCED_TOKENS: Record<AdvancedColorKey, Record<string, AdvancedToken>> =
     "--highlight-bg": {
       format: "rgba",
       light: { from: "marker", reference: "rgba(253, 224, 71, 0.55)" },
-      dark: { from: "marker", reference: "rgba(202, 138, 4, 0.2)" }
+      dark: { from: "marker", reference: "rgba(231, 189, 17, 0.18)" }
     }
   },
   findMatch: { "--find-match-rgb": both({ from: "findMatch", reference: STATUS_COLORS["--find-match-rgb"] }, "triplet") },

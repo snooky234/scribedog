@@ -127,7 +127,7 @@ describe("resolveTheme", () => {
   });
 
   it("applies the advanced colours", () => {
-    expect(resolveTheme(theme).root["--highlight-bg"]).toBe("rgba(180, 83, 9, 0.2)");
+    expect(resolveTheme(theme).root["--highlight-bg"]).toBe("rgba(180, 83, 9, 0.18)");
   });
 });
 
