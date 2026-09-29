@@ -3,6 +3,21 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.18.2] - 2026-09-30
+
+### Highlights
+- Zoom the note's text with Ctrl + mouse wheel
+- Pull the page narrower at its edges and dock it back
+
+### Bug Fixes
+- Keep hint banners inside list items and allow inserting them there
+- Show space between paragraphs
+- Wrap words longer than the line instead of cutting them off in print
+- Derive the dark-mode highlight of custom themes from the new colour
+- Frame the selection and keep unsaved dots and pins in one column in the file tree
+- Break lists between sub-points instead of moving them to the next page whole in PDF export
+- Cancel the print preview on window close instead of closing the app afterwards
+
 ## [0.18.1] - 2026-09-29
 
 ### Highlights
