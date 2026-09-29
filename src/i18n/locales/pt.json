@@ -1084,6 +1084,10 @@
     "exitTooltip": "Sair do modo Zen (Ctrl+Shift+Y)",
     "resizeLabel": "Ajustar a largura do texto"
   },
+  "pageWidth": {
+    "resizeLabel": "Ajustar a largura da página",
+    "resizeTooltip": "Arraste para estreitar a página. Clique duplo: largura total"
+  },
   "chat": {
     "openButton": "Assistente de IA",
     "openButtonTitle": "Abrir assistente de IA",

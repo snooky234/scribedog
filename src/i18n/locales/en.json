@@ -1084,6 +1084,10 @@
     "exitTooltip": "Exit Zen mode (Ctrl+Shift+Y)",
     "resizeLabel": "Adjust text width"
   },
+  "pageWidth": {
+    "resizeLabel": "Adjust page width",
+    "resizeTooltip": "Drag to make the page narrower. Double-click: full width"
+  },
   "chat": {
     "openButton": "AI assistant",
     "openButtonTitle": "Open AI assistant",

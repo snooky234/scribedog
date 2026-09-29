@@ -44,7 +44,9 @@
 .workspace-grid--zen .editor-view__surface {
   max-width: var(--zen-width, 760px);
   margin-inline: auto;
-  padding-inline: 4rem;
+  /* The same room above the text as beside it: on the paper surface the
+     column is a sheet, and its margins should look like one. */
+  padding: 4rem;
   background: transparent;
 }
 
@@ -117,56 +119,6 @@
   background: rgba(var(--overlay-rgb), 0.08);
   backdrop-filter: blur(6px);
   pointer-events: none;
-}
-
-/* Draggable edges of the text column, positioned on the viewport centre so
-   they line up with the centred surface (both use --zen-width). */
-.zen-resizer {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  z-index: 55;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  cursor: col-resize;
-  touch-action: none;
-}
-
-.zen-resizer--left {
-  left: calc(50% - var(--zen-width, 760px) / 2 - 7px);
-}
-
-.zen-resizer--right {
-  left: calc(50% + var(--zen-width, 760px) / 2 - 7px);
-}
-
-.zen-resizer__grip {
-  width: 2px;
-  height: 100%;
-  border-radius: 9999px;
-  /* Resting state, before hover/focus/drag — needs to read as "draggable" on
-     its own, especially in light theme, where the near-white surface left
-     this all but invisible. */
-  background: rgba(var(--muted-rgb), 0.06);
-  transition: background-color 0.15s ease, width 0.15s ease;
-}
-
-.zen-resizer:hover .zen-resizer__grip,
-.zen-resizer:focus-visible .zen-resizer__grip,
-body.is-resizing-zen .zen-resizer__grip {
-  width: 3px;
-  background: rgba(var(--muted-rgb), 0.55);
-}
-
-.zen-resizer:focus-visible {
-  outline: none;
-}
-
-body.is-resizing-zen {
-  cursor: col-resize;
-  user-select: none;
 }
 
 /* The chat panel while Zen mode is on (App.tsx renders it as a MobileSheet

@@ -1083,6 +1083,10 @@
     "exitTooltip": "Zen モードを終了 (Ctrl+Shift+Y)",
     "resizeLabel": "テキストの幅を調整"
   },
+  "pageWidth": {
+    "resizeLabel": "ページ幅を調整",
+    "resizeTooltip": "ドラッグしてページを狭くします。ダブルクリック：全幅"
+  },
   "chat": {
     "openButton": "AIアシスタント",
     "openButtonTitle": "AIアシスタントを開く",

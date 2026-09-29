@@ -1083,6 +1083,10 @@
     "exitTooltip": "退出禅模式 (Ctrl+Shift+Y)",
     "resizeLabel": "调整文本宽度"
   },
+  "pageWidth": {
+    "resizeLabel": "调整页面宽度",
+    "resizeTooltip": "拖动以缩窄页面。双击：全宽"
+  },
   "chat": {
     "openButton": "AI 助手",
     "openButtonTitle": "打开 AI 助手",

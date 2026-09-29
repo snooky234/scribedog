@@ -23,6 +23,7 @@ import {
   type PageMarginId,
   type PageSizeId
 } from "@/lib/pageSetup";
+import { clampPageWidthEm, parseStoredPageWidth } from "@/lib/editor/pageWidth";
 import { clampZenFontSizePt } from "@/lib/zenFontZoom";
 import {
   DEFAULT_HEADING_NUMBERING,
@@ -48,6 +49,7 @@ export const DETAILS_COLLAPSED_STORAGE_KEY = "scribedog-details-collapsed-sectio
 export type DetailsSectionId = "outline" | "fileInfo" | "outgoingLinks" | "backlinks";
 export const ZOOM_STORAGE_KEY = "scribedog-zoom-level";
 export const ZEN_WIDTH_STORAGE_KEY = "scribedog-zen-width";
+export const PAGE_WIDTH_STORAGE_KEY = "scribedog-page-width";
 export const ZEN_FONT_SIZE_STORAGE_KEY = "scribedog-zen-font-size-pt";
 export const FONT_STORAGE_KEY = "scribedog-font-id";
 export const FONT_SIZE_STORAGE_KEY = "scribedog-font-size-pt";
@@ -108,6 +110,26 @@ function getStoredZenWidth(): number {
     return Number.isFinite(parsed) ? clampZenWidth(parsed) : ZEN_WIDTH_DEFAULT;
   } catch {
     return ZEN_WIDTH_DEFAULT;
+  }
+}
+
+function getStoredPageWidthEm(): number | null {
+  try {
+    return parseStoredPageWidth(window.localStorage.getItem(PAGE_WIDTH_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function persistPageWidthEm(widthEm: number | null): void {
+  try {
+    if (widthEm === null) {
+      window.localStorage.removeItem(PAGE_WIDTH_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(PAGE_WIDTH_STORAGE_KEY, String(widthEm));
+    }
+  } catch {
+    // localStorage may be unavailable in some environments.
   }
 }
 
@@ -601,6 +623,13 @@ type EditorSettingsState = {
   zenWidth: number;
   setZenWidth: (width: number) => void;
   /**
+   * Width of the page inside the editor card, in em of the document text
+   * (lib/editor/pageWidth.ts), pulled narrower at its edges. `null` is the
+   * docked page, as wide as the card. App-wide, like the Zen width.
+   */
+  pageWidthEm: number | null;
+  setPageWidthEm: (widthEm: number | null) => void;
+  /**
    * Text size for Zen mode only, set by pinching or Ctrl+wheel there. `null`
    * until the first gesture: the column then follows fontSizePt, so a user
    * who never zooms sees the same text as in the normal view. Kept apart
@@ -796,6 +825,12 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
     const clamped = clampZenWidth(width);
     persistZenWidth(clamped);
     set({ zenWidth: clamped });
+  },
+  pageWidthEm: getStoredPageWidthEm(),
+  setPageWidthEm: (widthEm: number | null) => {
+    const clamped = widthEm === null ? null : clampPageWidthEm(widthEm);
+    persistPageWidthEm(clamped);
+    set({ pageWidthEm: clamped });
   },
   zenFontSizePt: getStoredZenFontSizePt(),
   setZenFontSizePt: (sizePt: number | null) => {

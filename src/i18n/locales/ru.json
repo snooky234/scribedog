@@ -1096,6 +1096,10 @@
     "exitTooltip": "Выйти из режима Zen (Ctrl+Shift+Y)",
     "resizeLabel": "Настроить ширину текста"
   },
+  "pageWidth": {
+    "resizeLabel": "Настроить ширину страницы",
+    "resizeTooltip": "Перетащите, чтобы сузить страницу. Двойной щелчок: вся ширина"
+  },
   "chat": {
     "openButton": "ИИ-ассистент",
     "openButtonTitle": "Открыть ИИ-ассистента",

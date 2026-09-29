@@ -38,6 +38,14 @@
   font-size: calc(1rem * var(--document-font-scale, 1));
 }
 
+/* The page pulled narrower at its edges (PageWidthHandles.tsx), centred in
+   the card. A max-width, so where the card is narrower the page simply
+   fills it: docked, never overflowing. */
+.editor-view__surface--page-width {
+  max-width: var(--page-width);
+  margin-inline: auto;
+}
+
 /* Paper option (issue #49): the document stays a white page while the rest
    of the UI is dark. The light palette itself is repainted onto this class
    in tokens.css; here only the surface changes, because the translucent
@@ -1103,4 +1111,61 @@
   line-height: 1;
   text-align: right;
   pointer-events: none;
+}
+
+/* The page's edges (PageWidthHandles.tsx): a layer over the editor pane
+   that lets every pointer through except on the two grips, which sit on the
+   page's left and right edge, measured. Same look as Zen mode's resizers. */
+.editor-view__panes {
+  position: relative;
+}
+
+.page-width-handles {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.page-width-handle {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  width: 14px;
+  /* Clear of the page's rounded corners (the surface's 1rem radius). */
+  padding-block: 1rem;
+  transform: translateX(-50%);
+  cursor: col-resize;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.page-width-handle__grip {
+  width: 2px;
+  height: 100%;
+  border-radius: 9999px;
+  background: transparent;
+  transition: background-color 0.15s ease, width 0.15s ease;
+}
+
+/* Zen mode's column has no card edge to find it by, so its grips show
+   faintly at rest too, as they always have there. */
+.page-width-handles--zen .page-width-handle__grip {
+  background: rgba(var(--muted-rgb), 0.06);
+}
+
+.page-width-handle:hover .page-width-handle__grip,
+.page-width-handle:focus-visible .page-width-handle__grip,
+body.is-resizing-page .page-width-handle__grip {
+  width: 3px;
+  background: rgba(var(--muted-rgb), 0.55);
+}
+
+.page-width-handle:focus-visible {
+  outline: none;
+}
+
+body.is-resizing-page {
+  cursor: col-resize;
+  user-select: none;
 }

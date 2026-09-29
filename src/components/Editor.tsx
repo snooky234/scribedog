@@ -21,6 +21,7 @@ import { Toolbar } from "@/components/Toolbar";
 import { FileLinkSuggestionPopover } from "@/components/editor/FileLinkSuggestionPopover";
 import { DetailsPanel } from "@/components/editor/DetailsPanel";
 import { SelectionContextMenu, type SelectionContextMenuState } from "@/components/editor/SelectionContextMenu";
+import { PageWidthHandles } from "@/components/editor/PageWidthHandles";
 import { StagedChangeBar } from "@/components/editor/StagedChangeBar";
 import { usePageLines } from "@/components/editor/usePageLines";
 import { MobileSheet } from "@/components/app/MobileSheet";
@@ -121,6 +122,10 @@ const PAPER_SURFACE_CLASS = "editor-view__surface--paper";
 // Tables shrink to their content instead of spanning the text width
 // (useEditorSettingsStore.tableWidth); editor-content.css keys off this name.
 const TABLE_WIDTH_CONTENT_CLASS = "editor-view__surface--table-content";
+
+// The page pulled narrower than the card (--page-width, PageWidthHandles);
+// editor-content.css keys off this name.
+const PAGE_WIDTH_CLASS = "editor-view__surface--page-width";
 
 type EditorProps = {
   markdown: string;
@@ -337,6 +342,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     menuRef: selectionMenuRef
   } = useContextMenuState<SelectionContextMenuState>();
   const pageLinesEnabled = useEditorSettingsStore((state) => state.pageLinesEnabled);
+  const pageWidthEm = useEditorSettingsStore((state) => state.pageWidthEm);
 
   // Clipboard failures (a webview without clipboard permission, a browser
   // blocking the API) are reported on the editor's shared feedback channel,
@@ -1646,6 +1652,20 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     editor?.view.dom.classList.toggle(TABLE_WIDTH_CONTENT_CLASS, tableWidth === "content");
   }, [editor, tableWidth]);
 
+  // Zen mode sets its own column width (zen-mode.css).
+  const pageNarrowed = pageWidthEm !== null && !isZenMode;
+
+  useEffect(() => {
+    const dom = editor?.view.dom;
+
+    if (!dom) {
+      return;
+    }
+
+    dom.style.setProperty("--page-width", `${pageWidthEm ?? 0}em`);
+    dom.classList.toggle(PAGE_WIDTH_CLASS, pageNarrowed);
+  }, [editor, pageWidthEm, pageNarrowed]);
+
   // A tap on an image selects it without focusing the editor (see ImageView),
   // so there is no blur to clear that selection on. A pointer going down
   // anywhere outside the editor surface clears it instead.
@@ -1938,6 +1958,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
                 }}
               />
             </ScrollArea>
+
+            {isZenMode ? (
+              <PageWidthHandles editor={editor} zen />
+            ) : layout === "desktop" ? (
+              <PageWidthHandles editor={editor} />
+            ) : null}
 
             {detailsSheetOpen && layout !== "desktop" && !isChatOpen ? (
               <MobileSheet

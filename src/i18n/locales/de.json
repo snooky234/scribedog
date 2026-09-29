@@ -1084,6 +1084,10 @@
     "exitTooltip": "Zen-Modus verlassen (Strg+Umschalt+Y)",
     "resizeLabel": "Textbreite anpassen"
   },
+  "pageWidth": {
+    "resizeLabel": "Seitenbreite anpassen",
+    "resizeTooltip": "Ziehen, um die Seite schmaler zu machen. Doppelklick: volle Breite"
+  },
   "chat": {
     "openButton": "KI-Assistent",
     "openButtonTitle": "KI-Assistent öffnen",
