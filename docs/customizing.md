@@ -24,6 +24,11 @@ you judge long or layout-heavy documents.
 The **theme builder** lives under **Settings, Appearance**. It starts from
 any built-in theme.
 
+This is what a custom theme can look like: a warm amber accent and a
+paper-coloured page.
+
+<img src="images/scribe-dog-custom-theme.png" alt="ScribeDog with a custom theme: warm amber accent and a paper-coloured page" width="700">
+
 You pick a handful of base colours:
 
 - background

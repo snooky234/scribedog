@@ -106,6 +106,8 @@ builder where you pick a few colours and the rest follows. Export and share
 your themes as JSON. The interface speaks 10 languages, and every keyboard
 shortcut can be remapped.
 
+<img src="docs/images/scribe-dog-custom-theme.png" alt="ScribeDog with a custom theme: warm amber accent and a paper-coloured page" width="700">
+
 <img src="docs/images/scribe-dog-themebuilder.png" alt="ScribeDog theme builder" width="700">
 
 [Read more →](docs/customizing.md)
