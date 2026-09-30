@@ -70,7 +70,7 @@ jobs:
           manifest=$(node -p "require('./package.json').version")
 
           if [ "$version" != "$manifest" ]; then
-            echo "Tag says $version but package.json says $manifest; bump the manifests first (see DOCS/RELEASING.md)." >&2
+            echo "Tag says $version but package.json says $manifest; bump the manifests first." >&2
             exit 1
           fi
 

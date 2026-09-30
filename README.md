@@ -27,7 +27,7 @@ key.
 Whatever you write — **personal notes, journals, letters, blog posts,
 documentation, essays, or fiction** — ScribeDog gives you a clean, distraction-free
 place to write it, with an AI assistant that respects one simple rule:
-**your words are yours.** No account, no subscription, no server in between.
+**your words are yours.** No account, no subscription, no vendor in between.
 
 <img src="src/assets/scribedog-demo.gif" alt="ScribeDog demo" width="700">
 
@@ -45,9 +45,12 @@ place to write it, with an AI assistant that respects one simple rule:
 - 🕓 **Automatic version history** — every save can be snapshotted locally; browse, diff, and restore any previous version with one click
 - 🎙️ **Voice input, 100% offline** — dictate straight into your document or into the AI prompt; speech recognition runs locally via whisper.cpp, no cloud involved
 - 📥 **Import & export built in** — bring Word, PDF, and HTML files in as Markdown (even images, via AI-powered OCR), by picking them or by dragging files or whole folders in from outside the app, and export notes or whole folders to PDF, DOCX, ODT, or HTML
+- 🖥️ **Self-hosted server edition** — run the same editor on your own Docker host, NAS or Raspberry Pi and use it from any browser, phone or tablet; the desktop app can open that server vault too ([user guide](server/docs/README.md))
 - 🔓 **100% open source** — MIT-licensed, every release built transparently from this repository by GitHub Actions
 - 🔒 **No telemetry** — no analytics, no account; the only automatic network call is an optional, disableable update check
 - ⚡ **Lightweight** — built with Tauri, starts instantly, files stay plain `.md`
+
+**Your notes outlive the app.** Everything ScribeDog writes is a plain `.md` file in a folder you picked — no database, no proprietary container, no export step. Point any other editor at that folder and keep working; nothing here locks you in.
 
 **Local AI is genuinely usable today.** You don't need a data center: modern
 open models like **Gemma 3/4** or **Qwen 3** already deliver good results on a
@@ -61,6 +64,7 @@ notes — fluently, privately, and for free.
 - 📝 **Note-takers & journalers** — keep a private knowledge folder or diary that no cloud service sees
 - ✉️ **Everyday writers** — letters, applications, emails, meeting notes; let the AI polish tone and wording locally
 - ✍️ **Authors & bloggers** — draft, rewrite, and expand creative text with an AI that doesn't train on your manuscript
+- 🏠 **Self-hosters & homelabbers** — keep your notes on your own Docker host, NAS or Pi and reach them from every device, without handing them to a cloud service
 - 🧑‍💻 **Developers & documenters** — clean, diff-friendly Markdown files that work with Git and every other tool
 
 ---
@@ -285,7 +289,7 @@ ScribeDog stores everything as plain `.md` files in a normal folder — so makin
 ### 🔒 Privacy first
 - No telemetry, no analytics — ScribeDog doesn't collect or transmit usage data. The one exception: on Windows, it checks GitHub on startup for a new release (a simple version comparison, no usage data sent), which can be turned off in settings
 - Beyond that optional update check, local AI providers mean the only network call is to the local endpoint *you* configure, and only when you trigger an AI action
-- Cloud AI is strictly **bring-your-own-key**: your key is stored in the operating system's credential store (Windows Credential Manager, macOS Keychain, Linux Secret Service) — not in plain text on disk — and sent only to the provider you chose, with no ScribeDog server in between. The settings dialog shows a clear notice whenever a cloud provider is selected
+- Cloud AI is strictly **bring-your-own-key**: your key is stored in the operating system's credential store (Windows Credential Manager, Linux Secret Service) — not in plain text on disk — and sent only to the provider you chose, with no ScribeDog server in between. The settings dialog shows a clear notice whenever a cloud provider is selected
 - The **knowledge base is off until you switch it on**, and only then may the AI read notes beyond the open document — folder by folder, with the folders you untick staying out. The search runs locally; only the passages found for your question are sent to the AI provider you configured
 - Tauri capabilities are scoped tightly: filesystem access is limited to the folder you open, HTTP access to your configured AI endpoint
 

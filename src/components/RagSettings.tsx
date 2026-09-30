@@ -18,8 +18,7 @@ import { useRagEmbeddingStore, type RagSearchMode } from "@/store/useRagEmbeddin
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
 
 /**
- * The "Wissensbasis" settings tab (knowledge base — see
- * DOCS/wissensbasis-plan.md).
+ * The "Wissensbasis" settings tab (knowledge base).
  *
  * Like the theme and versioning settings these apply immediately through their
  * own store rather than through the AI settings' save button. Three things

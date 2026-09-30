@@ -33,7 +33,7 @@ export type AiSettings = {
   model: string;
   contextLength: number;
   thinkingMode: AiThinkingMode;
-  // --- The vault agent (see DOCS/vault-agent-plan.md) -----------------------
+  // --- The vault agent ------------------------------------------------------
   //
   // Every capability is its own switch, because they need very different
   // model classes: creating, renaming and editing a note is something a 7B

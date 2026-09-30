@@ -216,7 +216,7 @@ export function Sidebar({
   const isServerVault = folderPath !== null && (platform.kind === "web" || remoteVaultFor(folderPath) !== null);
   // The name is clipped at its start (sidebar.css), which takes an RTL
   // block — and RTL alone reorders anything with digits in it, turning
-  // "192.168.1.5/stephan/" into "stephan/192.168.1.5". The isolate keeps the
+  // "192.168.1.5/notes/" into "notes/192.168.1.5". The isolate keeps the
   // characters in reading order inside that block.
   const folderLabelContent = (
     <>

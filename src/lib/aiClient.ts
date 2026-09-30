@@ -64,7 +64,7 @@ export function isCloudProvider(provider: AiProvider): boolean {
  * Anthropic is missing on purpose rather than by oversight: it has no
  * embeddings API at all. Offering it and letting the request fail would send
  * the user hunting for a wrong URL or a wrong key — the settings tab says
- * plainly that this provider cannot do it (see DOCS/wissensbasis-plan.md, K).
+ * plainly that this provider cannot do it.
  */
 export const EMBEDDING_PROVIDERS: AiProvider[] = ["ollama", "jan", "lmstudio", "openai", "mistral"];
 
@@ -1526,7 +1526,7 @@ const AGENT_TOOL_SPECS = [
   }
 ] as const;
 
-// The knowledge base's tools ("Wissensbasis", see DOCS/wissensbasis-plan.md).
+// The knowledge base's tools ("Wissensbasis").
 // Kept apart from the specs above because they are the only ones whose
 // availability depends on a setting: they read files the user never opened, so
 // they are offered only once the feature has been switched on for this vault.
@@ -1587,7 +1587,7 @@ const VAULT_TOOL_SPECS = [
   }
 ] as const;
 
-// The vault agent's file tools (v3, see DOCS/vault-agent-plan.md). Gated on
+// The vault agent's file tools (v3). Gated on
 // agentFileAccess — the switch is a consent decision like the knowledge base's:
 // it lets the agent read *and* write every note in the vault, not just the one
 // the user has open.
@@ -3523,9 +3523,9 @@ export async function generateOcrMarkdown(
 }
 
 /**
- * The knowledge base's own connection (see DOCS/wissensbasis-plan.md, J): a
- * different service than the chat may use, so that notes can be made
- * searchable locally while the chat runs in the cloud, or the other way round.
+ * The knowledge base's own connection: a different service than the chat
+ * may use, so that notes can be made searchable locally while the chat
+ * runs in the cloud, or the other way round.
  */
 export type EmbeddingSettings = {
   provider: AiProvider;

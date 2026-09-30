@@ -8,10 +8,10 @@ import { useRagEmbeddingStore } from "@/store/useRagEmbeddingStore";
  * The "Mehr erfahren" dialog of the knowledge base tab.
  *
  * This is the one place in the feature where jargon is allowed, and only
- * because it is explained here: everywhere else the wording rule from
- * DOCS/wissensbasis-plan.md applies (no "RAG", "Embedding", "Index", "Chunk"
- * in labels, toggles, buttons or warnings). The four sections answer the
- * questions a non-technical user actually has, in the order they have them —
+ * because it is explained here: everywhere else the wording rule applies
+ * (no "RAG", "Embedding", "Index", "Chunk" in labels, toggles, buttons or
+ * warnings). The four sections answer the questions a non-technical user
+ * actually has, in the order they have them —
  * including the last one, which no feature tour usually bothers with: how do I
  * undo this.
  */

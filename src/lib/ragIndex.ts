@@ -1,9 +1,9 @@
 // Preparing the vault for meaning search: passages go to the embedding service,
 // the vectors that come back are stored per vault in .scribedog/rag-index.bin.
 //
-// The division of labour is the one from DOCS/wissensbasis-plan.md: Rust owns
-// everything that touches files (splitting, storing, comparing), this module
-// owns the orchestration and the network calls — the latter through
+// The division of labour: Rust owns everything that touches files
+// (splitting, storing, comparing), this module owns the orchestration
+// and the network calls — the latter through
 // aiClient.embedTexts, so the endpoint rules that protect the chat protect this
 // too, rather than being reimplemented next to them.
 

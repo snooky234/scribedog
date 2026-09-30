@@ -7,8 +7,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-TEMP
-/DOCS
+TEMP/
+LOCAL/
 
 node_modules
 dist
@@ -27,7 +27,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Personal dev tooling
 .claude/
 CLAUDE.md
 

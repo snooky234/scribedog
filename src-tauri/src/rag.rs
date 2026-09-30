@@ -11,8 +11,8 @@
 //! Two search paths live here. Keyword search (BM25) needs nothing but the
 //! files themselves. Meaning search compares the vectors of a passage against
 //! the vector of the question — those vectors are produced by an embedding
-//! service the frontend talks to (never this module: see the Rust/TypeScript
-//! split in DOCS/wissensbasis-plan.md) and stored in one flat file per vault.
+//! service the frontend talks to (never this module) and stored in one flat
+//! file per vault.
 
 use std::{
     collections::HashMap,
@@ -586,7 +586,7 @@ const VAULT_META_DIR: &str = ".scribedog";
 
 /// The stored vectors of one vault. Flat file rather than a vector database:
 /// a large vault is a few thousand passages, and brute-force cosine over that
-/// takes about a millisecond — see DOCS/wissensbasis-plan.md.
+/// takes about a millisecond.
 const INDEX_FILE_NAME: &str = "rag-index.bin";
 const INDEX_MAGIC: &[u8] = b"SDRAGIX1";
 
