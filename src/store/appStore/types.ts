@@ -3,6 +3,8 @@ import type { StateCreator } from "zustand";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import type { VaultIconMap } from "@/lib/vaultIcons";
 
+import type { VersionedText } from "@/platform/types";
+
 import type { WorkingSetEntry } from "./workingSet";
 
 export type FileDocumentState = {
@@ -15,15 +17,48 @@ export type FileDocumentState = {
    * check until the next reload sets it.
    */
   baseMtimeMs?: number | null;
+  /**
+   * Version token of the file `baseContent` was read from (see
+   * `VersionedText`), null when the file did not exist. A save writes only
+   * while the disk still holds this version; undefined means nobody recorded
+   * one, and the save writes over whatever is there.
+   */
+  baseVersion?: string | null;
 };
 
 /**
- * A save that found the file changed on disk since it was read
- * (isExternallyModified). The UI asks; overwrite goes through
- * saveSelectedFile({ force: true }).
+ * A save whose changes overlap with someone else's write to the same note.
+ * Changes at different places never get here; saveWithMerge merges them.
+ *
+ * A manual save asks (`prompt`); an auto-save only marks the note, since a
+ * timer must not open a dialog mid-sentence, and the save button then says
+ * there is a conflict to resolve. Overwriting goes through
+ * saveSelectedFile({ force: true }), reviewing through startMergeReview.
  */
 export type SaveConflict = {
   filePath: string;
+  prompt: boolean;
+  /** Number of overlapping passages. */
+  conflicts: number;
+  /** The version on disk that the review builds on. */
+  theirs: VersionedText;
+  /** What the editor held when the save ran. */
+  ours: string;
+  /** The merge with their / our text at every overlapping passage. */
+  theirsText: string;
+  oursText: string;
+};
+
+/**
+ * A conflict being resolved in the editor. The document holds the merge with
+ * their text at the overlapping passages, its baseline is their version, and
+ * each passage is offered as a proposal (red theirs, green ours) to accept or
+ * discard. Saving waits until none is left.
+ */
+export type MergeReview = {
+  filePath: string;
+  theirsText: string;
+  oursText: string;
 };
 
 export type MoveTreeEntryInput = {
@@ -55,6 +90,7 @@ export type AppData = {
   fileError: string | null;
   saveError: string | null;
   saveConflict: SaveConflict | null;
+  mergeReview: MergeReview | null;
   /** The "In progress" list above the tree; see workingSet.ts for the rules. */
   workingSet: WorkingSetEntry[];
   sortMode: SortMode;
@@ -101,13 +137,12 @@ export type FileSlice = {
    * last one back until the note is left, a deliberate save is always
    * snapshotted.
    *
-   * Before writing, the file's mtime is compared with the one its baseline was
-   * read at. A file someone changed outside the app in the meantime is not
-   * overwritten: a manual save sets `saveConflict` for the UI to ask and
-   * resolves false; an auto-save resolves false without a word, since a timer
-   * must not open a dialog mid-sentence. `force` is the user's answer: the
-   * version on disk is snapshotted first (when versioning is on), then written
-   * over.
+   * The write goes through only while the file is still the version its
+   * baseline was read from (saveWithMerge). Someone else's write in the
+   * meantime is merged in when the changes sit at different places; when they
+   * overlap, the save resolves false and sets `saveConflict` (see there).
+   * `force` keeps this side's text: the version on disk is snapshotted first
+   * (when versioning is on), then written over.
    */
   saveSelectedFile: (options?: SaveOptions) => Promise<boolean>;
   /**
@@ -115,8 +150,19 @@ export type FileSlice = {
    * closing a dirty entry of the working set with "Save" needs.
    */
   saveFilePath: (filePath: string, options?: SaveOptions) => Promise<boolean>;
-  /** The user chose not to overwrite; the document stays dirty. */
+  /**
+   * The user closed the question without deciding; the document stays dirty
+   * and the conflict stays marked (prompt off) until the next save by hand.
+   */
   dismissSaveConflict: () => void;
+  /**
+   * Resolves the pending conflict in the editor (see MergeReview). This
+   * side's whole text goes into the version history first, so nothing is
+   * lost whichever way each passage is decided.
+   */
+  startMergeReview: () => Promise<boolean>;
+  /** No overlapping passage is left open; saving is possible again. */
+  endMergeReview: () => void;
   restoreFileVersion: (versionId: string) => Promise<boolean>;
   createNewFile: (targetDirectory?: string, insertAfterBasename?: string | null) => Promise<string | null>;
   /**

@@ -28,6 +28,7 @@ import { anchorForTrigger, type PopoverAnchor } from "@/lib/usePopoverOverflowAl
 import type { FileVersion } from "@/lib/fileVersions";
 import { cn } from "@/lib/utils";
 import { getVaultCapabilities, vaultCapabilityHint } from "@/platform";
+import { useAppStore } from "@/store/useAppStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
 import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
@@ -228,16 +229,30 @@ export function DocumentPanel({
   // "stuck"; the spinner is kept for the write itself. It still saves on
   // click, for the impatient. A file removed underneath us stays a decision
   // either way (useAutoSave leaves it alone).
-  const isAutoSavePending = autoSaveEnabled && isDirty && !isSelectedFileMissing;
+  // A save that met someone else's changes to the same passages. An
+  // auto-save does not open a dialog for it, so the button is where the
+  // user learns about it, and clicking it saves by hand, which asks. While
+  // the passages are being decided in the editor there is nothing to save.
+  const hasSaveConflict = useAppStore(
+    (state) =>
+      selectedFilePath !== null &&
+      (state.saveConflict?.filePath === selectedFilePath || state.mergeReview?.filePath === selectedFilePath)
+  );
+  const isMergeReviewOpen = useAppStore(
+    (state) => selectedFilePath !== null && state.mergeReview?.filePath === selectedFilePath
+  );
+  const isAutoSavePending = autoSaveEnabled && isDirty && !isSelectedFileMissing && !hasSaveConflict;
   // The save button's label: visible text on the desktop, the accessible
   // name of the icon-only button on phone and tablet.
   const saveStateLabel = isSaving || isAutoSavePending
     ? t("app.statusSaving")
-    : isSelectedFileMissing
-      ? t("app.statusFileRemoved")
-      : isDirty
-        ? t("app.saveButtonTitle")
-        : t("app.statusSaved");
+    : hasSaveConflict
+      ? t("app.statusConflict")
+      : isSelectedFileMissing
+        ? t("app.statusFileRemoved")
+        : isDirty
+          ? t("app.saveButtonTitle")
+          : t("app.statusSaved");
 
   // Find & replace normally lives inside <Editor> (it needs the ProseMirror
   // document). Whenever no editor is mounted — no file open, or the selected
@@ -478,18 +493,18 @@ export function DocumentPanel({
                 className={cn(
                   "detail-panel__save-button",
                   isAutoSavePending && "detail-panel__save-button--auto",
-                  isSelectedFileMissing && "detail-panel__save-button--warning"
+                  (isSelectedFileMissing || hasSaveConflict) && "detail-panel__save-button--warning"
                 )}
                 aria-label={layout === "desktop" ? undefined : saveStateLabel}
                 data-testid="status"
                 data-dirty={isDirty ? "true" : "false"}
-                disabled={!isDirty || isSaving}
-                title={isDirty && !isSaving ? t("app.saveButtonTitle") : saveStateLabel}
+                disabled={!isDirty || isSaving || isMergeReviewOpen}
+                title={isDirty && !isSaving && !hasSaveConflict ? t("app.saveButtonTitle") : saveStateLabel}
                 onClick={onSaveRequest}
               >
                 {isSaving ? (
                   <Loader2 className="animate-spin" />
-                ) : isSelectedFileMissing ? (
+                ) : isSelectedFileMissing || hasSaveConflict ? (
                   <AlertTriangle />
                 ) : isDirty ? (
                   <Save />

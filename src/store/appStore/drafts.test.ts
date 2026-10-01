@@ -187,8 +187,13 @@ describe("loadDraftDocuments", () => {
     const documents = await loadDraftDocuments(VAULT, files, readFile);
 
     expect(documents).toEqual({
-      "D:/Vault/Notes/.scribedog-foldernote.md": { content: "about notes", baseContent: "", baseMtimeMs: null },
-      "D:/Vault/.scribedog-foldernote.md": { content: "about the vault", baseContent: "", baseMtimeMs: null }
+      "D:/Vault/Notes/.scribedog-foldernote.md": { content: "about notes", baseContent: "", baseMtimeMs: null, baseVersion: null },
+      "D:/Vault/.scribedog-foldernote.md": {
+        content: "about the vault",
+        baseContent: "",
+        baseMtimeMs: null,
+        baseVersion: null
+      }
     });
     expect(storage.deleteDraft).toHaveBeenCalledWith(VAULT, "Gone/.scribedog-foldernote.md");
   });

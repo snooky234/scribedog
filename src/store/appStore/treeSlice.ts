@@ -194,15 +194,16 @@ export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
                 ? correctedBaseContent
                 : await rewriteRelativeImagePaths(document.content, oldDirPath, mappedPath, folderPath);
 
-            // A rename keeps the mtime; a rewrite of the image paths below
-            // produces a new one nobody looks up here, so it is unknown.
-            const baseMtimeMs =
-              correctedBaseContent === preMoveContentByPath.get(path) ? document.baseMtimeMs : undefined;
+            // A rename keeps mtime and version; a rewrite of the image paths
+            // below produces new ones nobody looks up here, so they are unknown.
+            const isUnchangedOnDisk = correctedBaseContent === preMoveContentByPath.get(path);
+            const baseMtimeMs = isUnchangedOnDisk ? document.baseMtimeMs : undefined;
 
             rewrittenDocuments[mappedPath] = {
               content: correctedContent,
               baseContent: correctedBaseContent,
-              baseMtimeMs
+              baseMtimeMs,
+              baseVersion: isUnchangedOnDisk ? document.baseVersion : undefined
             };
 
             // The moved draft still holds the old image paths; the rewritten

@@ -35,21 +35,27 @@ what that means for the stored API keys).
 ## Editing from more than one place
 
 The same vault can be open in several browsers and desktop apps at once, and
-each sees the others' changes live. What the server does not do is lock a
-note. What it does do is notice: a save checks whether the note on the
-server has changed since this app read it, and if so it asks before
-overwriting. Say yes and the server's version goes into the version history
-first (while versioning is on), so nothing is lost and the two can be
-compared there; say no and your edits stay unsaved in this app. An
-auto-save never asks; it just steps back and leaves the note marked as
-changed until you save by hand. There is no merge, so:
+each sees the others' changes live. A note is never locked, but no save
+overwrites another one unnoticed: the server writes a note only while it is
+still the version the app read, and checks that in the same step as the
+write, so two saves arriving at once cannot both get through. When the note
+has moved on, the app merges the two versions line by line:
 
 - Different notes in different places: fine.
-- The same note open in two places, editing in one: fine, the other updates
-  when it is reopened.
-- Typing in the same note in two places at once: avoid it. Whoever saves
-  second gets the question, and one of the two edits ends up in the history
-  rather than in the note.
+- The same note, edits at different places: merged and saved without a
+  question, in the browser as in the desktop app.
+- The same note, edits to the same lines: whoever saves second is asked.
+  **Review passages** shows each overlapping passage in the editor, the other
+  version in red and yours in green, to accept or discard one by one;
+  **Keep my version** overwrites the other one. While versioning is on,
+  both versions end up in the version history either way.
+
+An auto-save never asks. It pauses for that note, and the save button says
+**Resolve conflict** until you click it.
+
+There is no live co-editing: you see the other person's change when your
+next save merges it in, or when the note is reloaded, not keystroke by
+keystroke.
 
 Unsaved edits are a different matter: a note you have typed into but not
 saved is kept as a draft, and the draft stays in the browser (or desktop

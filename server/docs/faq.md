@@ -89,9 +89,10 @@ Its index runs inside the desktop app and reads the notes from your disk. A
 server vault is not on your disk. The chat agent's own search works.
 
 **Can I open the same vault in the browser and the desktop app at once?**
-Yes, and each sees the other's changes live. Just do not type in the same
-note in both at the same time: there is no locking, and the later save wins.
-See [Your data and backups](data-and-backups.md).
+Yes, and each sees the other's changes live. Even typing in the same note in
+both is safe: the later save merges the other edit in, and asks only when
+both changed the same lines. See
+[Editing from more than one place](data-and-backups.md#editing-from-more-than-one-place).
 
 **How do I get my colour theme from the browser into the desktop app?**
 Custom themes (Settings → Appearance → theme builder) are stored in the

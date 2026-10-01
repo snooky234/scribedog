@@ -18,7 +18,15 @@ import {
   sortMarkdownRecords,
   VAULT_META_DIR_NAME
 } from "@/lib/vaultPaths";
-import { ALL_VAULT_CAPABILITIES, type DirectoryEntry, type FileSystemApi, type MarkdownFileRecord, type VaultStorage } from "@/platform/types";
+import { contentVersion, contentVersionOfText } from "@/platform/contentVersion";
+import {
+  ALL_VAULT_CAPABILITIES,
+  type DirectoryEntry,
+  type FileSystemApi,
+  type MarkdownFileRecord,
+  type VaultStorage,
+  type VersionedText
+} from "@/platform/types";
 
 /**
  * The machine's filesystem through Tauri's fs plugin. Tauri's own scope (the
@@ -77,12 +85,35 @@ async function collectMarkdownFiles(
   }
 }
 
+async function readLocalVersioned(path: string): Promise<VersionedText> {
+  const bytes = await localFs.readFile(path);
+
+  // The same decoding as the fs plugin's readTextFile, so a versioned read
+  // and a plain one return the same string.
+  return { content: new TextDecoder("utf-8").decode(bytes), version: await contentVersion(bytes) };
+}
+
 /** A local folder as the vault: the filesystem above plus the recursive listing. */
 export const localVaultStorage: VaultStorage = {
   capabilities: ALL_VAULT_CAPABILITIES,
   ...localFs,
   // The files are on this machine; the file manager is the archive.
   packFolder: null,
+  readTextFileVersioned: (path) => readLocalVersioned(path),
+  // One process writes here, so checking directly before the write is enough;
+  // what remains is a sync client landing in the few milliseconds between
+  // the two, which no check on this side can rule out.
+  async writeTextFileIfMatch(path, contents, expectedVersion) {
+    const current = (await localFs.exists(path)) ? await readLocalVersioned(path) : null;
+
+    if ((current?.version ?? null) !== expectedVersion) {
+      return { ok: false, current };
+    }
+
+    await localFs.writeTextFile(path, contents);
+
+    return { ok: true, version: await contentVersionOfText(contents) };
+  },
   async listMarkdownFiles(rootPath) {
     const accumulator: MarkdownFileRecord[] = [];
     await collectMarkdownFiles(rootPath, rootPath, accumulator);

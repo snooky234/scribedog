@@ -25,9 +25,12 @@ type AppDialogsProps = {
   onDiscardAndClose: () => void;
   onCancelClose: () => void;
 
-  // A save that met an external change to the file (store: saveConflict)
+  // A save whose changes overlap with someone else's (store: saveConflict);
+  // the label is null while there is nothing to ask.
   saveConflictFileLabel: string | null;
+  saveConflictCount: number;
   isSaving: boolean;
+  onReviewConflict: () => void;
   onOverwriteConflict: () => void;
   onDismissConflict: () => void;
 
@@ -96,7 +99,9 @@ export function AppDialogs({
   onDiscardAndClose,
   onCancelClose,
   saveConflictFileLabel,
+  saveConflictCount,
   isSaving,
+  onReviewConflict,
   onOverwriteConflict,
   onDismissConflict,
   isAiSettingsOpen,
@@ -154,7 +159,9 @@ export function AppDialogs({
       <SaveConflictDialog
         open={saveConflictFileLabel !== null}
         fileLabel={saveConflictFileLabel}
+        conflicts={saveConflictCount}
         isSaving={isSaving}
+        onReview={onReviewConflict}
         onOverwrite={onOverwriteConflict}
         onCancel={onDismissConflict}
       />

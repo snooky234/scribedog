@@ -19,6 +19,7 @@ export const initialAppData: AppData = {
   fileError: null,
   saveError: null,
   saveConflict: null,
+  mergeReview: null,
   workingSet: [],
   sortMode: DEFAULT_SORT_MODE,
   manualOrder: {},

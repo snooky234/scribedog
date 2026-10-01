@@ -1,7 +1,8 @@
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 import type { RequireSession } from "../auth/guard.js";
-import { EntryConflictError, EntryNotFoundError, type Vault } from "./files.js";
+import { FileLockTimeoutError } from "./fileLock.js";
+import { contentVersion, EntryConflictError, EntryNotFoundError, type Vault } from "./files.js";
 import { VaultPathError } from "./paths.js";
 
 export type FileRoutesOptions = {
@@ -10,7 +11,7 @@ export type FileRoutesOptions = {
 };
 
 type PathQuery = { path?: string };
-type TextBody = { path?: unknown; content?: unknown };
+type TextBody = { path?: unknown; content?: unknown; ifMatch?: string | null };
 type MkdirBody = { path?: unknown; recursive?: unknown };
 type RenameBody = { from?: unknown; to?: unknown };
 type RemoveBody = { path?: unknown; recursive?: unknown };
@@ -59,6 +60,10 @@ export function vaultErrorHandler(error: FastifyError, request: FastifyRequest, 
 
   if (error instanceof EntryConflictError) {
     return reply.code(409).send({ error: "conflict", message: error.message });
+  }
+
+  if (error instanceof FileLockTimeoutError) {
+    return reply.code(503).send({ error: "locked", message: error.message });
   }
 
   if (typeof (error as { statusCode?: number }).statusCode === "number") {
@@ -123,8 +128,10 @@ export async function fileRoutes(app: FastifyInstance, options: FileRoutesOption
     }
   );
 
+  // The version is the token a later conditional write hands back as
+  // `ifMatch` (see PUT below).
   app.get<{ Querystring: PathQuery }>("/fs/text", { schema: pathQuerySchema }, async (request) => {
-    return { content: await vault.readText(request.query.path) };
+    return vault.readTextVersioned(request.query.path);
   });
 
   app.put<{ Body: TextBody }>(
@@ -134,13 +141,39 @@ export async function fileRoutes(app: FastifyInstance, options: FileRoutesOption
         body: {
           type: "object",
           required: ["path", "content"],
-          properties: { path: { type: "string" }, content: { type: "string" } },
+          properties: {
+            path: { type: "string" },
+            content: { type: "string" },
+            ifMatch: { type: "string", nullable: true }
+          },
           additionalProperties: false
         }
       }
     },
-    async (request) => {
-      return vault.writeText(request.body.path, request.body.content as string);
+    async (request, reply) => {
+      const { path, content, ifMatch } = request.body;
+
+      // Without ifMatch the write is unconditional, as it always was: the
+      // sidecars stay last-writer-wins on purpose, and an older client keeps
+      // working. With it, the write goes through only while the file is still
+      // the version the client built on (null: still absent); otherwise 409
+      // with what is there now, so the client can merge at once.
+      if (ifMatch === undefined) {
+        const { mtimeMs } = await vault.writeText(path, content as string);
+        return { mtimeMs, version: contentVersion(content as string) };
+      }
+
+      const result = await vault.writeTextIfMatch(path, content as string, ifMatch);
+
+      if (!result.ok) {
+        return reply.code(409).send({
+          error: "version_conflict",
+          message: "The file was changed by someone else since it was read.",
+          current: result.current
+        });
+      }
+
+      return { mtimeMs: result.mtimeMs, version: result.version };
     }
   );
 

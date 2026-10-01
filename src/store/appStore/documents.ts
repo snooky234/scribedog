@@ -1,4 +1,4 @@
-import { readMarkdownFile, type OpenDocument } from "@/lib/fileSystem";
+import { readMarkdownFileVersioned, type OpenDocument } from "@/lib/fileSystem";
 import { isFolderNotePath } from "@/lib/folderNotes";
 import type { MarkdownFileRecord } from "@/platform/types";
 
@@ -8,31 +8,6 @@ import type { AppData, FileDocumentState } from "./types";
 
 export function isDocumentDirty(document: FileDocumentState): boolean {
   return document.content !== document.baseContent;
-}
-
-/**
- * Filesystems round mtimes differently (FAT to two seconds, some sync clients
- * rewrite them on the way through), so the comparison has slack rather than
- * demanding equality.
- */
-export const EXTERNAL_CHANGE_TOLERANCE_MS = 1_000;
-
-/**
- * Whether the file on disk is a different one from the one the document was
- * read from. Unknown on either side (never looked up, file missing) is "no":
- * a missing file has nothing to protect, and a baseline nobody recorded
- * cannot be compared, so the save goes ahead as it always did.
- */
-export function isExternallyModified(
-  baseMtimeMs: number | null | undefined,
-  currentMtimeMs: number | null | undefined,
-  toleranceMs: number = EXTERNAL_CHANGE_TOLERANCE_MS
-): boolean {
-  if (baseMtimeMs == null || currentMtimeMs == null) {
-    return false;
-  }
-
-  return Math.abs(currentMtimeMs - baseMtimeMs) > toleranceMs;
 }
 
 export function pruneDocumentsToCurrentFolder(
@@ -96,11 +71,12 @@ export async function refreshCleanDocumentsFromDisk(
   await Promise.all(
     cleanPathsToReload.map(async (filePath) => {
       try {
-        const markdown = await readMarkdownFile(filePath);
+        const { content: markdown, version } = await readMarkdownFileVersioned(filePath);
         nextDocuments[filePath] = {
           content: markdown,
           baseContent: markdown,
-          baseMtimeMs: mtimeByPath.get(filePath) ?? null
+          baseMtimeMs: mtimeByPath.get(filePath) ?? null,
+          baseVersion: version
         };
       } catch {
         delete nextDocuments[filePath];

@@ -17,9 +17,10 @@ vi.mock("@/lib/fileSystem", async (importOriginal) => ({
     { filePath: `${root}/note.md`, relativePath: "note.md", mtimeMs: 1 },
     { filePath: `${root}/other.md`, relativePath: "other.md", mtimeMs: 1 }
   ]),
-  readMarkdownFile: vi.fn(async (path: string) => {
+  readMarkdownFileVersioned: vi.fn(async (path: string) => {
     await readDelay.promise;
-    return path.endsWith("other.md") ? "# Other, changed on disk\n" : "# Note\n";
+    const content = path.endsWith("other.md") ? "# Other, changed on disk\n" : "# Note\n";
+    return { content, version: `v:${content}` };
   }),
   markdownFolderExists: vi.fn(async (path: string) => existingFolders.has(path))
 }));
@@ -80,7 +81,8 @@ describe("refreshFolderFiles while the user is typing", () => {
     expect(state.fileDocuments[OTHER]).toEqual({
       content: "# Other, changed on disk\n",
       baseContent: "# Other, changed on disk\n",
-      baseMtimeMs: 1
+      baseMtimeMs: 1,
+      baseVersion: "v:# Other, changed on disk\n"
     });
   });
 

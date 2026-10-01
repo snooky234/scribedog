@@ -1,9 +1,14 @@
-import { readFile, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createTestContext, type TestContext } from "./helpers.js";
+
+function sha256(text: string): string {
+  return createHash("sha256").update(text, "utf8").digest("hex");
+}
 
 describe("file API", () => {
   let context: TestContext;
@@ -67,7 +72,7 @@ describe("file API", () => {
   });
 
   it("reads and writes text, creating new files in existing folders", async () => {
-    expect((await get(`/api/fs/text?${q("Notes/Idea.md")}`)).json()).toEqual({ content: "# Idea\n" });
+    expect((await get(`/api/fs/text?${q("Notes/Idea.md")}`)).json()).toEqual({ content: "# Idea\n", version: sha256("# Idea\n") });
     expect((await get(`/api/fs/text?${q("Nope.md")}`)).statusCode).toBe(404);
 
     const overwrite = await putJson("/api/fs/text", { path: "Welcome.md", content: "# Changed\n\nNew text with ümlauts.\n" });
@@ -85,7 +90,72 @@ describe("file API", () => {
     // Sidecars the frontend keeps are ordinary files here.
     expect((await post("/api/fs/mkdir", { path: ".scribedog/versions", recursive: true })).statusCode).toBe(204);
     expect((await putJson("/api/fs/text", { path: ".scribedog/versions/index.json", content: "{}" })).statusCode).toBe(200);
-    expect((await get(`/api/fs/text?${q(".scribedog/versions/index.json")}`)).json()).toEqual({ content: "{}" });
+    expect((await get(`/api/fs/text?${q(".scribedog/versions/index.json")}`)).json()).toEqual({ content: "{}", version: sha256("{}") });
+  });
+
+  describe("conditional text writes", () => {
+    const read = async (relativePath: string) =>
+      (await get(`/api/fs/text?${q(relativePath)}`)).json() as { content: string; version: string };
+
+    it("writes when the file is still the version the client read, and returns the new one", async () => {
+      const { version } = await read("Welcome.md");
+
+      const response = await putJson("/api/fs/text", { path: "Welcome.md", content: "# Mine\n", ifMatch: version });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({ version: sha256("# Mine\n") });
+      expect(response.json().mtimeMs).toBeGreaterThan(0);
+      expect(await readFile(path.join(context.vaultPath, "Welcome.md"), "utf8")).toBe("# Mine\n");
+    });
+
+    it("refuses a stale version with 409 and hands back what is on disk", async () => {
+      const { version } = await read("Welcome.md");
+      await writeFile(path.join(context.vaultPath, "Welcome.md"), "# Theirs\n", "utf8");
+
+      const response = await putJson("/api/fs/text", { path: "Welcome.md", content: "# Mine\n", ifMatch: version });
+
+      expect(response.statusCode).toBe(409);
+      expect(response.json()).toMatchObject({
+        error: "version_conflict",
+        current: { content: "# Theirs\n", version: sha256("# Theirs\n") }
+      });
+      expect(await readFile(path.join(context.vaultPath, "Welcome.md"), "utf8")).toBe("# Theirs\n");
+    });
+
+    it("treats ifMatch null as 'must not exist yet' and reports a deleted file as current null", async () => {
+      const create = await putJson("/api/fs/text", { path: "Notes/Fresh.md", content: "# Fresh\n", ifMatch: null });
+      expect(create.statusCode).toBe(200);
+
+      const again = await putJson("/api/fs/text", { path: "Notes/Fresh.md", content: "# Other\n", ifMatch: null });
+      expect(again.statusCode).toBe(409);
+      expect(again.json().current).toEqual({ content: "# Fresh\n", version: sha256("# Fresh\n") });
+
+      const gone = await putJson("/api/fs/text", { path: "Notes/Gone.md", content: "# Back\n", ifMatch: sha256("x") });
+      expect(gone.statusCode).toBe(409);
+      expect(gone.json().current).toBeNull();
+    });
+
+    it("lets exactly one of two concurrent writes on the same version through", async () => {
+      const { version } = await read("Welcome.md");
+
+      const responses = await Promise.all([
+        putJson("/api/fs/text", { path: "Welcome.md", content: "# First\n", ifMatch: version }),
+        putJson("/api/fs/text", { path: "Welcome.md", content: "# Second\n", ifMatch: version })
+      ]);
+
+      expect(responses.map((response) => response.statusCode).sort()).toEqual([200, 409]);
+      const winner = responses.find((response) => response.statusCode === 200)!;
+      const loser = responses.find((response) => response.statusCode === 409)!;
+      expect(loser.json().current.version).toBe(winner.json().version);
+    });
+
+    it("leaves no lock or temp file behind", async () => {
+      const { version } = await read("Notes/Idea.md");
+      await putJson("/api/fs/text", { path: "Notes/Idea.md", content: "# Idea 2\n", ifMatch: version });
+
+      expect((await readdir(path.join(context.vaultPath, "Notes"))).filter((name) => name.endsWith(".tmp"))).toEqual([]);
+      expect(await readdir(path.join(context.vaultPath, ".scribedog", "server", "locks"))).toEqual([]);
+    });
   });
 
   it("reads and writes bytes with a content type for images", async () => {

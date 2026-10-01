@@ -47,8 +47,8 @@ curl -s 'https://notes.example.com/api/export/zip?path=' -H 'authorization: Bear
 | `GET` | `/api/fs/stat?path=…` | size, times, kind of one entry |
 | `GET` | `/api/fs/exists?path=…` | `{ "exists": true\|false }` |
 | `POST` | `/api/fs/mkdir` | `{ "path": "…", "recursive": true }` |
-| `GET` | `/api/fs/text?path=…` | read a text file |
-| `PUT` | `/api/fs/text` | `{ "path": "…", "content": "…" }` creates or overwrites (parent folder must exist) |
+| `GET` | `/api/fs/text?path=…` | `{ "content": "…", "version": "…" }` reads a text file; see [Conditional writes](#conditional-writes) |
+| `PUT` | `/api/fs/text` | `{ "path": "…", "content": "…" }` creates or overwrites (parent folder must exist); with `"ifMatch"` only while the file is still that version. Answers `{ "mtimeMs": …, "version": "…" }` |
 | `GET` | `/api/fs/file?path=…` | read a binary file (images get their content type) |
 | `PUT` | `/api/fs/file?path=…` | body as `application/octet-stream` creates or overwrites |
 | `POST` | `/api/fs/rename` | `{ "from": "…", "to": "…" }` (files and folders) |
@@ -75,12 +75,40 @@ reached through a symlink. The rendered formats (PDF, DOCX, ODT, EPUB) are
 made in the browser or the desktop app, not on the server, so there is no
 route for them.
 
+## Conditional writes
+
+A text file's `version` is the SHA-256 of its bytes, as lowercase hex. Send
+it back as `ifMatch` to write only while nobody else has changed the file
+since you read it:
+
+```json
+{ "path": "Notes/Idea.md", "content": "…", "ifMatch": "3b1f…" }
+```
+
+`"ifMatch": null` means "create, the file must not exist yet". Without
+`ifMatch` the write is unconditional, as before.
+
+The comparison and the write are one step, under a lock that also holds
+between several server instances writing to the same disk. When the file is
+no longer that version, nothing is written and the answer is 409 with what
+is there now, so a client can merge without asking again:
+
+```json
+{ "error": "version_conflict", "message": "…", "current": { "content": "…", "version": "…" } }
+```
+
+`current` is `null` when the file has been deleted in the meantime. Only
+`/fs/text` takes `ifMatch`; images and the app's own files in `.scribedog/`
+are written unconditionally.
+
 ## Errors
 
 Errors come back as JSON: `{ "error": "<code>", "message": "..." }`. The
 codes you will meet: `unauthorized` (401), `invalid_password` (401),
 `too_many_attempts` (429, with `retryAfterSeconds`), `forbidden_origin`
-(403), `not_found` (404), `weak_password` (400).
+(403), `not_found` (404), `weak_password` (400), `version_conflict` (409,
+see [Conditional writes](#conditional-writes)) and `locked` (503: the file
+was being written by someone else for longer than two seconds; try again).
 
 ## Cross-site requests
 

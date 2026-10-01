@@ -99,9 +99,38 @@ export const ALL_VAULT_CAPABILITIES: VaultCapabilities = {
  * derived from `readDir`, because a remote vault answers it in one round trip
  * instead of one per directory.
  */
+/**
+ * A text file together with its version: an opaque token for exactly these
+ * bytes (a SHA-256 of them on every storage), which a conditional write
+ * hands back to say which version it builds on.
+ */
+export type VersionedText = { content: string; version: string };
+
+/**
+ * The outcome of `writeTextFileIfMatch`. On a mismatch `current` is what is
+ * there instead (null: the file is gone), so the caller can merge at once.
+ */
+export type ConditionalWriteResult =
+  | { ok: true; version: string }
+  | { ok: false; current: VersionedText | null };
+
 export type VaultStorage = FileSystemApi & {
   capabilities: VaultCapabilities;
   listMarkdownFiles(rootPath: string): Promise<MarkdownFileRecord[]>;
+  readTextFileVersioned(path: string): Promise<VersionedText>;
+  /**
+   * Writes only while the file is still `expectedVersion` (null: it must not
+   * exist yet). A note can be written by more than one hand: another device,
+   * a sync client, a second person in a server vault. Comparing and writing
+   * as one step is what keeps one of them from silently replacing the
+   * other's work; on a server vault the server does both under a lock, on a
+   * local folder the check sits directly before the write.
+   */
+  writeTextFileIfMatch(
+    path: string,
+    contents: string,
+    expectedVersion: string | null
+  ): Promise<ConditionalWriteResult>;
   /**
    * Packs a folder of the vault (notes, images, everything but the
    * `.scribedog/` metadata) into a ZIP archive of the raw files. Null for a

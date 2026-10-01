@@ -99,11 +99,16 @@ export function useAutoSave({
       // Re-checked at fire time: the timer outlives a note switch by design
       // (cleanup only cancels it), but a save must never hit a different
       // note than the edits it was scheduled for.
+      // A conflict waits for the user: retrying after every pause would only
+      // meet it again, and during a merge review the document is not yet
+      // either side's text.
       if (
         state.selectedFilePath !== selectedFilePath ||
         !state.isDirty ||
         state.isSaving ||
-        state.saveError
+        state.saveError ||
+        state.saveConflict?.filePath === selectedFilePath ||
+        state.mergeReview?.filePath === selectedFilePath
       ) {
         return;
       }

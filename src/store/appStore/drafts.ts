@@ -262,7 +262,7 @@ export async function loadDraftDocuments(
         const unwrittenFolderNotePath = await unwrittenFolderNoteFor(folderPath, draft.relativePath, markdownFiles);
 
         if (unwrittenFolderNotePath) {
-          documents[unwrittenFolderNotePath] = { content: draft.content, baseContent: "", baseMtimeMs: null };
+          documents[unwrittenFolderNotePath] = { content: draft.content, baseContent: "", baseMtimeMs: null, baseVersion: null };
           return;
         }
 

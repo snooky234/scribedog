@@ -23,6 +23,7 @@ import { DetailsPanel } from "@/components/editor/DetailsPanel";
 import { SelectionContextMenu, type SelectionContextMenuState } from "@/components/editor/SelectionContextMenu";
 import { PageWidthHandles } from "@/components/editor/PageWidthHandles";
 import { useFontZoom } from "@/hooks/useFontZoom";
+import { MergeConflictBar } from "@/components/editor/MergeConflictBar";
 import { StagedChangeBar } from "@/components/editor/StagedChangeBar";
 import { usePageLines } from "@/components/editor/usePageLines";
 import { MobileSheet } from "@/components/app/MobileSheet";
@@ -51,6 +52,7 @@ import {
 } from "@/lib/chat/vaultStaging";
 import { CODE_LINK_ATTR } from "@/lib/editor/codeBlockLinks";
 import { buildStagedPreview } from "@/lib/editor/stagedPreview";
+import { replaceDocumentKeepingSelection } from "@/lib/editor/replaceDocument";
 import { normalizeImageSrc } from "@/lib/chat/imageAttachments";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { buildEditorExtensions } from "@/lib/editor/extensions";
@@ -329,6 +331,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const [stagedPreviewStats, setStagedPreviewStats] = useState<{ hunks: number; missing: number } | null>(
     null
   );
+  // A save that met overlapping changes from someone else, being resolved in
+  // this document (see MergeReview in the app store).
+  const mergeReview = useAppStore((state) =>
+    filePath && state.mergeReview?.filePath === filePath ? state.mergeReview : null
+  );
+  const [mergeReviewStats, setMergeReviewStats] = useState<{ open: number; missing: number } | null>(null);
 
   const ai = useAiEditorActions({ editorRef, markdown, filePath, onAiLoadingChange, onAiPendingChange });
   const { dictation, toggleDictation } = useEditorDictation({
@@ -1739,7 +1747,20 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       markdown !== lastSyncedMarkdownRef.current &&
       markdown !== getEditorMarkdown(currentEditor, "")
     ) {
-      currentEditor.commands.setContent(markdown, { emitUpdate: false });
+      // Only the differing part is replaced, so content arriving from
+      // outside (someone else's edit merged in on save, a reload from disk)
+      // leaves the caret where the user is typing.
+      let replaced = false;
+
+      try {
+        replaced = replaceDocumentKeepingSelection(currentEditor, markdown);
+      } catch {
+        replaced = false;
+      }
+
+      if (!replaced) {
+        currentEditor.commands.setContent(markdown, { emitUpdate: false });
+      }
     }
 
     lastSyncedMarkdownRef.current = markdown;
@@ -1855,6 +1876,60 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     };
   }, [stagedChange, editor, markdown, stagedRelativePath]);
 
+  // Offers every overlapping passage of a save conflict as a proposal: red is
+  // the other version, which the document holds, green is this side's. The
+  // ordinary accept/discard of a proposal is exactly the decision, so nothing
+  // is overridden here. Declared after the sync effect for the same reason as
+  // the staged review above: the document has to be settled first.
+  //
+  // Not ended when the note is left: the review stays in the store, and the
+  // passages still open are found again by their text on the way back.
+  useEffect(() => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor || currentEditor.isDestroyed || !mergeReview) {
+      setMergeReviewStats(null);
+      return;
+    }
+
+    clearAiSuggestions(currentEditor);
+
+    const preview = buildStagedPreview(currentEditor.state.doc, mergeReview.theirsText, mergeReview.oursText);
+
+    // Nothing left to decide (all passages settled before the note was left,
+    // or none could be found again): this side's text is in the version
+    // history, and the document saves normally.
+    if (preview.suggestions.length === 0) {
+      useAppStore.getState().endMergeReview();
+      return;
+    }
+
+    for (const suggestion of preview.suggestions) {
+      addAiSuggestion(currentEditor, { id: createSuggestionId(), ...suggestion });
+    }
+
+    setMergeReviewStats({ open: preview.suggestions.length, missing: preview.missing });
+
+    // The proposals live in ProseMirror plugin state, so the count is read
+    // back after every transaction; the last decision ends the review.
+    const handleTransaction = () => {
+      const open = getAiSuggestions(currentEditor).length;
+
+      if (open === 0) {
+        useAppStore.getState().endMergeReview();
+        return;
+      }
+
+      setMergeReviewStats((stats) => (stats && stats.open !== open ? { ...stats, open } : stats));
+    };
+
+    currentEditor.on("transaction", handleTransaction);
+
+    return () => {
+      currentEditor.off("transaction", handleTransaction);
+    };
+  }, [mergeReview, editor]);
+
   if (!editor) {
     return null;
   }
@@ -1876,6 +1951,21 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
   return (
     <div className="editor-view">
+      {mergeReview && mergeReviewStats ? (
+        <MergeConflictBar
+          openPassages={mergeReviewStats.open}
+          missingPassages={mergeReviewStats.missing}
+          onKeepAllMine={() => {
+            acceptAllAiSuggestions(editor);
+            useAppStore.getState().endMergeReview();
+          }}
+          onKeepAllTheirs={() => {
+            clearAiSuggestions(editor);
+            useAppStore.getState().endMergeReview();
+          }}
+        />
+      ) : null}
+
       {stagedChange ? (
         <StagedChangeBar
           change={stagedChange}

@@ -54,11 +54,12 @@ notes takes a moment to open.
 or a sync tool writes into the folder on the server, the desktop app sees the
 change within a second, the way it does for a local folder.
 
-**Do not edit the same note in two places at once.** The server has no
-locking: if the desktop app and a browser tab both have the same note open
-and both save, the later save wins and the earlier edit is lost (the version
-history keeps a copy). Open a note in one place at a time; different notes in
-different places are fine.
+**The same note in two places is safe, but not live.** If the desktop app and
+a browser tab both have a note open and both save, the later save merges the
+earlier one in when the edits sit at different places, and asks when they
+touch the same lines. Nothing is overwritten unnoticed. You do not see the
+other side typing, though; see
+[Editing from more than one place](data-and-backups.md#editing-from-more-than-one-place).
 
 **The notes are on the server, so the file tree offers two extra entries**
 that a local folder does not need: **Download as Markdown** on a note (also

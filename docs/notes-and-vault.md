@@ -98,12 +98,27 @@ pause in typing and when you leave a note.
 
 ### Saving never overwrites an outside edit unnoticed
 
-If a note changed on disk while you were editing it, for example by another
-editor or a sync client, saving asks whether to overwrite.
+A note can change on disk while you edit it: another editor, a sync client,
+a second device. ScribeDog writes only while the note is still the version
+it read. If it is not, the two versions are merged line by line.
 
-The version from disk goes into the version history first, so nothing is
-lost and you can compare the two there. Auto-save never asks. It waits for
-you to save by hand.
+| Your edits and the other ones | What happens |
+| --- | --- |
+| at different places | merged and saved without asking; the editor shows the result and your cursor stays put |
+| at the same lines | you are asked |
+
+When you are asked, **Review passages** shows each overlapping passage in the
+editor, the other version in red and yours in green, and you accept or
+discard them one by one (or all at once from the bar above the note). Saving
+waits until every passage is decided. **Keep my version** overwrites the
+other one instead.
+
+> **Nothing is lost while versioning is on.** Your whole version goes into the
+> version history before a review starts, and the other one goes there before
+> you overwrite it.
+
+Auto-save never opens the question while you type. It pauses for that note,
+and the save button says **Resolve conflict** until you click it.
 
 ### Unsaved changes survive a restart
 

@@ -8,13 +8,16 @@ import {
   getRelativeDisplayPath,
   readMarkdownFile,
   readMarkdownFileMtime,
+  readMarkdownFileVersioned,
   renameMarkdownFile,
-  writeMarkdownFile
+  writeMarkdownFileIfMatch
 } from "@/lib/fileSystem";
 import { readVersionContent } from "@/lib/fileVersions";
 import { getFolderNotePath, isFolderNotePath } from "@/lib/folderNotes";
+import { merge3 } from "@/lib/merge3";
 
-import { collectUnsavedDocuments, isDocumentDirty, isExternallyModified } from "./documents";
+import { saveWithMerge } from "./conditionalSave";
+import { collectUnsavedDocuments, isDocumentDirty } from "./documents";
 import { discardDraft, flushDrafts, moveDraftFor, scheduleDraft } from "./drafts";
 import { toErrorMessage } from "./errors";
 import { dropVaultIcons, moveVaultIcons } from "./icons";
@@ -45,6 +48,38 @@ import {
   snapshotFileVersion,
   snapshotFileVersionNow
 } from "./versioning";
+
+/**
+ * What the editor shows after a save merged someone else's write in: the
+ * merged text, or, when the user typed on while the write was in flight,
+ * those keystrokes merged onto it. Should they overlap with the other side,
+ * the editor keeps what it holds and the next save meets the conflict.
+ */
+function catchUpWithMerge(sent: string, held: string, written: string): string {
+  if (held === sent) {
+    return written;
+  }
+
+  const merge = merge3(sent, held, written);
+
+  return merge.clean ? merge.text : held;
+}
+
+/**
+ * Writes a note that must not exist yet and returns its version. The tree
+ * can lag behind the disk (another device, another person in a shared
+ * vault), so a free name in the list is no proof; overwriting a file
+ * nobody here has seen would lose it without a trace.
+ */
+async function createMarkdownFileExclusive(filePath: string, content: string): Promise<string> {
+  const result = await writeMarkdownFileIfMatch(filePath, content, null);
+
+  if (!result.ok) {
+    throw new Error(i18n.t("store.fileAlreadyExists"));
+  }
+
+  return result.version;
+}
 
 export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
   selectFilePath: async (filePath: string) => {
@@ -82,10 +117,11 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
     });
 
     try {
-      // The mtime is read together with the content: it is what a later save
-      // compares against to notice that someone else wrote the file meanwhile.
-      const [markdown, baseMtimeMs] = await Promise.all([
-        readMarkdownFile(filePath),
+      // The version is read together with the content: a later save writes
+      // only while the disk still holds it, which is how it notices that
+      // someone else wrote the file meanwhile.
+      const [{ content: markdown, version: baseVersion }, baseMtimeMs] = await Promise.all([
+        readMarkdownFileVersioned(filePath),
         readMarkdownFileMtime(filePath)
       ]);
 
@@ -93,7 +129,8 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       const nextDocumentState = {
         content: markdown,
         baseContent: markdown,
-        baseMtimeMs
+        baseMtimeMs,
+        baseVersion
       };
 
       if (currentState.selectedFilePath !== filePath) {
@@ -154,7 +191,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       set({
         fileDocuments: {
           ...fileDocuments,
-          [notePath]: { content: "", baseContent: "", baseMtimeMs: null }
+          [notePath]: { content: "", baseContent: "", baseMtimeMs: null, baseVersion: null }
         }
       });
     }
@@ -170,9 +207,10 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
 
     const currentDocument = fileDocuments[selectedFilePath];
     const baseContent = currentDocument?.baseContent ?? selectedFileBaseContent ?? markdown;
-    // Carried, never looked up here: the mtime belongs to the moment the
-    // baseline was read, and only the reader of the file knows it.
+    // Carried, never looked up here: mtime and version belong to the moment
+    // the baseline was read, and only the reader of the file knows them.
     const baseMtimeMs = currentDocument?.baseMtimeMs;
+    const baseVersion = currentDocument?.baseVersion;
     const isDirty = markdown !== baseContent;
     // Becoming dirty is the one automatic way into the "In progress" list,
     // and only when the user has asked for that; by default pinning is the
@@ -191,7 +229,8 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         [selectedFilePath]: {
           content: markdown,
           baseContent,
-          baseMtimeMs
+          baseMtimeMs,
+          baseVersion
         }
       },
       workingSet: nextWorkingSet,
@@ -234,7 +273,8 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         [filePath]: {
           content: markdown,
           baseContent: markdown,
-          baseMtimeMs: currentDocument?.baseMtimeMs
+          baseMtimeMs: currentDocument?.baseMtimeMs,
+          baseVersion: currentDocument?.baseVersion
         }
       },
       ...(isSelected
@@ -264,7 +304,8 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         [selectedFilePath]: {
           content: selectedFileBaseContent,
           baseContent: selectedFileBaseContent,
-          baseMtimeMs: fileDocuments[selectedFilePath]?.baseMtimeMs
+          baseMtimeMs: fileDocuments[selectedFilePath]?.baseMtimeMs,
+          baseVersion: fileDocuments[selectedFilePath]?.baseVersion
         }
       },
       saveError: null,
@@ -297,55 +338,70 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
 
     const previousBaseContent = previousDocument?.baseContent ?? selectedFileContent;
 
+    // The overlapping passages of a conflict are being decided in the editor;
+    // until that is done, the document is neither side's text.
+    if (!options?.force && get().mergeReview?.filePath === selectedFilePath) {
+      return false;
+    }
+
     set({ isSaving: true, saveError: null, saveConflict: null });
 
     try {
-      const currentMtimeMs = await readMarkdownFileMtime(selectedFilePath);
-
-      if (!options?.force && isExternallyModified(previousDocument?.baseMtimeMs, currentMtimeMs)) {
-        // Someone else's version is on disk. A manual save asks; an
-        // auto-save, which fires from a timer while the user types, must
-        // not open a dialog, so it steps back and leaves the document dirty
-        // (the draft carries it) until the next manual save.
-        set({
-          isSaving: false,
-          saveConflict: options?.trigger === "auto" ? null : { filePath: selectedFilePath }
-        });
-
-        return false;
-      }
-
-      if (options?.force && currentMtimeMs !== null) {
-        // The version being overwritten is the only copy of someone else's
-        // work; it goes into the history before the write, so overwriting
-        // is never destructive while versioning is on.
-        const diskContent = await readMarkdownFile(selectedFilePath).catch(() => null);
-
-        if (diskContent !== null && diskContent !== selectedFileContent) {
-          await snapshotFileVersionNow(folderPath, selectedFilePath, diskContent);
-        }
-      }
-
       // A folder note is written into its folder on the first save; the
       // folder can still be one the agent has only proposed so far.
       if (isFolderNotePath(selectedFilePath)) {
         await createMarkdownFolderAtPath(await dirname(selectedFilePath));
       }
 
-      await writeMarkdownFile(selectedFilePath, selectedFileContent);
+      const outcome = await saveWithMerge(
+        selectedFilePath,
+        previousBaseContent,
+        selectedFileContent,
+        previousDocument?.baseVersion,
+        {
+          force: options?.force,
+          // The version being overwritten is the only copy of someone else's
+          // work; it goes into the history before the write, so overwriting
+          // is never destructive while versioning is on.
+          onOverwrite: (theirs) => snapshotFileVersionNow(folderPath, selectedFilePath, theirs)
+        }
+      );
+
+      if (outcome.kind === "conflict") {
+        // Someone else changed the same passages. A manual save asks; an
+        // auto-save, which fires from a timer while the user types, must not
+        // open a dialog, so it only marks the note and leaves the document
+        // dirty (the draft carries it) until the user turns to it.
+        set({
+          isSaving: false,
+          saveConflict: {
+            filePath: selectedFilePath,
+            prompt: options?.trigger !== "auto",
+            conflicts: outcome.conflicts,
+            theirs: outcome.theirs,
+            ours: selectedFileContent,
+            theirsText: outcome.theirsText,
+            oursText: outcome.oursText
+          }
+        });
+
+        return false;
+      }
+
+      const writtenContent = outcome.content;
 
       // What was just written is on disk; the draft has nothing left to protect.
       discardDraft(folderPath, selectedFilePath);
 
-      // The mtime the write produced is the new baseline; without it every
-      // following save would see its own write as someone else's change.
+      // Still kept next to the version: drafts and the folder refresh go by
+      // the mtime.
       const writtenMtimeMs = await readMarkdownFileMtime(selectedFilePath);
 
       if (options?.trigger === "auto") {
-        snapshotFileVersion(folderPath, selectedFilePath, selectedFileContent, { deferred: true });
+        snapshotFileVersion(folderPath, selectedFilePath, writtenContent, { deferred: true });
       } else {
         discardPendingFileVersion(selectedFilePath);
-        snapshotFileVersion(folderPath, selectedFilePath, selectedFileContent);
+        snapshotFileVersion(folderPath, selectedFilePath, writtenContent);
       }
 
       if (folderPath) {
@@ -353,17 +409,23 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
           folderPath,
           selectedFilePath,
           previousBaseContent,
-          selectedFileContent,
+          writtenContent,
           collectUnsavedDocuments(get())
         ).catch(() => undefined);
       }
 
       const currentState = get();
       const currentDocument = currentState.fileDocuments[selectedFilePath];
-      const nextSelectedContent =
-        currentState.selectedFilePath === selectedFilePath
-          ? currentState.selectedFileContent ?? selectedFileContent
-          : currentDocument?.content ?? selectedFileContent;
+      const isOpen = currentState.selectedFilePath === selectedFilePath;
+      const heldContent = isOpen
+        ? currentState.selectedFileContent ?? selectedFileContent
+        : currentDocument?.content ?? selectedFileContent;
+      // After a merge the disk holds more than this side sent, and the editor
+      // has to catch up, including whatever was typed while the write was in
+      // flight.
+      const nextContent = outcome.merged
+        ? catchUpWithMerge(selectedFileContent, heldContent, writtenContent)
+        : heldContent;
       // The first save of a folder note (or of a note deleted outside the
       // app while it was open) is what brings the file into existence, so
       // the list learns about it here rather than on the next watcher tick.
@@ -384,20 +446,20 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         fileDocuments: {
           ...currentState.fileDocuments,
           [selectedFilePath]: {
-            content: nextSelectedContent,
-            baseContent: selectedFileContent,
-            baseMtimeMs: writtenMtimeMs
+            content: nextContent,
+            baseContent: writtenContent,
+            baseMtimeMs: writtenMtimeMs,
+            baseVersion: outcome.version
           }
         },
-        selectedFileBaseContent:
-          currentState.selectedFilePath === selectedFilePath
-            ? selectedFileContent
-            : currentState.selectedFileBaseContent,
+        ...(isOpen
+          ? {
+              selectedFileContent: nextContent,
+              selectedFileBaseContent: writtenContent,
+              isDirty: nextContent !== writtenContent
+            }
+          : {}),
         isSaving: false,
-        isDirty:
-          currentState.selectedFilePath === selectedFilePath
-            ? nextSelectedContent !== selectedFileContent
-            : currentState.isDirty,
         saveError: null
       });
 
@@ -411,8 +473,69 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       return false;
     }
   },
+  // Only the question goes away: the conflict is still there, the save
+  // button keeps saying so, and auto-save keeps waiting for the user.
   dismissSaveConflict: () => {
-    set({ saveConflict: null });
+    const { saveConflict } = get();
+
+    if (saveConflict) {
+      set({ saveConflict: { ...saveConflict, prompt: false } });
+    }
+  },
+  startMergeReview: async () => {
+    const { saveConflict, folderPath, selectedFilePath, selectedFileContent, fileDocuments } = get();
+
+    if (!saveConflict) {
+      return false;
+    }
+
+    const { filePath, theirs, ours, theirsText, oursText } = saveConflict;
+    const heldContent =
+      filePath === selectedFilePath ? selectedFileContent : fileDocuments[filePath]?.content ?? null;
+
+    // Typed on after the conflict was found (an auto-save only marks the
+    // note): the merge is out of date, so it is worked out again.
+    if (heldContent !== ours) {
+      await get().saveFilePath(filePath);
+      return false;
+    }
+
+    try {
+      await snapshotFileVersionNow(folderPath, filePath, ours);
+    } catch (error) {
+      set({ saveError: toErrorMessage(error, i18n.t("store.fileSaveError")) });
+      return false;
+    }
+
+    const baseMtimeMs = await readMarkdownFileMtime(filePath);
+    const currentState = get();
+    const isOpen = currentState.selectedFilePath === filePath;
+
+    set({
+      saveConflict: null,
+      mergeReview: { filePath, theirsText, oursText },
+      fileDocuments: {
+        ...currentState.fileDocuments,
+        [filePath]: {
+          content: theirsText,
+          baseContent: theirs.content,
+          baseMtimeMs,
+          baseVersion: theirs.version
+        }
+      },
+      ...(isOpen
+        ? {
+            selectedFileContent: theirsText,
+            selectedFileBaseContent: theirs.content,
+            isDirty: theirsText !== theirs.content
+          }
+        : {})
+    });
+
+    return true;
+  },
+  endMergeReview: () => {
+    set({ mergeReview: null });
   },
   // Restoring writes the version's content into the open document and saves
   // it, which creates a *new* version on top of the history. Nothing in the
@@ -470,7 +593,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         suffix += 1;
       }
 
-      await writeMarkdownFile(newFilePath, "");
+      const baseVersion = await createMarkdownFileExclusive(newFilePath, "");
 
       // The empty initial state is a version like any other: it is what
       // restoring "back to the beginning" has to land on.
@@ -501,7 +624,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         manualOrder: nextManualOrder,
         fileDocuments: {
           ...fileDocuments,
-          [newFilePath]: { content: "", baseContent: "" }
+          [newFilePath]: { content: "", baseContent: "", baseVersion }
         },
         selectedFilePath: newFilePath,
         selectedFileContent: "",
@@ -557,7 +680,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
 
       const content = fileDocuments[filePath]?.content ?? (await readMarkdownFile(filePath));
 
-      await writeMarkdownFile(newFilePath, content);
+      const baseVersion = await createMarkdownFileExclusive(newFilePath, content);
       snapshotFileVersion(folderPath, newFilePath, content);
 
       const parentRelativePath = getRelativeDisplayPath(folderPath, targetDirectory);
@@ -585,7 +708,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         manualOrder: nextManualOrder,
         fileDocuments: {
           ...fileDocuments,
-          [newFilePath]: { content, baseContent: content }
+          [newFilePath]: { content, baseContent: content, baseVersion }
         },
         selectedFilePath: newFilePath,
         selectedFileContent: content,
@@ -623,7 +746,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
       // The agent may create "Projekte/2026/Notiz.md" without either folder
       // existing yet — mkdir is what makes that one tool call instead of three.
       await createMarkdownFolderAtPath(targetDirectory);
-      await writeMarkdownFile(filePath, content);
+      const baseVersion = await createMarkdownFileExclusive(filePath, content);
       snapshotFileVersion(folderPath, filePath, content);
       // The document below starts clean; a draft left from an earlier life of
       // this path would come back dirty on the next open.
@@ -667,7 +790,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
         manualOrder: nextManualOrder,
         fileDocuments: {
           ...currentState.fileDocuments,
-          [filePath]: { content, baseContent: content }
+          [filePath]: { content, baseContent: content, baseVersion }
         },
         ...(isSelected
           ? {
@@ -954,25 +1077,40 @@ ${openDocument.content}`
             [filePath]: {
               content: newContent,
               baseContent: existingDocument.baseContent,
-              baseMtimeMs: existingDocument.baseMtimeMs
+              baseMtimeMs: existingDocument.baseMtimeMs,
+              baseVersion: existingDocument.baseVersion
             }
           }
         });
         scheduleDraft(get().folderPath, filePath, newContent, existingDocument.baseMtimeMs ?? null);
       } else {
-        await writeMarkdownFile(filePath, newContent);
+        // A document read earlier knows what the new content was derived
+        // from; someone else's write since then is merged in rather than
+        // replaced. Without one, the content was derived from the disk just
+        // now and simply goes in.
+        const outcome = await saveWithMerge(
+          filePath,
+          existingDocument?.baseContent ?? newContent,
+          newContent,
+          existingDocument?.baseVersion
+        );
+
+        if (outcome.kind === "conflict") {
+          throw new Error(i18n.t("store.fileReplaceConflict", { fileName: getBasename(filePath) }));
+        }
 
         // Project-wide replace overwrites files the user never opened, so
         // this is exactly the case a version history has to cover.
-        snapshotFileVersion(get().folderPath, filePath, newContent);
+        snapshotFileVersion(get().folderPath, filePath, outcome.content);
 
         if (existingDocument) {
           set({
             fileDocuments: {
               ...get().fileDocuments,
               [filePath]: {
-                content: newContent,
-                baseContent: newContent
+                content: outcome.content,
+                baseContent: outcome.content,
+                baseVersion: outcome.version
               }
             }
           });

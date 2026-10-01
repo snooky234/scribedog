@@ -1,5 +1,5 @@
 import { getVaultStorage } from "@/platform";
-import type { DirectoryEntry, FileInfo } from "@/platform/types";
+import type { ConditionalWriteResult, DirectoryEntry, FileInfo, VersionedText } from "@/platform/types";
 
 /**
  * Filesystem primitives on the *open vault*, with the names and signatures
@@ -33,6 +33,18 @@ export function readTextFile(path: string): Promise<string> {
 
 export function writeTextFile(path: string, contents: string): Promise<void> {
   return getVaultStorage().writeTextFile(path, contents);
+}
+
+export function readTextFileVersioned(path: string): Promise<VersionedText> {
+  return getVaultStorage().readTextFileVersioned(path);
+}
+
+export function writeTextFileIfMatch(
+  path: string,
+  contents: string,
+  expectedVersion: string | null
+): Promise<ConditionalWriteResult> {
+  return getVaultStorage().writeTextFileIfMatch(path, contents, expectedVersion);
 }
 
 export function readFile(path: string): Promise<Uint8Array> {

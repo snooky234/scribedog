@@ -53,6 +53,7 @@ export async function createLoadedFolderState(
     fileError: null,
     saveError: null,
     saveConflict: null,
+    mergeReview: null,
     workingSet,
     sortMode,
     manualOrder,

@@ -2,7 +2,19 @@ import i18n from "@/i18n";
 import { getVaultStorage, platform } from "@/platform";
 import { activateVaultStorage, isRemoteVaultPath, remoteVaultFor, watchRemoteVault } from "@/lib/remoteVaults";
 import { dirname, join } from "@/platform/paths";
-import { exists, mkdir, readTextFile, remove, rename, stat, writeFile, writeTextFile } from "@/platform/vaultFs";
+import {
+  exists,
+  mkdir,
+  readTextFile,
+  readTextFileVersioned,
+  remove,
+  rename,
+  stat,
+  writeFile,
+  writeTextFile,
+  writeTextFileIfMatch
+} from "@/platform/vaultFs";
+import type { ConditionalWriteResult, VersionedText } from "@/platform/types";
 import { getProtectedClipboardImages } from "@/lib/clipboardImages";
 import {
   ABSOLUTE_URL_PATTERN,
@@ -108,6 +120,23 @@ export async function readMarkdownFile(filePath: string): Promise<string> {
   return readTextFile(filePath);
 }
 
+/**
+ * The note together with its version token, which a later
+ * `writeMarkdownFileIfMatch` hands back to say what it builds on.
+ */
+export async function readMarkdownFileVersioned(filePath: string): Promise<VersionedText> {
+  return readTextFileVersioned(filePath);
+}
+
+/** The version of the note on disk, or null when it cannot be read (missing, no access). */
+export async function readMarkdownFileVersion(filePath: string): Promise<string | null> {
+  try {
+    return (await readTextFileVersioned(filePath)).version;
+  } catch {
+    return null;
+  }
+}
+
 /** The file's mtime in ms, or null when it cannot be read (missing, no access). */
 export async function readMarkdownFileMtime(filePath: string): Promise<number | null> {
   try {
@@ -126,6 +155,19 @@ export async function readMarkdownFileMtime(filePath: string): Promise<number | 
  */
 export async function writeMarkdownFile(filePath: string, markdown: string): Promise<void> {
   await writeTextFile(filePath, markdown);
+}
+
+/**
+ * `writeMarkdownFile` that goes through only while the note is still the
+ * version the caller read (null: not there yet). The same versioning rule
+ * applies to its callers.
+ */
+export async function writeMarkdownFileIfMatch(
+  filePath: string,
+  markdown: string,
+  expectedVersion: string | null
+): Promise<ConditionalWriteResult> {
+  return writeTextFileIfMatch(filePath, markdown, expectedVersion);
 }
 
 export async function renameMarkdownFile(oldPath: string, newPath: string): Promise<void> {

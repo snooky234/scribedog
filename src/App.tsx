@@ -143,6 +143,7 @@ function App() {
   const saveError = useAppStore((state) => state.saveError);
   const saveConflict = useAppStore((state) => state.saveConflict);
   const dismissSaveConflict = useAppStore((state) => state.dismissSaveConflict);
+  const startMergeReview = useAppStore((state) => state.startMergeReview);
   const workingSet = useAppStore((state) => state.workingSet);
   const pinWorkingSetEntry = useAppStore((state) => state.pinWorkingSetEntry);
   const moveWorkingSetEntry = useAppStore((state) => state.moveWorkingSetEntry);
@@ -1207,8 +1208,18 @@ function App() {
         onSaveAndClose={() => void workingSetActions.saveAndClose()}
         onDiscardAndClose={workingSetActions.discardAndClose}
         onCancelClose={workingSetActions.cancelClose}
-        saveConflictFileLabel={saveConflict ? labelNotePath(saveConflict.filePath) : null}
+        // An auto-save only marks the note; the question comes with the
+        // next save by hand.
+        saveConflictFileLabel={saveConflict?.prompt ? labelNotePath(saveConflict.filePath) : null}
+        saveConflictCount={saveConflict?.conflicts ?? 0}
         isSaving={isSaving}
+        onReviewConflict={() => {
+          if (saveConflict?.filePath === selectedFilePath) {
+            void startMergeReview();
+          } else {
+            dismissSaveConflict();
+          }
+        }}
         onOverwriteConflict={() => {
           // The answer belongs to the note the question was asked about.
           if (saveConflict?.filePath === selectedFilePath) {

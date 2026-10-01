@@ -76,6 +76,9 @@ export function createRemoteVaultStorage(api: ServerApi, root: string): VaultSto
     async writeTextFile(path, contents) {
       await api.writeText(toVaultRelative(path), contents);
     },
+    readTextFileVersioned: async (path) => api.readTextVersioned(toVaultRelative(path)),
+    writeTextFileIfMatch: async (path, contents, expectedVersion) =>
+      api.writeTextIfMatch(toVaultRelative(path), contents, expectedVersion),
     readFile: async (path) => api.readBytes(toVaultRelative(path)),
     async writeFile(path, data) {
       await api.writeBytes(toVaultRelative(path), data);

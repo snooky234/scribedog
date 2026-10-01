@@ -41,8 +41,9 @@ app, for example Obsidian, Markor on Android or iA Writer.
   hidden `.scribedog` folder.
 - Do not edit the same file on two devices at once. That is how sync
   conflicts happen.
-- ScribeDog notices when a note changed on disk while you were editing it and
-  asks before overwriting. See
+- ScribeDog notices when a note changed on disk while you were editing it,
+  merges changes at different places and asks only when the same lines were
+  changed. See
   [Saving](notes-and-vault.md#saving-never-overwrites-an-outside-edit-unnoticed).
 
 ## Backups

@@ -1,4 +1,5 @@
 import { SessionError } from "@/platform/errors";
+import type { ConditionalWriteResult, VersionedText } from "@/platform/types";
 
 /**
  * The HTTP client for the ScribeDog server, mirroring the routes in
@@ -59,7 +60,9 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
-    message: string
+    message: string,
+    /** The parsed response body, for errors that carry data (a version conflict). */
+    readonly body: unknown = null
   ) {
     super(message);
     this.name = "ApiError";
@@ -148,7 +151,12 @@ export function createServerApi(transport: ServerTransport) {
         throw new SessionError("too_many_attempts", body?.message ?? "Too many attempts.", body?.retryAfterSeconds);
       }
 
-      throw new ApiError(response.status, body?.error ?? "error", body?.message ?? `Request failed (${response.status}).`);
+      throw new ApiError(
+        response.status,
+        body?.error ?? "error",
+        body?.message ?? `Request failed (${response.status}).`,
+        body
+      );
     }
 
     return response;
@@ -187,8 +195,28 @@ export function createServerApi(transport: ServerTransport) {
     mkdir: (path: string, recursive: boolean) =>
       request<void>("/fs/mkdir", { method: "POST", body: JSON.stringify({ path, recursive }) }),
     readText: async (path: string) => (await request<{ content: string }>(withPath("/fs/text", path))).content,
+    readTextVersioned: (path: string) => request<VersionedText>(withPath("/fs/text", path)),
     writeText: (path: string, content: string) =>
       request<{ mtimeMs: number }>("/fs/text", { method: "PUT", body: JSON.stringify({ path, content }) }),
+    /** A write that the server lets through only while the file is still `ifMatch` (null: absent). */
+    async writeTextIfMatch(path: string, content: string, ifMatch: string | null): Promise<ConditionalWriteResult> {
+      try {
+        const { version } = await request<{ mtimeMs: number; version: string }>("/fs/text", {
+          method: "PUT",
+          body: JSON.stringify({ path, content, ifMatch })
+        });
+
+        return { ok: true, version };
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 409 && error.code === "version_conflict") {
+          const current = (error.body as { current?: VersionedText | null } | null)?.current ?? null;
+
+          return { ok: false, current };
+        }
+
+        throw error;
+      }
+    },
     readBytes: (path: string) => requestBytes(withPath("/fs/file", path)),
     writeBytes: (path: string, data: Uint8Array) =>
       request<{ mtimeMs: number }>(withPath("/fs/file", path), { method: "PUT", body: data, binary: true }),

@@ -5,16 +5,34 @@ vi.mock("@tauri-apps/api/path", () => ({
   dirname: async (path: string) => path.slice(0, path.lastIndexOf("/")) || "/"
 }));
 
-// The file as it sits on disk: content plus the mtime a stat would report.
-const disk = vi.hoisted(() => ({ content: "# Note\n", mtimeMs: 1_000 }));
+// The note as it sits on disk. The version token is derived from the content
+// the way a hash would be: same text, same token.
+const disk = vi.hoisted(() => ({
+  content: "" as string | null,
+  mtimeMs: 1_000,
+  // Runs inside the write, to simulate the user typing while it is in flight.
+  duringWrite: null as null | (() => void)
+}));
+const versionOf = (content: string) => `v:${content}`;
 
 const fsMock = vi.hoisted(() => ({
-  writeMarkdownFile: vi.fn(async (_path: string, content: string) => {
+  writeMarkdownFileIfMatch: vi.fn(async (_path: string, content: string, expected: string | null) => {
+    const current = disk.content === null ? null : { content: disk.content, version: `v:${disk.content}` };
+
+    if ((current?.version ?? null) !== expected) {
+      return { ok: false as const, current };
+    }
+
+    disk.duringWrite?.();
     disk.content = content;
     disk.mtimeMs += 10_000;
+
+    return { ok: true as const, version: `v:${content}` };
   }),
-  readMarkdownFile: vi.fn(async () => disk.content),
-  readMarkdownFileMtime: vi.fn(async () => disk.mtimeMs)
+  readMarkdownFileVersioned: vi.fn(async () => ({ content: disk.content ?? "", version: `v:${disk.content}` })),
+  readMarkdownFileVersion: vi.fn(async () => (disk.content === null ? null : `v:${disk.content}`)),
+  readMarkdownFile: vi.fn(async () => disk.content ?? ""),
+  readMarkdownFileMtime: vi.fn(async () => (disk.content === null ? null : disk.mtimeMs))
 }));
 
 vi.mock("@/lib/fileSystem", async (importOriginal) => ({
@@ -44,119 +62,210 @@ vi.mock("./drafts", () => ({
 }));
 
 const { useAppStore } = await import("@/store/useAppStore");
-const { EXTERNAL_CHANGE_TOLERANCE_MS, isExternallyModified } = await import("./documents");
 
 const VAULT = "/vault";
 const NOTE = "/vault/note.md";
 
-describe("isExternallyModified", () => {
-  it("is false within the tolerance and true beyond it", () => {
-    expect(isExternallyModified(1_000, 1_000)).toBe(false);
-    expect(isExternallyModified(1_000, 1_000 + EXTERNAL_CHANGE_TOLERANCE_MS)).toBe(false);
-    expect(isExternallyModified(1_000, 1_000 + EXTERNAL_CHANGE_TOLERANCE_MS + 1)).toBe(true);
-    // A clock or a sync client can also set the file *back*.
-    expect(isExternallyModified(10_000, 1_000)).toBe(true);
-  });
+const BASE = "# Note\n\nFirst paragraph.\n\nSecond paragraph.\n";
+const MINE = BASE.replace("First paragraph.", "First paragraph, edited here.");
 
-  // Nothing to compare is not a conflict: the save behaves as it always did.
-  it("is false when either side is unknown or the file is gone", () => {
-    expect(isExternallyModified(undefined, 5_000)).toBe(false);
-    expect(isExternallyModified(null, 5_000)).toBe(false);
-    expect(isExternallyModified(1_000, null)).toBe(false);
+function openWith(
+  content: string,
+  { base = BASE, baseVersion = versionOf(BASE) }: { base?: string; baseVersion?: string | null } = {}
+) {
+  useAppStore.setState({
+    folderPath: VAULT,
+    filePaths: [NOTE],
+    emptyFolderPaths: [],
+    fileDocuments: { [NOTE]: { content, baseContent: base, baseMtimeMs: 1_000, baseVersion } },
+    selectedFilePath: NOTE,
+    selectedFileContent: content,
+    selectedFileBaseContent: base,
+    isDirty: content !== base,
+    saveConflict: null,
+    mergeReview: null,
+    saveError: null,
+    manualOrder: {}
   });
+}
+
+beforeEach(() => {
+  disk.content = BASE;
+  disk.mtimeMs = 1_000;
+  disk.duringWrite = null;
+  vi.clearAllMocks();
+  openWith(MINE);
 });
 
-describe("saveSelectedFile with an external change", () => {
-  beforeEach(() => {
-    disk.content = "# Note\n";
-    disk.mtimeMs = 1_000;
-    vi.clearAllMocks();
-
-    useAppStore.setState({
-      folderPath: VAULT,
-      filePaths: [NOTE],
-      emptyFolderPaths: [],
-      fileDocuments: { [NOTE]: { content: "# Note\n\nmine", baseContent: "# Note\n", baseMtimeMs: 1_000 } },
-      selectedFilePath: NOTE,
-      selectedFileContent: "# Note\n\nmine",
-      selectedFileBaseContent: "# Note\n",
-      isDirty: true,
-      saveConflict: null,
-      manualOrder: {}
-    });
-  });
-
-  it("saves when the file is as it was read, and adopts the written mtime", async () => {
+describe("saveSelectedFile with versions", () => {
+  it("writes while the disk still holds the baseline, and adopts the new version and mtime", async () => {
     expect(await useAppStore.getState().saveSelectedFile()).toBe(true);
 
-    expect(fsMock.writeMarkdownFile).toHaveBeenCalledWith(NOTE, "# Note\n\nmine");
+    expect(fsMock.writeMarkdownFileIfMatch).toHaveBeenCalledWith(NOTE, MINE, versionOf(BASE));
     const state = useAppStore.getState();
+    expect(disk.content).toBe(MINE);
     expect(state.isDirty).toBe(false);
-    expect(state.fileDocuments[NOTE].baseMtimeMs).toBe(11_000);
+    expect(state.fileDocuments[NOTE]).toMatchObject({ baseContent: MINE, baseVersion: versionOf(MINE), baseMtimeMs: 11_000 });
     expect(state.fileMtimeMs[NOTE]).toBe(11_000);
   });
 
-  it("refuses a manual save over someone else's write and asks", async () => {
-    disk.content = "# Note\n\ntheirs";
-    disk.mtimeMs = 50_000;
+  it("merges someone else's change at another place silently and shows the result", async () => {
+    disk.content = BASE.replace("Second paragraph.", "Second paragraph, edited elsewhere.");
+    const merged = MINE.replace("Second paragraph.", "Second paragraph, edited elsewhere.");
+
+    expect(await useAppStore.getState().saveSelectedFile({ trigger: "auto" })).toBe(true);
+
+    const state = useAppStore.getState();
+    expect(disk.content).toBe(merged);
+    expect(state.saveConflict).toBeNull();
+    expect(state.selectedFileContent).toBe(merged);
+    expect(state.selectedFileBaseContent).toBe(merged);
+    expect(state.isDirty).toBe(false);
+    expect(state.fileDocuments[NOTE].baseVersion).toBe(versionOf(merged));
+  });
+
+  it("keeps keystrokes typed while a merged write was in flight", async () => {
+    disk.content = BASE.replace("Second paragraph.", "Second paragraph, edited elsewhere.");
+    const typedOn = `${MINE}\nThird paragraph.\n`;
+    disk.duringWrite = () => useAppStore.getState().updateSelectedFileContent(typedOn);
+
+    expect(await useAppStore.getState().saveSelectedFile()).toBe(true);
+
+    const state = useAppStore.getState();
+    const merged = MINE.replace("Second paragraph.", "Second paragraph, edited elsewhere.");
+    expect(state.selectedFileBaseContent).toBe(merged);
+    expect(state.selectedFileContent).toBe(`${merged}\nThird paragraph.\n`);
+    expect(state.isDirty).toBe(true);
+  });
+
+  it("asks on a manual save when the changes overlap, and writes nothing", async () => {
+    const theirs = BASE.replace("First paragraph.", "First paragraph, theirs.");
+    disk.content = theirs;
 
     expect(await useAppStore.getState().saveSelectedFile()).toBe(false);
 
-    expect(fsMock.writeMarkdownFile).not.toHaveBeenCalled();
     const state = useAppStore.getState();
-    expect(state.saveConflict).toEqual({ filePath: NOTE });
+    expect(disk.content).toBe(theirs);
+    expect(state.saveConflict).toEqual({
+      filePath: NOTE,
+      prompt: true,
+      conflicts: 1,
+      theirs: { content: theirs, version: versionOf(theirs) },
+      ours: MINE,
+      theirsText: theirs,
+      oursText: MINE
+    });
     expect(state.isDirty).toBe(true);
     expect(state.isSaving).toBe(false);
     expect(state.saveError).toBeNull();
   });
 
   // A timer must not open a dialog mid-sentence.
-  it("skips an auto-save over someone else's write without asking", async () => {
-    disk.mtimeMs = 50_000;
+  it("only marks the note on an overlapping auto-save", async () => {
+    disk.content = BASE.replace("First paragraph.", "First paragraph, theirs.");
 
     expect(await useAppStore.getState().saveSelectedFile({ trigger: "auto" })).toBe(false);
 
-    expect(fsMock.writeMarkdownFile).not.toHaveBeenCalled();
-    expect(useAppStore.getState().saveConflict).toBeNull();
+    expect(useAppStore.getState().saveConflict).toMatchObject({ filePath: NOTE, prompt: false });
     expect(useAppStore.getState().isDirty).toBe(true);
   });
 
   it("overwrites on force, with the disk version snapshotted first", async () => {
-    disk.content = "# Note\n\ntheirs";
-    disk.mtimeMs = 50_000;
+    const theirs = BASE.replace("First paragraph.", "First paragraph, theirs.");
+    disk.content = theirs;
     await useAppStore.getState().saveSelectedFile();
 
     expect(await useAppStore.getState().saveSelectedFile({ force: true })).toBe(true);
 
-    expect(versioning.snapshotFileVersionNow).toHaveBeenCalledWith(VAULT, NOTE, "# Note\n\ntheirs");
-    expect(versioning.snapshotFileVersionNow.mock.invocationCallOrder[0]).toBeLessThan(
-      fsMock.writeMarkdownFile.mock.invocationCallOrder[0]
-    );
-    expect(disk.content).toBe("# Note\n\nmine");
+    expect(versioning.snapshotFileVersionNow).toHaveBeenCalledWith(VAULT, NOTE, theirs);
+    const writeOrder = fsMock.writeMarkdownFileIfMatch.mock.invocationCallOrder;
+    const lastWrite = writeOrder[writeOrder.length - 1];
+    expect(versioning.snapshotFileVersionNow.mock.invocationCallOrder[0]).toBeLessThan(lastWrite);
+    expect(disk.content).toBe(MINE);
     expect(useAppStore.getState().saveConflict).toBeNull();
     expect(useAppStore.getState().isDirty).toBe(false);
   });
 
-  it("dismissSaveConflict leaves the document dirty", async () => {
-    disk.mtimeMs = 50_000;
+  it("dismissSaveConflict closes the question but keeps the conflict marked", async () => {
+    disk.content = BASE.replace("First paragraph.", "First paragraph, theirs.");
     await useAppStore.getState().saveSelectedFile();
 
     useAppStore.getState().dismissSaveConflict();
 
-    expect(useAppStore.getState().saveConflict).toBeNull();
+    expect(useAppStore.getState().saveConflict).toMatchObject({ filePath: NOTE, prompt: false });
     expect(useAppStore.getState().isDirty).toBe(true);
-    expect(disk.content).toBe("# Note\n");
   });
 
-  // A note the app has never read from disk with an mtime (created by a
-  // write, restored draft of an unwritten folder note) saves as before.
-  it("saves without a baseline mtime", async () => {
+  // A note whose baseline nobody recorded a version for saves as before.
+  it("writes over whatever is there without a baseline version", async () => {
     useAppStore.setState({
-      fileDocuments: { [NOTE]: { content: "# Note\n\nmine", baseContent: "# Note\n" } }
+      fileDocuments: { [NOTE]: { content: MINE, baseContent: BASE, baseMtimeMs: 1_000 } }
     });
-    disk.mtimeMs = 50_000;
+    disk.content = "# Something else entirely\n";
 
     expect(await useAppStore.getState().saveSelectedFile()).toBe(true);
-    expect(useAppStore.getState().saveConflict).toBeNull();
+    expect(disk.content).toBe(MINE);
+  });
+
+  it("writes a note again that was deleted meanwhile", async () => {
+    disk.content = null;
+
+    expect(await useAppStore.getState().saveSelectedFile()).toBe(true);
+    expect(disk.content).toBe(MINE);
+  });
+
+  it("refuses to create over a file that appeared under a new note's name", async () => {
+    openWith(MINE, { base: "", baseVersion: null });
+
+    expect(await useAppStore.getState().saveSelectedFile()).toBe(false);
+    expect(useAppStore.getState().saveConflict).toMatchObject({ filePath: NOTE });
+    expect(disk.content).toBe(BASE);
+  });
+});
+
+describe("resolving a conflict in the editor", () => {
+  const THEIRS = BASE.replace("First paragraph.", "First paragraph, theirs.").replace(
+    "Second paragraph.",
+    "Second paragraph, theirs too."
+  );
+
+  beforeEach(async () => {
+    disk.content = THEIRS;
+    await useAppStore.getState().saveSelectedFile();
+  });
+
+  it("puts their version under the document, with their text at the overlap", async () => {
+    expect(await useAppStore.getState().startMergeReview()).toBe(true);
+
+    const state = useAppStore.getState();
+    expect(versioning.snapshotFileVersionNow).toHaveBeenCalledWith(VAULT, NOTE, MINE);
+    expect(state.saveConflict).toBeNull();
+    expect(state.mergeReview).toEqual({ filePath: NOTE, theirsText: THEIRS, oursText: MINE.replace("Second paragraph.", "Second paragraph, theirs too.") });
+    expect(state.selectedFileContent).toBe(THEIRS);
+    expect(state.selectedFileBaseContent).toBe(THEIRS);
+    expect(state.fileDocuments[NOTE].baseVersion).toBe(versionOf(THEIRS));
+  });
+
+  it("does not save while passages are open, and saves normally afterwards", async () => {
+    await useAppStore.getState().startMergeReview();
+    const resolved = useAppStore.getState().mergeReview!.oursText;
+    useAppStore.getState().updateSelectedFileContent(resolved);
+
+    expect(await useAppStore.getState().saveSelectedFile({ trigger: "auto" })).toBe(false);
+    expect(disk.content).toBe(THEIRS);
+
+    useAppStore.getState().endMergeReview();
+
+    expect(await useAppStore.getState().saveSelectedFile()).toBe(true);
+    expect(disk.content).toBe(resolved);
+  });
+
+  it("works the merge out again when the user typed on after it was found", async () => {
+    useAppStore.getState().updateSelectedFileContent(`${MINE}\nMore.\n`);
+
+    expect(await useAppStore.getState().startMergeReview()).toBe(false);
+
+    expect(useAppStore.getState().mergeReview).toBeNull();
+    expect(useAppStore.getState().saveConflict).toMatchObject({ ours: `${MINE}\nMore.\n` });
   });
 });

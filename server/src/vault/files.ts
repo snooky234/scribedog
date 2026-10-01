@@ -1,7 +1,9 @@
+import { createHash, randomBytes } from "node:crypto";
 import { lstat, mkdir, readdir, readFile, realpath, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { DATA_VERSION_RELATIVE_PATH } from "./dataVersion.js";
+import { createFileLocks } from "./fileLock.js";
 import { assertVaultPath, resolveVaultEntry, VAULT_META_DIR_NAME, VaultPathError } from "./paths.js";
 
 
@@ -28,6 +30,28 @@ export type VaultFileInfo = {
   mtimeMs: number | null;
   birthtimeMs: number | null;
 };
+
+/** A text file together with the version token of exactly these bytes. */
+export type VersionedText = { content: string; version: string };
+
+/**
+ * The outcome of a conditional write. `current` is what is on disk instead
+ * of the expected version, or null when the file is gone, so the client can
+ * merge without a second round trip.
+ */
+export type ConditionalWriteResult =
+  | { ok: true; mtimeMs: number; version: string }
+  | { ok: false; current: VersionedText | null };
+
+/**
+ * The version token of a file: SHA-256 over its bytes. A content hash rather
+ * than the mtime, because mtimes are rounded differently by filesystems and
+ * rewritten by sync clients, and several containers writing to one disk
+ * cannot agree on a clock anyway. Clients treat the token as opaque.
+ */
+export function contentVersion(data: Buffer | string): string {
+  return createHash("sha256").update(data).digest("hex");
+}
 
 export class NoteNotFoundError extends Error {}
 
@@ -121,8 +145,16 @@ export type Vault = {
   exists(rawPath: unknown): Promise<boolean>;
   mkdir(rawPath: unknown, recursive: boolean): Promise<void>;
   readText(rawPath: unknown): Promise<string>;
+  readTextVersioned(rawPath: unknown): Promise<VersionedText>;
   /** Creates or overwrites; the parent folder must exist. */
   writeText(rawPath: unknown, content: string): Promise<{ mtimeMs: number }>;
+  /**
+   * Writes only when the file on disk is still `expectedVersion` (null: the
+   * file must not exist yet). Comparison and write are one step under a
+   * per-file lock that also holds across processes, since several containers
+   * can write to the same vault.
+   */
+  writeTextIfMatch(rawPath: unknown, content: string, expectedVersion: string | null): Promise<ConditionalWriteResult>;
   readBytes(rawPath: unknown): Promise<Buffer>;
   writeBytes(rawPath: unknown, data: Buffer): Promise<{ mtimeMs: number }>;
   rename(rawFrom: unknown, rawTo: unknown): Promise<void>;
@@ -149,10 +181,17 @@ export async function openVault(vaultPath: string): Promise<Vault> {
     return { relativePath, absolutePath };
   }
 
+  const locks = createFileLocks(path.join(realPath, VAULT_META_DIR_NAME, "server", "locks"));
+
   // Write-then-rename so a container stopped mid-write leaves the old file
-  // intact rather than a truncated one.
+  // intact rather than a truncated one. The temp name is random, not the pid:
+  // every container runs the server as pid 1, and two of them writing the
+  // same file would otherwise share one temp file.
   async function writeAtomically(absolutePath: string, data: string | Buffer, relativePath: string) {
-    const tempPath = path.join(path.dirname(absolutePath), `.${path.basename(absolutePath)}.${process.pid}.tmp`);
+    const tempPath = path.join(
+      path.dirname(absolutePath),
+      `.${path.basename(absolutePath)}.${randomBytes(6).toString("hex")}.tmp`
+    );
 
     try {
       await writeFile(tempPath, data, typeof data === "string" ? "utf8" : undefined);
@@ -273,11 +312,50 @@ export async function openVault(vaultPath: string): Promise<Vault> {
       }
     },
 
+    async readTextVersioned(rawPath) {
+      const { relativePath, absolutePath } = await resolve(rawPath);
+
+      try {
+        const bytes = await readFile(absolutePath);
+        return { content: bytes.toString("utf8"), version: contentVersion(bytes) };
+      } catch (error) {
+        return translateFsError(error, relativePath);
+      }
+    },
+
     async writeText(rawPath, content) {
       const { relativePath, absolutePath } = await resolve(rawPath);
       assertMutableEntry(relativePath);
 
       return writeAtomically(absolutePath, content, relativePath);
+    },
+
+    async writeTextIfMatch(rawPath, content, expectedVersion) {
+      const { relativePath, absolutePath } = await resolve(rawPath);
+      assertMutableEntry(relativePath);
+
+      return locks.withLock(relativePath, async (): Promise<ConditionalWriteResult> => {
+        let current: VersionedText | null;
+
+        try {
+          const bytes = await readFile(absolutePath);
+          current = { content: bytes.toString("utf8"), version: contentVersion(bytes) };
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+            translateFsError(error, relativePath);
+          }
+
+          current = null;
+        }
+
+        if ((current?.version ?? null) !== expectedVersion) {
+          return { ok: false, current };
+        }
+
+        const { mtimeMs } = await writeAtomically(absolutePath, content, relativePath);
+
+        return { ok: true, mtimeMs, version: contentVersion(content) };
+      });
     },
 
     async readBytes(rawPath) {
