@@ -1728,3 +1728,77 @@
     display: none;
   }
 }
+
+/* Shared vaults (components/shared/SharedVaultDialogs.tsx). */
+.shared-vault-dialog__panel--wide {
+  width: min(100%, 40rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+
+.shared-vault-dialog__members {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.shared-vault-dialog__members legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+}
+
+.shared-vault-dialog__member {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shared-vault-dialog__heading {
+  margin: 1.2rem 0 0;
+  font-size: 0.95rem;
+}
+
+.shared-vault-dialog__list {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.shared-vault-dialog__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid rgba(var(--overlay-rgb),0.08);
+  border-radius: 0.9rem;
+  background: rgba(var(--surface-rgb),0.74);
+  padding: 0.65rem 0.8rem;
+}
+
+.shared-vault-dialog__row-text {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.shared-vault-dialog__row-text strong {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.shared-vault-dialog__row-text span {
+  color: rgba(var(--muted-rgb),0.9);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.shared-vault-dialog__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}

@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Ellipsis,
   FileText,
+  Users,
   Folder,
   FolderOpen,
   PawPrint
@@ -23,6 +24,7 @@ import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportD
 import { getVaultCapabilities } from "@/platform";
 import type { PinToggleAction } from "@/store/appStore/workingSet";
 import { useSearchStore } from "@/store/useSearchStore";
+import { useSharedVaultsStore } from "@/store/useSharedVaultsStore";
 
 import {
   formatModifiedLabel,
@@ -225,6 +227,17 @@ export function TreeNodeRow({
     node.kind === "folder" && node.folderNotePath
       ? state.fileMatchCounts[node.folderNotePath] ?? 0
       : 0
+  );
+  // Who else has this note of a shared vault open, as one string: a selector
+  // has to return the same value for the same state, which a fresh array
+  // would not be.
+  const presentUsers = useSharedVaultsStore((state) =>
+    node.kind === "file" && state.presence
+      ? state.presence.editors
+          .filter((editor) => editor.path === node.relativePath)
+          .map((editor) => editor.user)
+          .join(", ")
+      : ""
   );
   // The paw. On a folder it is cumulative over the subtree and only shown while
   // the folder is collapsed — expanded, the files carry their own, and the same
@@ -637,6 +650,11 @@ export function TreeNodeRow({
             >
               <title>{t("fileTree.stagedChange")}</title>
             </PawPrint>
+          ) : null}
+          {presentUsers ? (
+            <Users className="file-tree__presence" aria-label={t("sharedVaults.presence", { names: presentUsers })}>
+              <title>{t("sharedVaults.presence", { names: presentUsers })}</title>
+            </Users>
           ) : null}
           {/* Before the pin, as in the folder row above. */}
           {isDirty ? (

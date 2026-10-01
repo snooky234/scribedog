@@ -43,6 +43,22 @@ describe("normalizeBasePath", () => {
     expect(loadConfig({ SCRIBEDOG_WEB_DIST_DIR: "/srv/scribedog/web" }).webDistDir).toBe(path.resolve("/srv/scribedog/web"));
     expect(loadConfig({}).webDistDir).toBe(path.resolve(process.cwd(), "..", "dist-web"));
   });
+
+  it("reads the person and the shared folder, both optional", () => {
+    expect(loadConfig({})).toMatchObject({ user: null, sharedPath: null });
+    expect(loadConfig({ SCRIBEDOG_USER: " anna ", SCRIBEDOG_SHARED_PATH: "/shared" })).toMatchObject({
+      user: "anna",
+      sharedPath: path.resolve("/shared")
+    });
+    // Without a name sharing stays off at startup instead of refusing to start.
+    expect(loadConfig({ SCRIBEDOG_SHARED_PATH: "/shared" })).toMatchObject({ user: null });
+  });
+
+  it("refuses a user name that could not be a folder name", () => {
+    for (const name of ["Anna", "../anna", "anna bob", ".anna"]) {
+      expect(() => loadConfig({ SCRIBEDOG_USER: name }), name).toThrow(ConfigError);
+    }
+  });
 });
 
 describe("renderIndexHtml", () => {

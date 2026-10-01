@@ -217,9 +217,11 @@ Run the same ScribeDog on your own server (Docker, a Raspberry Pi, a NAS, a
 small VM) and use it from any browser, phone or tablet, with the same editor,
 file management, version history and AI features. The desktop app can open that
 server vault too, with its AI and dictation running on your computer. One
-password, your folder, no account.
+password, your folder, no account. Several people on one box can also keep
+shared vaults next to their own, and two of them saving the same note merge
+instead of overwriting each other.
 
-[Server Edition guide →](server/docs/README.md) · [Getting started](server/docs/getting-started.md) · [The desktop app as a client](server/docs/desktop-app.md) · [Security](server/docs/security.md) · [FAQ](server/docs/faq.md)
+[Server Edition guide →](server/docs/README.md) · [Getting started](server/docs/getting-started.md) · [The desktop app as a client](server/docs/desktop-app.md) · [Shared vaults](server/docs/multiuser.md#shared-vaults) · [Security](server/docs/security.md) · [FAQ](server/docs/faq.md)
 
 ---
 

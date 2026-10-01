@@ -111,6 +111,13 @@ In `./scribedog-data` next to the compose file, as plain `.md` files.
 Everything the app knows is in that folder. See
 [Your data and backups](data-and-backups.md).
 
+**Can several people share a vault?**
+Yes, in the multi-instance setup: next to their own vault, people can keep
+shared vaults that only the chosen members see, with a trash that keeps a
+deleted one for 30 days. See [Shared vaults](multiuser.md#shared-vaults).
+With a single instance there is one vault and one password, so sharing
+means sharing that password.
+
 **Can I edit the files directly on the server?**
 Yes, with any editor, over SSH, with a sync tool. Open browsers and desktop
 apps see the change within a second.

@@ -3,10 +3,10 @@ import type { FastifyInstance } from "fastify";
 import type { RequireSession } from "../auth/guard.js";
 import { archiveBaseName, collectExportEntries, createZipStream } from "./exportZip.js";
 import type { Vault } from "./files.js";
-import { vaultErrorHandler } from "./routes.js";
+import { attachVault, vaultErrorHandler, type VaultResolver } from "./routes.js";
 
 export type ExportRoutesOptions = {
-  vault: Vault;
+  vault: Vault | VaultResolver;
   requireSession: RequireSession;
 };
 
@@ -31,10 +31,11 @@ function attachment(fileName: string): string {
  * Mounted under `${basePath}/api`, behind requireSession like the file API.
  */
 export async function exportRoutes(app: FastifyInstance, options: ExportRoutesOptions): Promise<void> {
-  const { vault, requireSession } = options;
+  const { requireSession } = options;
 
   app.addHook("onRequest", requireSession);
   app.setErrorHandler(vaultErrorHandler);
+  attachVault(app, options.vault);
 
   app.get<{ Querystring: PathQuery }>(
     "/export/zip",
@@ -48,7 +49,7 @@ export async function exportRoutes(app: FastifyInstance, options: ExportRoutesOp
       }
     },
     async (request, reply) => {
-      const { relativePath, entries } = await collectExportEntries(vault.realPath, request.query.path);
+      const { relativePath, entries } = await collectExportEntries(request.vault!.realPath, request.query.path);
 
       return reply
         .header("cache-control", "no-store")

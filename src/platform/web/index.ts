@@ -4,10 +4,12 @@ import { secretRef } from "@/platform/secretRef";
 import type { CredentialsStatus, Platform } from "@/platform/types";
 
 import { browserDownloads } from "./downloads";
-import { subscribeToVaultChanges } from "./liveUpdates";
+import { subscribeToVaultChanges, watchRoot } from "./liveUpdates";
 import { browserLocalModels } from "./localModels";
 import { posixPaths } from "@/platform/remote/paths";
 import { REMOTE_VAULT_ROOT, remoteVaultStorage } from "./remoteStorage";
+import { sharedVaultIdOf, sharedVaultScope } from "./sharedVaultRoot";
+import { sharedVaultName, webSharedVaults } from "./sharedVaults";
 import {
   ApiError,
   getBasePath,
@@ -80,7 +82,8 @@ export const platform: Platform = {
     spellcheckDictionary: false,
     session: true,
     browserLocalModels: true,
-    remoteVaults: false
+    remoteVaults: false,
+    sharedVaults: true
   },
 
   vaultStorage: remoteVaultStorage,
@@ -90,15 +93,18 @@ export const platform: Platform = {
   vault: {
     allowFolderAccess: async () => undefined,
     allowFileAccess: async () => undefined,
-    // The change stream is per tab, not per folder (there is only one), so
-    // subscribing is what "watching" means here.
-    watchFolder: async () => undefined,
+    // One change stream per tab, pointed at the vault that was just opened:
+    // the instance's own, or a shared one under its id.
+    watchFolder: async (folderPath) => {
+      const sharedId = sharedVaultIdOf(folderPath);
+      watchRoot(folderPath, sharedId ? sharedVaultScope(sharedId) : "");
+    },
     // There are no local folders in the browser, so nothing ever goes missing.
     folderExists: async () => true,
-    // One server, one vault: nothing to choose, the session decides.
+    // The instance's own vault; shared ones are opened from the sidebar.
     getStartupFolderPath: async () => REMOTE_VAULT_ROOT,
-    onFolderFilesChanged: async (handler) => subscribeToVaultChanges(() => handler(REMOTE_VAULT_ROOT)),
-    displayName: () => `${window.location.host}${getBasePath()}`
+    onFolderFilesChanged: async (handler) => subscribeToVaultChanges(handler),
+    displayName: (folderPath) => sharedVaultName(folderPath) ?? `${window.location.host}${getBasePath()}`
   },
 
   app: {
@@ -242,5 +248,6 @@ export const platform: Platform = {
     onUnauthorized
   },
   localModels: browserLocalModels,
-  remoteVaults: null
+  remoteVaults: null,
+  sharedVaults: webSharedVaults
 };

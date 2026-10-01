@@ -245,6 +245,23 @@
 
 /* The header's save state is an icon button (DocumentPanel): accent while
    there is something to save, disabled once there is not. */
+/* Someone else has this note of a shared vault open (DocumentPanel.tsx). */
+.detail-panel__presence {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 12rem;
+  font-size: 0.82rem;
+  color: rgba(var(--muted-rgb), 0.95);
+}
+
+.detail-panel__presence span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .detail-panel__save-button {
   flex-shrink: 0;
   cursor: pointer;

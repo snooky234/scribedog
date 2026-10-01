@@ -5,7 +5,8 @@
 #
 # Every instance is a separate container with its own data folder, password
 # and session cookie (the cookie is scoped to the base path, so the two never
-# see each other's). The service names below (scribedog-1, scribedog-2) are
+# see each other's). All of them also mount ./shared, where the vaults the
+# people share with each other live (see docs/multiuser.md, "Shared vaults"). The service names below (scribedog-1, scribedog-2) are
 # internal plumbing, never seen outside this compose file: renaming a person,
 # or moving them to a different path, is a single line in .env
 # (PERSON1_BASE_PATH / PERSON2_BASE_PATH) — nothing here or in the Caddyfile
@@ -38,8 +39,13 @@ services:
       # the container hands its data folder to these ids and runs as them.
       PUID: ${PERSON1_PUID:-1000}
       PGID: ${PERSON1_PGID:-1000}
+      # Who this instance is to the others, for shared vaults.
+      SCRIBEDOG_USER: ${PERSON1_USER:-}
+      SCRIBEDOG_SHARED_PATH: /shared
+      SCRIBEDOG_SHARED_GID: ${SHARED_GID:-1500}
     volumes:
       - ./${PERSON1_DATA_DIR:-person1-data}:/data
+      - ./${SHARED_DIR:-shared}:/shared
 
   scribedog-2:
     <<: *scribedog
@@ -48,8 +54,12 @@ services:
       SCRIBEDOG_INIT_PASSWORD: ${PERSON2_INIT_PASSWORD:-}
       PUID: ${PERSON2_PUID:-1001}
       PGID: ${PERSON2_PGID:-1001}
+      SCRIBEDOG_USER: ${PERSON2_USER:-}
+      SCRIBEDOG_SHARED_PATH: /shared
+      SCRIBEDOG_SHARED_GID: ${SHARED_GID:-1500}
     volumes:
       - ./${PERSON2_DATA_DIR:-person2-data}:/data
+      - ./${SHARED_DIR:-shared}:/shared
 
   caddy:
     image: caddy:2-alpine

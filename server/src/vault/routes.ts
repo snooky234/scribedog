@@ -2,13 +2,50 @@ import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from
 
 import type { RequireSession } from "../auth/guard.js";
 import { FileLockTimeoutError } from "./fileLock.js";
+import { SharedVaultError } from "../shared/model.js";
 import { contentVersion, EntryConflictError, EntryNotFoundError, type Vault } from "./files.js";
 import { VaultPathError } from "./paths.js";
 
+/**
+ * Which vault a request works on. The instance's own vault is always the
+ * same one; a shared vault comes from the route's id and is only handed out
+ * after the access check (see server/src/shared/).
+ */
+export type VaultResolver = (request: FastifyRequest) => Promise<Vault>;
+
+declare module "fastify" {
+  interface FastifyRequest {
+    vault?: Vault;
+  }
+}
+
 export type FileRoutesOptions = {
-  vault: Vault;
+  vault: Vault | VaultResolver;
   requireSession: RequireSession;
 };
+
+/**
+ * Resolves the vault once per request, after the session check and before
+ * the handler, so a refused access check never reaches a handler and its
+ * error goes through vaultErrorHandler like any other.
+ */
+export function attachVault(app: FastifyInstance, source: Vault | VaultResolver): void {
+  const resolve: VaultResolver = typeof source === "function" ? source : async () => source;
+
+  app.addHook("preHandler", async (request) => {
+    request.vault = await resolve(request);
+  });
+}
+
+function vaultOf(request: FastifyRequest): Vault {
+  // attachVault runs for every route of the group; a handler without a vault
+  // would be a wiring mistake, not a client error.
+  if (!request.vault) {
+    throw new Error("No vault resolved for this request.");
+  }
+
+  return request.vault;
+}
 
 type PathQuery = { path?: string };
 type TextBody = { path?: unknown; content?: unknown; ifMatch?: string | null };
@@ -58,6 +95,10 @@ export function vaultErrorHandler(error: FastifyError, request: FastifyRequest, 
     return reply.code(404).send({ error: "not_found", message: error.message });
   }
 
+  if (error instanceof SharedVaultError) {
+    return reply.code(error.statusCode).send({ error: error.code === "gone" ? "vault_deleted" : error.code, message: error.message });
+  }
+
   if (error instanceof EntryConflictError) {
     return reply.code(409).send({ error: "conflict", message: error.message });
   }
@@ -83,31 +124,32 @@ export function vaultErrorHandler(error: FastifyError, request: FastifyRequest, 
  * behind requireSession.
  */
 export async function fileRoutes(app: FastifyInstance, options: FileRoutesOptions): Promise<void> {
-  const { vault, requireSession } = options;
+  const { requireSession } = options;
 
   app.addHook("onRequest", requireSession);
   app.setErrorHandler(vaultErrorHandler);
+  attachVault(app, options.vault);
 
   // Raw bodies for the binary write; JSON stays the default for everything else.
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer" }, (_request, body, done) => {
     done(null, body);
   });
 
-  app.get("/files", async () => {
-    const files = await vault.listMarkdownFiles();
+  app.get("/files", async (request) => {
+    const files = await vaultOf(request).listMarkdownFiles();
     return { files };
   });
 
   app.get<{ Querystring: PathQuery }>("/fs/entries", { schema: pathQuerySchema }, async (request) => {
-    return { entries: await vault.readDir(request.query.path) };
+    return { entries: await vaultOf(request).readDir(request.query.path) };
   });
 
   app.get<{ Querystring: PathQuery }>("/fs/stat", { schema: pathQuerySchema }, async (request) => {
-    return vault.stat(request.query.path);
+    return vaultOf(request).stat(request.query.path);
   });
 
   app.get<{ Querystring: PathQuery }>("/fs/exists", { schema: pathQuerySchema }, async (request) => {
-    return { exists: await vault.exists(request.query.path) };
+    return { exists: await vaultOf(request).exists(request.query.path) };
   });
 
   app.post<{ Body: MkdirBody }>(
@@ -123,7 +165,7 @@ export async function fileRoutes(app: FastifyInstance, options: FileRoutesOption
       }
     },
     async (request, reply) => {
-      await vault.mkdir(request.body.path, request.body.recursive === true);
+      await vaultOf(request).mkdir(request.body.path, request.body.recursive === true);
       return reply.code(204).send();
     }
   );
@@ -131,7 +173,7 @@ export async function fileRoutes(app: FastifyInstance, options: FileRoutesOption
   // The version is the token a later conditional write hands back as
   // `ifMatch` (see PUT below).
   app.get<{ Querystring: PathQuery }>("/fs/text", { schema: pathQuerySchema }, async (request) => {
-    return vault.readTextVersioned(request.query.path);
+    return vaultOf(request).readTextVersioned(request.query.path);
   });
 
   app.put<{ Body: TextBody }>(
@@ -159,11 +201,11 @@ export async function fileRoutes(app: FastifyInstance, options: FileRoutesOption
       // the version the client built on (null: still absent); otherwise 409
       // with what is there now, so the client can merge at once.
       if (ifMatch === undefined) {
-        const { mtimeMs } = await vault.writeText(path, content as string);
+        const { mtimeMs } = await vaultOf(request).writeText(path, content as string);
         return { mtimeMs, version: contentVersion(content as string) };
       }
 
-      const result = await vault.writeTextIfMatch(path, content as string, ifMatch);
+      const result = await vaultOf(request).writeTextIfMatch(path, content as string, ifMatch);
 
       if (!result.ok) {
         return reply.code(409).send({
@@ -178,7 +220,7 @@ export async function fileRoutes(app: FastifyInstance, options: FileRoutesOption
   );
 
   app.get<{ Querystring: PathQuery }>("/fs/file", { schema: pathQuerySchema }, async (request, reply) => {
-    const bytes = await vault.readBytes(request.query.path);
+    const bytes = await vaultOf(request).readBytes(request.query.path);
 
     return reply.header("cache-control", "no-cache").type(contentTypeFor(request.query.path ?? "")).send(bytes);
   });
@@ -188,7 +230,7 @@ export async function fileRoutes(app: FastifyInstance, options: FileRoutesOption
       return reply.code(415).send({ error: "unsupported_media_type", message: "Send the file as application/octet-stream." });
     }
 
-    return vault.writeBytes(request.query.path, request.body);
+    return vaultOf(request).writeBytes(request.query.path, request.body);
   });
 
   app.post<{ Body: RenameBody }>(
@@ -204,7 +246,7 @@ export async function fileRoutes(app: FastifyInstance, options: FileRoutesOption
       }
     },
     async (request, reply) => {
-      await vault.rename(request.body.from, request.body.to);
+      await vaultOf(request).rename(request.body.from, request.body.to);
       return reply.code(204).send();
     }
   );
@@ -222,7 +264,7 @@ export async function fileRoutes(app: FastifyInstance, options: FileRoutesOption
       }
     },
     async (request, reply) => {
-      await vault.remove(request.body.path, request.body.recursive === true);
+      await vaultOf(request).remove(request.body.path, request.body.recursive === true);
       return reply.code(204).send();
     }
   );

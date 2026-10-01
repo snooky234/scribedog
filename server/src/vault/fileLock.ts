@@ -24,6 +24,18 @@ export type FileLocks = {
 const DEFAULT_TIMEOUT_MS = 2_000;
 const DEFAULT_STALE_MS = 30_000;
 
+/**
+ * Whether creating the lock file failed because someone else holds the lock.
+ * On Windows a lock file another process has just deleted lingers for a
+ * moment in a "delete pending" state, and creating it again fails with EPERM
+ * instead of succeeding; there that means "wait", too. Elsewhere EPERM is a
+ * real permission problem (a shared folder without the right group, say) and
+ * must surface as one, not hide behind a lock timeout.
+ */
+function isTakenError(code: string | undefined): boolean {
+  return code === "EEXIST" || (process.platform === "win32" && code === "EPERM");
+}
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -63,7 +75,7 @@ export function createFileLocks(lockDirectory: string, options: FileLockOptions 
         await handle.close();
         return;
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+        if (!isTakenError((error as NodeJS.ErrnoException).code)) {
           throw error;
         }
       }

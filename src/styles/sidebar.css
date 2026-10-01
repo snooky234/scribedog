@@ -239,3 +239,43 @@
   flex: none;
   color: rgba(var(--muted-rgb),0.9);
 }
+
+/* "<who> deleted <vault>", once per member (components/shared/SharedVaultSwitcher.tsx). */
+.shared-vault-notices {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.shared-vault-notices__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  border: 1px solid rgba(var(--overlay-rgb),0.1);
+  border-radius: 0.8rem;
+  background: rgba(var(--surface-rgb),0.6);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.82rem;
+  color: rgba(var(--text-rgb),0.8);
+}
+
+.shared-vault-notices__item span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.shared-vault-notices__dismiss {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: rgba(var(--muted-rgb),0.9);
+  border-radius: 0.4rem;
+  padding: 0.15rem;
+  cursor: pointer;
+}
+
+.shared-vault-notices__dismiss:hover {
+  background: rgba(var(--surface-hover-rgb), 0.92);
+}

@@ -1,9 +1,10 @@
 # Multiple users on one host
 
 ScribeDog has one password and one vault per instance, on purpose: there are
-no accounts, no sharing rules and no permissions to get wrong. Two or more
-people on one box therefore get one instance each, every one under its own
-path prefix, behind a single shared Caddy.
+no accounts to manage and no permissions on your own notes to get wrong. Two
+or more people on one box therefore get one instance each, every one under
+its own path prefix, behind a single shared Caddy. On top of that, they can
+keep [shared vaults](#shared-vaults) that several of them open.
 [`examples/multi-instance/`](../examples/multi-instance/) is a complete
 compose file for that: two ready-made slots, `PERSON1` and `PERSON2`
 (`anna`/`bob` by default), as a starting template.
@@ -104,8 +105,10 @@ applies unchanged, one instance at a time:
 1. Open `docker-compose.yml` and:
    - Copy the last `scribedog-<N>` service block, bump the number
      (`scribedog-2` copied becomes `scribedog-3`), and point its
-     `SCRIBEDOG_BASE_PATH`, `SCRIBEDOG_INIT_PASSWORD`, `PUID`, `PGID` and
-     volume at the matching `PERSON3_*` variables.
+     `SCRIBEDOG_BASE_PATH`, `SCRIBEDOG_INIT_PASSWORD`, `PUID`, `PGID`,
+     `SCRIBEDOG_USER` and data volume at the matching `PERSON3_*` variables.
+     Keep the `/shared` volume and the other two `SCRIBEDOG_SHARED_*` lines
+     as they are: every instance mounts the same folder.
    - Add `- scribedog-3` to the `caddy` service's `depends_on:` list.
    - Add `PERSON3_BASE_PATH: ${PERSON3_BASE_PATH:-/PERSON3_UNSET}` to the
      `caddy` service's `environment:` block, next to
@@ -119,7 +122,8 @@ applies unchanged, one instance at a time:
    ```
 3. Open `.env` and add the `PERSON3_*` group next to the other two:
    `PERSON3_INIT_PASSWORD=` (eight characters or more), `PERSON3_BASE_PATH=/carol`
-   (or whatever path you want), `PERSON3_DATA_DIR=carol-data` and
+   (or whatever path you want), `PERSON3_USER=carol` (their name in shared
+   vaults), `PERSON3_DATA_DIR=carol-data` and
    `PERSON3_PUID`/`PERSON3_PGID` (their own Linux user, see [Keeping the
    folders apart](#keeping-the-folders-apart)). Leaving the last three out
    means the folder gets the fallback name from the copied service block and
@@ -198,3 +202,96 @@ The container starts as root, hands the folder to that user and drops to it,
 so the files it writes stay that user's. This keeps ordinary users out of
 each other's notes; it does not keep root out, and nothing on the host can
 (see [Security](security.md)).
+
+The start script runs the server with `umask 002` when shared vaults are set
+up, so the shared folder stays writable for the group. Files in a person's
+own data folder are then group-writable too, for their own group; with a
+Linux user and group of their own per person, as above, that is nobody else.
+
+## Shared vaults
+
+Next to their own vault, the people of a multi-instance setup can keep vaults
+together: "Familie" for three of them, "Haushalt" for two. Whoever creates
+one picks a name and the members, and only members see it. The creator can
+rename it, change the members and delete it; a member can leave on their
+own. Someone taken off a vault loses access at once, open tabs included.
+
+Each shared vault is a complete vault of its own (notes, `images/`, version
+history), not a folder inside somebody's vault. Two people saving the same
+note do not overwrite each other: changes at different places are merged,
+and overlapping ones are asked about (see
+[Editing from more than one place](data-and-backups.md#editing-from-more-than-one-place)).
+Chat history and the agent's pending proposals stay personal: each person
+has their own in `.scribedog/users/<name>/` inside the shared vault.
+
+### Using them
+
+Once sharing is set up, the vault name at the top of the sidebar becomes a
+menu: **My vault**, then every shared vault you are in, then
+**New shared vault…** and **Manage shared vaults…**.
+
+| Where | What it does |
+| --- | --- |
+| **New shared vault…** | A name and the people to share with. The new vault opens right away. |
+| **Manage shared vaults…** | Every shared vault you are in, with who created it and who is in it. The creator can edit (name, members) and delete; everyone else can leave. Your deleted vaults are listed under **Trash** with the date they go for good, and can be restored until then. |
+| The file tree and the note's header | A people icon on a note someone else has open right now, and their name next to the save button when it is the note you have open. It is a hint, nothing is locked. |
+
+When a vault you have open is deleted, or you are taken off it, a message
+says so and takes you back to your own vault. Members who were not there
+when it was deleted see a one-time note under the vault name.
+
+> **In the browser for now.** Shared vaults are opened and managed in the
+> browser. The desktop app, connected to your instance, opens your own vault.
+
+### Setting it up
+
+The example compose file already has everything; what it needs from you is in
+`.env`:
+
+| Variable | What it is |
+| --- | --- |
+| `PERSON<N>_USER` | The person's name for the others, e.g. `anna`. Lowercase letters, digits, `-` and `_`. Pick it once: a changed name is a different person to the shared vaults. Leave it empty to keep that instance out of sharing. |
+| `SHARED_DIR` | The folder for shared vaults, next to the data folders. `shared` by default. |
+| `SHARED_GID` | A group id that is free on the host (`getent group 1500` prints nothing). The shared folder belongs to this group. |
+
+A person can be picked as a member once their instance has started at least
+once with a name.
+
+### Who can write where
+
+Every instance runs as its own Linux user (see
+[Keeping the folders apart](#keeping-the-folders-apart)), so the shared folder
+cannot belong to any one of them. It belongs to the `SHARED_GID` group
+instead, and each container adds its user to that group when it starts. All
+folders inside carry the setgid bit, so whatever anyone creates there keeps
+the group, and the server writes with `umask 002`, so it stays writable for
+the others. The start script repairs group and modes when it finds something
+off, for example after files were copied in by hand.
+
+> **The rule is kept by the app, not by the disk.** Every instance can read
+> every shared vault on disk; which person may open which vault is decided by
+> the server on each request. The people in this setup can therefore not
+> keep a shared vault from each other's *container*, only from each other in
+> the app. Root on the host sees everything anyway (see [Security](security.md)).
+
+### Deleting and the trash
+
+Deleting a shared vault asks first and then moves it to `shared/.trash/`. It
+stays there for 30 days; until then the creator can restore it. The other
+members see a one-time note that it was deleted, and anyone who has it open
+is told so instead of meeting an error. After the 30 days every instance's
+daily clean-up removes it for good.
+
+### On disk
+
+```text
+shared/
+├── .scribedog/registry.json   which vaults exist, their names and members
+├── .trash/                    deleted vaults, for 30 days
+├── familie-7f3a/              a vault: the name at creation plus a short id
+└── haushalt-0c12/
+```
+
+The folder name is made once from the name the vault was created with and
+never changes, so renaming a vault touches nothing on disk. The registry is
+plain JSON written by the instances; edit it only with all of them stopped.

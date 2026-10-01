@@ -69,9 +69,40 @@ export type ServerConfig = {
    * copies it to.
    */
   webDistDir: string;
+  /**
+   * The person this instance serves, in a multi-instance setup where people
+   * share vaults. Also the folder name of their own sidecars in a shared
+   * vault, hence the slug rule. Null outside such a setup.
+   */
+  user: string | null;
+  /**
+   * The folder every instance of the setup mounts for shared vaults. Sharing
+   * is on only when both this and `user` are set; a folder without a user
+   * leaves it off with a warning at startup rather than refusing to start,
+   * so a compose file updated ahead of its .env keeps running.
+   */
+  sharedPath: string | null;
 };
 
 export class ConfigError extends Error {}
+
+const USER_NAME_PATTERN = /^[a-z0-9][a-z0-9_-]{0,31}$/;
+
+export function parseUser(raw: string | undefined): string | null {
+  const value = raw?.trim() ?? "";
+
+  if (!value) {
+    return null;
+  }
+
+  if (!USER_NAME_PATTERN.test(value)) {
+    throw new ConfigError(
+      `SCRIBEDOG_USER "${raw}" is not usable. Use lowercase letters, digits, "-" and "_" (up to 32), e.g. "anna".`
+    );
+  }
+
+  return value;
+}
 
 const BASE_PATH_SEGMENT = /^[A-Za-z0-9._~-]+$/;
 
@@ -224,6 +255,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     loginLockSeconds: parseInteger(env.SCRIBEDOG_LOGIN_LOCK_SECONDS, 60, "SCRIBEDOG_LOGIN_LOCK_SECONDS"),
     loginLockMaxSeconds: parseInteger(env.SCRIBEDOG_LOGIN_LOCK_MAX_SECONDS, 900, "SCRIBEDOG_LOGIN_LOCK_MAX_SECONDS"),
     allowedOrigins: parseOrigins(env.SCRIBEDOG_ALLOWED_ORIGINS),
-    llmAllowedHosts: parseList(env.SCRIBEDOG_LLM_ALLOWED_HOSTS, DEFAULT_LLM_HOSTS).map((host) => host.toLowerCase())
+    llmAllowedHosts: parseList(env.SCRIBEDOG_LLM_ALLOWED_HOSTS, DEFAULT_LLM_HOSTS).map((host) => host.toLowerCase()),
+    ...parseSharing(env)
   };
+}
+
+function parseSharing(env: NodeJS.ProcessEnv): { user: string | null; sharedPath: string | null } {
+  const user = parseUser(env.SCRIBEDOG_USER);
+  const rawSharedPath = env.SCRIBEDOG_SHARED_PATH?.trim();
+  const sharedPath = rawSharedPath ? path.resolve(rawSharedPath) : null;
+
+  return { user, sharedPath };
 }

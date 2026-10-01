@@ -60,6 +60,14 @@ curl -s 'https://notes.example.com/api/export/zip?path=' -H 'authorization: Bear
 | `GET`/`POST` | `/api/llm/request` | forwards one request to the AI provider named in `X-Scribedog-Llm-Url` |
 | `GET` | `/api/events` | WebSocket; sends `{"type":"files-changed"}` when the vault changes on disk. A socket opened with an access key is closed when that key is revoked. |
 | `GET` | `/api/health` | liveness probe |
+| `GET` | `/api/shared` | `{ "enabled": false }`, or the [shared vaults](#shared-vaults) of this instance's person: `me`, `people`, `vaults`, `trash`, `notices` |
+| `POST` | `/api/shared/vaults` | `{ "name": "…", "members": ["bob"] }` creates a shared vault (201) |
+| `PATCH` | `/api/shared/vaults/:id` | `{ "name": "…", "members": […] }` renames or changes members (creator only) |
+| `POST` | `/api/shared/vaults/:id/leave` | leaves the vault (members, not the creator) |
+| `DELETE` | `/api/shared/vaults/:id` | moves it to the trash (creator only); answers `{ "purgeAt": … }` |
+| `POST` | `/api/shared/vaults/:id/restore` | takes it back out of the trash (creator only) |
+| `POST` | `/api/shared/notices/:id/dismiss` | hides a "vault was deleted" notice for this person |
+| | `/api/v/:id/…` | the shared vault's own `/files`, `/fs/*`, `/export/zip` and `/events`, same shapes as above |
 
 ## Paths
 
@@ -101,14 +109,34 @@ is there now, so a client can merge without asking again:
 `/fs/text` takes `ifMatch`; images and the app's own files in `.scribedog/`
 are written unconditionally.
 
+## Shared vaults
+
+On an instance that is part of a [shared-vault setup](multiuser.md#shared-vaults),
+every request speaks for that instance's person. A shared vault answers the
+same file API as the instance's own vault, under `/api/v/<id>/`: reading
+takes membership, everything else takes the right to write (in this version
+every member has it). A vault the person is not in answers 404, exactly like
+one that does not exist, so the API does not tell anyone which vaults the
+others have. A deleted one answers 410 with `vault_deleted`.
+
+Inside a shared vault `.scribedog/users/<name>/` holds each person's own
+files (chat history, pending agent proposals); the other people's folders
+there are refused like `.scribedog/server/`.
+
+The `/events` socket of a shared vault closes with code `4003` when the
+person is taken off the vault (or leaves it on another device) and `4004`
+when it is deleted; `4001` still means the access key was revoked.
+
 ## Errors
 
 Errors come back as JSON: `{ "error": "<code>", "message": "..." }`. The
 codes you will meet: `unauthorized` (401), `invalid_password` (401),
 `too_many_attempts` (429, with `retryAfterSeconds`), `forbidden_origin`
 (403), `not_found` (404), `weak_password` (400), `version_conflict` (409,
-see [Conditional writes](#conditional-writes)) and `locked` (503: the file
-was being written by someone else for longer than two seconds; try again).
+see [Conditional writes](#conditional-writes)), `locked` (503: the file
+was being written by someone else for longer than two seconds; try again),
+and for shared vaults `forbidden` (403: only the creator may do that) and
+`vault_deleted` (410).
 
 ## Cross-site requests
 

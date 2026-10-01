@@ -22,6 +22,13 @@
   apps' access keys). It is created on first start with mode `0600` and is
   the one place the file API never reaches.
 
+In a multi-instance setup with [shared vaults](multiuser.md#shared-vaults)
+there is one more folder, `./shared`, mounted into every instance: one
+subfolder per shared vault (the same layout as above, except that chat
+history and pending agent proposals sit in `.scribedog/users/<name>/`, one
+folder per person), the registry of who is in which vault in
+`shared/.scribedog/`, and deleted vaults in `shared/.trash/` for 30 days.
+
 Because it is a plain folder, everything that works with folders works with
 it: open it in another editor over SSH, grep it, put it under version
 control, sync it with another tool. Changes made on the host show up in open
@@ -80,6 +87,10 @@ for example every night:
 # once: restic init --repo /backup/scribedog   (or an S3/SFTP/rclone target)
 0 3 * * * restic --repo /backup/scribedog backup /srv/scribedog/scribedog-data && restic --repo /backup/scribedog forget --keep-daily 14 --keep-weekly 8 --prune
 ```
+
+In a multi-instance setup, back up every data folder and `./shared` (shared
+vaults, their registry and the trash) the same way; the trash only keeps a
+deleted vault for 30 days.
 
 Backing up while the app is running is fine: the folder holds small text and
 JSON files that are written one at a time, there is no database with locks or

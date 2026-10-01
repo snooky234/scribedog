@@ -161,7 +161,32 @@ export type Vault = {
   remove(rawPath: unknown, recursive: boolean): Promise<void>;
 };
 
-export async function openVault(vaultPath: string): Promise<Vault> {
+export type OpenVaultOptions = {
+  /**
+   * Set for a vault several people share: the person the requests come from.
+   * Each of them keeps their own sidecars (chat history, pending agent
+   * proposals) in `.scribedog/users/<user>/`, and the other people's folders
+   * there are off limits, the way `.scribedog/server/` is for everyone.
+   */
+  user?: string;
+};
+
+/** Where a shared vault keeps one person's sidecars; mirrors src/lib/userMeta.ts. */
+const USERS_DIR_SEGMENT = "users";
+
+function assertOwnUserDir(relativePath: string, user: string | undefined): void {
+  if (user === undefined) {
+    return;
+  }
+
+  const segments = relativePath.toLowerCase().split("/");
+
+  if (segments[0] === VAULT_META_DIR_NAME && segments[1] === USERS_DIR_SEGMENT && segments.length > 2 && segments[2] !== user) {
+    throw new VaultPathError(`"${relativePath}" belongs to someone else.`);
+  }
+}
+
+export async function openVault(vaultPath: string, vaultOptions: OpenVaultOptions = {}): Promise<Vault> {
   let realPath: string;
 
   try {
@@ -176,6 +201,7 @@ export async function openVault(vaultPath: string): Promise<Vault> {
 
   async function resolve(rawPath: unknown, options: { allowRoot?: boolean } = {}) {
     const relativePath = assertVaultPath(rawPath, options);
+    assertOwnUserDir(relativePath, vaultOptions.user);
     const absolutePath = await resolveVaultEntry(realPath, relativePath);
 
     return { relativePath, absolutePath };

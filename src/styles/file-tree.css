@@ -357,6 +357,14 @@
   opacity: 0.85;
 }
 
+/* Someone else has this note of a shared vault open (TreeNodeRow.tsx). */
+.file-tree__presence {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  color: rgba(var(--muted-rgb), 0.95);
+}
+
 /* The pin (fileTree/PinToggle.tsx), in the tree and in the "In progress"
    list alike: always there on a pinned note, on the others only while the
    mouse is over the row, so neither list grows a column of pins nobody set.

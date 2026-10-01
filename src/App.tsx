@@ -79,6 +79,8 @@ import { useRagSettingsStore } from "@/store/useRagSettingsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useNavigationHistoryStore } from "@/store/useNavigationHistoryStore";
 import { useSessionStore } from "@/store/useSessionStore";
+import { useSharedVaultsStore } from "@/store/useSharedVaultsStore";
+import { SharedVaultDialogs } from "@/components/shared/SharedVaultDialogs";
 import { useShortcutsStore } from "@/store/useShortcutsStore";
 
 import "./App.css";
@@ -871,6 +873,50 @@ function App() {
 
   useStartupFolder(openFolderAtPath);
   useFolderWatcher(refreshFolderFiles);
+
+  // Shared vaults (a multi-instance server): the list is fetched once a vault
+  // is open, which is also the moment a session is known to exist, and again
+  // on every switch, so a vault someone just shared shows up without a reload.
+  useEffect(() => {
+    if (folderPath && platform.sharedVaults) {
+      void useSharedVaultsStore.getState().refresh();
+    }
+  }, [folderPath]);
+
+  // Presence in a shared vault: which note this person has open goes to the
+  // others, and who else has which note open comes back. Starts empty on
+  // every switch, so nothing of the previous vault lingers in the tree.
+  useEffect(() => {
+    if (folderPath && platform.sharedVaults) {
+      useSharedVaultsStore.getState().setPresence(folderPath, []);
+    }
+  }, [folderPath]);
+
+  useEffect(() => {
+    const api = platform.sharedVaults;
+
+    if (api && folderPath && api.idOf(folderPath)) {
+      api.setOpenNote(folderPath, selectedFilePath ? getRelativeDisplayPath(folderPath, selectedFilePath) : null);
+    }
+  }, [folderPath, selectedFilePath]);
+
+  useEffect(() => {
+    return platform.sharedVaults?.onPresence((presenceFolderPath, editors) => {
+      if (useAppStore.getState().folderPath === presenceFolderPath) {
+        useSharedVaultsStore.getState().setPresence(presenceFolderPath, editors);
+      }
+    });
+  }, []);
+
+  // The open shared vault was deleted or the person taken off it: the dialog
+  // says so and leads back to their own vault.
+  useEffect(() => {
+    return platform.sharedVaults?.onAccessLost((lostFolderPath, reason) => {
+      if (useAppStore.getState().folderPath === lostFolderPath) {
+        useSharedVaultsStore.getState().markLost(lostFolderPath, reason);
+      }
+    });
+  }, []);
   const remoteVaultDialog = useRemoteVaultDialog({ openVault: openRecentFolderSafely });
 
   // The open note is remembered per vault and per device, and opened again
@@ -1200,6 +1246,11 @@ function App() {
           {notice}
         </div>
       ) : null}
+
+      <SharedVaultDialogs
+        onOpenVault={(targetFolderPath) => void openRecentFolderSafely(targetFolderPath)}
+        onForceOpenVault={(targetFolderPath) => void openFolderAtPath(targetFolderPath)}
+      />
 
       <AppDialogs
         closingFileLabel={

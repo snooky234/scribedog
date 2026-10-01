@@ -1,5 +1,10 @@
 import { SessionError } from "@/platform/errors";
-import type { ConditionalWriteResult, VersionedText } from "@/platform/types";
+import type {
+  ConditionalWriteResult,
+  SharedOverview,
+  SharedVaultInfo,
+  VersionedText
+} from "@/platform/types";
 
 /**
  * The HTTP client for the ScribeDog server, mirroring the routes in
@@ -85,6 +90,15 @@ export type ServerTransport = {
   fetch(apiPath: string, init: TransportInit): Promise<Response>;
 };
 
+/**
+ * The same server, one level down: a shared vault answers the very file API
+ * of the instance's own vault under `/v/<id>` (server/src/app.ts), so its
+ * client is the ordinary one over a transport that adds the prefix.
+ */
+export function scopedTransport(transport: ServerTransport, prefix: string): ServerTransport {
+  return { fetch: (apiPath, init) => transport.fetch(`${prefix}${apiPath}`, init) };
+}
+
 type RequestOptions = {
   method?: string;
   headers?: Record<string, string>;
@@ -100,8 +114,17 @@ type RequestOptions = {
 
 const withPath = (route: string, path: string) => `${route}?path=${encodeURIComponent(path)}`;
 
-export function createServerApi(transport: ServerTransport) {
-  const unauthorizedHandlers = new Set<() => void>();
+export type ServerApiOptions = {
+  /**
+   * Handlers for a refused session, shared with another client of the same
+   * server: a shared vault's client (see scopedTransport) has to bring up
+   * the same sign-in as the instance's own one.
+   */
+  unauthorizedHandlers?: Set<() => void>;
+};
+
+export function createServerApi(transport: ServerTransport, options: ServerApiOptions = {}) {
+  const unauthorizedHandlers = options.unauthorizedHandlers ?? new Set<() => void>();
 
   function onUnauthorized(handler: () => void): () => void {
     unauthorizedHandlers.add(handler);
@@ -233,12 +256,35 @@ export function createServerApi(transport: ServerTransport) {
         // ended"; it must not pull the login form over a settings dialog.
         isLogin: true
       }),
+    /** Null when the server is not part of a shared-vault setup. */
+    async sharedOverview(): Promise<SharedOverview | null> {
+      const overview = await request<({ enabled: true } & SharedOverview) | { enabled: false }>("/shared");
+
+      if (!overview.enabled) {
+        return null;
+      }
+
+      const { enabled: _enabled, ...rest } = overview;
+      return rest;
+    },
+    createSharedVault: (name: string, members: string[]) =>
+      request<SharedVaultInfo>("/shared/vaults", { method: "POST", body: JSON.stringify({ name, members }) }),
+    updateSharedVault: (id: string, changes: { name?: string; members?: string[] }) =>
+      request<SharedVaultInfo>(`/shared/vaults/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(changes) }),
+    leaveSharedVault: (id: string) =>
+      request<void>(`/shared/vaults/${encodeURIComponent(id)}/leave`, { method: "POST" }),
+    deleteSharedVault: (id: string) =>
+      request<{ purgeAt: number }>(`/shared/vaults/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    restoreSharedVault: (id: string) =>
+      request<SharedVaultInfo>(`/shared/vaults/${encodeURIComponent(id)}/restore`, { method: "POST" }),
+    dismissSharedNotice: (id: string) =>
+      request<void>(`/shared/notices/${encodeURIComponent(id)}/dismiss`, { method: "POST" }),
     secretStatus: () => request<RemoteSecretStatus>("/secrets"),
     storeSecret: (id: string, value: string) =>
       request<void>(`/secrets/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify({ value }) })
   };
 
-  return { api, onUnauthorized };
+  return { api, onUnauthorized, unauthorizedHandlers };
 }
 
 export type ServerApi = ReturnType<typeof createServerApi>["api"];

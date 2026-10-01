@@ -9,7 +9,8 @@ import {
   PanelLeft,
   Pencil,
   Save,
-  Square
+  Square,
+  Users
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -29,6 +30,8 @@ import type { FileVersion } from "@/lib/fileVersions";
 import { cn } from "@/lib/utils";
 import { getVaultCapabilities, vaultCapabilityHint } from "@/platform";
 import { useAppStore } from "@/store/useAppStore";
+import { useSharedVaultsStore } from "@/store/useSharedVaultsStore";
+import { getRelativeDisplayPath } from "@/lib/fileSystem";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
 import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
@@ -242,6 +245,20 @@ export function DocumentPanel({
     (state) => selectedFilePath !== null && state.mergeReview?.filePath === selectedFilePath
   );
   const isAutoSavePending = autoSaveEnabled && isDirty && !isSelectedFileMissing && !hasSaveConflict;
+  // Who else has this note of a shared vault open; a hint, never a lock. One
+  // string, since a selector must not hand out a fresh array every time.
+  const presentUsers = useSharedVaultsStore((state) => {
+    if (!state.presence || !folderPath || !selectedFilePath || state.presence.folderPath !== folderPath) {
+      return "";
+    }
+
+    const relativePath = getRelativeDisplayPath(folderPath, selectedFilePath);
+
+    return state.presence.editors
+      .filter((editor) => editor.path === relativePath)
+      .map((editor) => editor.user)
+      .join(", ");
+  });
   // The save button's label: visible text on the desktop, the accessible
   // name of the icon-only button on phone and tablet.
   const saveStateLabel = isSaving || isAutoSavePending
@@ -478,6 +495,17 @@ export function DocumentPanel({
                   triggerHidden={layout === "phone"}
                   openRequestId={versionsRequestId}
                 />
+              ) : null}
+              {presentUsers ? (
+                <span
+                  className="detail-panel__presence"
+                  title={t("sharedVaults.presence", { names: presentUsers })}
+                  aria-label={t("sharedVaults.presence", { names: presentUsers })}
+                  data-testid="note-presence"
+                >
+                  <Users className="size-4" aria-hidden="true" />
+                  {layout === "desktop" ? <span>{presentUsers}</span> : null}
+                </span>
               ) : null}
               {/* The thing showing the save state is also what saves, on
                   every layout: without a keyboard there is no Ctrl+S, and

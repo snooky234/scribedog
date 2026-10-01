@@ -13,10 +13,12 @@ import type { ServerConfig } from "./config.js";
 import { llmRoutes } from "./llm/proxyRoutes.js";
 import { secretRoutes } from "./secrets/routes.js";
 import type { SecretStore } from "./secrets/secretStore.js";
+import { sharedRoutes } from "./shared/routes.js";
+import type { SharedVaults } from "./shared/service.js";
 import { eventRoutes } from "./vault/eventRoutes.js";
 import { exportRoutes } from "./vault/exportRoutes.js";
 import type { Vault } from "./vault/files.js";
-import { fileRoutes } from "./vault/routes.js";
+import { fileRoutes, type VaultResolver } from "./vault/routes.js";
 import type { VaultWatcher } from "./vault/watcher.js";
 import { staticSite } from "./web/staticSite.js";
 
@@ -30,6 +32,8 @@ export type AppDependencies = {
   vault: Vault;
   /** Change signal for the live file list; omitted in tests that do not need it. */
   watcher?: VaultWatcher;
+  /** Vaults shared with the other people of a multi-instance setup; absent when not configured. */
+  shared?: SharedVaults | null;
   /** Built web client directory; omitted in tests that only exercise the API. */
   webDistDir?: string;
   logger?: FastifyServerOptions["logger"];
@@ -104,7 +108,37 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
       });
 
       if (deps.watcher) {
-        await scoped.register(eventRoutes, { watcher: deps.watcher, tokens, requireSession, prefix: "/api" });
+        await scoped.register(eventRoutes, { source: deps.watcher, tokens, requireSession, prefix: "/api" });
+      }
+
+      await scoped.register(sharedRoutes, { shared: deps.shared ?? null, requireSession, prefix: "/api/shared" });
+
+      // A shared vault answers the very same file, export and event API as
+      // the instance's own vault, one level down under its id. The vault is
+      // resolved per request, through the access check: reading takes
+      // membership, everything else the right to write.
+      if (deps.shared) {
+        const shared = deps.shared;
+        const vaultIdOf = (request: { params: unknown }) => (request.params as { vaultId?: string }).vaultId ?? "";
+        const resolveSharedVault: VaultResolver = (request) =>
+          shared.open(vaultIdOf(request), request.method === "GET" || request.method === "HEAD" ? "read" : "write");
+        const prefix = "/api/v/:vaultId";
+
+        await scoped.register(fileRoutes, { vault: resolveSharedVault, requireSession, prefix });
+        await scoped.register(exportRoutes, { vault: resolveSharedVault, requireSession, prefix });
+        await scoped.register(eventRoutes, {
+          source: {
+            prepare: async (request) => {
+              await shared.open(vaultIdOf(request), "read");
+            },
+            subscribe: (request, handler) => shared.subscribeFiles(vaultIdOf(request), handler),
+            watchAccess: (request, onLost) => shared.watchAccess(vaultIdOf(request), onLost),
+            presence: (request, push) => shared.joinPresence(vaultIdOf(request), push)
+          },
+          tokens,
+          requireSession,
+          prefix
+        });
       }
 
       if (deps.webDistDir) {

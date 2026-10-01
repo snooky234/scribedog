@@ -234,6 +234,87 @@ export type VaultAccessApi = {
   displayName(folderPath: string): string;
 };
 
+export type SharedVaultMember = { user: string; role: "editor" };
+
+/** A vault shared between people of a multi-instance server setup. */
+export type SharedVaultInfo = {
+  id: string;
+  name: string;
+  creator: string;
+  members: SharedVaultMember[];
+  isCreator: boolean;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type SharedTrashInfo = SharedVaultInfo & { deletedAt: number; purgeAt: number };
+
+/** "<creator> deleted <vault>", shown once to each other member. */
+export type SharedNoticeInfo = {
+  id: string;
+  kind: "vault-deleted";
+  vaultId: string;
+  vaultName: string;
+  by: string;
+  at: number;
+};
+
+export type SharedOverview = {
+  /** The person this server instance serves. */
+  me: string;
+  /** Everyone who can be picked as a member. */
+  people: string[];
+  vaults: SharedVaultInfo[];
+  /** The person's own deleted vaults, restorable until `purgeAt`. */
+  trash: SharedTrashInfo[];
+  notices: SharedNoticeInfo[];
+};
+
+/** Someone else who has a note of the open shared vault open. */
+export type SharedPresenceEditor = { user: string; path: string };
+
+/** Why an open shared vault can no longer be used. */
+export type SharedVaultLoss = "removed" | "deleted";
+
+/**
+ * Vaults the people of a multi-instance setup share (server/docs/multiuser.md).
+ * Each one is a vault of its own with a virtual root of its own, so the store,
+ * the per-vault markers and every sidecar work on it unchanged.
+ */
+export type SharedVaultsApi = {
+  /** Null when the server is not part of a shared-vault setup. */
+  overview(): Promise<SharedOverview | null>;
+  create(name: string, members: string[]): Promise<SharedVaultInfo>;
+  update(id: string, changes: { name?: string; members?: string[] }): Promise<SharedVaultInfo>;
+  leave(id: string): Promise<void>;
+  /** Into the trash; resolves to when it will be purged. */
+  remove(id: string): Promise<{ purgeAt: number }>;
+  restore(id: string): Promise<SharedVaultInfo>;
+  dismissNotice(id: string): Promise<void>;
+  /** The root of the instance's own vault, where "back to my vault" goes. */
+  homeRoot: string;
+  /** The virtual root a shared vault is opened at. */
+  rootFor(id: string): string;
+  /** The id behind a virtual root, or null for any other folder. */
+  idOf(folderPath: string): string | null;
+  /**
+   * The storage for a shared vault's root, null for any other folder. Also
+   * registers the person the vault is opened as, which is what puts their
+   * chat history and proposals in a folder of their own (src/lib/userMeta.ts).
+   */
+  storageFor(folderPath: string): Promise<VaultStorage | null>;
+  /** Told when the open shared vault was deleted or the person taken off it. */
+  onAccessLost(handler: (folderPath: string, reason: SharedVaultLoss) => void): () => void;
+  /**
+   * Which note this person has open in the shared vault at `folderPath`
+   * (vault-relative, null for none), so the others can see it. A hint for
+   * them, never a lock.
+   */
+  setOpenNote(folderPath: string, relativePath: string | null): void;
+  /** Who else has which note of the open shared vault open, whenever that changes. */
+  onPresence(handler: (folderPath: string, editors: SharedPresenceEditor[]) => void): () => void;
+};
+
 export type VoiceModelStatus = {
   downloaded: boolean;
   downloading: boolean;
@@ -473,6 +554,8 @@ export type PlatformFeatures = {
   session: boolean;
   /** Vaults on a ScribeDog server next to local folders (see RemoteVaultsApi). */
   remoteVaults: boolean;
+  /** Vaults shared with other people of a multi-instance server (see SharedVaultsApi). */
+  sharedVaults: boolean;
   /**
    * Local model servers are reached by the browser itself (see
    * LocalModelsApi), so their failures need explaining and the settings a
@@ -520,4 +603,5 @@ export type Platform = {
   session: SessionApi | null;
   localModels: LocalModelsApi | null;
   remoteVaults: RemoteVaultsApi | null;
+  sharedVaults: SharedVaultsApi | null;
 };

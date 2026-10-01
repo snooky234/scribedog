@@ -28,7 +28,7 @@ export function getBasePath(): string {
   return content;
 }
 
-const browserTransport: ServerTransport = {
+export const browserTransport: ServerTransport = {
   fetch: (apiPath, init) =>
     fetch(`${getBasePath()}/api${apiPath}`, {
       method: init.method,
@@ -42,6 +42,8 @@ const client = createServerApi(browserTransport);
 
 export const serverApi = client.api;
 export const onUnauthorized = client.onUnauthorized;
+/** For the clients of shared vaults, so a refused session signs out everywhere at once. */
+export const unauthorizedHandlers = client.unauthorizedHandlers;
 
 /** Where `platform.http.fetch` sends a cloud AI request; see web/index.ts. */
 const LLM_PROXY_PATH = "/llm/request";
@@ -52,9 +54,12 @@ export function llmProxyUrl(): string {
   return `${getBasePath()}/api${LLM_PROXY_PATH}`;
 }
 
-/** Absolute WebSocket URL of the live-update stream, prefix included. */
-export function eventsUrl(): string {
+/**
+ * Absolute WebSocket URL of the live-update stream, prefix included. `scope`
+ * is the API path of a shared vault (`/v/<id>`), empty for the instance's own.
+ */
+export function eventsUrl(scope = ""): string {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
-  return `${protocol}//${window.location.host}${getBasePath()}/api/events`;
+  return `${protocol}//${window.location.host}${getBasePath()}/api${scope}/events`;
 }

@@ -7,6 +7,7 @@ import {
   type HeadingNumberingSettings
 } from "@/lib/editor/headingNumbers";
 import { VAULT_META_DIR_NAME } from "@/lib/fileSystem";
+import { userMetaDirPath } from "@/lib/userMeta";
 import { normalizeVaultIcons, type VaultIconMap } from "@/lib/vaultIcons";
 import { normalizeStoredWorkingSet, type StoredWorkingSet } from "@/store/appStore/workingSet";
 
@@ -32,6 +33,11 @@ const SORT_MODES: SortMode[] = ["name", "modified", "manual"];
  */
 export const DEFAULT_SORT_MODE: SortMode = "manual";
 
+/**
+ * Shared by everyone who opens the vault: order, icons, manuscript, heading
+ * numbering, folder notes. The sort mode and the "In progress" list are one
+ * person's view of it and live in userMetaDirPath instead (see userMeta.ts).
+ */
 async function vaultMetaDirPath(folderPath: string): Promise<string> {
   return join(folderPath, VAULT_META_DIR_NAME);
 }
@@ -52,7 +58,7 @@ function isManualOrderMap(value: unknown): value is ManualOrderMap {
 
 export async function readSortMode(folderPath: string): Promise<SortMode> {
   try {
-    const filePath = await join(await vaultMetaDirPath(folderPath), SORT_MODE_FILE_NAME);
+    const filePath = await join(await userMetaDirPath(folderPath), SORT_MODE_FILE_NAME);
 
     if (!(await exists(filePath))) {
       return DEFAULT_SORT_MODE;
@@ -75,7 +81,7 @@ export async function readSortMode(folderPath: string): Promise<SortMode> {
 }
 
 export async function writeSortMode(folderPath: string, mode: SortMode): Promise<void> {
-  const dirPath = await vaultMetaDirPath(folderPath);
+  const dirPath = await userMetaDirPath(folderPath);
   await mkdir(dirPath, { recursive: true });
   await writeTextFile(await join(dirPath, SORT_MODE_FILE_NAME), JSON.stringify({ mode }, null, 2));
 }
@@ -110,7 +116,7 @@ export async function writeManualOrder(folderPath: string, order: ManualOrderMap
  */
 export async function readWorkingSet(folderPath: string): Promise<StoredWorkingSet> {
   try {
-    const filePath = await join(await vaultMetaDirPath(folderPath), WORKING_SET_FILE_NAME);
+    const filePath = await join(await userMetaDirPath(folderPath), WORKING_SET_FILE_NAME);
 
     if (!(await exists(filePath))) {
       return { version: 1, entries: [] };
@@ -123,7 +129,7 @@ export async function readWorkingSet(folderPath: string): Promise<StoredWorkingS
 }
 
 export async function writeWorkingSet(folderPath: string, workingSet: StoredWorkingSet): Promise<void> {
-  const dirPath = await vaultMetaDirPath(folderPath);
+  const dirPath = await userMetaDirPath(folderPath);
   await mkdir(dirPath, { recursive: true });
   await writeTextFile(await join(dirPath, WORKING_SET_FILE_NAME), JSON.stringify(workingSet, null, 2));
 }

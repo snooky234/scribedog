@@ -56,7 +56,10 @@ export const platform: Platform = {
     spellcheckDictionary: true,
     session: false,
     browserLocalModels: false,
-    remoteVaults: true
+    remoteVaults: true,
+    // A server vault opened from here is the instance's own; shared vaults
+    // on it are not offered yet.
+    sharedVaults: false
   },
 
   vaultStorage: localVaultStorage,
@@ -252,5 +255,6 @@ export const platform: Platform = {
   },
   session: null,
   localModels: null,
-  remoteVaults: desktopRemoteVaults
+  remoteVaults: desktopRemoteVaults,
+  sharedVaults: null
 };

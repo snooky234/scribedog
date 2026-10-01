@@ -1,13 +1,14 @@
 import { join } from "@/platform/paths";
 import { exists, mkdir, readTextFile, remove, writeTextFile } from "@/platform/vaultFs";
 
-import { VAULT_META_DIR_NAME } from "@/lib/fileSystem";
+import { userMetaDirPath } from "@/lib/userMeta";
 
 import { normalizeStagedChange, type StagedChange } from "./vaultStaging";
 
 /**
- * Persistence for the staging layer, in the vault's own metadata folder next to
- * the chat sessions and the version history:
+ * Persistence for the staging layer, in the person's own metadata folder next
+ * to the chat sessions (see userMeta.ts; `.scribedog/` unless the vault is
+ * shared):
  *
  *   .scribedog/staged-changes.json  ->  [StagedChange, ...]
  *
@@ -20,7 +21,7 @@ import { normalizeStagedChange, type StagedChange } from "./vaultStaging";
 const STAGED_CHANGES_FILE_NAME = "staged-changes.json";
 
 async function stagedChangesFilePath(folderPath: string): Promise<string> {
-  return join(folderPath, VAULT_META_DIR_NAME, STAGED_CHANGES_FILE_NAME);
+  return join(await userMetaDirPath(folderPath), STAGED_CHANGES_FILE_NAME);
 }
 
 export async function readStagedChanges(folderPath: string): Promise<StagedChange[]> {
@@ -49,7 +50,7 @@ export async function readStagedChanges(folderPath: string): Promise<StagedChang
 
 export async function writeStagedChanges(folderPath: string, changes: StagedChange[]): Promise<void> {
   const persistable = changes.filter((change) => !change.editorProposal);
-  const dirPath = await join(folderPath, VAULT_META_DIR_NAME);
+  const dirPath = await userMetaDirPath(folderPath);
   const filePath = await join(dirPath, STAGED_CHANGES_FILE_NAME);
 
   if (persistable.length === 0) {

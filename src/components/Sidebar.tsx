@@ -20,6 +20,7 @@ import {
   Server,
   Settings2,
   Trash2,
+  Users,
   X
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -40,6 +41,7 @@ import {
 import { FileTree, type BatchEntry, type PendingEntryRename } from "@/components/FileTree";
 import type { VaultIconMap } from "@/lib/vaultIcons";
 import { WorkingSetPanel } from "@/components/sidebar/WorkingSetPanel";
+import { SharedVaultNotices, SharedVaultSwitcher } from "@/components/shared/SharedVaultSwitcher";
 import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStoredCollapsed, useWorkingSetHeight } from "@/hooks/useWorkingSetHeight";
@@ -56,6 +58,7 @@ import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import { cn } from "@/lib/utils";
 import type { MoveTreeEntryInput, WorkingSetEntry } from "@/store/useAppStore";
 import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportDropStore";
+import { useSharedVaultsStore } from "@/store/useSharedVaultsStore";
 
 /** What the "In progress" section needs from the app (see WorkingSetPanel). */
 export type WorkingSetHandlers = {
@@ -214,13 +217,20 @@ export function Sidebar({
   // A vault on a server, whether this is the browser (always) or the desktop
   // app opened one: the name gets the same server mark the recent list uses.
   const isServerVault = folderPath !== null && (platform.kind === "web" || remoteVaultFor(folderPath) !== null);
+  // A vault shared with other people carries their mark instead of the server's.
+  const isSharedVault = folderPath !== null && (platform.sharedVaults?.idOf(folderPath) ?? null) !== null;
+  const hasSharedVaults = useSharedVaultsStore((state) => state.status === "ready");
   // The name is clipped at its start (sidebar.css), which takes an RTL
   // block — and RTL alone reorders anything with digits in it, turning
   // "192.168.1.5/notes/" into "notes/192.168.1.5". The isolate keeps the
   // characters in reading order inside that block.
   const folderLabelContent = (
     <>
-      {isServerVault ? <Server className="size-4 sidebar-panel__folder-kind" aria-hidden="true" /> : null}
+      {isSharedVault ? (
+        <Users className="size-4 sidebar-panel__folder-kind" aria-hidden="true" />
+      ) : isServerVault ? (
+        <Server className="size-4 sidebar-panel__folder-kind" aria-hidden="true" />
+      ) : null}
       <span className="sidebar-panel__folder-name">
         <bdi dir="ltr">{folderLabel}</bdi>
       </span>
@@ -549,6 +559,16 @@ export function Sidebar({
                 </MenuPositioner>
               </MenuPortal>
             </Menu>
+          ) : hasSharedVaults ? (
+            // The own vault and the shared ones: the name switches between them.
+            <SharedVaultSwitcher
+              folderPath={folderPath}
+              isLoading={isLoading}
+              label={folderLabelContent}
+              title={folderLabel}
+              onOpenVault={onOpenRecentFolder}
+              onContextMenu={openRootContextMenu}
+            />
           ) : (
             // One vault, nothing to switch to: the name is a label, not a menu.
             <div
@@ -620,6 +640,8 @@ export function Sidebar({
             document.body
           )
         : null}
+
+      <SharedVaultNotices />
 
       {folderError ? (
         <div className="sidebar-panel__message sidebar-panel__message--error">

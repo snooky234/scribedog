@@ -11,6 +11,7 @@ import { openTokenStore, type TokenStore } from "../src/auth/tokenStore.js";
 import { loadConfig, type ServerConfig } from "../src/config.js";
 import { KEY_COOKIE_NAME } from "../src/secrets/keyCookie.js";
 import { openSecretStore, type SecretStore } from "../src/secrets/secretStore.js";
+import { openSharedVaults, type SharedVaults } from "../src/shared/service.js";
 import { openVault, type Vault } from "../src/vault/files.js";
 import { createVaultWatcher, type VaultWatcher } from "../src/vault/watcher.js";
 
@@ -28,6 +29,8 @@ export type TestContext = {
   app: FastifyInstance;
   /** Only when created with `watch: true`. */
   watcher: VaultWatcher | null;
+  /** Only when created with `shared`. */
+  shared: SharedVaults | null;
   /**
    * Logs in and returns the Cookie header value for subsequent requests,
    * session token and key cookie together, the way a browser sends them.
@@ -49,7 +52,12 @@ export async function createTempVault(): Promise<string> {
 
 export async function createTestContext(
   env: NodeJS.ProcessEnv = {},
-  options: { webDistDir?: string; watch?: boolean } = {}
+  options: {
+    webDistDir?: string;
+    watch?: boolean;
+    /** Join a shared-vault setup at `root` as `user` (one instance per person). */
+    shared?: { root: string; user: string; now?: () => number; accessPollMs?: number };
+  } = {}
 ): Promise<TestContext> {
   const vaultPath = await createTempVault();
   const config = loadConfig({
@@ -63,6 +71,7 @@ export async function createTestContext(
   const secrets = openSecretStore(vault.realPath);
   const tokens = await openTokenStore({ vaultPath: vault.realPath, log: silentLog });
   const watcher = options.watch ? createVaultWatcher(vault.realPath, silentLog) : null;
+  const shared = options.shared ? await openSharedVaults({ ...options.shared, log: silentLog }) : null;
   const app = await buildApp({
     config,
     authStore,
@@ -70,6 +79,7 @@ export async function createTestContext(
     tokens,
     vault,
     watcher: watcher ?? undefined,
+    shared,
     webDistDir: options.webDistDir
   });
 
@@ -82,6 +92,7 @@ export async function createTestContext(
     tokens,
     app,
     watcher,
+    shared,
     async login(password = TEST_PASSWORD) {
       const response = await app.inject({
         method: "POST",
@@ -107,6 +118,7 @@ export async function createTestContext(
     },
     async cleanup() {
       watcher?.close();
+      shared?.close();
       await app.close();
       await rm(vaultPath, { recursive: true, force: true });
     }

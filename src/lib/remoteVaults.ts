@@ -349,6 +349,15 @@ export async function revokeRemoteDevice(root: string, tokenId: string): Promise
  * a failed listing.
  */
 export async function activateVaultStorage(folderPath: string): Promise<void> {
+  // A shared vault of the server this frontend runs on (the browser) has a
+  // root of its own and a storage the platform hands out per vault.
+  const sharedStorage = await platform.sharedVaults?.storageFor(folderPath);
+
+  if (sharedStorage) {
+    setActiveVaultStorage(sharedStorage);
+    return;
+  }
+
   if (!isRemoteVaultPath(folderPath)) {
     setActiveVaultStorage(null);
     return;

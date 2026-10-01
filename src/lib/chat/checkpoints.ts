@@ -1,7 +1,7 @@
 import { join } from "@/platform/paths";
 import { exists, mkdir, readTextFile, remove, writeTextFile } from "@/platform/vaultFs";
 
-import { VAULT_META_DIR_NAME } from "@/lib/fileSystem";
+import { userMetaDirPath } from "@/lib/userMeta";
 
 import { normalizeVaultPath, vaultPathKey } from "./vaultStaging";
 
@@ -46,7 +46,8 @@ const INDEX_FILE_NAME = "index.json";
 export const MAX_CHECKPOINTS_PER_SESSION = 20;
 
 async function checkpointsDirPath(folderPath: string): Promise<string> {
-  return join(folderPath, VAULT_META_DIR_NAME, CHECKPOINTS_DIR_NAME);
+  // Per person (see userMeta.ts): a checkpoint undoes one's own agent runs.
+  return join(await userMetaDirPath(folderPath), CHECKPOINTS_DIR_NAME);
 }
 
 async function indexFilePath(folderPath: string): Promise<string> {

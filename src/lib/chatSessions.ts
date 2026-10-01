@@ -3,7 +3,7 @@ import { exists, mkdir, readTextFile, writeTextFile } from "@/platform/vaultFs";
 
 import type { AiChatMessage, AiChatRole, ChatUserAction, ToolCall } from "@/lib/aiClient";
 import { normalizePlan, type PlanStep } from "@/lib/chat/agentPlan";
-import { VAULT_META_DIR_NAME } from "@/lib/fileSystem";
+import { userMetaDirPath } from "@/lib/userMeta";
 
 export type ChatSession = {
   id: string;
@@ -25,10 +25,6 @@ const SESSIONS_FILE_NAME = "chat-sessions.json";
 // FIFO cap: only the most recently updated sessions are kept, on disk and in
 // memory. Older ones fall off the end.
 export const MAX_SESSIONS = 100;
-
-async function vaultMetaDirPath(folderPath: string): Promise<string> {
-  return join(folderPath, VAULT_META_DIR_NAME);
-}
 
 const CHAT_ROLES: AiChatRole[] = ["user", "assistant", "tool"];
 
@@ -195,7 +191,7 @@ export function orderAndCapSessions(sessions: ChatSession[]): ChatSession[] {
 
 export async function readSessions(folderPath: string): Promise<ChatSession[]> {
   try {
-    const filePath = await join(await vaultMetaDirPath(folderPath), SESSIONS_FILE_NAME);
+    const filePath = await join(await userMetaDirPath(folderPath), SESSIONS_FILE_NAME);
 
     if (!(await exists(filePath))) {
       return [];
@@ -218,7 +214,7 @@ export async function readSessions(folderPath: string): Promise<ChatSession[]> {
 }
 
 export async function writeSessions(folderPath: string, sessions: ChatSession[]): Promise<void> {
-  const dirPath = await vaultMetaDirPath(folderPath);
+  const dirPath = await userMetaDirPath(folderPath);
   await mkdir(dirPath, { recursive: true });
   await writeTextFile(
     await join(dirPath, SESSIONS_FILE_NAME),

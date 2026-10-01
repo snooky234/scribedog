@@ -36,6 +36,9 @@ ones that matter; you only need them if you run the server without it.
 | `SCRIBEDOG_LLM_ALLOWED_HOSTS` | the three cloud providers | Hosts the server may forward AI requests to. Add your own gateway here if you use one. |
 | `SCRIBEDOG_LOG_LEVEL` | `info` | Log level (`debug`, `info`, `warn`, `error`). |
 | `SCRIBEDOG_WEB_DIST_DIR` | `../dist-web` | Directory with the built web client (see [Development](development.md)). The Docker image sets it. |
+| `SCRIBEDOG_USER` | *(empty)* | The name this instance's person has for the others in a [shared-vault setup](multiuser.md#shared-vaults): lowercase letters, digits, `-` and `_`, up to 32. The multi-instance example sets it from `PERSON<N>_USER`. |
+| `SCRIBEDOG_SHARED_PATH` | *(empty)* | Folder with the shared vaults, mounted into every instance. Sharing is on only when this and `SCRIBEDOG_USER` are set; with the folder but no name the server starts without sharing and says so in its log. |
+| `SCRIBEDOG_SHARED_GID` | *(empty)* | Group id the shared folder belongs to. Required with `SCRIBEDOG_SHARED_PATH` when the container starts as root: the start script adds the instance's user to that group and keeps the folder writable for all of them. The multi-instance example sets it from `SHARED_GID`. |
 
 ## TLS and the reverse proxy
 
@@ -83,4 +86,5 @@ Each person needs their own instance, password and vault, all behind one
 shared Caddy. Setting that up from scratch, moving an existing single
 instance into it, and adding another person later are all covered in
 [Multiple users on one host](multiuser.md), with `SCRIBEDOG_BASE_PATH` (see
-above) doing the per-instance path routing.
+above) doing the per-instance path routing. Vaults the people share with each
+other are described there too, under [Shared vaults](multiuser.md#shared-vaults).
