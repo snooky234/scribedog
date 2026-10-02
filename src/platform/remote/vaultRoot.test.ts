@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isRemoteVaultPath, remoteVaultRootFor } from "./vaultRoot";
+import { isRemoteVaultPath, parseSharedVaultRoot, remoteVaultRootFor, serverRootOf, sharedVaultRootFor } from "./vaultRoot";
 
 describe("remote vault root", () => {
   it("names host, port and base path, so two instances on one host stay apart", () => {
@@ -15,5 +15,28 @@ describe("remote vault root", () => {
     expect(isRemoteVaultPath("C:\\Users\\me\\Notes")).toBe(false);
     expect(isRemoteVaultPath("/home/me/@remote")).toBe(false);
     expect(isRemoteVaultPath("/vault/Idea.md")).toBe(false);
+  });
+
+  it("gives a shared vault a root of its own below its server", () => {
+    const server = remoteVaultRootFor("https://notes.example.com/anna");
+    const shared = sharedVaultRootFor(server, "7f3a");
+
+    expect(shared).toBe("/@remote/notes.example.com/anna/@shared/7f3a");
+    expect(isRemoteVaultPath(shared)).toBe(true);
+    expect(parseSharedVaultRoot(shared)).toEqual({ serverRoot: server, vaultId: "7f3a" });
+    // The token and the device list belong to the instance, not the vault.
+    expect(serverRootOf(shared)).toBe(server);
+    expect(serverRootOf(server)).toBe(server);
+  });
+
+  it("is not a shared vault root for the server itself, a note inside one, or a malformed id", () => {
+    for (const path of [
+      "/@remote/notes.example.com/anna",
+      "/@remote/notes.example.com/anna/@shared/7f3a/Note.md",
+      "/@remote/notes.example.com/anna/@shared/XYZ",
+      "/@remote/notes.example.com/anna/@shared/"
+    ]) {
+      expect(parseSharedVaultRoot(path), path).toBeNull();
+    }
   });
 });

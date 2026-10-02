@@ -1,6 +1,13 @@
 import i18n from "@/i18n";
 import { getVaultStorage, platform } from "@/platform";
-import { activateVaultStorage, isRemoteVaultPath, remoteVaultFor, watchRemoteVault } from "@/lib/remoteVaults";
+import {
+  activateVaultStorage,
+  isRemoteVaultPath,
+  remoteVaultFor,
+  setActiveRemoteServer,
+  watchRemoteVault
+} from "@/lib/remoteVaults";
+import { sharedVaultNameFor } from "@/store/useSharedVaultsStore";
 import { dirname, join } from "@/platform/paths";
 import {
   exists,
@@ -92,6 +99,9 @@ export async function chooseMarkdownFolder(): Promise<string | null> {
  * filesystem scope to it.
  */
 export async function allowMarkdownFolderAccess(folderPath: string): Promise<void> {
+  // Which server's shared vaults the sidebar offers, before the storage is
+  // installed: a failed open must not leave the previous server's list up.
+  setActiveRemoteServer(folderPath);
   await activateVaultStorage(folderPath);
 
   if (!isRemoteVaultPath(folderPath)) {
@@ -313,10 +323,16 @@ export function formatFolderLabel(folderPath: string | null): string {
     return i18n.t("fileSystem.noFolderOpen");
   }
 
-  return remoteVaultFor(folderPath)?.name ?? platform.vault.displayName(folderPath);
+  return sharedVaultNameFor(folderPath) ?? remoteVaultFor(folderPath)?.name ?? platform.vault.displayName(folderPath);
 }
 
 export function getFolderBasename(folderPath: string): string {
+  const shared = sharedVaultNameFor(folderPath);
+
+  if (shared) {
+    return shared;
+  }
+
   const remote = remoteVaultFor(folderPath);
 
   if (remote) {

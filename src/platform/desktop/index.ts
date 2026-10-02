@@ -23,6 +23,8 @@ import type {
 } from "@/platform/types";
 
 import { localFs, localVaultStorage } from "./fs";
+import { desktopSharedVaults } from "@/lib/remoteVaults";
+
 import { desktopRemoteVaults } from "./remoteVaults";
 
 /** Fired by the Rust file watcher (`watch_folder`) with the watched folder path. */
@@ -57,9 +59,9 @@ export const platform: Platform = {
     session: false,
     browserLocalModels: false,
     remoteVaults: true,
-    // A server vault opened from here is the instance's own; shared vaults
-    // on it are not offered yet.
-    sharedVaults: false
+    // Shared vaults of whichever server vault is open; a local folder has
+    // none, which setActiveRemoteServer reports as "no shared vaults".
+    sharedVaults: true
   },
 
   vaultStorage: localVaultStorage,
@@ -256,5 +258,5 @@ export const platform: Platform = {
   session: null,
   localModels: null,
   remoteVaults: desktopRemoteVaults,
-  sharedVaults: null
+  sharedVaults: desktopSharedVaults
 };

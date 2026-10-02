@@ -65,13 +65,6 @@ async function loadOverview(): Promise<SharedOverview | null> {
   return lastOverview;
 }
 
-/** The display name of a shared vault as last seen, for the sidebar header. */
-export function sharedVaultName(folderPath: string): string | null {
-  const id = sharedVaultIdOf(folderPath);
-
-  return id ? (lastOverview?.vaults.find((vault) => vault.id === id)?.name ?? null) : null;
-}
-
 export const webSharedVaults: SharedVaultsApi = {
   overview: loadOverview,
   create: (name, members) => serverApi.createSharedVault(name, members),

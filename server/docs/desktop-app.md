@@ -54,6 +54,12 @@ notes takes a moment to open.
 or a sync tool writes into the folder on the server, the desktop app sees the
 change within a second, the way it does for a local folder.
 
+**Shared vaults are in the vault menu.** When the server you are connected to
+has [shared vaults](multiuser.md#shared-vaults), the menu behind the vault
+name lists them above your local folders, with **New shared vault…** and
+**Manage shared vaults…** below. Opening one makes it the vault the app works
+in, with its own version history and its own last opened note.
+
 **The same note in two places is safe, but not live.** If the desktop app and
 a browser tab both have a note open and both save, the later save merges the
 earlier one in when the edits sit at different places, and asks when they

@@ -1,10 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-import type { RemoteVaultsApi } from "@/platform/types";
+import type { RemoteVaultsApi, SharedPresenceEditor, SharedVaultLoss } from "@/platform/types";
 
 /** Fired by the Rust live-update client when the server refuses the token. */
 export const REMOTE_VAULT_UNAUTHORIZED_EVENT = "scribedog-remote-vault-unauthorized";
+/** Fired when a shared vault's stream is closed for good (removed, deleted). */
+export const REMOTE_VAULT_ACCESS_LOST_EVENT = "scribedog-remote-vault-access-lost";
+/** Fired with the other people's open notes in the watched shared vault. */
+export const REMOTE_VAULT_PRESENCE_EVENT = "scribedog-remote-vault-presence";
 
 type RustRequest = {
   url: string;
@@ -87,5 +91,14 @@ export const desktopRemoteVaults: RemoteVaultsApi = {
   getToken: (vaultRoot) => invoke<string | null>("get_remote_vault_token", { vaultRoot }),
   deleteToken: (vaultRoot) => invoke("delete_remote_vault_token", { vaultRoot }),
   watch: (vaultRoot, eventsUrl, token) => invoke("watch_remote_vault", { vaultRoot, eventsUrl, token }),
-  onUnauthorized: (handler) => listen<string>(REMOTE_VAULT_UNAUTHORIZED_EVENT, (event) => handler(event.payload))
+  onUnauthorized: (handler) => listen<string>(REMOTE_VAULT_UNAUTHORIZED_EVENT, (event) => handler(event.payload)),
+  setPresencePath: (relativePath) => invoke("set_remote_vault_presence", { path: relativePath }),
+  onPresence: (handler) =>
+    listen<{ vaultRoot: string; editors: SharedPresenceEditor[] }>(REMOTE_VAULT_PRESENCE_EVENT, (event) =>
+      handler(event.payload.vaultRoot, event.payload.editors)
+    ),
+  onAccessLost: (handler) =>
+    listen<{ vaultRoot: string; reason: SharedVaultLoss }>(REMOTE_VAULT_ACCESS_LOST_EVENT, (event) =>
+      handler(event.payload.vaultRoot, event.payload.reason)
+    )
 };

@@ -9,7 +9,7 @@ import { browserLocalModels } from "./localModels";
 import { posixPaths } from "@/platform/remote/paths";
 import { REMOTE_VAULT_ROOT, remoteVaultStorage } from "./remoteStorage";
 import { sharedVaultIdOf, sharedVaultScope } from "./sharedVaultRoot";
-import { sharedVaultName, webSharedVaults } from "./sharedVaults";
+import { webSharedVaults } from "./sharedVaults";
 import {
   ApiError,
   getBasePath,
@@ -104,7 +104,9 @@ export const platform: Platform = {
     // The instance's own vault; shared ones are opened from the sidebar.
     getStartupFolderPath: async () => REMOTE_VAULT_ROOT,
     onFolderFilesChanged: async (handler) => subscribeToVaultChanges(handler),
-    displayName: (folderPath) => sharedVaultName(folderPath) ?? `${window.location.host}${getBasePath()}`
+    // A shared vault's own name is added by formatFolderLabel; this is the
+    // instance the browser is talking to.
+    displayName: () => `${window.location.host}${getBasePath()}`
   },
 
   app: {

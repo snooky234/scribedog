@@ -483,6 +483,16 @@ export type RemoteVaultsApi = {
   watch(vaultRoot: string, eventsUrl: string, token: string): Promise<void>;
   /** Fires with the vault root when the live connection is refused for lack of a valid token. */
   onUnauthorized(handler: (vaultRoot: string) => void): Promise<() => void>;
+  /**
+   * The note the watched vault is showing, for the presence hints of a shared
+   * vault; null for none. Sent over the live connection, so it needs no
+   * request of its own.
+   */
+  setPresencePath(relativePath: string | null): Promise<void>;
+  /** Who else has which note of the watched shared vault open. */
+  onPresence(handler: (vaultRoot: string, editors: SharedPresenceEditor[]) => void): Promise<() => void>;
+  /** Fires when the server closes a shared vault's stream: removed from it, or it was deleted. */
+  onAccessLost(handler: (vaultRoot: string, reason: SharedVaultLoss) => void): Promise<() => void>;
 };
 
 /**

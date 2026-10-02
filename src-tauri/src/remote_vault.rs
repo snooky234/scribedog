@@ -21,9 +21,10 @@
 use std::{collections::HashSet, sync::Mutex, time::Duration};
 
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
-use futures_util::StreamExt;
+use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
+use tokio::sync::watch;
 use tokio_tungstenite::tungstenite::{client::IntoClientRequest, http::HeaderValue, Error as WsError, Message};
 
 use crate::{FolderWatchState, FOLDER_FILES_CHANGED_EVENT, KEYRING_SERVICE};
@@ -32,6 +33,18 @@ use crate::{FolderWatchState, FOLDER_FILES_CHANGED_EVENT, KEYRING_SERVICE};
 /// connection: the one moment an idle app learns that its key was revoked.
 const REMOTE_VAULT_UNAUTHORIZED_EVENT: &str = "scribedog-remote-vault-unauthorized";
 
+/// Emitted with the vault root and the reason when a shared vault's stream is
+/// closed for good: the person was taken off the vault, or it was deleted.
+const REMOTE_VAULT_ACCESS_LOST_EVENT: &str = "scribedog-remote-vault-access-lost";
+
+/// Emitted with the vault root and the other people's open notes, for the
+/// presence hints of a shared vault.
+const REMOTE_VAULT_PRESENCE_EVENT: &str = "scribedog-remote-vault-presence";
+
+/// Close codes of the server's event stream (server/src/vault/eventRoutes.ts).
+const ACCESS_REMOVED_CLOSE_CODE: u16 = 4003;
+const VAULT_DELETED_CLOSE_CODE: u16 = 4004;
+
 const RECONNECT_MIN: Duration = Duration::from_secs(1);
 const RECONNECT_MAX: Duration = Duration::from_secs(30);
 
@@ -39,6 +52,9 @@ pub struct RemoteVaultState {
     allowed_origins: Mutex<HashSet<String>>,
     client: reqwest::Client,
     watch: Mutex<Option<tauri::async_runtime::JoinHandle<()>>>,
+    /// The note the open shared vault is showing, sent on every (re)connect
+    /// so the other people see it. `None` means no note, or no shared vault.
+    presence: Mutex<Option<watch::Sender<Option<String>>>>,
 }
 
 impl Default for RemoteVaultState {
@@ -50,6 +66,7 @@ impl Default for RemoteVaultState {
                 .build()
                 .expect("reqwest client"),
             watch: Mutex::new(None),
+            presence: Mutex::new(None),
         }
     }
 }
@@ -184,6 +201,24 @@ pub fn stop_watch(state: &RemoteVaultState) {
             task.abort();
         }
     }
+
+    if let Ok(mut presence) = state.presence.lock() {
+        presence.take();
+    }
+}
+
+/// The note the open shared vault is showing, for the other people's presence
+/// hints. Dropped silently when no vault is watched: the frontend reports the
+/// open note whenever it changes, including before a watch has started.
+#[tauri::command]
+pub fn set_remote_vault_presence(state: State<'_, RemoteVaultState>, path: Option<String>) -> Result<(), String> {
+    if let Ok(presence) = state.presence.lock() {
+        if let Some(sender) = presence.as_ref() {
+            let _ = sender.send(path);
+        }
+    }
+
+    Ok(())
 }
 
 fn is_files_changed(text: &str) -> bool {
@@ -240,7 +275,49 @@ async fn connect_tcp(url: &reqwest::Url) -> Result<tokio::net::TcpStream, WsErro
     Err(WsError::Io(last_error))
 }
 
-async fn run_watch(app: AppHandle, vault_root: String, events_url: String, token: String) {
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AccessLostPayload {
+    vault_root: String,
+    /// "removed" (taken off the vault) or "deleted" (the vault is gone).
+    reason: &'static str,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PresencePayload {
+    vault_root: String,
+    /// The server's entries as they came: `[{ "user": "...", "path": "..." }]`.
+    editors: serde_json::Value,
+}
+
+/// The other people's open notes from a presence message, or `None` for any
+/// other message.
+fn presence_editors(text: &str) -> Option<serde_json::Value> {
+    let value: serde_json::Value = serde_json::from_str(text).ok()?;
+
+    if value.get("type").and_then(|kind| kind.as_str()) != Some("presence") {
+        return None;
+    }
+
+    value.get("editors").filter(|editors| editors.is_array()).cloned()
+}
+
+fn presence_message(path: Option<&str>) -> Message {
+    Message::Text(
+        serde_json::json!({ "type": "presence", "path": path })
+            .to_string()
+            .into(),
+    )
+}
+
+async fn run_watch(
+    app: AppHandle,
+    vault_root: String,
+    events_url: String,
+    token: String,
+    mut presence: watch::Receiver<Option<String>>,
+) {
     let mut delay = RECONNECT_MIN;
 
     loop {
@@ -256,17 +333,65 @@ async fn run_watch(app: AppHandle, vault_root: String, events_url: String, token
         match connect(&events_url, request).await {
             Ok(stream) => {
                 delay = RECONNECT_MIN;
-                let (_, mut incoming) = stream.split();
+                let (mut outgoing, mut incoming) = stream.split();
 
-                while let Some(message) = incoming.next().await {
-                    match message {
-                        Ok(Message::Text(text)) => {
-                            if is_files_changed(&text) {
-                                let _ = app.emit(FOLDER_FILES_CHANGED_EVENT, &vault_root);
+                // The open note goes out on every (re)connect, and again
+                // whenever the frontend reports another one.
+                presence.mark_changed();
+
+                loop {
+                    tokio::select! {
+                        changed = presence.changed() => {
+                            if changed.is_err() {
+                                return;
+                            }
+
+                            let path = presence.borrow_and_update().clone();
+
+                            if outgoing.send(presence_message(path.as_deref())).await.is_err() {
+                                break;
                             }
                         }
-                        Ok(Message::Close(_)) | Err(_) => break,
-                        _ => {}
+                        message = incoming.next() => {
+                            let Some(message) = message else {
+                                break;
+                            };
+
+                            match message {
+                                Ok(Message::Text(text)) => {
+                                    if is_files_changed(&text) {
+                                        let _ = app.emit(FOLDER_FILES_CHANGED_EVENT, &vault_root);
+                                    } else if let Some(editors) = presence_editors(&text) {
+                                        let _ = app.emit(
+                                            REMOTE_VAULT_PRESENCE_EVENT,
+                                            PresencePayload { vault_root: vault_root.clone(), editors },
+                                        );
+                                    }
+                                }
+                                // A shared vault the person may no longer open:
+                                // reconnecting would only be refused again.
+                                Ok(Message::Close(Some(frame))) => {
+                                    let code = u16::from(frame.code);
+                                    let reason = match code {
+                                        ACCESS_REMOVED_CLOSE_CODE => Some("removed"),
+                                        VAULT_DELETED_CLOSE_CODE => Some("deleted"),
+                                        _ => None,
+                                    };
+
+                                    if let Some(reason) = reason {
+                                        let _ = app.emit(
+                                            REMOTE_VAULT_ACCESS_LOST_EVENT,
+                                            AccessLostPayload { vault_root: vault_root.clone(), reason },
+                                        );
+                                        return;
+                                    }
+
+                                    break;
+                                }
+                                Ok(Message::Close(None)) | Err(_) => break,
+                                _ => {}
+                            }
+                        }
                     }
                 }
             }
@@ -314,7 +439,10 @@ pub fn watch_remote_vault(
 
     stop_watch(&state);
 
-    let task = tauri::async_runtime::spawn(run_watch(app, vault_root, events_url, token));
+    let (presence_sender, presence_receiver) = watch::channel(None);
+    *state.presence.lock().map_err(|_| "presence state poisoned".to_string())? = Some(presence_sender);
+
+    let task = tauri::async_runtime::spawn(run_watch(app, vault_root, events_url, token, presence_receiver));
 
     *state.watch.lock().map_err(|_| "watch state poisoned".to_string())? = Some(task);
 

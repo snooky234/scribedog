@@ -37,7 +37,10 @@ const shell = vi.hoisted(() => {
         tokens.delete(root);
       }),
       watch: vi.fn(async () => undefined),
-      onUnauthorized: vi.fn(async () => () => undefined)
+      onUnauthorized: vi.fn(async () => () => undefined),
+      setPresencePath: vi.fn(async () => undefined),
+      onPresence: vi.fn(async () => () => undefined),
+      onAccessLost: vi.fn(async () => () => undefined)
     }
   };
 });
@@ -47,6 +50,7 @@ const platformState = vi.hoisted(() => ({
   platform: {
     features: { remoteVaults: true },
     remoteVaults: null as unknown,
+    sharedVaults: null as unknown,
     vaultStorage: { capabilities: {}, listMarkdownFiles: async () => [] }
   }
 }));
@@ -207,5 +211,123 @@ describe("remote vault registry and token flow", () => {
     await remoteVaults.watchRemoteVault(entry.root);
 
     expect(shell.api.watch).toHaveBeenCalledWith(entry.root, "wss://notes.example.com/anna/api/events", "sdt_t_s");
+  });
+});
+
+/**
+ * A shared vault of a server the app has added (server/docs/multiuser.md):
+ * its own vault with its own root, served by the client and the token of the
+ * instance it belongs to.
+ */
+describe("shared vaults of a server vault", () => {
+  const OVERVIEW = {
+    enabled: true,
+    me: "anna",
+    people: ["anna", "bob"],
+    vaults: [
+      {
+        id: "7f3a",
+        name: "Familie",
+        creator: "anna",
+        members: [{ user: "anna", role: "editor" }],
+        isCreator: true,
+        createdAt: 1,
+        updatedAt: 1
+      }
+    ],
+    trash: [],
+    notices: []
+  };
+
+  async function addServer(): Promise<string> {
+    shell.setResponder(() => json({ id: "t", name: "d", token: "sdt_t_s", createdAt: "" }, 201));
+    const entry = await remoteVaults.addRemoteVault({
+      url: "https://notes.example.com/anna",
+      password: "pw",
+      name: "",
+      deviceName: "d"
+    });
+
+    return entry.root;
+  }
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    shell.tokens.clear();
+    shell.allowed.length = 0;
+    shell.requests.length = 0;
+    shell.setResponder(() => json({}));
+    platformState.platform.remoteVaults = shell.api;
+    platformState.platform.sharedVaults = remoteVaults.desktopSharedVaults;
+    platformState.activeStorage = null;
+    remoteVaults.resetRemoteVaultClients();
+    remoteVaults.setActiveRemoteServer(null);
+  });
+
+  it("lists the shared vaults of the open server, and none for a local folder", async () => {
+    const serverRoot = await addServer();
+    shell.setResponder(() => json(OVERVIEW));
+
+    remoteVaults.setActiveRemoteServer(serverRoot);
+    const overview = await remoteVaults.desktopSharedVaults.overview();
+
+    expect(overview?.vaults.map((vault) => vault.name)).toEqual(["Familie"]);
+    expect(shell.requests[shell.requests.length - 1]).toMatchObject({
+      url: "https://notes.example.com/anna/api/shared",
+      headers: { authorization: "Bearer sdt_t_s" }
+    });
+
+    remoteVaults.setActiveRemoteServer("C:\\Notes");
+    expect(await remoteVaults.desktopSharedVaults.overview()).toBeNull();
+  });
+
+  it("gives a shared vault a root below its server, and the instance keeps the token", async () => {
+    const serverRoot = await addServer();
+    remoteVaults.setActiveRemoteServer(serverRoot);
+
+    const root = remoteVaults.desktopSharedVaults.rootFor("7f3a");
+
+    expect(root).toBe("/@remote/notes.example.com/anna/@shared/7f3a");
+    expect(remoteVaults.desktopSharedVaults.idOf(root)).toBe("7f3a");
+    expect(remoteVaults.desktopSharedVaults.idOf(serverRoot)).toBeNull();
+    expect(remoteVaults.desktopSharedVaults.homeRoot).toBe(serverRoot);
+    // The token and the device list belong to the instance, not the vault.
+    expect(remoteVaults.remoteVaultFor(root)).toBeNull();
+  });
+
+  it("installs a storage that works on the vault's own file API", async () => {
+    const serverRoot = await addServer();
+    remoteVaults.setActiveRemoteServer(serverRoot);
+    const root = remoteVaults.desktopSharedVaults.rootFor("7f3a");
+
+    shell.setResponder((url) => (url.endsWith("/api/shared") ? json(OVERVIEW) : json({ files: [] })));
+    await remoteVaults.activateVaultStorage(root);
+
+    const storage = platformState.activeStorage as { listMarkdownFiles(rootPath: string): Promise<unknown[]> };
+    await storage.listMarkdownFiles(root);
+
+    expect(shell.requests[shell.requests.length - 1]).toMatchObject({
+      url: "https://notes.example.com/anna/api/v/7f3a/files",
+      headers: { authorization: "Bearer sdt_t_s" }
+    });
+  });
+
+  it("watches the shared vault's own event stream", async () => {
+    const serverRoot = await addServer();
+    remoteVaults.setActiveRemoteServer(serverRoot);
+    const root = remoteVaults.desktopSharedVaults.rootFor("7f3a");
+
+    await remoteVaults.watchRemoteVault(root);
+
+    expect(shell.api.watch).toHaveBeenCalledWith(root, "wss://notes.example.com/anna/api/v/7f3a/events", "sdt_t_s");
+  });
+
+  it("sends the open note to the shell, for the other people's presence hints", async () => {
+    const serverRoot = await addServer();
+    remoteVaults.setActiveRemoteServer(serverRoot);
+
+    remoteVaults.desktopSharedVaults.setOpenNote(remoteVaults.desktopSharedVaults.rootFor("7f3a"), "Einkauf.md");
+
+    expect(shell.api.setPresencePath).toHaveBeenCalledWith("Einkauf.md");
   });
 });

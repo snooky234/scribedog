@@ -240,8 +240,11 @@ When a vault you have open is deleted, or you are taken off it, a message
 says so and takes you back to your own vault. Members who were not there
 when it was deleted see a one-time note under the vault name.
 
-> **In the browser for now.** Shared vaults are opened and managed in the
-> browser. The desktop app, connected to your instance, opens your own vault.
+The desktop app does the same once it is connected to your instance: the
+vault menu in its sidebar lists your shared vaults above your local folders
+and servers, and creating, managing and the presence hints all work there
+too. It signs in as the person of that instance, so there is nothing extra
+to set up.
 
 ### Setting it up
 

@@ -466,6 +466,7 @@ pub fn run() {
             remote_vault::get_remote_vault_token,
             remote_vault::delete_remote_vault_token,
             remote_vault::watch_remote_vault,
+            remote_vault::set_remote_vault_presence,
             voice::voice_model_status,
             voice::download_voice_model,
             voice::start_voice_recording,

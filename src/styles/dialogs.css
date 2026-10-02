@@ -1747,12 +1747,33 @@
 .shared-vault-dialog__members legend {
   padding: 0;
   margin-bottom: 0.35rem;
+  font-size: 0.9rem;
 }
 
+/* The hint keeps the weight it has in every other dialog field; inside a
+   fieldset it would otherwise inherit the legend's. */
+.shared-vault-dialog__members small {
+  margin-top: 0.15rem;
+  font-weight: 400;
+}
+
+/* The checkbox and its name as one pair, left-aligned: the field around it
+   is a grid (.ai-dialog__field), which would otherwise push the two into
+   separate columns and leave the gap between them. */
 .shared-vault-dialog__member {
   display: flex;
+  justify-items: start;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.5rem;
+  cursor: pointer;
+}
+
+.shared-vault-dialog__member input {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: rgb(var(--accent-rgb));
 }
 
 .shared-vault-dialog__heading {

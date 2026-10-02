@@ -41,7 +41,7 @@ import {
 import { FileTree, type BatchEntry, type PendingEntryRename } from "@/components/FileTree";
 import type { VaultIconMap } from "@/lib/vaultIcons";
 import { WorkingSetPanel } from "@/components/sidebar/WorkingSetPanel";
-import { SharedVaultNotices, SharedVaultSwitcher } from "@/components/shared/SharedVaultSwitcher";
+import { SharedVaultMenuItems, SharedVaultNotices, SharedVaultSwitcher } from "@/components/shared/SharedVaultSwitcher";
 import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStoredCollapsed, useWorkingSetHeight } from "@/hooks/useWorkingSetHeight";
@@ -209,6 +209,9 @@ export function Sidebar({
     }
   }, []);
 
+  // A shared vault has no entry of its own (it belongs to its server, see
+  // lib/remoteVaults.ts), so it drops out here and is listed in the shared
+  // section above instead, where it also carries its name.
   const recentVaults = recentFolderPaths
     .filter((path) => !missingRecentPaths.has(path))
     .map((path) => ({ path, remote: remoteVaultFor(path) }))
@@ -521,6 +524,12 @@ export function Sidebar({
               <MenuPortal>
                 <MenuPositioner align="start">
                   <MenuPopup>
+                    {hasSharedVaults ? (
+                      <>
+                        <SharedVaultMenuItems folderPath={folderPath} onOpenVault={onOpenRecentFolder} />
+                        <div className="editor-toolbar__menu-separator" role="separator" />
+                      </>
+                    ) : null}
                     {recentVaults.length > 0 ? (
                       <>
                         {recentVaults.map(({ path, remote }) => (

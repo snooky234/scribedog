@@ -193,3 +193,17 @@ export const useSharedVaultsStore = create<SharedVaultsState>((set, get) => {
     setPresence: (folderPath, editors) => set({ presence: { folderPath, editors } })
   };
 });
+
+/**
+ * The display name of a shared vault by its root, for the sidebar. Read
+ * outside React (formatFolderLabel in lib/fileSystem.ts), hence getState.
+ */
+export function sharedVaultNameFor(folderPath: string): string | null {
+  const id = platform.sharedVaults?.idOf(folderPath) ?? null;
+
+  if (!id) {
+    return null;
+  }
+
+  return useSharedVaultsStore.getState().overview?.vaults.find((vault) => vault.id === id)?.name ?? null;
+}

@@ -2,8 +2,22 @@ import i18n from "@/i18n";
 import { isHttpsUrl, isLocalApiUrl } from "@/lib/aiClient";
 import { platform, setActiveVaultStorage, SessionError } from "@/platform";
 import { createRemoteVaultStorage } from "@/platform/remote/remoteStorage";
-import { createServerApi, type RemoteAccessToken, type ServerApi, type ServerTransport } from "@/platform/remote/serverApi";
-import { isRemoteVaultPath, remoteVaultRootFor } from "@/platform/remote/vaultRoot";
+import {
+  createServerApi,
+  scopedTransport,
+  type RemoteAccessToken,
+  type ServerApi,
+  type ServerTransport
+} from "@/platform/remote/serverApi";
+import {
+  isRemoteVaultPath,
+  parseSharedVaultRoot,
+  remoteVaultRootFor,
+  serverRootOf,
+  sharedVaultRootFor
+} from "@/platform/remote/vaultRoot";
+import { setVaultUser } from "@/lib/userMeta";
+import type { SharedOverview, SharedPresenceEditor, SharedVaultsApi, VaultStorage } from "@/platform/types";
 
 export { isRemoteVaultPath };
 export type { RemoteAccessToken };
@@ -131,6 +145,12 @@ type Client = {
   api: ServerApi;
   token: string | null;
   tokenLoaded: boolean;
+  /** How a request to this server is sent, for the clients of its shared vaults. */
+  transport: ServerTransport;
+  /** Everything that wants to know the session was refused, shared with those clients. */
+  unauthorizedHandlers: Set<() => void>;
+  /** One storage per shared vault of this server, built on first open. */
+  sharedStorages: Map<string, VaultStorage>;
 };
 
 const clients = new Map<string, Client>();
@@ -159,9 +179,16 @@ function clientFor(entry: RemoteVaultEntry): Client {
   }
 
   const shell = requireShell();
-  const client: Client = { api: undefined as unknown as ServerApi, token: null, tokenLoaded: false };
+  const client = {
+    api: undefined as unknown as ServerApi,
+    token: null as string | null,
+    tokenLoaded: false,
+    transport: undefined as unknown as ServerTransport,
+    unauthorizedHandlers: new Set<() => void>(),
+    sharedStorages: new Map<string, VaultStorage>()
+  } satisfies Partial<Client> as Client;
 
-  const transport: ServerTransport = {
+  client.transport = {
     fetch: (apiPath, init) =>
       shell.fetch(`${entry.url}/api${apiPath}`, {
         ...init,
@@ -169,7 +196,9 @@ function clientFor(entry: RemoteVaultEntry): Client {
       })
   };
 
-  const { api, onUnauthorized } = createServerApi(transport);
+  const { api, onUnauthorized } = createServerApi(client.transport, {
+    unauthorizedHandlers: client.unauthorizedHandlers
+  });
   client.api = api;
   onUnauthorized(() => notifyUnauthorized(entry.root));
   clients.set(entry.root, client);
@@ -312,7 +341,10 @@ export function renameRemoteVault(root: string, name: string): void {
 }
 
 async function readyClient(root: string): Promise<{ entry: RemoteVaultEntry; client: Client }> {
-  const entry = remoteVaultFor(root);
+  // A shared vault has no entry of its own: it belongs to the instance it
+  // lives on, and that is whose token, client and sign-in it uses.
+  const serverRoot = serverRootOf(root);
+  const entry = remoteVaultFor(serverRoot);
 
   if (!entry) {
     throw new Error(i18n.t("remoteVaults.unknownServer"));
@@ -322,7 +354,7 @@ async function readyClient(root: string): Promise<{ entry: RemoteVaultEntry; cli
   await loadToken(entry, client);
 
   if (!client.token) {
-    notifyUnauthorized(root);
+    notifyUnauthorized(serverRoot);
     throw new SessionError("unauthorized", i18n.t("remoteVaults.notSignedIn"));
   }
 
@@ -363,20 +395,186 @@ export async function activateVaultStorage(folderPath: string): Promise<void> {
     return;
   }
 
+  const shared = parseSharedVaultRoot(folderPath);
   const { entry, client } = await readyClient(folderPath);
   await requireShell().allowServer(originOf(entry.url));
+
+  if (shared) {
+    setActiveVaultStorage(await sharedStorageFor(entry, client, shared.vaultId, folderPath));
+    return;
+  }
+
   setActiveVaultStorage(createRemoteVaultStorage(client.api, entry.root));
 }
 
+/**
+ * The storage of one shared vault: the same client as its server, pointed at
+ * that vault's own file API (`/api/v/<id>`), and the person the vault is
+ * opened as, which is what gives them their own chat history and proposals
+ * in it (src/lib/userMeta.ts).
+ */
+async function sharedStorageFor(
+  entry: RemoteVaultEntry,
+  client: Client,
+  vaultId: string,
+  root: string
+): Promise<VaultStorage> {
+  const overview = sharedOverviews.get(entry.root) ?? (await loadSharedOverview(entry.root));
+
+  if (!overview) {
+    throw new Error(i18n.t("sharedVaults.errorGone"));
+  }
+
+  setVaultUser(root, overview.me);
+  let storage = client.sharedStorages.get(vaultId);
+
+  if (!storage) {
+    const scoped = createServerApi(scopedTransport(client.transport, `/v/${vaultId}`), {
+      unauthorizedHandlers: client.unauthorizedHandlers
+    });
+    storage = createRemoteVaultStorage(scoped.api, root);
+    client.sharedStorages.set(vaultId, storage);
+  }
+
+  return storage;
+}
+
 /** Where the server's change stream lives, for the shell's live-update client. */
-function eventsUrlFor(entry: RemoteVaultEntry): string {
-  return `${entry.url.replace(/^http/, "ws")}/api/events`;
+function eventsUrlFor(entry: RemoteVaultEntry, vaultId: string | null): string {
+  const scope = vaultId ? `/v/${vaultId}` : "";
+
+  return `${entry.url.replace(/^http/, "ws")}/api${scope}/events`;
 }
 
 export async function watchRemoteVault(root: string): Promise<void> {
   const { entry, client } = await readyClient(root);
 
-  await requireShell().watch(root, eventsUrlFor(entry), client.token ?? "");
+  await requireShell().watch(root, eventsUrlFor(entry, parseSharedVaultRoot(root)?.vaultId ?? null), client.token ?? "");
+}
+
+/*
+ * Shared vaults of a server the desktop app has added (server/docs/
+ * multiuser.md). The management calls go to the instance's own API, each
+ * vault's files to its own one; the token is the instance's, so nothing of
+ * the sign-in changes. The overview is cached per server for the sidebar,
+ * which asks for it on every menu.
+ */
+
+const sharedOverviews = new Map<string, SharedOverview | null>();
+const sharedLossHandlers = new Set<(folderPath: string, reason: "removed" | "deleted") => void>();
+const sharedPresenceHandlers = new Set<(folderPath: string, editors: SharedPresenceEditor[]) => void>();
+// The shell is listened to once; the handlers above come and go with the UI.
+let sharedPresenceListener: Promise<() => void> | null = null;
+let sharedAccessLostListener: Promise<() => void> | null = null;
+
+/** The server the sidebar is showing right now, so the menu knows what to list. */
+let activeServerRoot: string | null = null;
+
+async function loadSharedOverview(serverRoot: string): Promise<SharedOverview | null> {
+  const { client } = await readyClient(serverRoot);
+  const overview = await client.api.sharedOverview();
+  sharedOverviews.set(serverRoot, overview);
+
+  return overview;
+}
+
+function reportSharedLoss(folderPath: string, reason: "removed" | "deleted"): void {
+  for (const handler of sharedLossHandlers) {
+    handler(folderPath, reason);
+  }
+}
+
+function reportSharedPresence(folderPath: string, editors: SharedPresenceEditor[]): void {
+  for (const handler of sharedPresenceHandlers) {
+    handler(folderPath, editors);
+  }
+}
+
+/**
+ * The shared vaults of the open server vault. Null outside one, which is
+ * what keeps the switcher out of the sidebar for a local folder.
+ */
+export function setActiveRemoteServer(folderPath: string | null): void {
+  activeServerRoot = folderPath && isRemoteVaultPath(folderPath) ? serverRootOf(folderPath) : null;
+}
+
+export const desktopSharedVaults: SharedVaultsApi = {
+  async overview() {
+    return activeServerRoot ? loadSharedOverview(activeServerRoot) : null;
+  },
+
+  async create(name, members) {
+    const { client } = await readyClient(requireActiveServer());
+    return client.api.createSharedVault(name, members);
+  },
+
+  async update(id, changes) {
+    const { client } = await readyClient(requireActiveServer());
+    return client.api.updateSharedVault(id, changes);
+  },
+
+  async leave(id) {
+    const { client } = await readyClient(requireActiveServer());
+    await client.api.leaveSharedVault(id);
+  },
+
+  async remove(id) {
+    const { client } = await readyClient(requireActiveServer());
+    return client.api.deleteSharedVault(id);
+  },
+
+  async restore(id) {
+    const { client } = await readyClient(requireActiveServer());
+    return client.api.restoreSharedVault(id);
+  },
+
+  async dismissNotice(id) {
+    const { client } = await readyClient(requireActiveServer());
+    await client.api.dismissSharedNotice(id);
+  },
+
+  get homeRoot() {
+    return requireActiveServer();
+  },
+
+  rootFor: (id) => sharedVaultRootFor(requireActiveServer(), id),
+  idOf: (folderPath) => parseSharedVaultRoot(folderPath)?.vaultId ?? null,
+
+  async storageFor() {
+    // Opening goes through activateVaultStorage above, which has the server's
+    // client at hand; this entry point is the browser's.
+    return null;
+  },
+
+  setOpenNote: (_folderPath, relativePath) => {
+    void platform.remoteVaults?.setPresencePath(relativePath);
+  },
+
+  onPresence(handler) {
+    sharedPresenceHandlers.add(handler);
+    sharedPresenceListener ??= platform.remoteVaults?.onPresence(reportSharedPresence) ?? null;
+
+    return () => {
+      sharedPresenceHandlers.delete(handler);
+    };
+  },
+
+  onAccessLost(handler) {
+    sharedLossHandlers.add(handler);
+    sharedAccessLostListener ??= platform.remoteVaults?.onAccessLost(reportSharedLoss) ?? null;
+
+    return () => {
+      sharedLossHandlers.delete(handler);
+    };
+  }
+};
+
+function requireActiveServer(): string {
+  if (!activeServerRoot) {
+    throw new Error(i18n.t("remoteVaults.unknownServer"));
+  }
+
+  return activeServerRoot;
 }
 
 /** Only for tests: forgets the cached clients. */

@@ -49,7 +49,7 @@ cpal = "0.15"
 # does not, and which a home server behind Caddy's own CA needs.
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots"] }
 tokio-tungstenite = { version = "0.30", features = ["rustls-tls-native-roots"] }
-tokio = { version = "1", features = ["time"] }
+tokio = { version = "1", features = ["time", "sync"] }
 futures-util = "0.3"
 base64 = "0.22"
 
