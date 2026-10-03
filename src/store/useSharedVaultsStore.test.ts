@@ -110,6 +110,33 @@ describe("useSharedVaultsStore", () => {
     expect(api.current!.dismissNotice).toHaveBeenCalledWith("n1");
   });
 
+  // Switching from a server vault to a local folder: the previous vault's
+  // people and notices must not linger, or the file tree marks notes of the
+  // new one as "open by someone else".
+  it("drops presence and notices when the new vault has no shared vaults", async () => {
+    api.current!.overview.mockResolvedValueOnce(overview([family]));
+    await useSharedVaultsStore.getState().refresh();
+    useSharedVaultsStore.getState().setPresence("/shared/7f3a", [{ user: "bob", path: "Note.md" }]);
+
+    api.current!.overview.mockResolvedValueOnce(null);
+    await useSharedVaultsStore.getState().refresh();
+
+    const state = useSharedVaultsStore.getState();
+    expect(state.status).toBe("off");
+    expect(state.overview).toBeNull();
+    expect(state.presence).toBeNull();
+    expect(state.lost).toBeNull();
+  });
+
+  it("drops them for a platform without shared vaults too", async () => {
+    useSharedVaultsStore.getState().setPresence("/shared/7f3a", [{ user: "bob", path: "Note.md" }]);
+    api.current = null;
+
+    await useSharedVaultsStore.getState().refresh();
+
+    expect(useSharedVaultsStore.getState().presence).toBeNull();
+  });
+
   it("remembers which vault was lost, by its name", async () => {
     api.current!.overview.mockResolvedValue(overview([family]));
     await useSharedVaultsStore.getState().refresh();

@@ -533,11 +533,15 @@ export const desktopSharedVaults: SharedVaultsApi = {
     await client.api.dismissSharedNotice(id);
   },
 
+  // Read while rendering the vault menu, which can still be up for a moment
+  // after the app left the server: an exception there would tear the whole
+  // UI down, so these answer with an empty root instead. Opening it is a
+  // no-op, and the list is gone with the next refresh.
   get homeRoot() {
-    return requireActiveServer();
+    return activeServerRoot ?? "";
   },
 
-  rootFor: (id) => sharedVaultRootFor(requireActiveServer(), id),
+  rootFor: (id) => (activeServerRoot ? sharedVaultRootFor(activeServerRoot, id) : ""),
   idOf: (folderPath) => parseSharedVaultRoot(folderPath)?.vaultId ?? null,
 
   async storageFor() {

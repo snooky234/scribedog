@@ -322,6 +322,16 @@ describe("shared vaults of a server vault", () => {
     expect(shell.api.watch).toHaveBeenCalledWith(root, "wss://notes.example.com/anna/api/v/7f3a/events", "sdt_t_s");
   });
 
+  // The vault menu can still be on screen for a moment after the app has
+  // left the server for a local folder. Reading a root while rendering must
+  // not throw there: that tears the whole UI down (the window goes black).
+  it("answers with an empty root instead of throwing once no server is open", () => {
+    remoteVaults.setActiveRemoteServer("C:\Users\me\Notes");
+
+    expect(remoteVaults.desktopSharedVaults.homeRoot).toBe("");
+    expect(remoteVaults.desktopSharedVaults.rootFor("7f3a")).toBe("");
+  });
+
   it("sends the open note to the shell, for the other people's presence hints", async () => {
     const serverRoot = await addServer();
     remoteVaults.setActiveRemoteServer(serverRoot);

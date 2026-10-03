@@ -21,41 +21,53 @@ type SharedVaultSwitcherProps = {
   onContextMenu: (event: MouseEvent<HTMLElement>) => void;
 };
 
-/**
- * The entries of the shared vaults: the person's own vault of this server
- * and every shared vault they are in, then creating and managing them.
- *
- * Its own component because the two shells put it in different places: the
- * browser has nothing else to switch between, so the vault name is this menu
- * (SharedVaultSwitcher below); the desktop app already has one for its local
- * folders and servers, and these go in there as a section.
- */
-export function SharedVaultMenuItems({ folderPath, onOpenVault }: { folderPath: string | null; onOpenVault: (folderPath: string) => void }) {
-  const { t } = useTranslation();
+function useSharedMenu(folderPath: string | null) {
   const overview = useSharedVaultsStore((state) => state.overview);
   const openDialog = useSharedVaultsStore((state) => state.openDialog);
   const api = platform.sharedVaults;
+
+  const marker = (path: string) =>
+    path === folderPath ? <Check className="size-4" aria-hidden="true" /> : <span className="size-4" aria-hidden="true" />;
+
+  return { api, overview, openDialog, marker };
+}
+
+/**
+ * The shared vaults themselves, one row each.
+ *
+ * Its own component because the two shells put them in different places: in
+ * the browser they hang under the vault name, which is the only menu there
+ * (SharedVaultSwitcher below); in the desktop app they are indented under
+ * their server in the vault menu it already has, next to the local folders.
+ */
+export function SharedVaultItems({
+  folderPath,
+  onOpenVault,
+  indented = false
+}: {
+  folderPath: string | null;
+  onOpenVault: (folderPath: string) => void;
+  indented?: boolean;
+}) {
+  const { api, overview, marker } = useSharedMenu(folderPath);
 
   if (!api || !overview) {
     return null;
   }
 
-  const marker = (path: string) =>
-    path === folderPath ? <Check className="size-4" aria-hidden="true" /> : <span className="size-4" aria-hidden="true" />;
-
   return (
     <>
-      <MenuItem className="sidebar-panel__recent-folder-item" onClick={() => onOpenVault(api.homeRoot)}>
-        {marker(api.homeRoot)}
-        <span className="sidebar-panel__recent-folder-name">{t("sharedVaults.menuOwnVault")}</span>
-      </MenuItem>
       {overview.vaults.map((vault) => {
         const root = api.rootFor(vault.id);
 
         return (
           <MenuItem
             key={vault.id}
-            className="sidebar-panel__recent-folder-item"
+            className={
+              indented
+                ? "sidebar-panel__recent-folder-item sidebar-panel__recent-folder-item--nested"
+                : "sidebar-panel__recent-folder-item"
+            }
             title={vault.members.map((member) => member.user).join(", ")}
             onClick={() => onOpenVault(root)}
             data-testid="shared-vault-item"
@@ -66,7 +78,21 @@ export function SharedVaultMenuItems({ folderPath, onOpenVault }: { folderPath: 
           </MenuItem>
         );
       })}
-      <div className="editor-toolbar__menu-separator" role="separator" />
+    </>
+  );
+}
+
+/** "New shared vault…" and "Manage shared vaults…", at the end of the menu. */
+export function SharedVaultActions({ folderPath }: { folderPath: string | null }) {
+  const { t } = useTranslation();
+  const { api, overview, openDialog } = useSharedMenu(folderPath);
+
+  if (!api || !overview) {
+    return null;
+  }
+
+  return (
+    <>
       <MenuItem onClick={() => openDialog({ kind: "create" })} data-testid="shared-vault-new">
         <Plus className="size-4" aria-hidden="true" />
         {t("sharedVaults.menuNew")}
@@ -76,6 +102,23 @@ export function SharedVaultMenuItems({ folderPath, onOpenVault }: { folderPath: 
         {t("sharedVaults.menuManage")}
       </MenuItem>
     </>
+  );
+}
+
+/** The instance's own vault; only the browser needs it as a row of its own. */
+function OwnVaultItem({ folderPath, onOpenVault }: { folderPath: string | null; onOpenVault: (folderPath: string) => void }) {
+  const { t } = useTranslation();
+  const { api, marker } = useSharedMenu(folderPath);
+
+  if (!api) {
+    return null;
+  }
+
+  return (
+    <MenuItem className="sidebar-panel__recent-folder-item" onClick={() => onOpenVault(api.homeRoot)}>
+      {marker(api.homeRoot)}
+      <span className="sidebar-panel__recent-folder-name">{t("sharedVaults.menuOwnVault")}</span>
+    </MenuItem>
   );
 }
 
@@ -113,7 +156,10 @@ export function SharedVaultSwitcher({ folderPath, isLoading, label, title, onOpe
       <MenuPortal>
         <MenuPositioner align="start">
           <MenuPopup>
-            <SharedVaultMenuItems folderPath={folderPath} onOpenVault={onOpenVault} />
+            <OwnVaultItem folderPath={folderPath} onOpenVault={onOpenVault} />
+            <SharedVaultItems folderPath={folderPath} onOpenVault={onOpenVault} indented />
+            <div className="editor-toolbar__menu-separator" role="separator" />
+            <SharedVaultActions folderPath={folderPath} />
           </MenuPopup>
         </MenuPositioner>
       </MenuPortal>

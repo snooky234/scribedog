@@ -116,6 +116,12 @@
   max-width: 22rem;
 }
 
+/* A shared vault below the server it belongs to (Sidebar.tsx): indented the
+   way a file sits under its folder in the tree. */
+.sidebar-panel__recent-folder-item--nested {
+  padding-left: 1.75rem;
+}
+
 .sidebar-panel__recent-folder-name {
   overflow: hidden;
   white-space: nowrap;

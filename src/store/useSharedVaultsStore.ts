@@ -117,7 +117,7 @@ export const useSharedVaultsStore = create<SharedVaultsState>((set, get) => {
       const api = platform.sharedVaults;
 
       if (!api) {
-        set({ status: "off", overview: null });
+        set({ status: "off", overview: null, presence: null, lost: null });
         return;
       }
 
@@ -127,7 +127,10 @@ export const useSharedVaultsStore = create<SharedVaultsState>((set, get) => {
 
       try {
         const overview = await api.overview();
-        set(overview ? { status: "ready", overview } : { status: "off", overview: null });
+        // Everything about the previous vault goes with it: a local folder
+        // (or a server without sharing) has no shared vaults, no notices and
+        // nobody else editing in it.
+        set(overview ? { status: "ready", overview } : { status: "off", overview: null, presence: null, lost: null });
       } catch {
         // A server that cannot answer right now keeps the last list rather
         // than making the vaults vanish from the menu.

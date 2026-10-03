@@ -23,6 +23,7 @@ import type { SortMode } from "@/lib/vaultMeta";
 import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportDropStore";
 import { getVaultCapabilities } from "@/platform";
 import type { PinToggleAction } from "@/store/appStore/workingSet";
+import { useAppStore } from "@/store/useAppStore";
 import { useSearchStore } from "@/store/useSearchStore";
 import { useSharedVaultsStore } from "@/store/useSharedVaultsStore";
 
@@ -231,14 +232,18 @@ export function TreeNodeRow({
   // Who else has this note of a shared vault open, as one string: a selector
   // has to return the same value for the same state, which a fresh array
   // would not be.
-  const presentUsers = useSharedVaultsStore((state) =>
-    node.kind === "file" && state.presence
-      ? state.presence.editors
-          .filter((editor) => editor.path === node.relativePath)
-          .map((editor) => editor.user)
-          .join(", ")
-      : ""
-  );
+  const presentUsers = useSharedVaultsStore((state) => {
+    // Only for the vault the presence was reported for: switching to another
+    // one leaves the previous list in place until the next message arrives.
+    if (node.kind !== "file" || state.presence?.folderPath !== useAppStore.getState().folderPath) {
+      return "";
+    }
+
+    return state.presence.editors
+      .filter((editor) => editor.path === node.relativePath)
+      .map((editor) => editor.user)
+      .join(", ");
+  });
   // The paw. On a folder it is cumulative over the subtree and only shown while
   // the folder is collapsed — expanded, the files carry their own, and the same
   // marker repeated on every ancestor would say nothing.
