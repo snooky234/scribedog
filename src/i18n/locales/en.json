@@ -341,6 +341,7 @@
   "assistants": {
     "defaultName": "ScribeDog (Default)",
     "defaultDescription": "Your loyal writing companion.",
+    "defaultLockedHint": "The default assistant's name and description follow the app language, so they can't be changed. The instruction can.",
     "addAssistant": "Add assistant",
     "editAssistant": "Edit assistant",
     "deleteAssistant": "Delete assistant",

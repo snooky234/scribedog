@@ -173,6 +173,7 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
                   type="text"
                   value={name}
                   disabled={isEditingDefault}
+                  aria-describedby={isEditingDefault ? "assistant-locked-hint" : undefined}
                   placeholder={t("assistants.namePlaceholder")}
                   onChange={(event) => setName(event.target.value)}
                 />
@@ -185,10 +186,21 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
                 type="text"
                 value={description}
                 disabled={isEditingDefault}
+                aria-describedby={isEditingDefault ? "assistant-locked-hint" : undefined}
                 placeholder={t("assistants.descriptionPlaceholder")}
                 onChange={(event) => setDescription(event.target.value)}
               />
             </label>
+
+            {/* The default assistant stores an empty name and description so
+                both stay language-aware, which is why the two fields are
+                locked while the instruction below is not. Without this line
+                the lock reads as a bug. */}
+            {isEditingDefault ? (
+              <p className="assistants__locked-hint" id="assistant-locked-hint">
+                {t("assistants.defaultLockedHint")}
+              </p>
+            ) : null}
 
             <label className="ai-dialog__field ai-dialog__field--full">
               <span>{t("assistants.instruction")}</span>

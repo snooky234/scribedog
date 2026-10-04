@@ -374,6 +374,27 @@
   overflow: hidden;
 }
 
+/* The default assistant's name and description are locked so they can keep
+   following the app language. A disabled input that still looks like an
+   editable one reads as the app being broken, so the lock is spelled out:
+   flatter surface, dimmed text, no text cursor and no caret from a selection
+   that happens to end inside the field. */
+.assistants__form .ai-dialog__field input:disabled {
+  opacity: 0.55;
+  background: rgba(var(--surface-raised-rgb), 0.4);
+  border-style: dashed;
+  cursor: not-allowed;
+  caret-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.assistants__locked-hint {
+  margin: -0.35rem 0 0;
+  color: var(--dialog-hint);
+  font-size: var(--dialog-hint-size);
+}
+
 .assistants__form-actions {
   display: flex;
   gap: 0.5rem;

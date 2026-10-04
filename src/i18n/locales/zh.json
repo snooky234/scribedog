@@ -340,6 +340,7 @@
   "assistants": {
     "defaultName": "ScribeDog (默认)",
     "defaultDescription": "你忠实的写作伙伴。",
+    "defaultLockedHint": "默认助手的名称和描述会跟随应用语言，因此无法修改。指令可以修改。",
     "addAssistant": "添加助手",
     "editAssistant": "编辑助手",
     "deleteAssistant": "删除助手",

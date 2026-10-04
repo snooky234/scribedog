@@ -341,6 +341,7 @@
   "assistants": {
     "defaultName": "ScribeDog (Predeterminado)",
     "defaultDescription": "Tu fiel compañero de escritura.",
+    "defaultLockedHint": "El nombre y la descripción del asistente predeterminado siguen el idioma de la aplicación, por eso no se pueden cambiar. La instrucción sí.",
     "addAssistant": "Añadir asistente",
     "editAssistant": "Editar asistente",
     "deleteAssistant": "Eliminar asistente",
