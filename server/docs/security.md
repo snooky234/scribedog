@@ -46,7 +46,8 @@ computer, and every request the app makes carries it.
 What the server keeps is a fingerprint of the key (a hash), never the key
 itself, together with the device name and when the key was created and last
 used. That is what the **Signed-in devices** list shows, in the browser under
-Settings → Account and in the desktop app under Settings → Servers. Someone
+Settings → Account and in the desktop app under the vault menu → Manage
+vaults… → Edit on the server. Someone
 who copies the data folder therefore cannot use the keys in it.
 
 Access keys do not expire. They end when:

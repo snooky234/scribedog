@@ -81,8 +81,9 @@ macOS Keychain, Linux Secret Service), never in a file the app writes. The
 server keeps only a fingerprint of it.
 
 **I lost a laptop that had the server added.**
-Revoke its key: Settings → Account in the browser, or Settings → Servers in
-another desktop app. Its next request is refused. The password stays.
+Revoke its key: Settings → Account in the browser, or, in another desktop
+app, the vault menu → Manage vaults… → Edit on that server. Its next
+request is refused. The password stays.
 
 **Why is the knowledge base greyed out for a server vault?**
 Its index runs inside the desktop app and reads the notes from your disk. A
@@ -247,6 +248,12 @@ editor. The desktop app's Whisper dictation works with a server vault.
 Set the new version in `SCRIBEDOG_IMAGE`, then `docker compose pull` and
 `docker compose up -d`, or `git pull` and `docker compose up -d --build`.
 Nobody is signed out. See [Updating](updating.md).
+
+**Does an update need changes to my .env?**
+No. New settings come with defaults, so a server started on the old `.env`
+keeps behaving as before. Shared vaults, for instance, stay off until you
+set `SCRIBEDOG_USER` and `SCRIBEDOG_SHARED_PATH` yourself. Release notes use
+the word **breaking** when something you configured really has to change.
 
 **The server refuses to start after I went back to an older version.**
 The data folder was written by a newer server and its layout moved on. Start

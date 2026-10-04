@@ -227,13 +227,14 @@ has their own in `.scribedog/users/<name>/` inside the shared vault.
 ### Using them
 
 Once sharing is set up, the vault name at the top of the sidebar becomes a
-menu: **My vault**, then every shared vault you are in, then
-**New shared vault…** and **Manage shared vaults…**.
+menu: **My vault**, every shared vault you are in below it, then
+**New shared vault…** and **Manage vaults…**. The menu is where vaults are
+opened; the dialog is where they are managed.
 
 | Where | What it does |
 | --- | --- |
 | **New shared vault…** | A name and the people to share with. The new vault opens right away. |
-| **Manage shared vaults…** | Every shared vault you are in, with who created it and who is in it. The creator can edit (name, members) and delete; everyone else can leave. Your deleted vaults are listed under **Trash** with the date they go for good, and can be restored until then. |
+| **Manage vaults…** | Under **Shared vaults**, every shared vault you are in, with who created it and who is in it. The creator can edit (name, members) and delete; everyone else can leave. Your deleted vaults are listed under **Trash** with the date they go for good, and can be restored until then. |
 | The file tree and the note's header | A people icon on a note someone else has open right now, and their name next to the save button when it is the note you have open. It is a hint, nothing is locked. |
 
 When a vault you have open is deleted, or you are taken off it, a message
@@ -241,9 +242,10 @@ says so and takes you back to your own vault. Members who were not there
 when it was deleted see a one-time note under the vault name.
 
 The desktop app does the same once it is connected to your instance: the
-vault menu in its sidebar lists your shared vaults above your local folders
-and servers, and creating, managing and the presence hints all work there
-too. It signs in as the person of that instance, so there is nothing extra
+vault menu in its sidebar lists your shared vaults under the server they
+belong to, next to your local folders, and creating, managing and the
+presence hints all work there too. Its **Manage vaults…** covers the same
+ground plus the folders on that computer and the servers it knows. It signs in as the person of that instance, so there is nothing extra
 to set up.
 
 ### Setting it up

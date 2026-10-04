@@ -29,6 +29,16 @@ git pull && docker compose up -d --build
 Sessions and the desktop apps' access keys survive restarts and updates;
 nobody has to sign in again.
 
+## Your .env after an update
+
+An update does not ask you to change `.env`. Every setting a release adds
+has a default, and a server started without it behaves as it did before.
+Shared vaults are the current example: they need `SCRIBEDOG_USER` and
+`SCRIBEDOG_SHARED_PATH`, and with neither set the server runs exactly as it
+did, without them. Set them when you want the feature, not because you
+updated. The release notes name the rare case where something you
+configured has to change, with the word **breaking**.
+
 ## The desktop app and the server
 
 Both come from the same repository and share its version number. Keep them

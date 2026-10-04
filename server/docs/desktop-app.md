@@ -56,9 +56,10 @@ change within a second, the way it does for a local folder.
 
 **Shared vaults are in the vault menu.** When the server you are connected to
 has [shared vaults](multiuser.md#shared-vaults), the menu behind the vault
-name lists them above your local folders, with **New shared vault…** and
-**Manage shared vaults…** below. Opening one makes it the vault the app works
-in, with its own version history and its own last opened note.
+name lists them indented under that server, next to your local folders, with
+**New shared vault…** and **Manage vaults…** below. Opening one makes it the
+vault the app works in, with its own version history and its own last opened
+note.
 
 **The same note in two places is safe, but not live.** If the desktop app and
 a browser tab both have a note open and both save, the later save merges the
@@ -91,10 +92,14 @@ the password and work continues where it was; unsaved edits are kept.
 
 ## Disconnecting, and the device list
 
-**Settings → Servers** lists every server the app knows. For each one:
+**Vault menu → Manage vaults…** lists every server the app knows, under
+**Connected servers**, next to the folders and shared vaults. **Edit** on a
+server opens it:
 
-- **Devices** shows the server's list of signed-in devices (every desktop app
-  that holds an access key), with when each was added and last used, and a
+- **Display name** is what the sidebar and the vault menu call this server.
+  Only this computer sees it; the server is not renamed.
+- **Signed-in devices** is the server's own list (every desktop app that
+  holds an access key), with when each was added and last used, and a
   **Revoke** button per device. This computer is marked. Revoking a device
   ends its access without changing the password, which is what to do when a
   laptop is lost.
