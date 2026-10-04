@@ -3,6 +3,15 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.19.1] - 2026-10-04
+
+### Bug Fixes
+- Make the default assistant's locked fields read as locked
+- Stop dialogs closing when a selection ends on the backdrop
+- Tighten rule spacing and clicks in the page margin
+- Stop the caret appearing in non-editable chrome
+- Fix spacing and stray caret in the empty document panel
+
 ## [0.19.0] - 2026-10-04
 
 ### Highlights
