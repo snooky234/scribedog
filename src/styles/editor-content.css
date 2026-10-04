@@ -171,6 +171,15 @@
   color: rgba(var(--text-rgb), 0.7);
 }
 
+/* Tailwind Typography gives a rule 3em of air above and below, which reads as
+   a page break rather than a section divider in a document that is being
+   edited. A separator only has to say "new section" — the heading that
+   usually follows brings its own margin on top of this. */
+.editor-view__surface hr {
+  margin-top: 1.4em;
+  margin-bottom: 1.4em;
+}
+
 .editor-view__surface ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0;

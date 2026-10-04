@@ -2035,19 +2035,24 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
                   lastPointerTypeRef.current = event.pointerType;
                 }}
                 onContextMenu={handleEditorContextMenu}
-                // The wrapper fills the scroll area below a short document.
-                // A click there is outside the contenteditable, so left to
+                // The wrapper fills the scroll area around and below the page.
+                // A click there is outside the contenteditable, and left to
                 // itself the browser parks the DOM selection on the nearest
                 // selectable element before it, the toolbar's separator,
-                // which then lights up as a stray caret. Treat it as "after
-                // the last paragraph" instead, the way editors do.
+                // which then lights up as a stray caret. The margin is not
+                // part of the document, so a click there means "put this
+                // aside", not "type here": take the focus out of the editor
+                // rather than moving the caret somewhere the user did not aim
+                // at. The selection itself survives, painted as the inactive
+                // highlight (see inactiveSelection.ts), so the AI actions
+                // still have something to work on.
                 onMouseDown={(event) => {
                   if (event.target !== event.currentTarget || !editor) {
                     return;
                   }
 
                   event.preventDefault();
-                  editor.commands.focus("end");
+                  (editor.view.dom as HTMLElement).blur();
                 }}
               />
             </ScrollArea>
