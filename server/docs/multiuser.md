@@ -250,8 +250,8 @@ to set up.
 
 ### Setting it up
 
-The example compose file already has everything; what it needs from you is in
-`.env`:
+A setup created with the current example compose file already has everything;
+what it needs from you is in `.env`:
 
 | Variable | What it is |
 | --- | --- |
@@ -261,6 +261,62 @@ The example compose file already has everything; what it needs from you is in
 
 A person can be picked as a member once their instance has started at least
 once with a name.
+
+### Turning it on in a setup you already run
+
+A compose file written before this feature existed passes none of the three
+variables into the containers, so filling in `.env` alone changes nothing.
+Three steps, and the running instances keep their notes, passwords and
+sessions:
+
+1. **Pick a group id that is free on the host.** Run `getent group 1500` on
+   the server; it must print nothing. Try another number until it does. The
+   shared folder belongs to this group, which is how the instances, each
+   running as its own Linux user, can all write in it.
+
+2. **Open `docker-compose.yml`** and give every `scribedog-<N>` service three
+   more environment lines and a second volume, each with that person's own
+   `PERSON<N>_USER` variable:
+
+   ```yaml
+     scribedog-1:
+       environment:
+         # ... the lines you already have
+         SCRIBEDOG_USER: ${PERSON1_USER:-}
+         SCRIBEDOG_SHARED_PATH: /shared
+         SCRIBEDOG_SHARED_GID: ${SHARED_GID:-1500}
+       volumes:
+         # ... the data volume you already have
+         - ./${SHARED_DIR:-shared}:/shared
+   ```
+
+   `SCRIBEDOG_SHARED_PATH` and `SCRIBEDOG_SHARED_GID` are the same for every
+   instance: they all mount the one shared folder. Only `SCRIBEDOG_USER`
+   differs.
+
+3. **Open `.env`** and add the names and the group:
+
+   ```dotenv
+   PERSON1_USER=anna
+   PERSON2_USER=bob
+   SHARED_DIR=shared
+   SHARED_GID=1500
+   ```
+
+Then `docker compose up -d`. The folder is created on the next start, with
+the group and modes the instances need, and the vault name in the sidebar
+becomes the menu described above.
+
+An instance whose `PERSON<N>_USER` you leave empty stays out of sharing and
+runs as before; with the folder mounted but no name, that instance starts
+without sharing and says so in its log rather than refusing to run. The
+group id is the one thing the container insists on: `SCRIBEDOG_SHARED_PATH`
+without a numeric `SCRIBEDOG_SHARED_GID` stops the start with a message,
+because a shared folder nobody can write to would fail later and less
+clearly.
+
+Nothing here is required by the update itself: a server updated without these
+changes keeps working exactly as it did.
 
 ### Who can write where
 

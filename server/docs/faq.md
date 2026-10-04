@@ -119,6 +119,14 @@ deleted one for 30 days. See [Shared vaults](multiuser.md#shared-vaults).
 With a single instance there is one vault and one password, so sharing
 means sharing that password.
 
+**I already run a multi-instance setup. How do I get shared vaults?**
+Your compose file was written before the feature existed, so it passes none
+of its variables into the containers and filling in `.env` alone does
+nothing. Add three environment lines and one volume per instance, then the
+names and a free group id to `.env`. Step by step:
+[Turning it on in a setup you already run](multiuser.md#turning-it-on-in-a-setup-you-already-run).
+Until you do, everything keeps running as before.
+
 **Can I edit the files directly on the server?**
 Yes, with any editor, over SSH, with a sync tool. Open browsers and desktop
 apps see the change within a second.
