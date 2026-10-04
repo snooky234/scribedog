@@ -105,7 +105,7 @@ export function DeviceList({ load, revoke, onRevokedCurrent, testIdPrefix = "dev
               </div>
               <Button
                 type="button"
-                variant="outline"
+                variant="destructive"
                 size="sm"
                 disabled={busyId !== null}
                 onClick={() => void handleRevoke(device)}

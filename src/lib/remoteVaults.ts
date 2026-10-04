@@ -17,7 +17,13 @@ import {
   sharedVaultRootFor
 } from "@/platform/remote/vaultRoot";
 import { setVaultUser } from "@/lib/userMeta";
-import type { SharedOverview, SharedPresenceEditor, SharedVaultsApi, VaultStorage } from "@/platform/types";
+import type {
+  SharedOverview,
+  SharedPresenceEditor,
+  SharedVaultsApi,
+  SharedVaultServer,
+  VaultStorage
+} from "@/platform/types";
 
 export { isRemoteVaultPath };
 export type { RemoteAccessToken };
@@ -103,16 +109,66 @@ function readEntries(): RemoteVaultEntry[] {
   }
 }
 
+/**
+ * The server list lives in localStorage, which no component can observe, so
+ * every reader that renders it subscribes here. Renaming a server reaches
+ * the sidebar and the vault menu right away rather than at the next start.
+ */
+const listeners = new Set<() => void>();
+let snapshot: RemoteVaultEntry[] | null = null;
+
+export function subscribeToRemoteVaults(listener: () => void): () => void {
+  listeners.add(listener);
+
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** A stable array for useSyncExternalStore; a fresh one would loop forever. */
+export function getRemoteVaultsSnapshot(): RemoteVaultEntry[] {
+  snapshot ??= listRemoteVaults();
+
+  return snapshot;
+}
+
 function writeEntries(entries: RemoteVaultEntry[]): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   } catch {
     // localStorage may be unavailable in some environments.
   }
+
+  snapshot = null;
+  listeners.forEach((listener) => listener());
 }
 
 export function listRemoteVaults(): RemoteVaultEntry[] {
   return platform.features.remoteVaults ? readEntries() : [];
+}
+
+/**
+ * Registers every server the app knows with the shell, which keeps the
+ * allowlist in memory and therefore starts empty (see
+ * src-tauri/src/remote_vault.rs). Called once at startup, before anything
+ * asks a server something: opening a vault registers its own server, but the
+ * vault menu lists the shared vaults of all of them, and that happens before
+ * any vault is open.
+ */
+export async function allowKnownRemoteServers(): Promise<void> {
+  const shell = platform.remoteVaults;
+
+  if (!shell) {
+    return;
+  }
+
+  await Promise.all(
+    readEntries().map((entry) =>
+      // A malformed entry (hand-edited localStorage) must not keep the
+      // others from being registered.
+      shell.allowServer(originOf(entry.url)).catch(() => undefined)
+    )
+  );
 }
 
 export function remoteVaultFor(folderPath: string | null): RemoteVaultEntry | null {
@@ -453,11 +509,15 @@ export async function watchRemoteVault(root: string): Promise<void> {
 }
 
 /*
- * Shared vaults of a server the desktop app has added (server/docs/
+ * Shared vaults of the servers the desktop app has added (server/docs/
  * multiuser.md). The management calls go to the instance's own API, each
  * vault's files to its own one; the token is the instance's, so nothing of
- * the sign-in changes. The overview is cached per server for the sidebar,
- * which asks for it on every menu.
+ * the sign-in changes.
+ *
+ * Listed for every server, not only the open one: someone in a local folder
+ * should be able to jump straight into a shared vault, the way they can into
+ * any other vault. The overviews are cached per server and refreshed
+ * whenever the menu opens.
  */
 
 const sharedOverviews = new Map<string, SharedOverview | null>();
@@ -466,9 +526,6 @@ const sharedPresenceHandlers = new Set<(folderPath: string, editors: SharedPrese
 // The shell is listened to once; the handlers above come and go with the UI.
 let sharedPresenceListener: Promise<() => void> | null = null;
 let sharedAccessLostListener: Promise<() => void> | null = null;
-
-/** The server the sidebar is showing right now, so the menu knows what to list. */
-let activeServerRoot: string | null = null;
 
 async function loadSharedOverview(serverRoot: string): Promise<SharedOverview | null> {
   const { client } = await readyClient(serverRoot);
@@ -490,59 +547,64 @@ function reportSharedPresence(folderPath: string, editors: SharedPresenceEditor[
   }
 }
 
-/**
- * The shared vaults of the open server vault. Null outside one, which is
- * what keeps the switcher out of the sidebar for a local folder.
- */
-export function setActiveRemoteServer(folderPath: string | null): void {
-  activeServerRoot = folderPath && isRemoteVaultPath(folderPath) ? serverRootOf(folderPath) : null;
-}
-
 export const desktopSharedVaults: SharedVaultsApi = {
-  async overview() {
-    return activeServerRoot ? loadSharedOverview(activeServerRoot) : null;
+  async servers() {
+    const entries = listRemoteVaults();
+    const overviews = await Promise.all(
+      entries.map((entry) =>
+        // A server that is away, or whose token was refused, is left out of
+        // the list rather than taking the others down with it.
+        loadSharedOverview(entry.root).catch(() => null)
+      )
+    );
+
+    return entries
+      .map((entry, index) => ({ root: entry.root, name: entry.name, overview: overviews[index] }))
+      .filter((server): server is SharedVaultServer => server.overview !== null);
   },
 
-  async create(name, members) {
-    const { client } = await readyClient(requireActiveServer());
+  connectedCount: () => listRemoteVaults().length,
+
+  async overview(serverRoot) {
+    return loadSharedOverview(serverRoot);
+  },
+
+  async create(serverRoot, name, members) {
+    const { client } = await readyClient(serverRoot);
     return client.api.createSharedVault(name, members);
   },
 
-  async update(id, changes) {
-    const { client } = await readyClient(requireActiveServer());
+  async update(serverRoot, id, changes) {
+    const { client } = await readyClient(serverRoot);
     return client.api.updateSharedVault(id, changes);
   },
 
-  async leave(id) {
-    const { client } = await readyClient(requireActiveServer());
+  async leave(serverRoot, id) {
+    const { client } = await readyClient(serverRoot);
     await client.api.leaveSharedVault(id);
   },
 
-  async remove(id) {
-    const { client } = await readyClient(requireActiveServer());
+  async remove(serverRoot, id) {
+    const { client } = await readyClient(serverRoot);
     return client.api.deleteSharedVault(id);
   },
 
-  async restore(id) {
-    const { client } = await readyClient(requireActiveServer());
+  async restore(serverRoot, id) {
+    const { client } = await readyClient(serverRoot);
     return client.api.restoreSharedVault(id);
   },
 
-  async dismissNotice(id) {
-    const { client } = await readyClient(requireActiveServer());
+  async dismissNotice(serverRoot, id) {
+    const { client } = await readyClient(serverRoot);
     await client.api.dismissSharedNotice(id);
   },
 
-  // Read while rendering the vault menu, which can still be up for a moment
-  // after the app left the server: an exception there would tear the whole
-  // UI down, so these answer with an empty root instead. Opening it is a
-  // no-op, and the list is gone with the next refresh.
-  get homeRoot() {
-    return activeServerRoot ?? "";
-  },
+  rootFor: (serverRoot, id) => sharedVaultRootFor(serverRoot, id),
+  parseRoot: (folderPath) => {
+    const parsed = parseSharedVaultRoot(folderPath);
 
-  rootFor: (id) => (activeServerRoot ? sharedVaultRootFor(activeServerRoot, id) : ""),
-  idOf: (folderPath) => parseSharedVaultRoot(folderPath)?.vaultId ?? null,
+    return parsed ? { serverRoot: parsed.serverRoot, id: parsed.vaultId } : null;
+  },
 
   async storageFor() {
     // Opening goes through activateVaultStorage above, which has the server's
@@ -572,14 +634,6 @@ export const desktopSharedVaults: SharedVaultsApi = {
     };
   }
 };
-
-function requireActiveServer(): string {
-  if (!activeServerRoot) {
-    throw new Error(i18n.t("remoteVaults.unknownServer"));
-  }
-
-  return activeServerRoot;
-}
 
 /** Only for tests: forgets the cached clients. */
 export function resetRemoteVaultClients(): void {

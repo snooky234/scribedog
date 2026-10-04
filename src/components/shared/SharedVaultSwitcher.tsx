@@ -4,12 +4,12 @@ import { useTranslation } from "react-i18next";
 
 import { Menu, MenuItem, MenuPopup, MenuPortal, MenuPositioner, MenuTrigger } from "@/components/ui/menu";
 import { platform } from "@/platform";
-import type { SharedNoticeInfo } from "@/platform/types";
+import type { SharedVaultServer } from "@/platform/types";
 import { useSharedVaultsStore } from "@/store/useSharedVaultsStore";
 
 // A selector must return the same object for the same state, or the store
 // hook re-renders forever; a fresh [] on every call would be a new one.
-const NO_NOTICES: SharedNoticeInfo[] = [];
+const NO_SERVERS: SharedVaultServer[] = [];
 
 type SharedVaultSwitcherProps = {
   folderPath: string | null;
@@ -21,15 +21,16 @@ type SharedVaultSwitcherProps = {
   onContextMenu: (event: MouseEvent<HTMLElement>) => void;
 };
 
-function useSharedMenu(folderPath: string | null) {
-  const overview = useSharedVaultsStore((state) => state.overview);
-  const openDialog = useSharedVaultsStore((state) => state.openDialog);
-  const api = platform.sharedVaults;
+function useServers(): SharedVaultServer[] {
+  return useSharedVaultsStore((state) => (state.servers.length > 0 ? state.servers : NO_SERVERS));
+}
 
-  const marker = (path: string) =>
-    path === folderPath ? <Check className="size-4" aria-hidden="true" /> : <span className="size-4" aria-hidden="true" />;
-
-  return { api, overview, openDialog, marker };
+function Marker({ root, folderPath }: { root: string; folderPath: string | null }) {
+  return root === folderPath ? (
+    <Check className="size-4" aria-hidden="true" />
+  ) : (
+    <span className="size-4" aria-hidden="true" />
+  );
 }
 
 /**
@@ -39,26 +40,32 @@ function useSharedMenu(folderPath: string | null) {
  * the browser they hang under the vault name, which is the only menu there
  * (SharedVaultSwitcher below); in the desktop app they are indented under
  * their server in the vault menu it already has, next to the local folders.
+ * `serverRoot` picks the server whose vaults to list; the desktop app can
+ * have several and renders this once per server.
  */
 export function SharedVaultItems({
+  serverRoot,
   folderPath,
   onOpenVault,
   indented = false
 }: {
+  serverRoot?: string;
   folderPath: string | null;
   onOpenVault: (folderPath: string) => void;
   indented?: boolean;
 }) {
-  const { api, overview, marker } = useSharedMenu(folderPath);
+  const servers = useServers();
+  const api = platform.sharedVaults;
+  const server = serverRoot === undefined ? servers[0] : servers.find((entry) => entry.root === serverRoot);
 
-  if (!api || !overview) {
+  if (!api || !server) {
     return null;
   }
 
   return (
     <>
-      {overview.vaults.map((vault) => {
-        const root = api.rootFor(vault.id);
+      {server.overview.vaults.map((vault) => {
+        const root = api.rootFor(server.root, vault.id);
 
         return (
           <MenuItem
@@ -72,7 +79,7 @@ export function SharedVaultItems({
             onClick={() => onOpenVault(root)}
             data-testid="shared-vault-item"
           >
-            {marker(root)}
+            <Marker root={root} folderPath={folderPath} />
             <Users className="size-4 sidebar-panel__recent-folder-kind" aria-hidden="true" />
             <span className="sidebar-panel__recent-folder-name">{vault.name}</span>
           </MenuItem>
@@ -82,41 +89,67 @@ export function SharedVaultItems({
   );
 }
 
-/** "New shared vault…" and "Manage shared vaults…", at the end of the menu. */
-export function SharedVaultActions({ folderPath }: { folderPath: string | null }) {
+/**
+ * "New shared vault…", for the server that offers them (the first one when
+ * none is named, which is the browser's single server).
+ */
+export function SharedVaultCreateAction({ serverRoot }: { serverRoot?: string }) {
   const { t } = useTranslation();
-  const { api, overview, openDialog } = useSharedMenu(folderPath);
+  const servers = useServers();
+  const openDialog = useSharedVaultsStore((state) => state.openDialog);
+  const target = serverRoot === undefined ? servers[0] : servers.find((entry) => entry.root === serverRoot);
 
-  if (!api || !overview) {
+  if (!platform.sharedVaults || !target) {
     return null;
   }
 
   return (
-    <>
-      <MenuItem onClick={() => openDialog({ kind: "create" })} data-testid="shared-vault-new">
-        <Plus className="size-4" aria-hidden="true" />
-        {t("sharedVaults.menuNew")}
-      </MenuItem>
-      <MenuItem onClick={() => openDialog({ kind: "manage" })} data-testid="shared-vault-manage">
-        <FolderCog className="size-4" aria-hidden="true" />
-        {t("sharedVaults.menuManage")}
-      </MenuItem>
-    </>
+    <MenuItem onClick={() => openDialog({ kind: "create", serverRoot: target.root })} data-testid="shared-vault-new">
+      <Plus className="size-4" aria-hidden="true" />
+      {t("sharedVaults.menuNew")}
+    </MenuItem>
+  );
+}
+
+/**
+ * "Manage vaults…", the last entry of the menu, below adding one. It covers
+ * everything the menu lists: the local folders, the servers and their shared
+ * vaults. Taking a folder off the list, or forgetting a server, has no other
+ * place to live, and looking for that in the settings is not where anyone
+ * looks first.
+ */
+export function SharedVaultManageAction() {
+  const { t } = useTranslation();
+  const servers = useServers();
+  const openDialog = useSharedVaultsStore((state) => state.openDialog);
+  const connectedCount = useSharedVaultsStore((state) => state.connectedCount);
+  const hasSomething = platform.features.localFolders || connectedCount > 0 || servers.length > 0;
+
+  if (!platform.sharedVaults || !hasSomething) {
+    return null;
+  }
+
+  return (
+    <MenuItem onClick={() => openDialog({ kind: "manage" })} data-testid="shared-vault-manage">
+      <FolderCog className="size-4" aria-hidden="true" />
+      {t("sharedVaults.menuManage")}
+    </MenuItem>
   );
 }
 
 /** The instance's own vault; only the browser needs it as a row of its own. */
 function OwnVaultItem({ folderPath, onOpenVault }: { folderPath: string | null; onOpenVault: (folderPath: string) => void }) {
   const { t } = useTranslation();
-  const { api, marker } = useSharedMenu(folderPath);
+  const servers = useServers();
+  const home = servers[0]?.root;
 
-  if (!api) {
+  if (home === undefined) {
     return null;
   }
 
   return (
-    <MenuItem className="sidebar-panel__recent-folder-item" onClick={() => onOpenVault(api.homeRoot)}>
-      {marker(api.homeRoot)}
+    <MenuItem className="sidebar-panel__recent-folder-item" onClick={() => onOpenVault(home)}>
+      <Marker root={home} folderPath={folderPath} />
       <span className="sidebar-panel__recent-folder-name">{t("sharedVaults.menuOwnVault")}</span>
     </MenuItem>
   );
@@ -130,9 +163,9 @@ function OwnVaultItem({ folderPath, onOpenVault }: { folderPath: string | null; 
  */
 export function SharedVaultSwitcher({ folderPath, isLoading, label, title, onOpenVault, onContextMenu }: SharedVaultSwitcherProps) {
   const { t } = useTranslation();
-  const hasOverview = useSharedVaultsStore((state) => state.overview !== null);
+  const hasServers = useSharedVaultsStore((state) => state.servers.length > 0);
 
-  if (!platform.sharedVaults || !hasOverview) {
+  if (!platform.sharedVaults || !hasServers) {
     return null;
   }
 
@@ -159,7 +192,8 @@ export function SharedVaultSwitcher({ folderPath, isLoading, label, title, onOpe
             <OwnVaultItem folderPath={folderPath} onOpenVault={onOpenVault} />
             <SharedVaultItems folderPath={folderPath} onOpenVault={onOpenVault} indented />
             <div className="editor-toolbar__menu-separator" role="separator" />
-            <SharedVaultActions folderPath={folderPath} />
+            <SharedVaultCreateAction />
+            <SharedVaultManageAction />
           </MenuPopup>
         </MenuPositioner>
       </MenuPortal>
@@ -173,7 +207,10 @@ export function SharedVaultSwitcher({ folderPath, isLoading, label, title, onOpe
  */
 export function SharedVaultNotices() {
   const { t } = useTranslation();
-  const notices = useSharedVaultsStore((state) => state.overview?.notices ?? NO_NOTICES);
+  const servers = useServers();
+  const notices = servers.flatMap((server) =>
+    server.overview.notices.map((notice) => ({ ...notice, serverRoot: server.root }))
+  );
 
   if (notices.length === 0) {
     return null;
@@ -182,14 +219,14 @@ export function SharedVaultNotices() {
   return (
     <div className="shared-vault-notices" role="status">
       {notices.map((notice) => (
-        <div key={notice.id} className="shared-vault-notices__item">
+        <div key={`${notice.serverRoot}:${notice.id}`} className="shared-vault-notices__item">
           <span>{t("sharedVaults.noticeDeleted", { by: notice.by, name: notice.vaultName })}</span>
           <button
             type="button"
             className="shared-vault-notices__dismiss"
             aria-label={t("sharedVaults.noticeDismiss")}
             title={t("sharedVaults.noticeDismiss")}
-            onClick={() => void useSharedVaultsStore.getState().dismissNotice(notice.id)}
+            onClick={() => void useSharedVaultsStore.getState().dismissNotice(notice.serverRoot, notice.id)}
           >
             <X className="size-3.5" aria-hidden="true" />
           </button>

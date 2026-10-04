@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { platform } from "@/platform";
 import { dirname, join } from "@/platform/paths";
 import { useTranslation } from "react-i18next";
@@ -45,7 +45,12 @@ import { useWebviewZoom } from "@/hooks/useWebviewZoom";
 import { useWindowReveal } from "@/hooks/useWindowReveal";
 import { useEmojiPickerPreload } from "@/hooks/useEmojiPickerPreload";
 import { useZenMode } from "@/hooks/useZenMode";
-import { getRecentFolderPaths, getRelativeDisplayPath } from "@/lib/fileSystem";
+import {
+  getRecentFolderPathsSnapshot,
+  getRelativeDisplayPath,
+  subscribeToRecentFolderPaths
+} from "@/lib/fileSystem";
+import { allowKnownRemoteServers } from "@/lib/remoteVaults";
 import {
   describeNotePath,
   getFolderNoteFolderPath,
@@ -174,6 +179,9 @@ function App() {
   const deleteFolderPath = useAppStore((state) => state.deleteFolderPath);
   const sortMode = useAppStore((state) => state.sortMode);
   const manualOrder = useAppStore((state) => state.manualOrder);
+  // Not in a store: the recent list is localStorage, and closing a folder in
+  // the manage dialog has to reach the vault menu without a restart.
+  const recentFolderPaths = useSyncExternalStore(subscribeToRecentFolderPaths, getRecentFolderPathsSnapshot);
   const vaultIcons = useAppStore((state) => state.vaultIcons);
   const setVaultIconFor = useAppStore((state) => state.setVaultIconFor);
   const fileMtimeMs = useAppStore((state) => state.fileMtimeMs);
@@ -877,10 +885,16 @@ function App() {
   // Shared vaults (a multi-instance server): the list is fetched once a vault
   // is open, which is also the moment a session is known to exist, and again
   // on every switch, so a vault someone just shared shows up without a reload.
+  // Also with no vault open: the menu lists the shared vaults of every
+  // server, so they are there right after a start, before anything is opened.
+  // The shell's allowlist is empty at startup, so the servers are registered
+  // first; without that every request is refused before a vault was opened.
   useEffect(() => {
-    if (folderPath && platform.sharedVaults) {
-      void useSharedVaultsStore.getState().refresh();
+    if (!platform.sharedVaults) {
+      return;
     }
+
+    void allowKnownRemoteServers().then(() => useSharedVaultsStore.getState().refresh());
   }, [folderPath]);
 
   // Presence in a shared vault: which note this person has open goes to the
@@ -895,7 +909,7 @@ function App() {
   useEffect(() => {
     const api = platform.sharedVaults;
 
-    if (api && folderPath && api.idOf(folderPath)) {
+    if (api && folderPath && api.parseRoot(folderPath)) {
       api.setOpenNote(folderPath, selectedFilePath ? getRelativeDisplayPath(folderPath, selectedFilePath) : null);
     }
   }, [folderPath, selectedFilePath]);
@@ -1011,7 +1025,7 @@ function App() {
       fileMtimeMs={fileMtimeMs}
       emptyFolderMtimeMs={emptyFolderMtimeMs}
       onOpenFolder={openFolderSafely}
-      recentFolderPaths={getRecentFolderPaths()}
+      recentFolderPaths={recentFolderPaths}
       onOpenRecentFolder={(targetFolderPath) => void openRecentFolderSafely(targetFolderPath)}
       onAddRemoteVault={platform.features.remoteVaults ? remoteVaultDialog.openAddDialog : undefined}
       onCreateFile={() => void handleCreateFile()}

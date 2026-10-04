@@ -212,6 +212,38 @@ describe("remote vault registry and token flow", () => {
 
     expect(shell.api.watch).toHaveBeenCalledWith(entry.root, "wss://notes.example.com/anna/api/events", "sdt_t_s");
   });
+
+  // Renaming writes to localStorage, which no component can observe: without
+  // the notification the sidebar kept the old name until the next start.
+  it("tells its readers when an entry changes, with a stable snapshot in between", async () => {
+    shell.setResponder(() => json({ id: "t", name: "d", token: "sdt_t_s", createdAt: "" }, 201));
+    const entry = await remoteVaults.addRemoteVault({
+      url: "https://notes.example.com/anna",
+      password: "pw",
+      name: "",
+      deviceName: "d"
+    });
+
+    let notified = 0;
+    const unsubscribe = remoteVaults.subscribeToRemoteVaults(() => {
+      notified += 1;
+    });
+    const before = remoteVaults.getRemoteVaultsSnapshot();
+
+    // Same array while nothing changed, or useSyncExternalStore would loop.
+    expect(remoteVaults.getRemoteVaultsSnapshot()).toBe(before);
+
+    remoteVaults.renameRemoteVault(entry.root, "Annas Server");
+
+    expect(notified).toBe(1);
+    const after = remoteVaults.getRemoteVaultsSnapshot();
+    expect(after).not.toBe(before);
+    expect(after.find((candidate) => candidate.root === entry.root)?.name).toBe("Annas Server");
+
+    unsubscribe();
+    remoteVaults.renameRemoteVault(entry.root, "Noch anders");
+    expect(notified).toBe(1);
+  });
 });
 
 /**
@@ -239,14 +271,9 @@ describe("shared vaults of a server vault", () => {
     notices: []
   };
 
-  async function addServer(): Promise<string> {
+  async function addServer(url = "https://notes.example.com/anna"): Promise<string> {
     shell.setResponder(() => json({ id: "t", name: "d", token: "sdt_t_s", createdAt: "" }, 201));
-    const entry = await remoteVaults.addRemoteVault({
-      url: "https://notes.example.com/anna",
-      password: "pw",
-      name: "",
-      deviceName: "d"
-    });
+    const entry = await remoteVaults.addRemoteVault({ url, password: "pw", name: "", deviceName: "d" });
 
     return entry.root;
   }
@@ -261,44 +288,51 @@ describe("shared vaults of a server vault", () => {
     platformState.platform.sharedVaults = remoteVaults.desktopSharedVaults;
     platformState.activeStorage = null;
     remoteVaults.resetRemoteVaultClients();
-    remoteVaults.setActiveRemoteServer(null);
   });
 
-  it("lists the shared vaults of the open server, and none for a local folder", async () => {
-    const serverRoot = await addServer();
+  it("asks every server it knows, so the vaults are there from a local folder too", async () => {
+    const first = await addServer();
+    const second = await addServer("https://work.example.com");
     shell.setResponder(() => json(OVERVIEW));
 
-    remoteVaults.setActiveRemoteServer(serverRoot);
-    const overview = await remoteVaults.desktopSharedVaults.overview();
+    const servers = await remoteVaults.desktopSharedVaults.servers();
 
-    expect(overview?.vaults.map((vault) => vault.name)).toEqual(["Familie"]);
-    expect(shell.requests[shell.requests.length - 1]).toMatchObject({
-      url: "https://notes.example.com/anna/api/shared",
-      headers: { authorization: "Bearer sdt_t_s" }
-    });
+    expect(servers.map((server) => server.root)).toEqual([first, second]);
+    expect(servers[0].overview.vaults.map((vault) => vault.name)).toEqual(["Familie"]);
+    expect(shell.requests.filter((request) => request.url.endsWith("/api/shared"))).toHaveLength(2);
+  });
 
-    remoteVaults.setActiveRemoteServer("C:\\Notes");
-    expect(await remoteVaults.desktopSharedVaults.overview()).toBeNull();
+  it("leaves out a server that is away or offers no shared vaults", async () => {
+    const reachable = await addServer();
+    await addServer("https://work.example.com");
+
+    shell.setResponder((url) =>
+      url.startsWith("https://work.example.com") ? json({ error: "unreachable" }, 500) : json(OVERVIEW)
+    );
+
+    const servers = await remoteVaults.desktopSharedVaults.servers();
+
+    expect(servers.map((server) => server.root)).toEqual([reachable]);
+
+    shell.setResponder(() => json({ enabled: false }));
+    expect(await remoteVaults.desktopSharedVaults.servers()).toEqual([]);
   });
 
   it("gives a shared vault a root below its server, and the instance keeps the token", async () => {
     const serverRoot = await addServer();
-    remoteVaults.setActiveRemoteServer(serverRoot);
 
-    const root = remoteVaults.desktopSharedVaults.rootFor("7f3a");
+    const root = remoteVaults.desktopSharedVaults.rootFor(serverRoot, "7f3a");
 
     expect(root).toBe("/@remote/notes.example.com/anna/@shared/7f3a");
-    expect(remoteVaults.desktopSharedVaults.idOf(root)).toBe("7f3a");
-    expect(remoteVaults.desktopSharedVaults.idOf(serverRoot)).toBeNull();
-    expect(remoteVaults.desktopSharedVaults.homeRoot).toBe(serverRoot);
+    expect(remoteVaults.desktopSharedVaults.parseRoot(root)).toEqual({ serverRoot, id: "7f3a" });
+    expect(remoteVaults.desktopSharedVaults.parseRoot(serverRoot)).toBeNull();
     // The token and the device list belong to the instance, not the vault.
     expect(remoteVaults.remoteVaultFor(root)).toBeNull();
   });
 
   it("installs a storage that works on the vault's own file API", async () => {
     const serverRoot = await addServer();
-    remoteVaults.setActiveRemoteServer(serverRoot);
-    const root = remoteVaults.desktopSharedVaults.rootFor("7f3a");
+    const root = remoteVaults.desktopSharedVaults.rootFor(serverRoot, "7f3a");
 
     shell.setResponder((url) => (url.endsWith("/api/shared") ? json(OVERVIEW) : json({ files: [] })));
     await remoteVaults.activateVaultStorage(root);
@@ -314,30 +348,35 @@ describe("shared vaults of a server vault", () => {
 
   it("watches the shared vault's own event stream", async () => {
     const serverRoot = await addServer();
-    remoteVaults.setActiveRemoteServer(serverRoot);
-    const root = remoteVaults.desktopSharedVaults.rootFor("7f3a");
+    const root = remoteVaults.desktopSharedVaults.rootFor(serverRoot, "7f3a");
 
     await remoteVaults.watchRemoteVault(root);
 
     expect(shell.api.watch).toHaveBeenCalledWith(root, "wss://notes.example.com/anna/api/v/7f3a/events", "sdt_t_s");
   });
 
-  // The vault menu can still be on screen for a moment after the app has
-  // left the server for a local folder. Reading a root while rendering must
-  // not throw there: that tears the whole UI down (the window goes black).
-  it("answers with an empty root instead of throwing once no server is open", () => {
-    remoteVaults.setActiveRemoteServer("C:\Users\me\Notes");
-
-    expect(remoteVaults.desktopSharedVaults.homeRoot).toBe("");
-    expect(remoteVaults.desktopSharedVaults.rootFor("7f3a")).toBe("");
-  });
-
   it("sends the open note to the shell, for the other people's presence hints", async () => {
     const serverRoot = await addServer();
-    remoteVaults.setActiveRemoteServer(serverRoot);
 
-    remoteVaults.desktopSharedVaults.setOpenNote(remoteVaults.desktopSharedVaults.rootFor("7f3a"), "Einkauf.md");
+    remoteVaults.desktopSharedVaults.setOpenNote(remoteVaults.desktopSharedVaults.rootFor(serverRoot, "7f3a"), "Einkauf.md");
 
     expect(shell.api.setPresencePath).toHaveBeenCalledWith("Einkauf.md");
+  });
+
+  // The shell's allowlist lives in memory and is empty after a restart. The
+  // menu lists every server's shared vaults before any vault is opened, so
+  // the servers have to be registered first or every request is refused.
+  it("registers every known server with the shell at startup", async () => {
+    await addServer();
+    await addServer("https://work.example.com");
+    shell.allowed.length = 0;
+
+    await remoteVaults.allowKnownRemoteServers();
+
+    expect(shell.allowed.sort()).toEqual(["https://notes.example.com", "https://work.example.com"]);
+  });
+
+  it("refuses to act on a server it does not know", async () => {
+    await expect(remoteVaults.desktopSharedVaults.overview("/@remote/nope")).rejects.toThrow();
   });
 });

@@ -16,7 +16,8 @@
    hint on the knowledge base page is the same grey as a hint on the
    appearance page — not the slate of --muted-rgb on one and text at 60% on
    the other. Headings and labels differ by weight and size, hints by colour. */
-.ai-dialog__panel {
+.ai-dialog__panel,
+.unsaved-dialog__panel {
   --dialog-heading: rgba(var(--text-rgb), 0.94);
   --dialog-label: rgba(var(--text-rgb), 0.86);
   --dialog-intro: rgba(var(--text-rgb), 0.72);
@@ -1733,7 +1734,27 @@
 .shared-vault-dialog__panel--wide {
   width: min(100%, 40rem);
   max-height: calc(100dvh - 2rem);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The lists grow with the number of vaults; the footer must not move with them. */
+.shared-vault-dialog__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  /* Room for the scrollbar, so no row sits under it. */
+  padding-right: 0.25rem;
+}
+
+.shared-vault-dialog__footer {
+  flex: 0 0 auto;
+}
+
+/* Pushes the destructive action away from the ones that confirm the form. */
+.shared-vault-dialog__spacer {
+  flex: 1 1 auto;
 }
 
 .shared-vault-dialog__members {
@@ -1781,6 +1802,12 @@
   font-size: 0.95rem;
 }
 
+/* The hints under each section: same size and colour as everywhere else, and
+   the same distance from the list above them. */
+.shared-vault-dialog__scroll .ai-dialog__model-hint {
+  margin: 0.6rem 0 0;
+}
+
 .shared-vault-dialog__list {
   list-style: none;
   margin: 0.8rem 0 0;
@@ -1816,6 +1843,13 @@
   color: rgba(var(--muted-rgb),0.9);
   font-size: 0.8rem;
   overflow-wrap: anywhere;
+}
+
+/* An action that belongs to a section rather than to one row ("Add server
+   vault…"), aligned with the rows above it. */
+.shared-vault-dialog__section-actions {
+  display: flex;
+  margin-top: 0.6rem;
 }
 
 .shared-vault-dialog__row-actions {

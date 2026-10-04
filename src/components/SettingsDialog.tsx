@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { AssistantsSettings } from "@/components/AssistantsSettings";
 import { AccountSettings } from "@/components/web/AccountSettings";
-import { RemoteVaultsSettings } from "@/components/remote/RemoteVaultsSettings";
 import { LicensesDialog } from "@/components/LicensesDialog";
 import { RagSettings } from "@/components/RagSettings";
 import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
@@ -789,10 +788,6 @@ export function SettingsDialog({
             ) : activeTab === "account" ? (
               <SettingsPage tab="account">
                 <AccountSettings />
-              </SettingsPage>
-            ) : activeTab === "server" ? (
-              <SettingsPage tab="server">
-                <RemoteVaultsSettings />
               </SettingsPage>
             ) : (
               <SettingsPage tab="ai">

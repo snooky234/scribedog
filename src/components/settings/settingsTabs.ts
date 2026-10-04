@@ -11,8 +11,7 @@ export type SettingsTab =
   | "rag"
   | "versioning"
   | "vault"
-  | "account"
-  | "server";
+  | "account";
 
 export type SettingsGroup = "application" | "ai" | "folder";
 
@@ -22,7 +21,7 @@ export type SettingsGroup = "application" | "ai" | "folder";
  * its entries change meaning with the open folder.
  */
 export const SETTINGS_NAV: { group: SettingsGroup; tabs: SettingsTab[] }[] = [
-  { group: "application", tabs: ["application", "appearance", "fonts", "shortcuts", "account", "server"] },
+  { group: "application", tabs: ["application", "appearance", "fonts", "shortcuts", "account"] },
   { group: "ai", tabs: ["ai", "assistants", "rag"] },
   { group: "folder", tabs: ["versioning", "vault"] }
 ];
@@ -36,8 +35,7 @@ export const SETTINGS_NAV: { group: SettingsGroup; tabs: SettingsTab[] }[] = [
  */
 const SETTINGS_TAB_FEATURE: Partial<Record<SettingsTab, keyof PlatformFeatures>> = {
   rag: "knowledgeIndex",
-  account: "session",
-  server: "remoteVaults"
+  account: "session"
 };
 
 export function isSettingsTabAvailable(tab: SettingsTab): boolean {
@@ -75,8 +73,7 @@ export const SELF_SAVING_TABS: SettingsTab[] = [
   "rag",
   "versioning",
   "vault",
-  "account",
-  "server"
+  "account"
 ];
 
 export const SETTINGS_TAB_LABEL_KEY: Record<SettingsTab, string> = {
@@ -89,8 +86,7 @@ export const SETTINGS_TAB_LABEL_KEY: Record<SettingsTab, string> = {
   rag: "settingsDialog.tabRag",
   versioning: "settingsDialog.tabVersioning",
   vault: "settingsDialog.tabVault",
-  account: "settingsDialog.tabAccount",
-  server: "settingsDialog.tabServer"
+  account: "settingsDialog.tabAccount"
 };
 
 export const SETTINGS_GROUP_LABEL_KEY: Record<SettingsGroup, string> = {

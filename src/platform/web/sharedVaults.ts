@@ -65,17 +65,32 @@ async function loadOverview(): Promise<SharedOverview | null> {
   return lastOverview;
 }
 
+/**
+ * The browser talks to exactly one server, the one it was served from, so
+ * the server root is empty everywhere: there is nothing to tell apart.
+ */
 export const webSharedVaults: SharedVaultsApi = {
+  async servers() {
+    const overview = await loadOverview();
+
+    return overview ? [{ root: REMOTE_VAULT_ROOT, name: "", overview }] : [];
+  },
+
+  // The browser is not connected to servers; it is served by one.
+  connectedCount: () => 0,
   overview: loadOverview,
-  create: (name, members) => serverApi.createSharedVault(name, members),
-  update: (id, changes) => serverApi.updateSharedVault(id, changes),
-  leave: (id) => serverApi.leaveSharedVault(id),
-  remove: (id) => serverApi.deleteSharedVault(id),
-  restore: (id) => serverApi.restoreSharedVault(id),
-  dismissNotice: (id) => serverApi.dismissSharedNotice(id),
-  homeRoot: REMOTE_VAULT_ROOT,
-  rootFor: sharedVaultRoot,
-  idOf: sharedVaultIdOf,
+  create: (_serverRoot, name, members) => serverApi.createSharedVault(name, members),
+  update: (_serverRoot, id, changes) => serverApi.updateSharedVault(id, changes),
+  leave: (_serverRoot, id) => serverApi.leaveSharedVault(id),
+  remove: (_serverRoot, id) => serverApi.deleteSharedVault(id),
+  restore: (_serverRoot, id) => serverApi.restoreSharedVault(id),
+  dismissNotice: (_serverRoot, id) => serverApi.dismissSharedNotice(id),
+  rootFor: (_serverRoot, id) => sharedVaultRoot(id),
+  parseRoot: (folderPath) => {
+    const id = sharedVaultIdOf(folderPath);
+
+    return id ? { serverRoot: REMOTE_VAULT_ROOT, id } : null;
+  },
 
   async storageFor(folderPath) {
     const id = sharedVaultIdOf(folderPath);

@@ -281,22 +281,42 @@ export type SharedVaultLoss = "removed" | "deleted";
  * Each one is a vault of its own with a virtual root of its own, so the store,
  * the per-vault markers and every sidecar work on it unchanged.
  */
+/** One server's shared vaults, as the vault menu lists them. */
+export type SharedVaultServer = {
+  /** The server's own root, which is also its vault; "" in the browser. */
+  root: string;
+  /** What the sidebar calls it; empty in the browser, which shows only one. */
+  name: string;
+  overview: SharedOverview;
+};
+
 export type SharedVaultsApi = {
-  /** Null when the server is not part of a shared-vault setup. */
-  overview(): Promise<SharedOverview | null>;
-  create(name: string, members: string[]): Promise<SharedVaultInfo>;
-  update(id: string, changes: { name?: string; members?: string[] }): Promise<SharedVaultInfo>;
-  leave(id: string): Promise<void>;
+  /**
+   * Every server that offers shared vaults, with the vaults this person is
+   * in. Asked whenever the vault menu opens, so a vault someone just shared
+   * shows up without a restart; a server that cannot be reached right now is
+   * left out rather than failing the whole list.
+   */
+  servers(): Promise<SharedVaultServer[]>;
+  /**
+   * How many servers this app is connected to at all, reachable or not and
+   * whether or not they offer shared vaults. What decides whether there is
+   * anything to manage; 0 in the browser, which has no list of servers.
+   */
+  connectedCount(): number;
+  /** The shared vaults of one server (its root), null when it offers none. */
+  overview(serverRoot: string): Promise<SharedOverview | null>;
+  create(serverRoot: string, name: string, members: string[]): Promise<SharedVaultInfo>;
+  update(serverRoot: string, id: string, changes: { name?: string; members?: string[] }): Promise<SharedVaultInfo>;
+  leave(serverRoot: string, id: string): Promise<void>;
   /** Into the trash; resolves to when it will be purged. */
-  remove(id: string): Promise<{ purgeAt: number }>;
-  restore(id: string): Promise<SharedVaultInfo>;
-  dismissNotice(id: string): Promise<void>;
-  /** The root of the instance's own vault, where "back to my vault" goes. */
-  homeRoot: string;
-  /** The virtual root a shared vault is opened at. */
-  rootFor(id: string): string;
-  /** The id behind a virtual root, or null for any other folder. */
-  idOf(folderPath: string): string | null;
+  remove(serverRoot: string, id: string): Promise<{ purgeAt: number }>;
+  restore(serverRoot: string, id: string): Promise<SharedVaultInfo>;
+  dismissNotice(serverRoot: string, id: string): Promise<void>;
+  /** The virtual root a shared vault of this server is opened at. */
+  rootFor(serverRoot: string, id: string): string;
+  /** The server root and vault id behind a shared vault's root; null for anything else. */
+  parseRoot(folderPath: string): { serverRoot: string; id: string } | null;
   /**
    * The storage for a shared vault's root, null for any other folder. Also
    * registers the person the vault is opened as, which is what puts their

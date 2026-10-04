@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowDownAZ,
@@ -41,7 +41,13 @@ import {
 import { FileTree, type BatchEntry, type PendingEntryRename } from "@/components/FileTree";
 import type { VaultIconMap } from "@/lib/vaultIcons";
 import { WorkingSetPanel } from "@/components/sidebar/WorkingSetPanel";
-import { SharedVaultActions, SharedVaultItems, SharedVaultNotices, SharedVaultSwitcher } from "@/components/shared/SharedVaultSwitcher";
+import {
+  SharedVaultCreateAction,
+  SharedVaultItems,
+  SharedVaultManageAction,
+  SharedVaultNotices,
+  SharedVaultSwitcher
+} from "@/components/shared/SharedVaultSwitcher";
 import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStoredCollapsed, useWorkingSetHeight } from "@/hooks/useWorkingSetHeight";
@@ -52,8 +58,12 @@ import {
 } from "@/lib/dragDrop/droppedSources";
 import { canDownloadFolderArchive } from "@/lib/export/markdownDownload";
 import { formatFolderLabel, getFolderBasename, pruneMissingRecentFolderPaths } from "@/lib/fileSystem";
-import { isRemoteVaultPath, remoteVaultFor } from "@/lib/remoteVaults";
-import { serverRootOf } from "@/platform/remote/vaultRoot";
+import {
+  getRemoteVaultsSnapshot,
+  isRemoteVaultPath,
+  remoteVaultFor,
+  subscribeToRemoteVaults
+} from "@/lib/remoteVaults";
 import { getVaultCapabilities, platform, vaultCapabilityHint } from "@/platform";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import { cn } from "@/lib/utils";
@@ -213,6 +223,9 @@ export function Sidebar({
   // A shared vault has no entry of its own (it belongs to its server, see
   // lib/remoteVaults.ts), so it drops out here and is listed in the shared
   // section above instead, where it also carries its name.
+  // Renaming a server has to reach the labels below without a restart; the
+  // list it renames lives in localStorage, which React cannot observe.
+  useSyncExternalStore(subscribeToRemoteVaults, getRemoteVaultsSnapshot);
   const recentVaults = recentFolderPaths
     .filter((path) => !missingRecentPaths.has(path))
     .map((path) => ({ path, remote: remoteVaultFor(path) }))
@@ -222,11 +235,8 @@ export function Sidebar({
   // app opened one: the name gets the same server mark the recent list uses.
   const isServerVault = folderPath !== null && (platform.kind === "web" || remoteVaultFor(folderPath) !== null);
   // A vault shared with other people carries their mark instead of the server's.
-  const isSharedVault = folderPath !== null && (platform.sharedVaults?.idOf(folderPath) ?? null) !== null;
+  const isSharedVault = folderPath !== null && (platform.sharedVaults?.parseRoot(folderPath) ?? null) !== null;
   const hasSharedVaults = useSharedVaultsStore((state) => state.status === "ready");
-  // Which server's shared vaults are listed: the open one, or the server a
-  // shared vault belongs to.
-  const activeServerRoot = folderPath && isRemoteVaultPath(folderPath) ? serverRootOf(folderPath) : null;
   // The name is clipped at its start (sidebar.css), which takes an RTL
   // block — and RTL alone reorders anything with digits in it, turning
   // "192.168.1.5/notes/" into "notes/192.168.1.5". The isolate keeps the
@@ -505,6 +515,9 @@ export function Sidebar({
               onOpenChange={(open) => {
                 if (open) {
                   pruneRecentVaults();
+                  // The servers are asked again every time the menu opens, so
+                  // a vault someone just shared is there without a restart.
+                  void useSharedVaultsStore.getState().refresh();
                 }
               }}
             >
@@ -548,11 +561,11 @@ export function Sidebar({
                                 {remote ? remote.name : getFolderBasename(path)}
                               </span>
                             </MenuItem>
-                            {/* The shared vaults of the open server, indented
-                                under it: they belong to that instance, and
-                                listing them at the top would show it twice. */}
-                            {hasSharedVaults && path === activeServerRoot ? (
-                              <SharedVaultItems folderPath={folderPath} onOpenVault={onOpenRecentFolder} indented />
+                            {/* A server's shared vaults, indented under it:
+                                they belong to that instance, and listing them
+                                at the top would show the server twice. */}
+                            {hasSharedVaults ? (
+                              <SharedVaultItems serverRoot={path} folderPath={folderPath} onOpenVault={onOpenRecentFolder} indented />
                             ) : null}
                           </Fragment>
                         ))}
@@ -563,13 +576,14 @@ export function Sidebar({
                       <FolderOpen className="size-4" aria-hidden="true" />
                       {t("sidebar.browseForFolder")}
                     </MenuItem>
-                    {hasSharedVaults ? <SharedVaultActions folderPath={folderPath} /> : null}
                     {onAddRemoteVault ? (
                       <MenuItem onClick={onAddRemoteVault} data-testid="add-remote-vault">
                         <Server className="size-4" aria-hidden="true" />
                         {t("sidebar.addServerVault")}
                       </MenuItem>
                     ) : null}
+                    <SharedVaultCreateAction />
+                    <SharedVaultManageAction />
                   </MenuPopup>
                 </MenuPositioner>
               </MenuPortal>
