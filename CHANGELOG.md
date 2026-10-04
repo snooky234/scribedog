@@ -3,6 +3,29 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.19.0] - 2026-10-04
+
+### Highlights
+- Shared vaults for multi-instance server setups: give everyone their own
+  vault and password, then share a vault with the people you pick. Only the
+  members see it, and everyone keeps their own sort order, chat history and
+  version history inside it.
+- Open shared vaults from the desktop app, listed under the server they
+  belong to
+- Merge concurrent edits on save instead of overwriting: when two people save
+  the same note, only genuinely conflicting lines are handed back for a
+  decision
+- See who else has the same note open right now, marked in the file tree and
+  next to the save button. It is a hint, nothing is locked.
+
+### Improvements
+- Manage folders, servers and shared vaults in one place: the vault menu's
+  "Manage vaults…" replaces the Server page in the settings, and now also
+  closes a folder you no longer want in the list (the files stay where they
+  are)
+- Rename a server, review its signed-in devices and disconnect it from that
+  same dialog
+
 ## [0.18.2] - 2026-09-30
 
 ### Highlights
