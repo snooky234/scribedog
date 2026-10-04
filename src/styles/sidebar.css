@@ -232,9 +232,13 @@
   min-width: 0;
 }
 
-/* Server edition: one vault, so the header shows its name without a menu. */
+/* Server edition: one vault, so the header shows its name without a menu.
+   This is the one variant that is a <div> rather than a <button>, so its
+   text takes a caret on click and looks editable, which it is not. */
 .sidebar-panel__folder--static {
   cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .sidebar-panel__folder--static:hover {

@@ -431,6 +431,11 @@
 
 .detail-panel__card--empty {
   opacity: 0.92;
+  /* Placeholder copy, not content: a caret in it suggests an editor that is
+     not there. The whole card, not just the text rows, since a click on the
+     empty space around them placed one just the same. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .detail-panel__card--empty::after {
@@ -455,13 +460,6 @@
 
 .detail-panel__card--empty h2 {
   max-width: 40rem;
-}
-
-/* Placeholder copy, not content: a caret in it suggests an editor that is not there. */
-.detail-panel__card--empty .detail-panel__eyebrow,
-.detail-panel__card--empty h2 {
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 p.detail-panel__version {

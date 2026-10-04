@@ -91,6 +91,8 @@ body {
     var(--sidebar-width, 320px) 1.25rem minmax(0, 1fr) 1.25rem var(--chat-width, 380px);
 }
 
+/* A focusable <div> with no text of its own, but a click still drops a caret
+   next to it. `body.is-resizing-*` only covers the drag itself. */
 .workspace-resizer {
   position: relative;
   display: flex;
@@ -98,6 +100,8 @@ body {
   justify-content: center;
   cursor: col-resize;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .workspace-resizer__grip {
