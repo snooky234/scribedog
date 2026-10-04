@@ -32,6 +32,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { ImagePreviewDialog } from "@/components/chat/ImagePreviewDialog";
 import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import i18n from "@/i18n";
 import {
@@ -685,6 +686,8 @@ function UndoTurnDialog({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, isReverting, onCancel]);
 
+  const dismissProps = useDismissOnOverlayClick(isReverting ? null : onCancel);
+
   if (!open) {
     return null;
   }
@@ -693,11 +696,7 @@ function UndoTurnDialog({
     <div
       className="unsaved-dialog"
       role="presentation"
-      onClick={() => {
-        if (!isReverting) {
-          onCancel();
-        }
-      }}
+      {...dismissProps}
     >
       <div
         className="unsaved-dialog__panel"

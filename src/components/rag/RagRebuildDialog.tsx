@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 
 /**
  * Asked before anything prepared is thrown away, because the user changed the
@@ -26,6 +27,7 @@ export function RagRebuildDialog({
   onConfirm: () => void;
 }) {
   const { t } = useTranslation();
+  const dismissProps = useDismissOnOverlayClick(onCancel);
 
   // The settings dialog closes itself on Escape via a window listener. While
   // this one is up, Escape has to dismiss it instead — captured before the
@@ -47,7 +49,7 @@ export function RagRebuildDialog({
   }, [onCancel]);
 
   return (
-    <div className="unsaved-dialog" role="presentation" onClick={onCancel}>
+    <div className="unsaved-dialog" role="presentation" {...dismissProps}>
       <div
         className="unsaved-dialog__panel rag-rebuild"
         role="dialog"

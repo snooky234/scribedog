@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 
 type UnsavedChangesDialogProps = {
   open: boolean;
@@ -80,6 +81,8 @@ export function UnsavedChangesDialog({
     order[nextIndex].current?.focus();
   };
 
+  const dismissProps = useDismissOnOverlayClick(isSaving ? null : onCancel);
+
   if (!open) {
     return null;
   }
@@ -88,11 +91,7 @@ export function UnsavedChangesDialog({
     <div
       className="unsaved-dialog"
       role="presentation"
-      onClick={() => {
-        if (!isSaving) {
-          onCancel();
-        }
-      }}
+      {...dismissProps}
     >
       <div
         className="unsaved-dialog__panel"

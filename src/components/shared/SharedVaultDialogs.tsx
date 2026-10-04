@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { DeviceList } from "@/components/remote/DeviceList";
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import i18n from "@/i18n";
 import {
   getFolderBasename,
@@ -71,6 +72,7 @@ function DialogFrame({
   wide?: boolean;
   onSubmit?: (event: FormEvent) => void;
 }) {
+  const dismissProps = useDismissOnOverlayClick(onDismiss);
   const panelClass = wide ? "unsaved-dialog__panel shared-vault-dialog__panel--wide" : "unsaved-dialog__panel";
   const panelProps = {
     className: panelClass,
@@ -81,7 +83,7 @@ function DialogFrame({
   } as const;
 
   return (
-    <div className="unsaved-dialog" role="presentation" onClick={onDismiss}>
+    <div className="unsaved-dialog" role="presentation" {...dismissProps}>
       {onSubmit ? (
         <form {...panelProps} onSubmit={onSubmit}>
           {children}

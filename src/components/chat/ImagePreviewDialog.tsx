@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 
 type ImagePreviewDialogProps = {
   /** The picture to show, or null when nothing is open. */
@@ -24,6 +25,7 @@ type ImagePreviewDialogProps = {
  * that would otherwise travel to the overlay.
  */
 export function ImagePreviewDialog({ src, name, onClose }: ImagePreviewDialogProps) {
+  const dismissProps = useDismissOnOverlayClick(onClose);
   const { t } = useTranslation();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -62,7 +64,7 @@ export function ImagePreviewDialog({ src, name, onClose }: ImagePreviewDialogPro
   }
 
   return (
-    <div className="image-preview" role="presentation" onClick={onClose}>
+    <div className="image-preview" role="presentation" {...dismissProps}>
       <div
         className="image-preview__panel"
         role="dialog"

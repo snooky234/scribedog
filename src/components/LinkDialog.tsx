@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { FileLinkOptionList } from "@/components/editor/FileLinkOptionList";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import {
   buildFileLinkHref,
   filterVaultFileOptions,
@@ -48,6 +49,7 @@ export function LinkDialog({
   onRemove,
   onCancel
 }: LinkDialogProps) {
+  const dismissProps = useDismissOnOverlayClick(onCancel);
   const { t } = useTranslation();
   const [href, setHref] = useState(initialHref);
   const [text, setText] = useState("");
@@ -153,7 +155,7 @@ export function LinkDialog({
   }
 
   return (
-    <div className="unsaved-dialog" role="presentation" onClick={onCancel}>
+    <div className="unsaved-dialog" role="presentation" {...dismissProps}>
       <div
         className="unsaved-dialog__panel link-dialog__panel"
         role="dialog"

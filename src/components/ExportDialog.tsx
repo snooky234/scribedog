@@ -4,6 +4,7 @@ import { platform } from "@/platform";
 import { FolderOpen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import {
   EXPORT_FORMATS,
   MERGED_EXPORT_FORMATS,
@@ -200,6 +201,8 @@ export function ExportDialog({
     setConflict(null);
     onClose();
   }, [isExporting, conflict, onClose]);
+
+  const dismissProps = useDismissOnOverlayClick(handleClose);
 
   useEffect(() => {
     if (!isOpen) {
@@ -399,7 +402,7 @@ export function ExportDialog({
           : "exportDialog.descriptionFileDownload";
 
   return (
-    <div className="unsaved-dialog" role="presentation" onClick={handleClose}>
+    <div className="unsaved-dialog" role="presentation" {...dismissProps}>
       <div
         className={`unsaved-dialog__panel export-dialog__panel${isManuscript ? " export-dialog__panel--wide" : ""}`}
         role="dialog"

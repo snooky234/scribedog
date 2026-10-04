@@ -3,6 +3,7 @@ import { Folder, FolderOpen, Home } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { listMoveTargets, type MoveSource } from "@/lib/moveTargets";
 import { cn } from "@/lib/utils";
 
@@ -97,15 +98,13 @@ export function MoveToDialog({
     }
   };
 
+  const dismissProps = useDismissOnOverlayClick(isMoving ? null : onCancel);
+
   return (
     <div
       className="unsaved-dialog"
       role="presentation"
-      onClick={() => {
-        if (!isMoving) {
-          onCancel();
-        }
-      }}
+      {...dismissProps}
     >
       <div
         className="unsaved-dialog__panel move-dialog__panel"

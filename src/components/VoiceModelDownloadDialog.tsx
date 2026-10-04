@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import {
   downloadVoiceModel,
   listenToVoiceModelDownloadProgress,
@@ -22,6 +23,7 @@ type VoiceModelDownloadDialogProps = {
 export function VoiceModelDownloadDialog({ open, onClose, onDownloaded }: VoiceModelDownloadDialogProps) {
   const { t } = useTranslation();
   const [isDownloading, setIsDownloading] = useState(false);
+  const dismissProps = useDismissOnOverlayClick(isDownloading ? null : onClose);
   const [progress, setProgress] = useState<VoiceModelDownloadProgress | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
@@ -82,7 +84,7 @@ export function VoiceModelDownloadDialog({ open, onClose, onDownloaded }: VoiceM
   const percent = Math.min(100, Math.round((downloadedMb / totalMb) * 100));
 
   return (
-    <div className="ai-dialog" role="presentation" onClick={() => !isDownloading && onClose()}>
+    <div className="ai-dialog" role="presentation" {...dismissProps}>
       <div
         className="ai-dialog__panel"
         role="dialog"

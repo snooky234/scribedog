@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { useVersioningSettingsStore } from "@/store/useVersioningSettingsStore";
 
 type SaveConflictDialogProps = {
@@ -64,6 +65,8 @@ export function SaveConflictDialog({
     }
   }, [open]);
 
+  const dismissProps = useDismissOnOverlayClick(isSaving ? null : onCancel);
+
   if (!open) {
     return null;
   }
@@ -72,11 +75,7 @@ export function SaveConflictDialog({
     <div
       className="unsaved-dialog"
       role="presentation"
-      onClick={() => {
-        if (!isSaving) {
-          onCancel();
-        }
-      }}
+      {...dismissProps}
     >
       <div
         className="unsaved-dialog__panel"

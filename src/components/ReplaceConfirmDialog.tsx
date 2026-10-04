@@ -3,6 +3,7 @@ import { Replace } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 
 export type ReplaceMatchItem = {
   id: string;
@@ -32,6 +33,7 @@ export function ReplaceConfirmDialog({
   onConfirm,
   onCancel
 }: ReplaceConfirmDialogProps) {
+  const dismissProps = useDismissOnOverlayClick(onCancel);
   const { t } = useTranslation();
   const [deselectedIds, setDeselectedIds] = useState<Set<string>>(new Set());
 
@@ -113,7 +115,7 @@ export function ReplaceConfirmDialog({
   };
 
   return (
-    <div className="ai-dialog" role="presentation" onClick={onCancel}>
+    <div className="ai-dialog" role="presentation" {...dismissProps}>
       <div
         className="ai-dialog__panel ai-dialog__panel--check"
         role="dialog"

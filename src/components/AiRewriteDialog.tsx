@@ -12,6 +12,7 @@ import { Markdown } from "tiptap-markdown";
 import { Button } from "@/components/ui/button";
 import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { platform } from "@/platform";
 import { type AiActionMode } from "@/lib/aiClient";
@@ -190,8 +191,10 @@ export function AiRewriteDialog({
   const isRecording = voice.status === "recording";
   const isTranscribing = voice.status === "transcribing";
 
+  const dismissProps = useDismissOnOverlayClick(isLoading ? null : onCancel);
+
   return (
-    <div className="ai-dialog" role="presentation" onClick={() => !isLoading && onCancel()}>
+    <div className="ai-dialog" role="presentation" {...dismissProps}>
       <div
         className="ai-dialog__panel ai-dialog__panel--rewrite"
         role="dialog"

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { SettingRow } from "@/components/settings/SettingRow";
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import {
   countAllVersions,
   deleteAllVersions,
@@ -37,6 +38,7 @@ export function VersioningSettings() {
   const [storedVersionCount, setStoredVersionCount] = useState<number | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const dismissProps = useDismissOnOverlayClick(isDeleting ? null : () => setIsConfirmingDelete(false));
 
   useEffect(() => {
     if (!folderPath) {
@@ -176,11 +178,7 @@ export function VersioningSettings() {
         <div
           className="unsaved-dialog"
           role="presentation"
-          onClick={() => {
-            if (!isDeleting) {
-              setIsConfirmingDelete(false);
-            }
-          }}
+          {...dismissProps}
         >
           <div
             className="unsaved-dialog__panel"

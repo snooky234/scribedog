@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 
 type LicensesDialogProps = {
   open: boolean;
@@ -41,12 +42,14 @@ export function LicensesDialog({ open, onClose }: LicensesDialogProps) {
     };
   }, [open, content]);
 
+  const dismissProps = useDismissOnOverlayClick(onClose);
+
   if (!open) {
     return null;
   }
 
   return (
-    <div className="ai-dialog" role="presentation" onClick={onClose}>
+    <div className="ai-dialog" role="presentation" {...dismissProps}>
       <div
         className="ai-dialog__panel ai-dialog__panel--licenses"
         role="dialog"

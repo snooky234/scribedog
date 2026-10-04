@@ -3,6 +3,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import {
   DEFAULT_ASSISTANT_ID,
   useAssistantsStore,
@@ -21,6 +22,7 @@ export function AssistantsSettings({ onEditRequest }: AssistantsSettingsProps) {
   const removeAssistant = useAssistantsStore((state) => state.removeAssistant);
 
   const [pendingDelete, setPendingDelete] = useState<Assistant | null>(null);
+  const dismissProps = useDismissOnOverlayClick(() => setPendingDelete(null));
 
   const displayName = (assistant: Assistant) =>
     assistant.id === DEFAULT_ASSISTANT_ID && !assistant.name
@@ -86,7 +88,7 @@ export function AssistantsSettings({ onEditRequest }: AssistantsSettingsProps) {
       </Button>
 
       {pendingDelete ? (
-        <div className="unsaved-dialog" role="presentation" onClick={() => setPendingDelete(null)}>
+        <div className="unsaved-dialog" role="presentation" {...dismissProps}>
           <div
             className="unsaved-dialog__panel"
             role="dialog"

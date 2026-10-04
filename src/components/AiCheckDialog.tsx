@@ -3,6 +3,7 @@ import { Check, CheckCheck, CircleCheckBig, SpellCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { type AiCheckIssue } from "@/lib/aiClient";
 
 type AiCheckDialogProps = {
@@ -15,6 +16,7 @@ type AiCheckDialogProps = {
 };
 
 export function AiCheckDialog({ open, issues, resolvedCount, onApply, onApplyAll, onClose }: AiCheckDialogProps) {
+  const dismissProps = useDismissOnOverlayClick(onClose);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function AiCheckDialog({ open, issues, resolvedCount, onApply, onApplyAll
   }
 
   return (
-    <div className="ai-dialog" role="presentation" onClick={onClose}>
+    <div className="ai-dialog" role="presentation" {...dismissProps}>
       <div
         className="ai-dialog__panel ai-dialog__panel--check"
         role="dialog"

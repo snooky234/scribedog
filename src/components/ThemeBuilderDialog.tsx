@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { ThemePreview, type ThemePreviewView } from "@/components/theme/ThemePreview";
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { isValidHexColor } from "@/lib/color";
 import { allowFileAccess } from "@/lib/fileSystem";
 import {
@@ -234,6 +235,8 @@ export function ThemeBuilderDialog({ open, onClose }: ThemeBuilderDialogProps) {
     }
     onClose();
   };
+
+  const dismissProps = useDismissOnOverlayClick(close);
 
   useEffect(() => {
     if (!open) {
@@ -481,7 +484,7 @@ export function ThemeBuilderDialog({ open, onClose }: ThemeBuilderDialogProps) {
   const resetLabel = t("themeBuilder.resetColor");
 
   return (
-    <div className="ai-dialog" role="presentation" onClick={close}>
+    <div className="ai-dialog" role="presentation" {...dismissProps}>
       <div
         className="ai-dialog__panel ai-dialog__panel--theme-builder"
         role="dialog"

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { useRagEmbeddingStore } from "@/store/useRagEmbeddingStore";
 
 /**
@@ -17,6 +18,7 @@ import { useRagEmbeddingStore } from "@/store/useRagEmbeddingStore";
  */
 export function RagExplainerDialog({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  const dismissProps = useDismissOnOverlayClick(onClose);
   // Two of the four sections answer differently depending on the search mode:
   // keyword search runs entirely on this device and stores nothing, meaning
   // search reads every note once and sends it away. Giving the keyword user the
@@ -48,7 +50,7 @@ export function RagExplainerDialog({ onClose }: { onClose: () => void }) {
   const sections = ["what", "how", "data", "undo"] as const;
 
   return (
-    <div className="unsaved-dialog" role="presentation" onClick={onClose}>
+    <div className="unsaved-dialog" role="presentation" {...dismissProps}>
       <div
         className="unsaved-dialog__panel rag-explainer"
         role="dialog"

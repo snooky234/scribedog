@@ -17,6 +17,7 @@ import { VaultScopeHeader } from "@/components/settings/VaultScopeHeader";
 import { VaultSettings } from "@/components/settings/VaultSettings";
 import { ShortcutsSettings } from "@/components/ShortcutsSettings";
 import { VersioningSettings } from "@/components/VersioningSettings";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import type { Assistant } from "@/store/useAssistantsStore";
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
 import { getPortableStatus, type PortableMode } from "@/lib/portable";
@@ -578,6 +579,8 @@ export function SettingsDialog({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose, licensesOpen]);
 
+  const dismissProps = useDismissOnOverlayClick(onClose);
+
   if (!open) {
     return null;
   }
@@ -589,7 +592,7 @@ export function SettingsDialog({
 
   return (
     <>
-    <div className="ai-dialog" role="presentation" onClick={onClose}>
+    <div className="ai-dialog" role="presentation" {...dismissProps}>
       <div
         className="ai-dialog__panel ai-dialog__panel--settings"
         role="dialog"

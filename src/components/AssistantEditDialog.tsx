@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import { SettingRow } from "@/components/settings/SettingRow";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { DEFAULT_CHAT_ASSISTANT_INSTRUCTION } from "@/lib/aiClient";
 import {
   DEFAULT_ASSISTANT_ID,
@@ -57,6 +58,7 @@ function AutoGrowTextarea({
 }
 
 export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditDialogProps) {
+  const dismissProps = useDismissOnOverlayClick(onClose);
   const { t } = useTranslation();
   const addAssistant = useAssistantsStore((state) => state.addAssistant);
   const updateAssistant = useAssistantsStore((state) => state.updateAssistant);
@@ -143,7 +145,7 @@ export function AssistantEditDialog({ open, assistant, onClose }: AssistantEditD
   };
 
   return (
-    <div className="ai-dialog" role="presentation" onClick={onClose}>
+    <div className="ai-dialog" role="presentation" {...dismissProps}>
       <div
         className="ai-dialog__panel"
         role="dialog"

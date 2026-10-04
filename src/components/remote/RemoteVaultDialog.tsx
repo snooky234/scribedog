@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { addRemoteVault, defaultDeviceName, signInRemoteVault, type RemoteVaultEntry } from "@/lib/remoteVaults";
 import { SessionError } from "@/platform";
 
@@ -111,15 +112,13 @@ export function RemoteVaultDialog({ request, onDone, onCancel }: RemoteVaultDial
     }
   };
 
+  const dismissProps = useDismissOnOverlayClick(isBusy ? null : onCancel);
+
   return (
     <div
       className="unsaved-dialog"
       role="presentation"
-      onClick={() => {
-        if (!isBusy) {
-          onCancel();
-        }
-      }}
+      {...dismissProps}
     >
       <form
         className="unsaved-dialog__panel remote-vault-dialog__panel"

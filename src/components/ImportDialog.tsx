@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle2, CircleAlert, CircleSlash, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import { MAX_DROPPED_FILES } from "@/lib/dragDrop/droppedSources";
 import {
   importFiles,
@@ -126,6 +127,8 @@ export function ImportDialog({
     onClose();
   }, [isRunning, onClose]);
 
+  const dismissProps = useDismissOnOverlayClick(handleClose);
+
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -153,7 +156,7 @@ export function ImportDialog({
   const cancelledCount = items.filter((item) => item.status === "cancelled").length;
 
   return (
-    <div className="unsaved-dialog" role="presentation" onClick={handleClose}>
+    <div className="unsaved-dialog" role="presentation" {...dismissProps}>
       <div
         className="unsaved-dialog__panel export-dialog__panel"
         role="dialog"

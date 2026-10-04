@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 
 type DeleteFileDialogProps = {
   open: boolean;
@@ -61,6 +62,8 @@ export function DeleteFileDialog({
     target.current?.focus();
   };
 
+  const dismissProps = useDismissOnOverlayClick(isDeleting ? null : onCancel);
+
   if (!open) {
     return null;
   }
@@ -69,11 +72,7 @@ export function DeleteFileDialog({
     <div
       className="unsaved-dialog"
       role="presentation"
-      onClick={() => {
-        if (!isDeleting) {
-          onCancel();
-        }
-      }}
+      {...dismissProps}
     >
       <div
         className="unsaved-dialog__panel"

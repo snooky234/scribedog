@@ -3,6 +3,7 @@ import { Columns2, Rows2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
 import type { FileVersion } from "@/lib/fileVersions";
 import { readVersionContent } from "@/lib/fileVersions";
 import { formatAbsoluteTimestamp, formatRelativeTimestamp } from "@/lib/relativeTime";
@@ -106,6 +107,7 @@ export function VersionDiffDialog({
   onRestore,
   onClose
 }: VersionDiffDialogProps) {
+  const dismissProps = useDismissOnOverlayClick(onClose);
   const { t, i18n } = useTranslation();
   const [viewMode, setViewMode] = useState<DiffViewMode>("inline");
   const [versionContent, setVersionContent] = useState<string | null>(null);
@@ -168,7 +170,7 @@ export function VersionDiffDialog({
   }
 
   return (
-    <div className="ai-dialog" role="presentation" onClick={onClose}>
+    <div className="ai-dialog" role="presentation" {...dismissProps}>
       <div
         className="ai-dialog__panel ai-dialog__panel--wide version-diff"
         role="dialog"
