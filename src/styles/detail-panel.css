@@ -457,6 +457,13 @@
   max-width: 40rem;
 }
 
+/* Placeholder copy, not content: a caret in it suggests an editor that is not there. */
+.detail-panel__card--empty .detail-panel__eyebrow,
+.detail-panel__card--empty h2 {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 p.detail-panel__version {
   position: absolute;
   left: 0;

@@ -492,12 +492,22 @@
     padding: 0 1rem 1rem;
   }
 
-  /* Some air below the header instead of the eyebrow sitting right under
-     its border, and between the eyebrow and the heading below it — the
-     base card's gap is zeroed out for the whole phone/tablet layout. */
-  .detail-panel__card--empty .detail-panel__eyebrow {
-    margin-top: 2.5rem;
-    margin-bottom: 0.5rem;
+  /* The text stays at the top of the card, it just needs air below the header
+     instead of sitting against its border. A fixed margin, not a viewport
+     one: `vh` would drift down the screen as the window grows taller. The
+     `p.` is on purpose: base.css resets every non-editor paragraph in the
+     panel to `margin: 0` through a `:not()` selector, which outscores a plain
+     two-class rule and silently swallowed the margin here. */
+  .detail-panel__card--empty p.detail-panel__eyebrow {
+    margin-top: 3rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* The card's gap is zeroed for the phone layout and the base h2 has
+     `margin: 0` with a display line-height, so without these the eyebrow,
+     the heading and its own second line all sit on top of each other. */
+  .detail-panel__card--empty h2 {
+    line-height: 1.3;
   }
 
   .detail-panel__card--empty .detail-panel__eyebrow,
