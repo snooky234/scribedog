@@ -132,7 +132,7 @@ jobs:
         # backstop against a hung runner, not the 20 minutes the emulated
         # build needed.
         timeout-minutes: 30
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           # The whole repository: the image needs the frontend under /src as
           # well as /server (see server/Dockerfile).
