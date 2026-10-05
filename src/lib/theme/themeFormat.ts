@@ -7,10 +7,14 @@
  * improves. Imported files are validated strictly, since whatever passes
  * ends up in `style.setProperty` and in a generated stylesheet: known keys
  * only, colours only as `#rrggbb`, and a name without control characters.
+ * The highlight colours of the open note are the one exception, and only
+ * they: they take an optional `aa` suffix, because a mark has to be
+ * dimmable down to invisible.
  */
 
 import {
   ADVANCED_COLOR_KEYS,
+  ALPHA_COLOR_KEYS,
   BASE_COLOR_KEYS,
   deriveThemeVariables,
   derivePaperProseVariables,
@@ -49,6 +53,7 @@ export type ThemeParseError = "invalidJson" | "notATheme" | "unsupportedVersion"
 export type ThemeParseResult = { ok: true; theme: CustomTheme } | { ok: false; error: ThemeParseError };
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const HEX_COLOR_ALPHA = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
 const THEME_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
 // Control characters, including the line/paragraph separators: a name is one
 // line of text in a select and a file name.
@@ -60,11 +65,16 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Every key present must be known; `required` keys must all be there. */
+/** Every key present must be known; `required` keys must all be there.
+ *  `alphaKeys` names the few that may carry an `aa` suffix — every other
+ *  key stays on the strict six-digit rule, since an alpha on a base or
+ *  paper colour would let the page through a surface that is meant to be
+ *  opaque. */
 function readColorMap<K extends string>(
   value: unknown,
   keys: readonly K[],
-  required: boolean
+  required: boolean,
+  alphaKeys: ReadonlySet<string> = new Set()
 ): Partial<Record<K, string>> | null {
   if (!isPlainObject(value)) {
     return null;
@@ -72,7 +82,8 @@ function readColorMap<K extends string>(
   const allowed = new Set<string>(keys);
   const result: Partial<Record<K, string>> = {};
   for (const [key, color] of Object.entries(value)) {
-    if (!allowed.has(key) || typeof color !== "string" || !HEX_COLOR.test(color)) {
+    const pattern = alphaKeys.has(key) ? HEX_COLOR_ALPHA : HEX_COLOR;
+    if (!allowed.has(key) || typeof color !== "string" || !pattern.test(color)) {
       return null;
     }
     result[key as K] = color.toLowerCase();
@@ -147,7 +158,12 @@ export function validateTheme(value: unknown): ThemeParseResult {
   }
 
   if (value.advanced !== undefined) {
-    const advanced = readColorMap<AdvancedColorKey>(value.advanced, ADVANCED_COLOR_KEYS, false);
+    const advanced = readColorMap<AdvancedColorKey>(
+      value.advanced,
+      ADVANCED_COLOR_KEYS,
+      false,
+      ALPHA_COLOR_KEYS
+    );
     if (!advanced) {
       return { ok: false, error: "invalidTheme" };
     }

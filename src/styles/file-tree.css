@@ -63,17 +63,20 @@
    so --selected above stays on its own quieter tint while the open note is
    the stronger one with the bar. One look however the note was opened (a
    click here, which also selects it, or the "In progress" list, a link, the
-   quick switcher, which do not), and the same one in working-set.css, so
-   the open note reads alike in both lists. Two classes so it outranks the
-   hover and --selected rules above. */
+   quick switcher, which do not). The three tokens below are the theme's:
+   they hold the same values as working-set.css's by default, so the open
+   note reads alike in both lists, and a custom theme may set the two lists
+   apart. Their alpha is part of the colour, so a theme can dim the tint or
+   the bar away entirely. Two classes so it outranks the hover and
+   --selected rules above. */
 .file-tree__row.file-tree__row--active {
-  background: rgba(var(--selection-rgb), 0.2);
-  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85);
+  background: var(--tree-active-bg);
+  box-shadow: inset 3px 0 0 var(--tree-active-marker);
 }
 
 /* The open note inside a selection: bar and selection frame together. */
 .file-tree__row.file-tree__row--active.file-tree__row--selected {
-  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85), inset 0 0 0 1px rgba(var(--selection-rgb), 0.55);
+  box-shadow: inset 3px 0 0 var(--tree-active-marker), inset 0 0 0 1px rgba(var(--selection-rgb), 0.55);
 }
 
 /* The ring is where the cursor is: the row holding the focus, file or
@@ -87,7 +90,7 @@
 
 .file-tree__row.file-tree__row--active:focus,
 .file-tree__row.file-tree__row--active.file-tree__row--selected:focus {
-  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb),0.85), inset 0 0 0 1px rgba(var(--accent-rgb),0.85);
+  box-shadow: inset 3px 0 0 var(--tree-active-marker), inset 0 0 0 1px rgba(var(--accent-rgb),0.85);
 }
 
 .file-tree__row svg {

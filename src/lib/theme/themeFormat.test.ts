@@ -85,6 +85,22 @@ describe("validateTheme rejects", () => {
     }
   });
 
+  // Alpha is the highlight colours' alone: a base or paper colour with one
+  // would let the page show through a surface meant to be opaque.
+  it("an alpha suffix outside the highlight colours", () => {
+    expect(validateTheme(document({ base: { ...theme.base, text: "#00000080" } })).ok).toBe(false);
+    expect(validateTheme(document({ paper: { background: "#ffffff80", text: "#000000" } })).ok).toBe(false);
+    expect(validateTheme(document({ advanced: { marker: "#b4530980" } })).ok).toBe(false);
+  });
+
+  it("an alpha suffix on a highlight colour", () => {
+    expect(validateTheme(document({ advanced: { activeBg: "#535b6633" } })).ok).toBe(true);
+    expect(validateTheme(document({ advanced: { activeMarker: "#a855f700" } })).ok).toBe(true);
+    // The text colour is not dimmable: an invisible name is not a style.
+    expect(validateTheme(document({ advanced: { activeText: "#0f172a80" } })).ok).toBe(false);
+    expect(validateTheme(document({ advanced: { activeBg: "#535b663" } })).ok).toBe(false);
+  });
+
   it("a missing base colour", () => {
     const { accent: _accent, ...withoutAccent } = theme.base;
     expect(validateTheme(document({ base: withoutAccent })).ok).toBe(false);

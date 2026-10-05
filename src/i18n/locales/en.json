@@ -417,6 +417,9 @@
     "advancedStatus": "Status colours",
     "advancedHighlights": "Highlights",
     "advancedCode": "Code blocks",
+    "advancedActive": "Open note",
+    "advancedOpenActiveSeparate": "Show the “In progress” list differently from the file tree",
+    "opacity": "Opacity",
     "advancedColors": {
       "error": "Error",
       "success": "Success",
@@ -433,7 +436,13 @@
       "codeNumber": "Number",
       "codeFunction": "Function",
       "codeType": "Type",
-      "codeVariable": "Variable"
+      "codeVariable": "Variable",
+      "activeText": "Name",
+      "activeBg": "Background",
+      "activeMarker": "Marker",
+      "openActiveText": "Name in the list",
+      "openActiveBg": "Background in the list",
+      "openActiveMarker": "Marker in the list"
     },
     "resetColor": "Reset to the template's colour",
     "resetAdvanced": "Take it from the base tone again",
@@ -475,6 +484,7 @@
     "useNeedsSave": "Save first, then use it.",
     "preview": {
       "vault": "Notes",
+      "workingSet": "In progress",
       "folder": "Projects",
       "fileHover": "Ideas",
       "fileActive": "Draft",

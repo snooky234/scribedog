@@ -416,6 +416,9 @@
     "advancedStatus": "状态颜色",
     "advancedHighlights": "高亮",
     "advancedCode": "代码块",
+    "advancedActive": "打开的笔记",
+    "advancedOpenActiveSeparate": "使“进行中”列表与文件树显示不同",
+    "opacity": "不透明度",
     "advancedColors": {
       "error": "错误",
       "success": "成功",
@@ -432,7 +435,13 @@
       "codeNumber": "数字",
       "codeFunction": "函数",
       "codeType": "类型",
-      "codeVariable": "变量"
+      "codeVariable": "变量",
+      "activeText": "名称",
+      "activeBg": "背景",
+      "activeMarker": "标记",
+      "openActiveText": "列表中的名称",
+      "openActiveBg": "列表中的背景",
+      "openActiveMarker": "列表中的标记"
     },
     "resetColor": "恢复为模板颜色",
     "resetAdvanced": "重新取自基调",
@@ -474,6 +483,7 @@
     "useNeedsSave": "请先保存，再使用。",
     "preview": {
       "vault": "笔记",
+      "workingSet": "进行中",
       "folder": "项目",
       "fileHover": "想法",
       "fileActive": "草稿",

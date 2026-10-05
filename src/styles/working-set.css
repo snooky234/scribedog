@@ -192,11 +192,13 @@
   outline: none;
 }
 
-/* Same marker as the open note in the tree (file-tree.css --active, and the
-   bold name from find.css), so one note never looks two ways at once. */
+/* The open note's marker in this list. Its tokens hold the same values as
+   the tree's (file-tree.css --active, and the bold name from find.css) by
+   default, so one note never looks two ways at once; a custom theme may
+   set the two lists apart, which is what the separate tokens are for. */
 .working-set__row.working-set__row--active {
-  background: rgba(var(--selection-rgb), 0.2);
-  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb), 0.85);
+  background: var(--open-active-bg);
+  box-shadow: inset 3px 0 0 var(--open-active-marker);
 }
 
 /* The ring is where the cursor is, as in the tree: see file-tree.css. */
@@ -205,10 +207,11 @@
 }
 
 .working-set__row.working-set__row--active:focus {
-  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb), 0.85), inset 0 0 0 1px rgba(var(--accent-rgb), 0.85);
+  box-shadow: inset 3px 0 0 var(--open-active-marker), inset 0 0 0 1px rgba(var(--accent-rgb), 0.85);
 }
 
 .working-set__row--active .working-set__name {
+  color: var(--open-active-text);
   font-weight: 600;
 }
 

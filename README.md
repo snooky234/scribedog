@@ -102,8 +102,9 @@ whisper.cpp, so no audio ever leaves your device.
 ### Themes you can make your own
 
 Light, dark, Sepia, Fjord, Fireside and a true-black Midnight, plus a theme
-builder where you pick a few colours and the rest follows. Export and share
-your themes as JSON. The interface speaks 10 languages, and every keyboard
+builder where you pick a few colours and the rest follows, down to how the
+note you are working on is marked in the sidebar. Export and share your
+themes as JSON. The interface speaks 10 languages, and every keyboard
 shortcut can be remapped.
 
 <img src="docs/images/scribe-dog-custom-theme.png" alt="ScribeDog with a custom theme: warm amber accent and a paper-coloured page" width="700">

@@ -224,6 +224,62 @@ describe("advanced colours", () => {
     // A blue "error" gets a pale blue message text, not the pale red one.
     expect(fg && fg.b > fg.r).toBe(true);
   });
+
+  // The mark is the theme's accent, selection tint and text, not a colour
+  // of its own: a theme that picks a copper accent and sets none of these
+  // keys must get a copper bar, never the built-in violet.
+  it("builds the highlight from the base colours when a theme sets none", () => {
+    const base = { ...DEFAULT_BASE_COLORS.dark, accent: "#a86c44", text: "#e1ded8", chrome: "#817f7e" };
+    const vars = deriveThemeVariables("dark", base);
+
+    expect(parseCssColor(vars["--tree-active-marker"])).toMatchObject({ r: 168, g: 108, b: 68 });
+    expect(parseCssColor(vars["--open-active-marker"])).toMatchObject({ r: 168, g: 108, b: 68 });
+    expect(maxChannelDelta(vars["--tree-active-text"], "#e1ded8")).toBeLessThanOrEqual(1);
+  });
+
+  it("carries a highlight colour's alpha into its token", () => {
+    const vars = deriveThemeVariables("dark", DEFAULT_BASE_COLORS.dark, { activeBg: "#12345680" });
+
+    expect(parseCssColor(vars["--tree-active-bg"])?.alpha).toBeCloseTo(0.502, 3);
+  });
+
+  it("lets a highlight be dimmed away entirely", () => {
+    const vars = deriveThemeVariables("dark", DEFAULT_BASE_COLORS.dark, { activeBg: "#12345600" });
+
+    expect(parseCssColor(vars["--tree-active-bg"])?.alpha).toBe(0);
+  });
+
+  // The whole point of the fallback: set the tree's highlight and the
+  // "In progress" list follows, so "both alike" needs no second set of
+  // picks and survives a later change to the tree's colours.
+  it("gives the open-files list the tree's highlight when it sets none", () => {
+    const vars = deriveThemeVariables("dark", DEFAULT_BASE_COLORS.dark, {
+      activeText: "#ff00aa",
+      activeBg: "#12345680"
+    });
+
+    expect(vars["--open-active-text"]).toBe(vars["--tree-active-text"]);
+    expect(vars["--open-active-bg"]).toBe(vars["--tree-active-bg"]);
+  });
+
+  it("keeps the two lists apart once the open-files list sets its own", () => {
+    const vars = deriveThemeVariables("dark", DEFAULT_BASE_COLORS.dark, {
+      activeText: "#ff00aa",
+      openActiveText: "#00ccff"
+    });
+
+    expect(vars["--open-active-text"]).not.toBe(vars["--tree-active-text"]);
+  });
+
+  // A theme written before these colours existed has none of the six keys,
+  // so the fallback must not invent one: the tokens stay at the mode's
+  // built-in values and the stylesheet's own rule is what shows.
+  it("leaves both lists at the built-in highlight when a theme sets neither", () => {
+    const vars = deriveThemeVariables("dark", DEFAULT_BASE_COLORS.dark, { error: "#ff00aa" });
+
+    expect(vars["--tree-active-bg"]).toBe(builtIn.dark["--tree-active-bg"]);
+    expect(vars["--open-active-marker"]).toBe(builtIn.dark["--open-active-marker"]);
+  });
 });
 
 describe("derivePaperVariables", () => {

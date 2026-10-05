@@ -13,7 +13,7 @@
  * from its base as in the built-in themes.
  */
 
-import { buildAccentPalette, hexToRgb, rgbToHex, type Rgb } from "@/lib/color";
+import { buildAccentPalette, rgbToHex, type Rgb } from "@/lib/color";
 
 import { oklabToRgb, parseCssColor, rgbToOklab, type Oklab } from "./oklab";
 
@@ -77,11 +77,53 @@ export const ADVANCED_COLOR_KEYS = [
   "codeNumber",
   "codeFunction",
   "codeType",
-  "codeVariable"
+  "codeVariable",
+  "activeText",
+  "activeBg",
+  "activeMarker",
+  "openActiveText",
+  "openActiveBg",
+  "openActiveMarker"
 ] as const;
 
 export type AdvancedColorKey = (typeof ADVANCED_COLOR_KEYS)[number];
 export type ThemeAdvancedColors = Partial<Record<AdvancedColorKey, string>>;
+
+/** The highlight colours of the open note, in the tree and in the
+ *  "In progress" list. The three `openActive*` keys are the list's
+ *  deviation from the tree: left out, they take the tree's value rather
+ *  than a default of their own, so "both lists alike" is what you get
+ *  without doing anything and stays that way when the tree colours
+ *  change. */
+export const OPEN_ACTIVE_FALLBACK: Partial<Record<AdvancedColorKey, AdvancedColorKey>> = {
+  openActiveText: "activeText",
+  openActiveBg: "activeBg",
+  openActiveMarker: "activeMarker"
+};
+
+/** The custom property each highlight colour overwrites. The token is
+ *  derived from the base colours when the key is unset, which is what the
+ *  dialog has to show in that case: a theme with a copper accent has a
+ *  copper bar, and a field showing the built-in violet would be lying. */
+export const HIGHLIGHT_TOKEN_OF: Partial<Record<AdvancedColorKey, string>> = {
+  activeText: "--tree-active-text",
+  activeBg: "--tree-active-bg",
+  activeMarker: "--tree-active-marker",
+  openActiveText: "--open-active-text",
+  openActiveBg: "--open-active-bg",
+  openActiveMarker: "--open-active-marker"
+};
+
+/** The advanced colours that may carry an `aa` alpha suffix. A highlight
+ *  is meant to be dimmable down to invisible, which is what alpha is for;
+ *  everywhere else an alpha would only produce a surface that lets the
+ *  page through, so the strict `#rrggbb` rule stays. */
+export const ALPHA_COLOR_KEYS: ReadonlySet<AdvancedColorKey> = new Set([
+  "activeBg",
+  "activeMarker",
+  "openActiveBg",
+  "openActiveMarker"
+]);
 
 /** What each advanced colour stands for in the built-in themes: the
  *  Tailwind 500 step for the status roles, the literal colour elsewhere. */
@@ -102,7 +144,13 @@ export const DEFAULT_ADVANCED_COLORS: Record<ThemeMode, Record<AdvancedColorKey,
     codeNumber: "#fdba74",
     codeFunction: "#93c5fd",
     codeType: "#67e8f9",
-    codeVariable: "#f0abfc"
+    codeVariable: "#f0abfc",
+    activeText: "#0f172a",
+    activeBg: "#535b6633",
+    activeMarker: "#a855f7d9",
+    openActiveText: "#0f172a",
+    openActiveBg: "#535b6633",
+    openActiveMarker: "#a855f7d9"
   },
   dark: {
     error: "#ef4444",
@@ -120,7 +168,13 @@ export const DEFAULT_ADVANCED_COLORS: Record<ThemeMode, Record<AdvancedColorKey,
     codeNumber: "#f0ad76",
     codeFunction: "#85b8f5",
     codeType: "#63d5e6",
-    codeVariable: "#e39cf0"
+    codeVariable: "#e39cf0",
+    activeText: "#e2e8f0",
+    activeBg: "#a0a0a433",
+    activeMarker: "#a855f7d9",
+    openActiveText: "#e2e8f0",
+    openActiveBg: "#a0a0a433",
+    openActiveMarker: "#a855f7d9"
   }
 };
 
@@ -163,6 +217,12 @@ type Rule = {
    *  way the reference does against its default source. How a pale status
    *  panel or a dark message text follows one picked status colour. */
   relative?: boolean;
+  /** Take the alpha from the picked colour instead of the reference. Only
+   *  the highlight colours do this: there the alpha is the user's choice,
+   *  down to a fully transparent mark, while everywhere else the
+   *  reference's alpha is a property of the token and has to survive a
+   *  recolouring. */
+  ownAlpha?: boolean;
 };
 
 type DerivedToken = { format: OutputFormat; light: Rule; dark: Rule };
@@ -174,6 +234,33 @@ const RAISED_PULL = 0.078;
 const HOVER_PULL = 0.272;
 const ACTIVE_PULL = 0.575;
 const BODY_END_PULL = 0.018;
+
+/** The three tokens one list's highlight is made of, derived from the base
+ *  colours the stylesheet used to read directly: the accent for the bar,
+ *  the selection tint for the background and the body text for the name. */
+function highlightTokens(prefix: string): Record<string, DerivedToken> {
+  return {
+    [`${prefix}-text`]: {
+      format: "hex",
+      light: { from: "text", reference: "#0f172a" },
+      dark: { from: "text", reference: "#e2e8f0" }
+    },
+    [`${prefix}-bg`]: {
+      format: "rgba",
+      light: { from: "chrome", reference: "rgba(83, 91, 102, 0.2)", tint: "muted", pull: 0.362 },
+      dark: { from: "chrome", reference: "rgba(160, 160, 164, 0.2)" }
+    },
+    // 0.851, not the 0.85 the stylesheet used to carry: an alpha the user
+    // may edit has to survive the two hex digits it is written as, and
+    // 0.85 does not round-trip through them. The difference is a 255th of
+    // the bar's opacity.
+    [`${prefix}-marker`]: {
+      format: "rgba",
+      light: { from: "accent", reference: "rgba(168, 85, 247, 0.851)" },
+      dark: { from: "accent", reference: "rgba(168, 85, 247, 0.851)" }
+    }
+  };
+}
 
 const DERIVED_TOKENS: Record<string, DerivedToken> = {
   "--text-rgb": {
@@ -321,7 +408,15 @@ const DERIVED_TOKENS: Record<string, DerivedToken> = {
     format: "css",
     light: { from: "muted", reference: "oklch(0.708 0 0)" },
     dark: { from: "muted", reference: "oklch(0.556 0 0)" }
-  }
+  },
+
+  /* The open note's mark, in the tree and in the "In progress" list. It is
+     the accent, the selection tint and the body text that make it, exactly
+     as the stylesheet used to spell out, so a theme that picks a copper
+     accent gets a copper bar without saying so. The matching advanced
+     colours overwrite these, and only when the user sets one. */
+  ...highlightTokens("--tree-active"),
+  ...highlightTokens("--open-active")
 };
 
 /** Status colours shared by both built-in themes (tokens.css). */
@@ -442,6 +537,19 @@ function codeToken(key: AdvancedColorKey, name: string): Record<string, Advanced
   };
 }
 
+/** One highlight colour, written out with its alpha: the picked colour is
+ *  the reference itself, so the token is what the user chose, down to a
+ *  fully transparent one. */
+function highlightToken(key: AdvancedColorKey, name: string): Record<string, AdvancedToken> {
+  return {
+    [name]: {
+      format: "rgba",
+      light: { from: key, reference: DEFAULT_ADVANCED_COLORS.light[key], ownAlpha: true },
+      dark: { from: key, reference: DEFAULT_ADVANCED_COLORS.dark[key], ownAlpha: true }
+    }
+  };
+}
+
 /** The tokens each advanced colour drives. The references are the built-in
  *  values (the same ones MODE_DEFAULTS carries), so the steps between, say,
  *  the error colour and the error panel stay what they are today. */
@@ -538,7 +646,13 @@ const ADVANCED_TOKENS: Record<AdvancedColorKey, Record<string, AdvancedToken>> =
   codeNumber: codeToken("codeNumber", "--code-number"),
   codeFunction: codeToken("codeFunction", "--code-function"),
   codeType: codeToken("codeType", "--code-type"),
-  codeVariable: codeToken("codeVariable", "--code-variable")
+  codeVariable: codeToken("codeVariable", "--code-variable"),
+  activeText: codeToken("activeText", "--tree-active-text"),
+  activeBg: highlightToken("activeBg", "--tree-active-bg"),
+  activeMarker: highlightToken("activeMarker", "--tree-active-marker"),
+  openActiveText: codeToken("openActiveText", "--open-active-text"),
+  openActiveBg: highlightToken("openActiveBg", "--open-active-bg"),
+  openActiveMarker: highlightToken("openActiveMarker", "--open-active-marker")
 };
 
 /** The custom properties an advanced colour drives (for the tests). */
@@ -558,8 +672,11 @@ const ACCENT_TOKENS: Record<string, string> = {
   darkest: "--accent-darkest-rgb"
 };
 
+/** The colour's position in Oklab; an alpha suffix, which only the
+ *  highlight colours carry, is not part of that and is dropped here. It
+ *  travels with the reference instead (see `applyRule`). */
 function toOklab(hex: string): Oklab {
-  const rgb = hexToRgb(hex);
+  const rgb = parseCssColor(hex);
   if (!rgb) {
     throw new Error(`Not a #rrggbb colour: ${hex}`);
   }
@@ -616,7 +733,25 @@ function applyRule(rule: Rule, colors: ColorSet, defaults: ColorSet, format: Out
     a: a * chroma,
     b: b * chroma
   });
-  return formatColor(derived, reference.alpha, format);
+  const alpha = rule.ownAlpha ? (parseCssColor(colors[rule.from])?.alpha ?? reference.alpha) : reference.alpha;
+  return formatColor(derived, alpha, format);
+}
+
+/** Fills an unset `openActive*` key from its `active*` counterpart, so a
+ *  theme that only sets the tree's highlight gets the same one in the
+ *  "In progress" list, and keeps it when the tree's colours change. A key
+ *  neither of the two sets stays unset, which is what makes a theme
+ *  written before these colours existed come out exactly as before: the
+ *  loop below writes no variable for it and the stylesheet keeps its own
+ *  rule. */
+function withOpenActiveFallback(advanced: ThemeAdvancedColors): ThemeAdvancedColors {
+  const resolved = { ...advanced };
+  for (const [key, source] of Object.entries(OPEN_ACTIVE_FALLBACK) as [AdvancedColorKey, AdvancedColorKey][]) {
+    if (resolved[key] === undefined && advanced[source] !== undefined) {
+      resolved[key] = advanced[source];
+    }
+  }
+  return resolved;
 }
 
 /** Every theme-controlled custom property, resolved for the given mode,
@@ -628,8 +763,9 @@ export function deriveThemeVariables(
   base: ThemeBaseColors,
   advanced: ThemeAdvancedColors = {}
 ): Record<string, string> {
+  const resolved = withOpenActiveFallback(advanced);
   const defaults: ColorSet = { ...DEFAULT_BASE_COLORS[mode], ...DEFAULT_ADVANCED_COLORS[mode] };
-  const colors: ColorSet = { ...defaults, ...base, ...advanced };
+  const colors: ColorSet = { ...defaults, ...base, ...resolved };
   const variables: Record<string, string> = { ...MODE_DEFAULTS[mode] };
 
   for (const [name, token] of Object.entries(DERIVED_TOKENS)) {
@@ -637,7 +773,7 @@ export function deriveThemeVariables(
   }
 
   for (const key of ADVANCED_COLOR_KEYS) {
-    if (advanced[key] === undefined) {
+    if (resolved[key] === undefined) {
       continue;
     }
     for (const [name, token] of Object.entries(ADVANCED_TOKENS[key])) {
@@ -654,6 +790,31 @@ export function deriveThemeVariables(
   }
 
   return variables;
+}
+
+/** What a highlight colour's field shows while the theme has not set it:
+ *  the value the theme derives from its base colours right now, as the hex
+ *  the picker speaks. Without this the field would show the built-in
+ *  violet next to a copper bar. */
+export function derivedHighlightColor(
+  key: AdvancedColorKey,
+  mode: ThemeMode,
+  base: ThemeBaseColors,
+  advanced: ThemeAdvancedColors = {}
+): string | null {
+  const name = HIGHLIGHT_TOKEN_OF[key];
+  if (!name) {
+    return null;
+  }
+  const color = parseCssColor(deriveThemeVariables(mode, base, advanced)[name]);
+  if (!color) {
+    return null;
+  }
+  const hex = rgbToHex(color);
+  if (!ALPHA_COLOR_KEYS.has(key) || color.alpha >= 1) {
+    return hex;
+  }
+  return `${hex}${Math.round(color.alpha * 255).toString(16).padStart(2, "0")}`;
 }
 
 /** Tailwind's gray scale, which the editor's `prose`/`prose-invert` classes

@@ -417,6 +417,9 @@
     "advancedStatus": "Colori di stato",
     "advancedHighlights": "Evidenziazioni",
     "advancedCode": "Blocchi di codice",
+    "advancedActive": "Nota aperta",
+    "advancedOpenActiveSeparate": "Mostrare l'elenco “In corso” diverso dall'albero dei file",
+    "opacity": "Opacità",
     "advancedColors": {
       "error": "Errore",
       "success": "Successo",
@@ -433,7 +436,13 @@
       "codeNumber": "Numero",
       "codeFunction": "Funzione",
       "codeType": "Tipo",
-      "codeVariable": "Variabile"
+      "codeVariable": "Variabile",
+      "activeText": "Nome",
+      "activeBg": "Sfondo",
+      "activeMarker": "Indicatore",
+      "openActiveText": "Nome nell'elenco",
+      "openActiveBg": "Sfondo nell'elenco",
+      "openActiveMarker": "Indicatore nell'elenco"
     },
     "resetColor": "Ripristina il colore del modello",
     "resetAdvanced": "Riprendilo dalla tonalità",
@@ -475,6 +484,7 @@
     "useNeedsSave": "Prima salva, poi usalo.",
     "preview": {
       "vault": "Note",
+      "workingSet": "In lavorazione",
       "folder": "Progetti",
       "fileHover": "Idee",
       "fileActive": "Bozza",

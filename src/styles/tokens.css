@@ -128,6 +128,21 @@
   --diff-added-bg: rgba(22, 163, 74, 0.16);
   --diff-added-accent: rgba(21, 128, 61, 0.55);
 
+  /* The open note's mark, once for the file tree and once for the
+     "In progress" list. Both sets hold the same values here, which is what
+     makes the two lists look alike by default; a custom theme may set them
+     apart. These are not colours of their own: a theme derives them from
+     its accent, its selection tint and its body text (derive.ts), which is
+     why a copper-accented theme gets a copper bar without asking. The
+     alpha is part of the colour, so a theme can dim a mark down to
+     invisible without the stylesheet knowing about it. */
+  --tree-active-text: #0f172a;
+  --tree-active-bg: rgba(83, 91, 102, 0.2);
+  --tree-active-marker: rgba(168, 85, 247, 0.851);
+  --open-active-text: #0f172a;
+  --open-active-bg: rgba(83, 91, 102, 0.2);
+  --open-active-marker: rgba(168, 85, 247, 0.851);
+
   /* Code block tokens. The prose styles give code blocks a dark background in
      both themes, so the palette below is shared; .dark only nudges it. */
   --code-comment: #94a3b8;
@@ -197,6 +212,13 @@
   --diff-removed-accent: rgba(252, 165, 165, 0.7);
   --diff-added-bg: rgba(74, 222, 128, 0.22);
   --diff-added-accent: rgba(134, 239, 172, 0.7);
+
+  --tree-active-text: #e2e8f0;
+  --tree-active-bg: rgba(160, 160, 164, 0.2);
+  --tree-active-marker: rgba(168, 85, 247, 0.851);
+  --open-active-text: #e2e8f0;
+  --open-active-bg: rgba(160, 160, 164, 0.2);
+  --open-active-marker: rgba(168, 85, 247, 0.851);
 
   /* Slightly dimmed against the darker code background of prose-invert. */
   --code-comment: #7c8798;

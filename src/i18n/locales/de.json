@@ -417,6 +417,9 @@
     "advancedStatus": "Statusfarben",
     "advancedHighlights": "Hervorhebungen",
     "advancedCode": "Codeblöcke",
+    "advancedActive": "Geöffnete Notiz",
+    "advancedOpenActiveSeparate": "Liste „In Arbeit“ abweichend vom Dateibaum darstellen",
+    "opacity": "Deckkraft",
     "advancedColors": {
       "error": "Fehler",
       "success": "Erfolg",
@@ -433,7 +436,13 @@
       "codeNumber": "Zahl",
       "codeFunction": "Funktion",
       "codeType": "Typ",
-      "codeVariable": "Variable"
+      "codeVariable": "Variable",
+      "activeText": "Name",
+      "activeBg": "Hintergrund",
+      "activeMarker": "Markierung",
+      "openActiveText": "Name in der Liste",
+      "openActiveBg": "Hintergrund in der Liste",
+      "openActiveMarker": "Markierung in der Liste"
     },
     "resetColor": "Auf die Farbe der Vorlage zurücksetzen",
     "resetAdvanced": "Wieder vom Grundton übernehmen",
@@ -475,6 +484,7 @@
     "useNeedsSave": "Erst speichern, dann verwenden.",
     "preview": {
       "vault": "Notizen",
+      "workingSet": "In Arbeit",
       "folder": "Projekte",
       "fileHover": "Ideen",
       "fileActive": "Entwurf",

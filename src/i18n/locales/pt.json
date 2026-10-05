@@ -417,6 +417,9 @@
     "advancedStatus": "Cores de status",
     "advancedHighlights": "Destaques",
     "advancedCode": "Blocos de código",
+    "advancedActive": "Nota aberta",
+    "advancedOpenActiveSeparate": "Mostrar a lista “Em andamento” diferente da árvore de arquivos",
+    "opacity": "Opacidade",
     "advancedColors": {
       "error": "Erro",
       "success": "Sucesso",
@@ -433,7 +436,13 @@
       "codeNumber": "Número",
       "codeFunction": "Função",
       "codeType": "Tipo",
-      "codeVariable": "Variável"
+      "codeVariable": "Variável",
+      "activeText": "Nome",
+      "activeBg": "Fundo",
+      "activeMarker": "Marca",
+      "openActiveText": "Nome na lista",
+      "openActiveBg": "Fundo na lista",
+      "openActiveMarker": "Marca na lista"
     },
     "resetColor": "Voltar à cor do modelo",
     "resetAdvanced": "Voltar a usar o tom base",
@@ -475,6 +484,7 @@
     "useNeedsSave": "Salve primeiro, depois use.",
     "preview": {
       "vault": "Notas",
+      "workingSet": "Em andamento",
       "folder": "Projetos",
       "fileHover": "Ideias",
       "fileActive": "Rascunho",

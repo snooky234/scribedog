@@ -416,6 +416,9 @@
     "advancedStatus": "ステータス色",
     "advancedHighlights": "強調表示",
     "advancedCode": "コードブロック",
+    "advancedActive": "開いているノート",
+    "advancedOpenActiveSeparate": "「作業中」リストをファイルツリーと別に表示する",
+    "opacity": "不透明度",
     "advancedColors": {
       "error": "エラー",
       "success": "成功",
@@ -432,7 +435,13 @@
       "codeNumber": "数値",
       "codeFunction": "関数",
       "codeType": "型",
-      "codeVariable": "変数"
+      "codeVariable": "変数",
+      "activeText": "名前",
+      "activeBg": "背景",
+      "activeMarker": "マーカー",
+      "openActiveText": "リストの名前",
+      "openActiveBg": "リストの背景",
+      "openActiveMarker": "リストのマーカー"
     },
     "resetColor": "テンプレートの色に戻す",
     "resetAdvanced": "基本トーンの色に戻す",
@@ -474,6 +483,7 @@
     "useNeedsSave": "先に保存してから使用してください。",
     "preview": {
       "vault": "ノート",
+      "workingSet": "作業中",
       "folder": "プロジェクト",
       "fileHover": "アイデア",
       "fileActive": "下書き",

@@ -221,8 +221,11 @@
 
 /* The currently open file must stay recognizable even when search-match
    highlighting colors other rows: the accent bar from file-tree.css, a bold
-   name, and a background that wins over the search tint. */
+   name, and a background that wins over the search tint. The colour is the
+   theme's, the weight is not: a name the theme could dim into the page
+   would leave the open note unreadable. */
 .file-tree__row--active .file-tree__name {
+  color: var(--tree-active-text);
   font-weight: 600;
 }
 

@@ -421,6 +421,9 @@
     "advancedStatus": "Цвета статусов",
     "advancedHighlights": "Выделения",
     "advancedCode": "Блоки кода",
+    "advancedActive": "Открытая заметка",
+    "advancedOpenActiveSeparate": "Показывать список «В работе» иначе, чем дерево файлов",
+    "opacity": "Непрозрачность",
     "advancedColors": {
       "error": "Ошибка",
       "success": "Успех",
@@ -437,7 +440,13 @@
       "codeNumber": "Число",
       "codeFunction": "Функция",
       "codeType": "Тип",
-      "codeVariable": "Переменная"
+      "codeVariable": "Переменная",
+      "activeText": "Имя",
+      "activeBg": "Фон",
+      "activeMarker": "Метка",
+      "openActiveText": "Имя в списке",
+      "openActiveBg": "Фон в списке",
+      "openActiveMarker": "Метка в списке"
     },
     "resetColor": "Вернуть цвет шаблона",
     "resetAdvanced": "Снова брать из основного тона",
@@ -479,6 +488,7 @@
     "useNeedsSave": "Сначала сохраните, затем используйте.",
     "preview": {
       "vault": "Заметки",
+      "workingSet": "В работе",
       "folder": "Проекты",
       "fileHover": "Идеи",
       "fileActive": "Черновик",

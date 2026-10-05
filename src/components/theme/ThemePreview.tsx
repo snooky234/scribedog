@@ -11,6 +11,11 @@ export type ThemePreviewView = "app" | "paper" | "zen";
 type ThemePreviewProps = {
   theme: CustomTheme;
   view: ThemePreviewView;
+  /** Adds the "In progress" list above the notes. It is only worth the
+   *  space once the list has colours of its own: then the same note shows
+   *  twice, one above the other, which is the comparison being made. While
+   *  the two match, the tree below already shows it. */
+  withWorkingSet?: boolean;
 };
 
 function asStyle(variables: Record<string, string>, extra: CSSProperties = {}): CSSProperties {
@@ -68,7 +73,7 @@ function DocumentSample() {
  * Every base colour and every derived tone shows up somewhere; hover and
  * active are drawn as fixed states.
  */
-export function ThemePreview({ theme, view }: ThemePreviewProps) {
+export function ThemePreview({ theme, view, withWorkingSet = false }: ThemePreviewProps) {
   const { t } = useTranslation();
   const resolved = useMemo(() => resolveTheme(theme), [theme]);
   const onPaper = view === "paper" && resolved.paper !== null;
@@ -116,6 +121,21 @@ export function ThemePreview({ theme, view }: ThemePreviewProps) {
     >
       <div className="theme-preview__window">
         <aside className="theme-preview__sidebar">
+          {/* The open note shows in both lists at once, so once they are
+              styled apart this is the only place the two marks can be
+              compared: the same note, twice, one above the other. */}
+          {withWorkingSet ? (
+            <>
+              <div className="theme-preview__sidebar-title">{t("themeBuilder.preview.workingSet")}</div>
+              <div className="theme-preview__row theme-preview__row--open is-active">
+                <span>{t("themeBuilder.preview.fileActive")}</span>
+                <span className="theme-preview__dirty" />
+              </div>
+              <div className="theme-preview__row theme-preview__row--open">
+                <span>{t("themeBuilder.preview.fileHover")}</span>
+              </div>
+            </>
+          ) : null}
           <div className="theme-preview__sidebar-title">{t("themeBuilder.preview.vault")}</div>
           <div className="theme-preview__row">
             <Folder aria-hidden="true" />

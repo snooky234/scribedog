@@ -44,6 +44,16 @@ Zen mode. Zen mode can get a background and text colour of its own.
 
 An **Advanced** section covers status, highlight, diff and code colours.
 
+It also holds the mark of the open note: its name, its background and the
+bar at its left edge. Background and bar have an opacity of their own, so a
+mark can be toned down or removed entirely, and the name's colour can carry
+the note instead. By default the file tree and the "In progress" list wear
+the same mark, which is why the open note looks alike in both. Tick **Show
+the "In progress" list differently from the file tree** and the list keeps
+the colours it has at that moment, free to be set on its own from then on.
+The preview then shows the list above the notes, so you see the same note
+marked both ways at once.
+
 <img src="images/scribe-dog-themebuilder.png" alt="ScribeDog theme builder" width="700">
 
 Themes can be exported and imported as a small JSON file, or through the

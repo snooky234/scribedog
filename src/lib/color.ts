@@ -11,9 +11,17 @@ export type Hsl = { h: number; s: number; l: number };
 export type Rgb = { r: number; g: number; b: number };
 
 const HEX_PATTERN = /^#([0-9a-f]{6})$/i;
+const HEX_ALPHA_PATTERN = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i;
 
 export function isValidHexColor(value: string): boolean {
   return HEX_PATTERN.test(value.trim());
+}
+
+/** The same, plus an optional `aa` suffix. Separate from the rule above on
+ *  purpose: only the theme's highlight colours may carry an opacity, and
+ *  everywhere else a colour has to stay opaque. */
+export function isValidAlphaHexColor(value: string): boolean {
+  return HEX_ALPHA_PATTERN.test(value.trim());
 }
 
 export function hexToRgb(hex: string): Rgb | null {

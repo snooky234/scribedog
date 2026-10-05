@@ -77,11 +77,31 @@
   background: rgb(var(--surface-hover-rgb));
 }
 
+/* The open note, with the tree's own tokens: the preview is where the
+   highlight colours are picked, so it has to show them. */
 .theme-preview__row.is-active {
-  background: rgba(var(--selection-rgb), 0.2);
-  box-shadow: inset 3px 0 0 rgba(var(--accent-rgb), 0.85);
-  color: rgb(var(--text-rgb));
+  background: var(--tree-active-bg);
+  box-shadow: inset 3px 0 0 var(--tree-active-marker);
+  color: var(--tree-active-text);
   font-weight: 600;
+}
+
+/* No icon on these rows, as in the app's own list. */
+.theme-preview__row--open {
+  padding-left: 0.5rem;
+}
+
+.theme-preview__row--open + .theme-preview__sidebar-title {
+  padding-top: 0.5rem;
+}
+
+/* The same note in the "In progress" list, which the preview only shows
+   while the two are styled apart. Its own three tokens, so the rows above
+   and below differ exactly as they will in the app. */
+.theme-preview__row--open.is-active {
+  background: var(--open-active-bg);
+  box-shadow: inset 3px 0 0 var(--open-active-marker);
+  color: var(--open-active-text);
 }
 
 .theme-preview__row.is-search-match {

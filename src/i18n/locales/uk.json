@@ -421,6 +421,9 @@
     "advancedStatus": "Кольори статусів",
     "advancedHighlights": "Виділення",
     "advancedCode": "Блоки коду",
+    "advancedActive": "Відкрита нотатка",
+    "advancedOpenActiveSeparate": "Показувати список «У роботі» інакше, ніж дерево файлів",
+    "opacity": "Непрозорість",
     "advancedColors": {
       "error": "Помилка",
       "success": "Успіх",
@@ -437,7 +440,13 @@
       "codeNumber": "Число",
       "codeFunction": "Функція",
       "codeType": "Тип",
-      "codeVariable": "Змінна"
+      "codeVariable": "Змінна",
+      "activeText": "Ім'я",
+      "activeBg": "Тло",
+      "activeMarker": "Позначка",
+      "openActiveText": "Ім'я в списку",
+      "openActiveBg": "Тло в списку",
+      "openActiveMarker": "Позначка в списку"
     },
     "resetColor": "Повернути колір шаблону",
     "resetAdvanced": "Знову брати з основного тону",
@@ -479,6 +488,7 @@
     "useNeedsSave": "Спершу збережіть, потім використайте.",
     "preview": {
       "vault": "Нотатки",
+      "workingSet": "У роботі",
       "folder": "Проєкти",
       "fileHover": "Ідеї",
       "fileActive": "Чернетка",

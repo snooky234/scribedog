@@ -60,7 +60,7 @@ function oklchToRgb(l: number, c: number, hueDegrees: number): Rgb {
   return oklabToRgb({ l, a: c * Math.cos(h), b: c * Math.sin(h) });
 }
 
-const HEX = /^#([0-9a-f]{6})$/i;
+const HEX = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i;
 const TRIPLET = /^(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})$/;
 const RGBA = /^rgba?\(\s*(\d{1,3})[,\s]\s*(\d{1,3})[,\s]\s*(\d{1,3})(?:\s*[,/]\s*([\d.]+)(%?))?\s*\)$/;
 const OKLCH = /^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+)(%?))?\s*\)$/;
@@ -74,7 +74,8 @@ function parseAlpha(value: string | undefined, percent: string | undefined): num
 }
 
 /**
- * Parses the four spellings the palette uses: `#rrggbb`, a bare `r, g, b`
+ * Parses the four spellings the palette uses: `#rrggbb` (with an optional
+ * `aa` suffix, which only the highlight colours use), a bare `r, g, b`
  * triplet (the `--*-rgb` tokens), `rgb()`/`rgba()` and `oklch()` (the
  * shadcn tokens). Anything else is `null` — this is not a general CSS
  * colour parser.
@@ -85,7 +86,8 @@ export function parseCssColor(value: string): CssColor | null {
   const hex = HEX.exec(input);
   if (hex) {
     const int = Number.parseInt(hex[1], 16);
-    return { r: (int >> 16) & 255, g: (int >> 8) & 255, b: int & 255, alpha: 1 };
+    const alpha = hex[2] === undefined ? 1 : Number.parseInt(hex[2], 16) / 255;
+    return { r: (int >> 16) & 255, g: (int >> 8) & 255, b: int & 255, alpha };
   }
 
   const triplet = TRIPLET.exec(input);

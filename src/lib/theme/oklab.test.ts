@@ -33,6 +33,12 @@ describe("parseCssColor", () => {
     expect(parseCssColor("rgb(10 20 30 / 15%)")).toEqual({ r: 10, g: 20, b: 30, alpha: 0.15 });
   });
 
+  it("reads the alpha suffix of a highlight colour", () => {
+    expect(parseCssColor("#0f172aff")).toEqual({ r: 15, g: 23, b: 42, alpha: 1 });
+    expect(parseCssColor("#0f172a00")).toEqual({ r: 15, g: 23, b: 42, alpha: 0 });
+    expect(parseCssColor("#0f172a33")?.alpha).toBeCloseTo(0.2, 3);
+  });
+
   it("converts oklch, including an alpha", () => {
     const white = parseCssColor("oklch(1 0 0 / 10%)");
     expect(white?.alpha).toBeCloseTo(0.1, 5);

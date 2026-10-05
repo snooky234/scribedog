@@ -5,17 +5,24 @@ import { useTranslation } from "react-i18next";
 import { ThemePreview, type ThemePreviewView } from "@/components/theme/ThemePreview";
 import { Button } from "@/components/ui/button";
 import { useDismissOnOverlayClick } from "@/hooks/useDismissOnOverlayClick";
-import { isValidHexColor } from "@/lib/color";
+import { isValidAlphaHexColor, isValidHexColor } from "@/lib/color";
 import { allowFileAccess } from "@/lib/fileSystem";
 import {
+  ALPHA_COLOR_KEYS,
   BASE_COLOR_KEYS,
-  DEFAULT_ADVANCED_COLORS,
   DEFAULT_BASE_COLORS,
   DEFAULT_PAPER_COLORS,
   type AdvancedColorKey,
   type BaseColorKey,
   type ThemeMode
 } from "@/lib/theme/derive";
+import {
+  advancedValue,
+  isOpenActiveBound,
+  OPEN_ACTIVE_KEYS,
+  setOpenActiveBound,
+  treeColorFor
+} from "@/lib/theme/highlightBinding";
 import {
   createThemeId,
   isValidThemeName,
@@ -64,7 +71,8 @@ const ADVANCED_GROUPS: { titleKey: string; keys: AdvancedColorKey[] }[] = [
   {
     titleKey: "themeBuilder.advancedCode",
     keys: ["codeComment", "codeKeyword", "codeString", "codeNumber", "codeFunction", "codeType", "codeVariable"]
-  }
+  },
+  { titleKey: "themeBuilder.advancedActive", keys: ["activeText", "activeBg", "activeMarker"] }
 ];
 
 function templateTheme(id: string, name: string): CustomTheme {
@@ -97,12 +105,40 @@ type ColorFieldProps = {
   /** Shown when the value can go back to an inherited one. */
   onReset?: () => void;
   resetLabel: string;
+  /** Adds the opacity slider, for the highlight colours that may be dimmed
+   *  away. Without it the field behaves exactly as it always has. */
+  alpha?: boolean;
+  alphaLabel?: string;
 };
 
+/** Splits `#rrggbbaa` into the part a native colour input understands and
+ *  its opacity; a six-digit value is fully opaque. */
+function splitAlpha(value: string): { rgb: string; alpha: number } {
+  const rgb = value.slice(0, 7);
+  const suffix = value.slice(7, 9);
+  return { rgb, alpha: suffix.length === 2 ? Number.parseInt(suffix, 16) / 255 : 1 };
+}
+
+function joinAlpha(rgb: string, alpha: number): string {
+  return alpha >= 1 ? rgb : `${rgb}${Math.round(alpha * 255).toString(16).padStart(2, "0")}`;
+}
+
 /** Swatch plus hex field, the same pair the accent colour setting uses. The
- *  text field only commits complete #rrggbb values. */
-function ColorField({ label, hint, value, disabled, onChange, onReset, resetLabel }: ColorFieldProps) {
+ *  text field only commits complete #rrggbb values, or #rrggbbaa where the
+ *  colour may carry an opacity. */
+function ColorField({
+  label,
+  hint,
+  value,
+  disabled,
+  onChange,
+  onReset,
+  resetLabel,
+  alpha,
+  alphaLabel
+}: ColorFieldProps) {
   const [text, setText] = useState(value);
+  const parts = splitAlpha(value);
 
   useEffect(() => {
     setText(value);
@@ -115,31 +151,52 @@ function ColorField({ label, hint, value, disabled, onChange, onReset, resetLabe
         {hint ? <small>{hint}</small> : null}
       </div>
       <div className="theme-builder__color-inputs">
-        <input
-          type="color"
-          className="theme-builder__swatch"
-          value={value}
-          disabled={disabled}
-          aria-label={label}
-          onChange={(event) => onChange(event.target.value.toLowerCase())}
-        />
+        {/* A native colour input has no opacity of its own, so the swatch
+            carries the colour and the slider beside it the opacity; the
+            checkered backdrop is what makes a dimmed one readable. */}
+        <span className={alpha ? "theme-builder__swatch-box" : undefined}>
+          <input
+            type="color"
+            className="theme-builder__swatch"
+            style={alpha ? { opacity: parts.alpha } : undefined}
+            value={parts.rgb}
+            disabled={disabled}
+            aria-label={label}
+            onChange={(event) =>
+              onChange(alpha ? joinAlpha(event.target.value.toLowerCase(), parts.alpha) : event.target.value.toLowerCase())
+            }
+          />
+        </span>
         <input
           type="text"
           className="theme-builder__hex"
           value={text}
           disabled={disabled}
-          maxLength={7}
+          maxLength={alpha ? 9 : 7}
           spellCheck={false}
           aria-label={label}
           onChange={(event) => {
             const next = event.target.value.trim();
             setText(next);
-            if (isValidHexColor(next)) {
+            if (alpha ? isValidAlphaHexColor(next) : isValidHexColor(next)) {
               onChange(next.toLowerCase());
             }
           }}
           onBlur={() => setText(value)}
         />
+        {alpha ? (
+          <input
+            type="range"
+            className="theme-builder__alpha"
+            min={0}
+            max={100}
+            value={Math.round(parts.alpha * 100)}
+            disabled={disabled}
+            aria-label={alphaLabel}
+            title={alphaLabel}
+            onChange={(event) => onChange(joinAlpha(parts.rgb, Number(event.target.value) / 100))}
+          />
+        ) : null}
         {onReset ? (
           <button
             type="button"
@@ -292,6 +349,11 @@ export function ThemeBuilderDialog({ open, onClose }: ThemeBuilderDialogProps) {
       }
       return { ...current, advanced: Object.keys(advanced).length > 0 ? advanced : undefined };
     });
+
+  const openActiveBound = isOpenActiveBound(draft);
+
+  const toggleOpenActiveBound = (bound: boolean) =>
+    setDraft((current) => setOpenActiveBound(current, bound));
 
   const duplicate = () => {
     const copy: CustomTheme = {
@@ -662,14 +724,61 @@ export function ThemeBuilderDialog({ open, onClose }: ThemeBuilderDialogProps) {
                           <ColorField
                             key={key}
                             label={t(`themeBuilder.advancedColors.${key}`)}
-                            value={draft.advanced?.[key] ?? DEFAULT_ADVANCED_COLORS[draft.mode][key]}
+                            value={advancedValue(draft, key)}
                             disabled={!editable}
                             onChange={(value) => setAdvancedColor(key, value)}
                             onReset={editable && draft.advanced?.[key] ? () => setAdvancedColor(key, undefined) : undefined}
                             resetLabel={t("themeBuilder.resetAdvanced")}
+                            alpha={ALPHA_COLOR_KEYS.has(key)}
+                            alphaLabel={t("themeBuilder.opacity")}
                           />
                         ))}
                       </div>
+                      {group.titleKey === "themeBuilder.advancedActive" ? (
+                        <>
+                          {/* Following the tree is the default and needs no
+                              colours of its own, so there is nothing to show
+                              until this is ticked. Ticking writes today's
+                              inherited values into the theme once, which is
+                              what stops them following the tree from then
+                              on, and is why the fields appear holding the
+                              colours the list already had. */}
+                          <label className="theme-builder__bound">
+                            <input
+                              type="checkbox"
+                              checked={!openActiveBound}
+                              disabled={!editable}
+                              onChange={(event) => toggleOpenActiveBound(!event.target.checked)}
+                            />
+                            {t("themeBuilder.advancedOpenActiveSeparate")}
+                          </label>
+                          {openActiveBound ? null : (
+                            <div className="theme-builder__colors">
+                              {OPEN_ACTIVE_KEYS.map((key) => (
+                                <ColorField
+                                  key={key}
+                                  label={t(`themeBuilder.advancedColors.${key}`)}
+                                  value={advancedValue(draft, key)}
+                                  disabled={!editable}
+                                  onChange={(value) => setAdvancedColor(key, value)}
+                                  // Back to the tree's colour, not to no
+                                  // colour: clearing the key would put the
+                                  // list back under the tree and take the
+                                  // fields away under the user's hands.
+                                  onReset={
+                                    editable && draft.advanced?.[key] !== treeColorFor(draft, key)
+                                      ? () => setAdvancedColor(key, treeColorFor(draft, key))
+                                      : undefined
+                                  }
+                                  resetLabel={t("themeBuilder.resetAdvanced")}
+                                  alpha={ALPHA_COLOR_KEYS.has(key)}
+                                  alphaLabel={t("themeBuilder.opacity")}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -740,7 +849,7 @@ export function ThemeBuilderDialog({ open, onClose }: ThemeBuilderDialogProps) {
             </div>
 
             <div className="theme-builder__preview">
-              <ThemePreview theme={draft} view={shownView} />
+              <ThemePreview theme={draft} view={shownView} withWorkingSet={!openActiveBound} />
               <div className="theme-builder__preview-options">
                 <div className="theme-builder__view-switch" role="group" aria-label={t("themeBuilder.previewView")}>
                   {(["app", "paper", "zen"] as const).map((view) => (
