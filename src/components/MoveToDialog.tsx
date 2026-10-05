@@ -85,6 +85,8 @@ export function MoveToDialog({
     }
   }, [request]);
 
+  const dismissProps = useDismissOnOverlayClick(isMoving ? null : onCancel);
+
   if (!request) {
     return null;
   }
@@ -97,8 +99,6 @@ export function MoveToDialog({
       onConfirm(selected);
     }
   };
-
-  const dismissProps = useDismissOnOverlayClick(isMoving ? null : onCancel);
 
   return (
     <div

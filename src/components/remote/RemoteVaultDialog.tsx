@@ -70,6 +70,8 @@ export function RemoteVaultDialog({ request, onDone, onCancel }: RemoteVaultDial
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [request, isBusy, onCancel]);
 
+  const dismissProps = useDismissOnOverlayClick(isBusy ? null : onCancel);
+
   if (!request) {
     return null;
   }
@@ -111,8 +113,6 @@ export function RemoteVaultDialog({ request, onDone, onCancel }: RemoteVaultDial
       setIsBusy(false);
     }
   };
-
-  const dismissProps = useDismissOnOverlayClick(isBusy ? null : onCancel);
 
   return (
     <div

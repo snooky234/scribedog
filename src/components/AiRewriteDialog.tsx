@@ -183,6 +183,8 @@ export function AiRewriteDialog({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, isLoading, onCancel, onSubmit, prompt, includeDocument, preserveFormatting]);
 
+  const dismissProps = useDismissOnOverlayClick(isLoading ? null : onCancel);
+
   if (!open) {
     return null;
   }
@@ -190,8 +192,6 @@ export function AiRewriteDialog({
   const title = mode === "insert" ? t("aiRewriteDialog.insertTitle") : t("aiRewriteDialog.rewriteTitle");
   const isRecording = voice.status === "recording";
   const isTranscribing = voice.status === "transcribing";
-
-  const dismissProps = useDismissOnOverlayClick(isLoading ? null : onCancel);
 
   return (
     <div className="ai-dialog" role="presentation" {...dismissProps}>
