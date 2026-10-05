@@ -58,5 +58,5 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 # The Escape that cancels the print preview (print_preview.rs). Already in the
 # tree through Tauri; only this one API surface is enabled.
-windows-sys = { version = "0.60", features = ["Win32_UI_Input_KeyboardAndMouse"] }
+windows-sys = { version = "0.61", features = ["Win32_UI_Input_KeyboardAndMouse"] }
 
