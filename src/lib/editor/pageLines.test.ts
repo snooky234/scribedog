@@ -149,7 +149,8 @@ describe("createInnerResolver", () => {
     expect(doc.nodeAt(row!.pos)?.type.name).toBe("tableRow");
     // Row indices count the header row, in the export as in the editor.
     expect(doc.nodeAt(row!.pos)?.textContent).toBe("2y");
-    expect(doc.nodeAt(row!.kind === "before" ? row!.labelPos : 0)?.textContent).toBe("y");
+    // The label sits on the row's first cell, where the line starts.
+    expect(doc.nodeAt(row!.kind === "before" ? row!.labelPos : 0)?.textContent).toBe("2");
 
     const item = resolve(list, { kind: "listItem", item: 2 });
     expect(doc.nodeAt(item!.pos)?.textContent).toBe("three");

@@ -93,9 +93,11 @@ export function createInnerResolver(doc: ProseMirrorNode): InnerResolver {
 
         const pos = childPosition(container, containerPos, index);
         const row = container.child(index);
-        // The label goes on the row's last cell (a <tr> draws nothing of its own).
-        const labelPos = at.kind === "tableRow" && row.childCount > 0 ? pos + row.nodeSize - 1 - row.lastChild!.nodeSize : pos;
-        const labelEnd = at.kind === "tableRow" && row.childCount > 0 ? pos + row.nodeSize - 1 : pos + row.nodeSize;
+        // The label goes on the row's first cell (a <tr> draws nothing of its own). The
+        // first, because the line hangs off that cell: it is stretched to the right edge of
+        // the page, which in a table narrower than the page lies far beyond the last cell.
+        const labelPos = at.kind === "tableRow" && row.childCount > 0 ? pos + 1 : pos;
+        const labelEnd = at.kind === "tableRow" && row.childCount > 0 ? pos + 1 + row.firstChild!.nodeSize : pos + row.nodeSize;
 
         return { kind: "before", pos, end: pos + row.nodeSize, labelPos, labelEnd };
       }

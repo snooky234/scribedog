@@ -1038,81 +1038,235 @@
 }
 
 /* Page lines ("Show page breaks", lib/editor/pageLines.ts): where the pages
-   of the PDF export and the print end. In the accent colour with the label
-   on the right, so they read as a view of the export rather than as content
-   like the grey manual page break above. Between blocks a line in front of
-   the block; inside a paragraph or code block the line breaks the text at
-   the word or line the new page starts with; over a table row or list item
-   a line on top of it. Only a break inside a block taller than a page, which
-   is not planned, gets the rough marker drawn over the block. */
+   of the PDF export and the print end. Every place a page can begin gets the
+   same three parts on one centre line: a faint haze, a dashed rule in the
+   accent colour and a label pill on the right that cuts the rule off with a
+   ring. Dashed and accent-coloured so it reads as a view of the export, not
+   as content like the grey manual page break above. What differs between the
+   places is only the room around the line: a paragraph, a list item and a
+   code block get the same, a table row has none to give (the line sits on
+   the row border), so there the rule covers the cell border and the row gets
+   a little more padding.
+
+   Between blocks and inside a paragraph or code block the line is a widget of
+   its own (.page-line). On a list item it is drawn in front of the item, on a
+   table row once per cell (a pseudo-element on the <tr> itself would be
+   taken for a cell and push the others aside), with the label on the last
+   cell. The rough marker for a break inside a block taller than a page keeps
+   its own placement and only shares the colour and the dashes: it lies over
+   the block, and a haze or a pill there would hide text. */
+.editor-view__surface {
+  --page-line-ink: rgba(var(--accent-rgb), 0.62);
+  --page-line-wash: rgba(var(--accent-rgb), 0.13);
+  --page-line-wash-h: 11px;
+  --page-line-pill-h: 15px;
+  --page-line-ring: 3px;
+  --page-line-space: 16px;
+  /* What the line is drawn on: the pill, its ring and the cover over a cell
+     border take this colour. */
+  --page-line-ground: rgb(var(--surface-rgb));
+  --page-line-rule: repeating-linear-gradient(to right, var(--page-line-ink) 0 4px, transparent 4px 8px);
+  --page-line-haze: linear-gradient(
+    to bottom,
+    var(--page-line-wash) 0%,
+    transparent 45%,
+    transparent 55%,
+    var(--page-line-wash) 100%
+  );
+}
+
+/* A code block is dark on both themes (prose-pre-bg), so a line inside one is
+   drawn on that colour. */
+.editor-view__surface pre {
+  --page-line-ground: var(--tw-prose-pre-bg);
+}
+
+/* Rule and haze share one box, so both sit on the same centre line; the
+   ground under the rule hides what lies there, a table's cell border. Set on
+   the elements that draw it rather than on the surface, because it has to
+   read the ground where it is used (a code block's differs). */
+.editor-view__surface .page-line,
+.editor-view__surface tr.page-line-before > td,
+.editor-view__surface tr.page-line-before > th,
+.editor-view__surface li.page-line-before {
+  --page-line-bar: var(--page-line-rule) 0 50% / 100% 1px no-repeat,
+    linear-gradient(var(--page-line-ground), var(--page-line-ground)) 0 50% / 100% 1px no-repeat,
+    var(--page-line-haze) 0 0 / 100% 100% no-repeat;
+  /* The same without the haze, for the table cells that only carry a share of
+     the rule. */
+  --page-line-strip: var(--page-line-rule), linear-gradient(var(--page-line-ground), var(--page-line-ground));
+}
+
+/* The label: the same pill everywhere, opaque so that neither the rule nor
+   the haze shows through it. */
+.editor-view__surface .page-line__label,
+.editor-view__surface td.page-line-label::after,
+.editor-view__surface th.page-line-label::after,
+.editor-view__surface li.page-line-label::after {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--page-line-pill-h);
+  padding: 0 0.45rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(var(--page-line-wash), var(--page-line-wash)), var(--page-line-ground);
+  box-shadow: 0 0 0 var(--page-line-ring) var(--page-line-ground);
+  color: rgb(var(--accent-rgb));
+  font: 600 0.62rem/1 var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Between blocks and inside a paragraph or code block. */
 .editor-view__surface .page-line {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin: 0.5em 0;
-  color: rgba(var(--accent-rgb), 0.85);
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
+  justify-content: flex-end;
+  height: var(--page-line-pill-h);
+  margin: var(--page-line-space) 0;
+  color: rgb(var(--accent-rgb));
   font-style: normal;
   font-weight: normal;
-  letter-spacing: 0.04em;
-  line-height: 1;
   white-space: normal;
   user-select: none;
   cursor: default;
 }
 
-.editor-view__surface .page-line::before {
-  content: "";
-  flex: 1;
-  border-top: 1px dashed rgba(var(--accent-rgb), 0.5);
+.editor-view__surface .page-line--inline {
+  width: 100%;
 }
 
-.editor-view__surface .page-line--inline {
-  margin: 0.35em 0;
+/* In a code block the line reaches out to the edges of the box (prose pads
+   a <pre> by 1.143em), so it is as wide as every other one. */
+.editor-view__surface pre .page-line--inline {
+  width: auto;
+  margin-inline: -1.143em;
+}
+
+.editor-view__surface .page-line::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: calc((var(--page-line-pill-h) - var(--page-line-wash-h)) / 2);
+  height: var(--page-line-wash-h);
+  background: var(--page-line-bar);
+  pointer-events: none;
+}
+
+.editor-view__surface .page-line__label {
+  position: relative;
+  z-index: 1;
+}
+
+/* A table row: the rule sits on the row border, in every cell, so a table
+   wider than the page (it scrolls sideways) has it along its whole width. The
+   first cell alone also draws the haze and stretches to the width of the
+   .tableWrapper, which is as wide as the page: in a table that fits its
+   content the line would otherwise stop at the table's edge while every other
+   page line runs to the margin. The wrapper of a break row is a size
+   container for that (cqw), and the label goes right-aligned to the same
+   edge. Over the first cell's rule the others cover it with their own, so the
+   dashes never double up. */
+.editor-view__surface .tableWrapper:has(tr.page-line-before) {
+  container-type: inline-size;
 }
 
 .editor-view__surface tr.page-line-before > td,
 .editor-view__surface tr.page-line-before > th {
-  border-top: 2px dashed rgba(var(--accent-rgb), 0.7);
+  padding-top: calc(var(--page-line-pill-h) / 2 + 3px);
 }
 
-.editor-view__surface .page-line-label {
-  position: relative;
-}
-
-.editor-view__surface li.page-line-before {
-  margin-top: 1.4em;
-}
-
-.editor-view__surface .page-line-label::after {
-  content: attr(data-page-line);
+.editor-view__surface tr.page-line-before > td::before,
+.editor-view__surface tr.page-line-before > th::before {
+  content: "";
   position: absolute;
   right: 0;
-  color: rgba(var(--accent-rgb), 0.85);
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  font-style: normal;
-  font-weight: normal;
-  letter-spacing: 0.04em;
-  line-height: 1;
+  left: 0;
+  top: 0;
+  height: 1px;
+  background: var(--page-line-strip);
   pointer-events: none;
+}
+
+.editor-view__surface tr.page-line-before > td:first-child::before,
+.editor-view__surface tr.page-line-before > th:first-child::before {
+  /* A cell's own 1px border lies outside the box the line is positioned in. */
+  right: auto;
+  left: -1px;
+  top: calc((1px - var(--page-line-wash-h)) / 2);
+  width: 100%;
+  width: max(100%, 100cqw);
+  height: var(--page-line-wash-h);
+  background: var(--page-line-bar);
 }
 
 .editor-view__surface td.page-line-label::after,
 .editor-view__surface th.page-line-label::after {
-  top: -0.55rem;
-  padding: 0 0.3rem;
-  background: rgb(var(--surface-rgb));
+  content: attr(data-page-line);
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  top: calc((1px - var(--page-line-pill-h)) / 2);
+  pointer-events: none;
+}
+
+@supports (width: 1cqw) {
+  .editor-view__surface td.page-line-label::after,
+  .editor-view__surface th.page-line-label::after {
+    right: auto;
+    left: calc(max(100%, 100cqw) - 1px);
+    transform: translateX(-100%);
+  }
+}
+
+/* A list item: the same room above it as a line between two paragraphs, the
+   rule across the full width instead of just the indent. How far in the item
+   sits is prose's doing: the list is padded by 1.625em, and every level
+   inside it by another 2em (the padding of the list and of its items). A task
+   list has none. */
+.editor-view__surface li.page-line-before {
+  --page-line-indent: 1.625em;
+  position: relative;
+  margin-top: calc(2 * var(--page-line-space) + var(--page-line-pill-h));
+}
+
+.editor-view__surface li li.page-line-before {
+  --page-line-indent: 3.625em;
+}
+
+.editor-view__surface li li li.page-line-before {
+  --page-line-indent: 5.625em;
+}
+
+.editor-view__surface li li li li.page-line-before {
+  --page-line-indent: 7.625em;
+}
+
+.editor-view__surface ul[data-type="taskList"] > li.page-line-before {
+  --page-line-indent: 0em;
+}
+
+.editor-view__surface li.page-line-before::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: calc(-1 * var(--page-line-indent));
+  top: calc(-1 * var(--page-line-space) - (var(--page-line-pill-h) + var(--page-line-wash-h)) / 2);
+  height: var(--page-line-wash-h);
+  background: var(--page-line-bar);
+  pointer-events: none;
 }
 
 .editor-view__surface li.page-line-label::after {
-  top: -1.1em;
-  left: -1.6em;
-  padding-top: 0;
-  border-top: 1px dashed rgba(var(--accent-rgb), 0.5);
-  text-align: right;
-  line-height: 1.6;
+  content: attr(data-page-line);
+  position: absolute;
+  right: 0;
+  top: calc(-1 * (var(--page-line-space) + var(--page-line-pill-h)));
+  pointer-events: none;
 }
 
 .editor-view__surface .page-line-within {
@@ -1125,16 +1279,13 @@
   top: var(--page-line-at, 50%);
   right: 0;
   left: 0;
-  padding-top: 2px;
-  border-top: 1px dashed rgba(var(--accent-rgb), 0.5);
-  color: rgba(var(--accent-rgb), 0.85);
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  font-style: normal;
-  font-weight: normal;
-  letter-spacing: 0.04em;
-  line-height: 1;
+  padding-top: 3px;
+  background: var(--page-line-rule) 0 0 / 100% 1px no-repeat;
+  color: rgb(var(--accent-rgb));
+  font: 600 0.62rem/1 var(--font-sans);
+  letter-spacing: 0.06em;
   text-align: right;
+  text-transform: uppercase;
   pointer-events: none;
 }
 
