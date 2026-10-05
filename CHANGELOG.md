@@ -3,6 +3,19 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.19.2] - 2026-10-06
+
+### Highlights
+- Set the open note's highlight in your theme: name, background and marker
+  bar are new advanced colours, separately for the file tree and the "In
+  progress" list, and background and marker can be made transparent. Unset,
+  they follow the theme's accent exactly as before, so no existing theme
+  changes.
+- A clearer page line, drawn the same everywhere up to the page edge
+
+### Bug Fixes
+- Fix a hook-order problem in three dialogs that close on a click outside
+
 ## [0.19.1] - 2026-10-04
 
 ### Bug Fixes
