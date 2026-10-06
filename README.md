@@ -216,9 +216,10 @@ Edition below.
 
 Run the same ScribeDog on your own server (Docker, a Raspberry Pi, a NAS, a
 small VM) and use it from any browser, phone or tablet, with the same editor,
-file management, version history and AI features. The desktop app can open that
-server vault too, with its AI and dictation running on your computer. One
-password, your folder, no account.
+file management, version history and AI features. The layout follows the
+screen it is on, down to the gestures a phone is used with. The desktop app can
+open that server vault too, with its AI and dictation running on your computer.
+One password, your folder, no account.
 
 ### Shared vaults for a household or a team
 
@@ -230,6 +231,16 @@ what someone else has open right now.
 <img src="docs/images/scribe-dog-server-shared-folder.png" alt="The vault menu with shared vaults below the person's own" width="300">
 
 [Read more →](server/docs/multiuser.md#shared-vaults)
+
+### On phones and tablets
+
+On a phone the formatting toolbar sits above the keyboard, and the file list
+swipes in from the left. A tablet in landscape keeps that list next to the
+note. Add the site to the home screen and it opens like an app.
+
+<img src="docs/images/scribe-dog-server-phone-tablet.jpg" alt="A tablet and a phone side by side, both showing the same note in ScribeDog: the tablet with the file list next to it, the phone with the formatting toolbar at the bottom" width="700">
+
+[Read more →](server/docs/phones-and-tablets.md)
 
 [Server Edition guide →](server/docs/README.md) · [Getting started](server/docs/getting-started.md) · [The desktop app as a client](server/docs/desktop-app.md) · [Security](server/docs/security.md) · [FAQ](server/docs/faq.md)
 
