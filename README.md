@@ -227,6 +227,8 @@ a vault with the people they pick. When two of them save the same note, the
 edits are merged instead of one overwriting the other, and the file tree marks
 what someone else has open right now.
 
+<img src="docs/images/scribe-dog-server-shared-folder.png" alt="The vault menu with shared vaults below the person's own" width="300">
+
 [Read more →](server/docs/multiuser.md#shared-vaults)
 
 [Server Edition guide →](server/docs/README.md) · [Getting started](server/docs/getting-started.md) · [The desktop app as a client](server/docs/desktop-app.md) · [Security](server/docs/security.md) · [FAQ](server/docs/faq.md)
