@@ -238,7 +238,7 @@ On a phone the formatting toolbar sits above the keyboard, and the file list
 swipes in from the left. A tablet in landscape keeps that list next to the
 note. Add the site to the home screen and it opens like an app.
 
-<img src="docs/images/scribe-dog-server-phone-tablet.jpg" alt="A tablet and a phone side by side, both showing the same note in ScribeDog: the tablet with the file list next to it, the phone with the formatting toolbar at the bottom" width="700">
+<img src="docs/images/scribe-dog-server-phone-tablet.jpg" alt="A tablet and a phone side by side, both showing the same note in ScribeDog: the tablet with the file list next to it, the phone with the formatting toolbar at the bottom">
 
 [Read more →](server/docs/phones-and-tablets.md)
 
