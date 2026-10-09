@@ -59,6 +59,17 @@ marked both ways at once.
 Themes can be exported and imported as a small JSON file, or through the
 clipboard.
 
+## Tables
+
+A Markdown table always has a header row, so the first row of every table is
+shown bold on a grey fill. If you want a table whose first row looks like all
+the others, switch on **First table row without header look** under
+**Settings, Appearance**.
+
+The setting only changes how the table is shown. It applies to every table, in
+the editor and in all exports and in print, and it leaves the file as it is.
+Other apps that open your note still show that row as the header.
+
 ## Languages
 
 The interface comes in 10 languages: English, German, Spanish, French,

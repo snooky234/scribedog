@@ -126,6 +126,11 @@ const PAPER_SURFACE_CLASS = "editor-view__surface--paper";
 // (useEditorSettingsStore.tableWidth); editor-content.css keys off this name.
 const TABLE_WIDTH_CONTENT_CLASS = "editor-view__surface--table-content";
 
+// The first table row looks like every other row
+// (useEditorSettingsStore.plainTableHeader); editor-content.css keys off this
+// name.
+const PLAIN_TABLE_HEADER_CLASS = "editor-view__surface--table-plain-header";
+
 // The page pulled narrower than the card (--page-width, PageWidthHandles);
 // editor-content.css keys off this name.
 const PAGE_WIDTH_CLASS = "editor-view__surface--page-width";
@@ -269,6 +274,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const paperSurface = useEditorSettingsStore((state) => state.paperSurface);
   const aiFeaturesVisible = useEditorSettingsStore((state) => state.aiFeaturesVisible);
   const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
+  const plainTableHeader = useEditorSettingsStore((state) => state.plainTableHeader);
   const detailsPanelVisible = useEditorSettingsStore((state) => state.detailsPanelVisible);
   const layout = useLayoutMode();
   // Phone and tablet show the panel as a sheet with its own switch (see the
@@ -1628,7 +1634,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         class: cn(
           "editor-view__surface prose dark:prose-invert max-w-none",
           paperSurface && PAPER_SURFACE_CLASS,
-          tableWidth === "content" && TABLE_WIDTH_CONTENT_CLASS
+          tableWidth === "content" && TABLE_WIDTH_CONTENT_CLASS,
+          plainTableHeader && PLAIN_TABLE_HEADER_CLASS
         ),
         "data-testid": "editor",
         spellcheck: String(spellcheckEnabled)
@@ -1662,6 +1669,10 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   useEffect(() => {
     editor?.view.dom.classList.toggle(TABLE_WIDTH_CONTENT_CLASS, tableWidth === "content");
   }, [editor, tableWidth]);
+
+  useEffect(() => {
+    editor?.view.dom.classList.toggle(PLAIN_TABLE_HEADER_CLASS, plainTableHeader);
+  }, [editor, plainTableHeader]);
 
   // Zen mode sets its own column width (zen-mode.css).
   const pageNarrowed = pageWidthEm !== null && !isZenMode;

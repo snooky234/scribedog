@@ -55,6 +55,8 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
   const setPaperSurface = useEditorSettingsStore((state) => state.setPaperSurface);
   const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
   const setTableWidth = useEditorSettingsStore((state) => state.setTableWidth);
+  const plainTableHeader = useEditorSettingsStore((state) => state.plainTableHeader);
+  const setPlainTableHeader = useEditorSettingsStore((state) => state.setPlainTableHeader);
   const pageSize = useEditorSettingsStore((state) => state.pageSize);
   const setPageSize = useEditorSettingsStore((state) => state.setPageSize);
   const pageMargins = useEditorSettingsStore((state) => state.pageMargins);
@@ -195,6 +197,19 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
           <option value="full">{t("settingsDialog.tableWidthFull")}</option>
           <option value="content">{t("settingsDialog.tableWidthContent")}</option>
         </select>
+      </SettingRow>
+
+      <SettingRow
+        layout="switch"
+        label={t("settingsDialog.plainTableHeader")}
+        hint={t("settingsDialog.plainTableHeaderShort")}
+        info={t("settingsDialog.plainTableHeaderHint")}
+      >
+        <input
+          type="checkbox"
+          checked={plainTableHeader}
+          onChange={(event) => setPlainTableHeader(event.target.checked)}
+        />
       </SettingRow>
 
       <SettingRow

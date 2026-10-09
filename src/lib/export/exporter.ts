@@ -17,6 +17,7 @@ import {
   type ManuscriptSource
 } from "./manuscript";
 import { normalizePageBreaks, parseMarkdownToBlocks, type ExportBlock } from "./markdownModel";
+import { plainTableHeaders } from "./tableHeader";
 import { addArchiveEntry, buildZipArchive, createArchive, mimeTypeFor } from "./zipArchive";
 
 /** Formats available when every note becomes its own file. */
@@ -135,7 +136,10 @@ async function renderBlocksAs(
   // whose chapters share one sequence — gets the same numbers as the editor.
   // Page breaks are tidied on the final list, where a manuscript's chapter
   // breaks and the notes' own breaks meet.
-  const blocks = numberExportBlocks(normalizePageBreaks(sourceBlocks), style.headingNumbering);
+  const blocks = plainTableHeaders(
+    numberExportBlocks(normalizePageBreaks(sourceBlocks), style.headingNumbering),
+    style.plainTableHeader
+  );
 
   switch (format) {
     case "html": {
@@ -705,7 +709,10 @@ export async function exportMergedNotes(input: MergedExportInput): Promise<Expor
           );
           const numberedManuscript: CompiledManuscript = {
             ...manuscript,
-            chapters: manuscript.chapters.map((chapter, index) => ({ ...chapter, blocks: chapterBlocks[index] }))
+            chapters: manuscript.chapters.map((chapter, index) => ({
+              ...chapter,
+              blocks: plainTableHeaders(chapterBlocks[index], style.plainTableHeader)
+            }))
           };
           return {
             bytes: renderEpubDocument(

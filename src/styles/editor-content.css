@@ -327,6 +327,14 @@
   text-align: left;
 }
 
+/* "Show the first row like any other" (useEditorSettingsStore
+   .plainTableHeader): display only, the cells stay header cells in the
+   document. Same specificity as the rule above, so it has to come after it. */
+.editor-view__surface--table-plain-header table th {
+  background: none;
+  font-weight: inherit;
+}
+
 .editor-view__surface table .selectedCell {
   position: relative;
 }

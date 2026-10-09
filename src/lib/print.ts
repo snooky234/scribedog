@@ -2,6 +2,7 @@ import { numberExportBlocks } from "@/lib/export/headingNumbers";
 import { embedDiagrams } from "@/lib/export/diagramAssets";
 import { collectImageSrcs, loadExportImages, type ExportImageMap } from "@/lib/export/imageAssets";
 import { normalizePageBreaks, parseMarkdownToBlocks, type ExportBlock } from "@/lib/export/markdownModel";
+import { plainTableHeaders } from "@/lib/export/tableHeader";
 import type { DocumentStyle } from "@/lib/fonts";
 import {
   getPrintFont,
@@ -30,12 +31,16 @@ import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 // are (planPrintedPages). Scaling in the print dialog is the one thing that
 // can still move them.
 export async function printMarkdown(markdown: string, markdownFilePath: string | null): Promise<void> {
-  const { headingNumbering, pageSize, pageMargins, fontId, fontSizePt, tableWidth } =
+  const { headingNumbering, pageSize, pageMargins, fontId, fontSizePt, tableWidth, plainTableHeader } =
     useEditorSettingsStore.getState();
   const page = getPageLayout(pageSize, pageMargins);
   const font = getPrintFont(fontId);
-  // Same numbering the editor shows, so the paper matches the screen.
-  const parsed = numberExportBlocks(normalizePageBreaks(parseMarkdownToBlocks(markdown)), headingNumbering);
+  // Same numbering and table header look the editor shows, so the paper
+  // matches the screen.
+  const parsed = plainTableHeaders(
+    numberExportBlocks(normalizePageBreaks(parseMarkdownToBlocks(markdown)), headingNumbering),
+    plainTableHeader
+  );
 
   const [images, { renderHtmlBody }] = await Promise.all([
     markdownFilePath ? loadExportImages(markdownFilePath, collectImageSrcs(parsed)) : Promise.resolve(new Map()),

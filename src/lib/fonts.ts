@@ -235,6 +235,13 @@ export type DocumentStyle = {
    */
   tableWidth?: TableWidth;
   /**
+   * The first table row looks like every other row, mirroring
+   * useEditorSettingsStore.plainTableHeader. Display only, for the same reason
+   * as the width: the file still carries its separator line. Omitted means the
+   * usual bold header row.
+   */
+  plainTableHeader?: boolean;
+  /**
    * Paper size and margin preset of every paged output (PDF, print, DOCX,
    * ODT), from the app-wide page setup (lib/pageSetup.ts). Omitted means A4
    * with normal margins, the PDF export's page before it was configurable.

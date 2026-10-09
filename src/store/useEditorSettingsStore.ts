@@ -56,6 +56,7 @@ export const FONT_STORAGE_KEY = "scribedog-font-id";
 export const FONT_SIZE_STORAGE_KEY = "scribedog-font-size-pt";
 export const PAPER_SURFACE_STORAGE_KEY = "scribedog-paper-surface";
 export const TABLE_WIDTH_STORAGE_KEY = "scribedog-table-width";
+export const PLAIN_TABLE_HEADER_STORAGE_KEY = "scribedog-plain-table-header";
 export const PAGE_SIZE_STORAGE_KEY = "scribedog-page-size";
 export const PAGE_MARGINS_STORAGE_KEY = "scribedog-page-margins";
 export const AUTO_SAVE_STORAGE_KEY = "scribedog-auto-save-enabled";
@@ -412,6 +413,22 @@ function persistTableWidth(width: TableWidth): void {
   }
 }
 
+function getStoredPlainTableHeader(): boolean {
+  try {
+    return window.localStorage.getItem(PLAIN_TABLE_HEADER_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function persistPlainTableHeader(enabled: boolean): void {
+  try {
+    window.localStorage.setItem(PLAIN_TABLE_HEADER_STORAGE_KEY, String(enabled));
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
 // Until the user picks one, the paper size follows the region of the
 // system language on every start (Letter in the US, A4 in Germany), so it is
 // only written once it was chosen.
@@ -570,6 +587,16 @@ type EditorSettingsState = {
    */
   tableWidth: TableWidth;
   setTableWidth: (width: TableWidth) => void;
+  /**
+   * Shows the first row of a table like every other row: no bold, no grey
+   * fill. Display only, in the editor and in every export, because a Markdown
+   * table cannot be written without its header row; the file is unchanged and
+   * any other tool still shows that row as the header. App-wide rather than
+   * per table, since there is nowhere in the file to keep a per-table choice
+   * (issue #59).
+   */
+  plainTableHeader: boolean;
+  setPlainTableHeader: (enabled: boolean) => void;
   /**
    * Paper size of every paged output: PDF, direct print, DOCX and ODT
    * (lib/pageSetup.ts). App-wide rather than per note, and not overridable in
@@ -745,6 +772,11 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
   setTableWidth: (width: TableWidth) => {
     persistTableWidth(width);
     set({ tableWidth: width });
+  },
+  plainTableHeader: getStoredPlainTableHeader(),
+  setPlainTableHeader: (enabled: boolean) => {
+    persistPlainTableHeader(enabled);
+    set({ plainTableHeader: enabled });
   },
   pageSize: getStoredPageSize(),
   setPageSize: (size: PageSizeId) => {

@@ -7,6 +7,7 @@ import { collectImageSrcs, loadExportImages, type ExportImageMap } from "@/lib/e
 import { pageBreakKeepMask, parseMarkdownToBlocksWithLines } from "@/lib/export/markdownModel";
 import { remapBlockIndices } from "@/lib/export/pageMap";
 import { requestPageMap } from "@/lib/export/pageMapClient";
+import { plainTableHeaders } from "@/lib/export/tableHeader";
 import { pageLineMarks } from "@/lib/editor/pageLineMapping";
 import { createInnerResolver, serializeTopLevelNodes } from "@/lib/editor/pageLinesInput";
 import { setPageLineMarks } from "@/lib/editor/pageLines";
@@ -38,6 +39,7 @@ export function usePageLines({
   const pageSize = useEditorSettingsStore((state) => state.pageSize);
   const pageMargins = useEditorSettingsStore((state) => state.pageMargins);
   const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
+  const plainTableHeader = useEditorSettingsStore((state) => state.plainTableHeader);
   const headingNumbering = useEditorSettingsStore((state) => state.headingNumbering);
   const imageSizes = useRef(new Map<string, ImageSize | null>());
   const diagrams = useRef<DiagramCache>(new Map());
@@ -51,7 +53,7 @@ export function usePageLines({
       return;
     }
 
-    const style = { fontId, fontSizePt, headingNumbering, tableWidth, pageSize, pageMargins };
+    const style = { fontId, fontSizePt, headingNumbering, tableWidth, plainTableHeader, pageSize, pageMargins };
     let disposed = false;
     let generation = 0;
     let timer: number | undefined;
@@ -92,7 +94,7 @@ export function usePageLines({
       }
 
       const map = await requestPageMap({
-        blocks: numberExportBlocks(withDiagrams, headingNumbering),
+        blocks: plainTableHeaders(numberExportBlocks(withDiagrams, headingNumbering), plainTableHeader),
         imageSizes: sizes,
         style
       });
@@ -127,5 +129,5 @@ export function usePageLines({
       editor.off("update", schedule);
       setPageLineMarks(editor, null);
     };
-  }, [editor, enabled, filePath, fontId, fontSizePt, pageSize, pageMargins, tableWidth, headingNumbering]);
+  }, [editor, enabled, filePath, fontId, fontSizePt, pageSize, pageMargins, tableWidth, plainTableHeader, headingNumbering]);
 }

@@ -5,6 +5,7 @@ import { numberExportBlocks } from "./headingNumbers";
 import { collectImageSrcs, loadExportImages } from "./imageAssets";
 import { pageBreakKeepMask, parseMarkdownToBlocks } from "./markdownModel";
 import { remapBlockIndices, type PageMap } from "./pageMap";
+import { plainTableHeaders } from "./tableHeader";
 
 /**
  * Where the pages of a note's PDF export break, computed without writing
@@ -23,7 +24,10 @@ export async function computePdfPageMap(
   const originalIndices = parsed.flatMap((_, index) => (keep[index] ? [index] : []));
   const kept = originalIndices.map((index) => parsed[index]);
   const images = markdownFilePath ? await loadExportImages(markdownFilePath, collectImageSrcs(kept)) : new Map();
-  const blocks = numberExportBlocks(await embedDiagrams(kept, images), style.headingNumbering);
+  const blocks = plainTableHeaders(
+    numberExportBlocks(await embedDiagrams(kept, images), style.headingNumbering),
+    style.plainTableHeader
+  );
   const { layoutPdfPageMap } = await import("./pdfExport");
 
   return remapBlockIndices(await layoutPdfPageMap(blocks, images, style), originalIndices);

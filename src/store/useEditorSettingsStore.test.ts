@@ -13,6 +13,26 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
+describe("plain table header", () => {
+  it("is off until it is switched on", async () => {
+    expect((await loadStore()).getState().plainTableHeader).toBe(false);
+  });
+
+  it("is kept across a restart", async () => {
+    (await loadStore()).getState().setPlainTableHeader(true);
+
+    expect((await loadStore()).getState().plainTableHeader).toBe(true);
+  });
+
+  it("can be switched off again", async () => {
+    const store = await loadStore();
+    store.getState().setPlainTableHeader(true);
+    store.getState().setPlainTableHeader(false);
+
+    expect((await loadStore()).getState().plainTableHeader).toBe(false);
+  });
+});
+
 describe("view text size", () => {
   it("follows the document size until the view is zoomed", async () => {
     const store = await loadStore();

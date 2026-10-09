@@ -91,9 +91,18 @@ export function ExportDialog({
   const fontSizePt = useEditorSettingsStore((state) => state.fontSizePt);
   const headingNumbering = useEditorSettingsStore((state) => state.headingNumbering);
   const tableWidth = useEditorSettingsStore((state) => state.tableWidth);
+  const plainTableHeader = useEditorSettingsStore((state) => state.plainTableHeader);
   const pageSize = useEditorSettingsStore((state) => state.pageSize);
   const pageMargins = useEditorSettingsStore((state) => state.pageMargins);
-  const documentStyle: DocumentStyle = { fontId, fontSizePt, headingNumbering, tableWidth, pageSize, pageMargins };
+  const documentStyle: DocumentStyle = {
+    fontId,
+    fontSizePt,
+    headingNumbering,
+    tableWidth,
+    plainTableHeader,
+    pageSize,
+    pageMargins
+  };
 
   const [format, setFormat] = useState<ExportFormat>("pdf");
   const [name, setName] = useState("");
