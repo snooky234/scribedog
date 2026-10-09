@@ -1,0 +1,175 @@
+/* The drawing dialog: a toolbar row, a surface that takes all remaining
+   space, and the actions. The surface's size comes from the window, not from
+   the note; the saved image is cropped to what was drawn. */
+
+.drawing-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(var(--backdrop-rgb), 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.drawing-dialog__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(100%, 72rem);
+  height: min(100%, 48rem);
+  border: 1px solid rgba(var(--overlay-rgb), 0.1);
+  border-radius: 1.25rem;
+  background: rgba(var(--surface-strong-rgb), 0.97);
+  padding: 1rem;
+  box-shadow: 0 16px 40px rgba(var(--shadow-rgb), 0.12);
+  outline: none;
+}
+
+.dark .drawing-dialog__panel {
+  box-shadow: 0 28px 80px rgba(var(--shadow-rgb), 0.45);
+}
+
+.drawing-dialog__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.drawing-dialog__title {
+  margin: 0 auto 0 0;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  color: rgba(var(--text-rgb), 0.94);
+}
+
+.drawing-dialog__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.drawing-dialog__width,
+.drawing-dialog__swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.drawing-dialog__width {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--background);
+}
+
+.drawing-dialog__width:hover {
+  background: var(--muted);
+}
+
+.drawing-dialog__width-dot {
+  display: block;
+  border-radius: 9999px;
+  background: rgba(var(--text-rgb), 0.85);
+}
+
+.drawing-dialog__swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid rgba(var(--overlay-rgb), 0.3);
+  border-radius: 9999px;
+}
+
+.drawing-dialog__width[aria-pressed="true"],
+.drawing-dialog__swatch[aria-pressed="true"] {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.drawing-dialog__color-input {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--background);
+  cursor: pointer;
+}
+
+.drawing-dialog__surface {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 1px dashed rgba(var(--overlay-rgb), 0.22);
+  border-radius: 0.75rem;
+  background: var(--background);
+  cursor: crosshair;
+  /* The surface takes every touch itself: no page scroll, no pinch zoom and
+     no sidebar swipe while a finger draws. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drawing-dialog__surface--eraser {
+  cursor: none;
+}
+
+.drawing-dialog__eraser-ring {
+  fill: none;
+  stroke: rgba(var(--text-rgb), 0.55);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.drawing-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.drawing-dialog__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(var(--text-rgb), 0.62);
+}
+
+.drawing-dialog__actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+/* On a phone the dialog is the whole visible screen. */
+@media (max-width: 640px) {
+  .drawing-dialog {
+    height: var(--viewport-height, 100dvh);
+    bottom: auto;
+    padding: 0;
+  }
+
+  .drawing-dialog__panel {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .drawing-dialog__title {
+    flex-basis: 100%;
+  }
+
+  .drawing-dialog__hint {
+    display: none;
+  }
+}

@@ -5,9 +5,11 @@ import { dirname, join } from "@/platform/paths";
 import { readFile } from "@/platform/vaultFs";
 import { NodeSelection } from "@tiptap/pm/state";
 import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
-import { Plus } from "lucide-react";
+import { PencilLine, Plus } from "lucide-react";
 
+import { isScribeDogDrawingSvg } from "@/lib/drawing/drawingSvg";
 import { EditorFileContext } from "@/lib/editorFileContext";
+import { subscribeImageFileChanged } from "@/lib/editor/imageRevisions";
 import { ABSOLUTE_URL_PATTERN, guessImageMimeType } from "@/lib/fileSystem";
 
 const MIN_IMAGE_WIDTH = 48;
@@ -20,17 +22,27 @@ type InsertSide = (typeof INSERT_SIDES)[number];
 
 export function ImageView({ node, editor, getPos, updateAttributes, selected }: ReactNodeViewProps) {
   const { t } = useTranslation();
-  const { filePath } = useContext(EditorFileContext);
+  const { filePath, onEditDrawing } = useContext(EditorFileContext);
   const src = (node.attrs.src as string | null) ?? "";
   const alt = (node.attrs.alt as string | null) ?? "";
   const width = (node.attrs.width as number | null) ?? null;
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [dragWidth, setDragWidth] = useState<number | null>(null);
+  // Absolute path of a drawing this app wrote (see drawingSvg.ts), null for
+  // any other image: only those can be edited without losing anything.
+  const [drawingPath, setDrawingPath] = useState<string | null>(null);
+  // Bumped when the file behind this image was rewritten in place (an
+  // edited drawing), which the unchanged src alone would never reveal.
+  const [revision, setRevision] = useState(0);
+  const absolutePathRef = useRef<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const dragWidthRef = useRef<number | null>(null);
 
   useEffect(() => {
+    absolutePathRef.current = null;
+    setDrawingPath(null);
+
     if (!src || ABSOLUTE_URL_PATTERN.test(src)) {
       setLoadError(false);
       return;
@@ -49,12 +61,19 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
         const currentFileDir = await dirname(filePath);
         const absolutePath = await join(currentFileDir, src);
         const data = await readFile(absolutePath);
-        const blob = new Blob([data], { type: guessImageMimeType(absolutePath) });
+        const mimeType = guessImageMimeType(absolutePath);
+        const blob = new Blob([data], { type: mimeType });
         createdUrl = URL.createObjectURL(blob);
 
         if (isActive) {
+          absolutePathRef.current = absolutePath;
           setObjectUrl(createdUrl);
           setLoadError(false);
+          setDrawingPath(
+            mimeType === "image/svg+xml" && isScribeDogDrawingSvg(new TextDecoder().decode(data))
+              ? absolutePath
+              : null
+          );
         }
       } catch {
         if (isActive) {
@@ -72,7 +91,25 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
         URL.revokeObjectURL(createdUrl);
       }
     };
-  }, [filePath, src]);
+  }, [filePath, src, revision]);
+
+  useEffect(
+    () =>
+      subscribeImageFileChanged((changedPath) => {
+        if (changedPath === absolutePathRef.current) {
+          setRevision((current) => current + 1);
+        }
+      }),
+    []
+  );
+
+  const canEditDrawing = drawingPath !== null && onEditDrawing !== null && editor.isEditable;
+
+  const editDrawing = () => {
+    if (drawingPath !== null && onEditDrawing && editor.isEditable) {
+      onEditDrawing(drawingPath);
+    }
+  };
 
   const displaySrc = ABSOLUTE_URL_PATTERN.test(src) ? src : objectUrl;
   const effectiveWidth = dragWidth ?? width;
@@ -201,7 +238,26 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
             alt={alt}
             className="editor-image-wrapper__img"
             style={effectiveWidth ? { width: effectiveWidth, height: "auto" } : undefined}
+            title={canEditDrawing ? t("imageView.editDrawingHint") : undefined}
+            onDoubleClick={canEditDrawing ? editDrawing : undefined}
           />
+          {selected && canEditDrawing ? (
+            <button
+              type="button"
+              className="editor-image-wrapper__edit-drawing"
+              aria-label={t("imageView.editDrawing")}
+              title={t("imageView.editDrawing")}
+              contentEditable={false}
+              onPointerDown={stopPointer}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                editDrawing();
+              }}
+            >
+              <PencilLine aria-hidden="true" />
+            </button>
+          ) : null}
           {selected &&
             RESIZE_HANDLES.map((handle) => (
               <span

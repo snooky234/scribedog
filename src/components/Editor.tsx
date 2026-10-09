@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 
 import { getVaultCapabilities, platform, vaultCapabilityHint } from "@/platform";
 import type { PickedImageFile } from "@/platform/types";
+import { readFile, writeFile } from "@/platform/vaultFs";
 import { EditorContent, type Editor as TipTapEditor, useEditor } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { AiCheckDialog } from "@/components/AiCheckDialog";
 import { FindReplacePanel } from "@/components/FindReplacePanel";
 import { AiRewriteDialog } from "@/components/AiRewriteDialog";
+import { DrawingDialog } from "@/components/DrawingDialog";
 import { LinkDialog, type LinkDialogResult } from "@/components/LinkDialog";
 import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
@@ -55,6 +57,9 @@ import { buildStagedPreview } from "@/lib/editor/stagedPreview";
 import { replaceDocumentKeepingSelection } from "@/lib/editor/replaceDocument";
 import { normalizeImageSrc } from "@/lib/chat/imageAttachments";
 import { EditorFileContext } from "@/lib/editorFileContext";
+import { parseDrawingSvg, serializeDrawingSvg } from "@/lib/drawing/drawingSvg";
+import type { DrawingStroke } from "@/lib/drawing/strokes";
+import { notifyImageFileChanged } from "@/lib/editor/imageRevisions";
 import { buildEditorExtensions } from "@/lib/editor/extensions";
 import { duplicatedImageSources } from "@/lib/editor/documentImages";
 import { hasHeading, type OutlineHeading } from "@/lib/editor/documentOutline";
@@ -181,6 +186,10 @@ export type EditorHandle = {
   ) => ImageWidthChange | null;
 };
 
+type DrawingDialogState =
+  | { mode: "insert"; strokes: DrawingStroke[] }
+  | { mode: "edit"; strokes: DrawingStroke[]; absolutePath: string };
+
 type LinkDialogState = {
   /** Href of the link the caret sits in, "" for a new link. */
   href: string;
@@ -292,6 +301,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     handleDetailsPanelResizeKeyDown
   } = useDetailsPanelWidth();
   const [linkDialog, setLinkDialog] = useState<LinkDialogState | null>(null);
+  const [drawingDialog, setDrawingDialog] = useState<DrawingDialogState | null>(null);
+  const [isSavingDrawing, setIsSavingDrawing] = useState(false);
   // Node types the serializer replaced with a placeholder in the last
   // serialization (see lib/editor/serializationGuard). While the list is
   // not empty the document is not reported to the store, so nothing with a
@@ -730,6 +741,113 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     }
 
     await insertImagePayloads(payloads, currentEditor.state.selection.from);
+  };
+
+  // Toolbar drawing button: the sketch is saved like any other image (an SVG
+  // in images/, inserted at the caret), so the note stays plain Markdown.
+  const handleDrawingInsertRequest = () => {
+    if (!editorRef.current?.isEditable) {
+      return;
+    }
+
+    if (!folderPath || !filePath) {
+      ai.setAiStatus({ kind: "error", message: t("editor.imageRequiresFile") });
+      return;
+    }
+
+    if (!getVaultCapabilities().images) {
+      ai.setAiStatus({ kind: "error", message: vaultCapabilityHint() });
+      return;
+    }
+
+    setDrawingDialog({ mode: "insert", strokes: [] });
+  };
+
+  // Double click (or the edit button) on a drawing in the note. The file is
+  // read again here rather than taken from the image view, so the dialog
+  // starts from what is on disk now.
+  const handleEditDrawing = async (absolutePath: string) => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor?.isEditable || drawingDialog) {
+      return;
+    }
+
+    if (!getVaultCapabilities().images) {
+      ai.setAiStatus({ kind: "error", message: vaultCapabilityHint() });
+      return;
+    }
+
+    try {
+      const strokes = parseDrawingSvg(new TextDecoder().decode(await readFile(absolutePath)));
+
+      if (!strokes) {
+        ai.setAiStatus({ kind: "error", message: t("drawing.notEditable") });
+        return;
+      }
+
+      setDrawingDialog({ mode: "edit", strokes, absolutePath });
+    } catch (error) {
+      ai.setAiStatus({
+        kind: "error",
+        message: t("drawing.loadFailed", { error: extractErrorMessage(error, t) })
+      });
+    }
+  };
+
+  const handleDrawingSubmit = async (strokes: DrawingStroke[]) => {
+    const currentEditor = editorRef.current;
+    const svg = serializeDrawingSvg(strokes);
+
+    if (!drawingDialog || !currentEditor || !svg) {
+      return;
+    }
+
+    const data = new TextEncoder().encode(svg);
+    setIsSavingDrawing(true);
+
+    try {
+      if (drawingDialog.mode === "insert") {
+        if (!folderPath || !filePath) {
+          return;
+        }
+
+        // Image file names are ASCII only (sanitizeImageFileName), so a
+        // locale whose word for it is not falls back to the English one.
+        // Saved here rather than through insertImagePayloads, which reports
+        // a failure and moves on: the dialog has to stay open then, or the
+        // sketch is gone.
+        const translatedName = t("drawing.fileName");
+        const baseName = /^[a-z0-9_-]+$/i.test(translatedName) ? translatedName : "drawing";
+        const rootRelativePath = await saveImageToFolder(folderPath, `${baseName}.svg`, "image/svg+xml", data);
+        const markdownPath = await getRelativeImageMarkdownPath(folderPath, filePath, rootRelativePath);
+
+        currentEditor
+          .chain()
+          .focus()
+          .insertContentAt(currentEditor.state.selection.from, {
+            type: "image",
+            attrs: { src: markdownPath, alt: baseName }
+          })
+          .run();
+        setDrawingDialog(null);
+        return;
+      }
+
+      // The Markdown keeps pointing at the same file, so the editor's undo
+      // cannot bring the old drawing back; the dialog's own undo is the
+      // only one there is.
+      await writeFile(drawingDialog.absolutePath, data);
+      notifyImageFileChanged(drawingDialog.absolutePath);
+      setDrawingDialog(null);
+    } catch (error) {
+      ai.setAiStatus({
+        kind: "error",
+        message: t("drawing.saveFailed", { error: extractErrorMessage(error, t) })
+      });
+    } finally {
+      setIsSavingDrawing(false);
+    }
   };
 
   const printDocument = () => {
@@ -1950,6 +2068,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       editor={editor}
       onLinkRequest={handleLinkRequest}
       onImageInsertRequest={handleImageInsertRequest}
+      onDrawingRequest={handleDrawingInsertRequest}
       onAiRequest={ai.openAiDraftFromSelection}
       onAiCheckRequest={ai.runAiGrammarCheck}
       onAiSettingsRequest={onAiSettingsRequest}
@@ -2028,7 +2147,15 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
       {toolbarContainer ? createPortal(toolbar, toolbarContainer) : toolbar}
 
-      <EditorFileContext.Provider value={{ folderPath, filePath }}>
+      <EditorFileContext.Provider
+        value={{
+          folderPath,
+          filePath,
+          onEditDrawing: (absolutePath) => {
+            void handleEditDrawing(absolutePath);
+          }
+        }}
+      >
         <div className="editor-view__body">
           <FindReplacePanel
             editor={editor}
@@ -2161,6 +2288,18 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         onRemove={handleLinkRemove}
         onCancel={() => setLinkDialog(null)}
       />
+
+      {drawingDialog ? (
+        <DrawingDialog
+          mode={drawingDialog.mode}
+          initialStrokes={drawingDialog.strokes}
+          busy={isSavingDrawing}
+          onSubmit={(strokes) => {
+            void handleDrawingSubmit(strokes);
+          }}
+          onCancel={() => setDrawingDialog(null)}
+        />
+      ) : null}
 
       {selectionMenu ? (
         <SelectionContextMenu

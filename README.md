@@ -60,6 +60,14 @@ formatted text, Markdown or plain text.
 
 [Read more →](docs/writing.md)
 
+### Sketch right in your note
+
+Draw with the mouse, a finger or a pen, pick a line width and colour, and
+insert the sketch at the cursor. It is saved as an SVG image in your vault, and
+a double-click opens it again for editing.
+
+[Read more →](docs/writing.md#drawings)
+
 ### Your vault: files, folders and linked notes
 
 Open any folder and every `.md` file appears in a tree. Link notes by dragging

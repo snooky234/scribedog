@@ -19,10 +19,43 @@ The editor is built on [TipTap](https://tiptap.dev/) and ProseMirror.
   columns
 - **Images**, shown inline. Resize by dragging, and the width is saved back
   into the Markdown.
+- **Drawings**, sketched by hand right in the note (see [Drawings](#drawings))
 - **Code blocks**, with a one-click copy button
 - An **emoji picker** with search, including keywords in your language
 
 Undo and redo work from the toolbar and with `Ctrl+Z` and `Ctrl+Y`.
+
+## Drawings
+
+The pencil button next to "Insert image" opens a drawing surface. Sketch with
+the mouse, a finger or a pen; a pen's pressure makes the line thinner or
+thicker. Pick one of four line widths and a colour from the palette, or choose
+your own.
+
+| Tool | What it does |
+| --- | --- |
+| Pen | Draws a line. Every line is its own object. |
+| Eraser | Removes a line you touch, as a whole. |
+| Undo / Redo | Steps back and forth one line (or one eraser stroke) at a time, also with `Ctrl+Z` and `Ctrl+Y`. |
+| Clear all | Empties the surface. Undo brings it back. |
+
+**Insert** saves the drawing as an SVG file in the `images/` folder and puts it
+at the cursor like any other image. The image is cropped to what you drew and
+has a transparent background, so it sits on light and dark pages alike. The
+note itself stays plain Markdown: `![drawing](images/drawing.svg)`.
+
+To change a drawing later, **double-click** it (or select it and tap the pencil
+in its corner). The surface opens with all your lines, and **Apply** writes the
+changes back into the same file.
+
+> [!NOTE]
+> Applying replaces the image file. The editor's undo cannot bring the old
+> drawing back, only the dialog's own undo can, before you apply. **Cancel**
+> throws away everything you changed in the dialog.
+
+Only drawings made in ScribeDog can be edited this way. Other SVG files stay
+ordinary images, since the drawing surface would lose whatever it cannot
+represent.
 
 ## Highlighting
 

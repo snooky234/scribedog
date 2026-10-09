@@ -28,6 +28,7 @@ import {
   Megaphone,
   MessagesSquare,
   OctagonAlert,
+  PencilLine,
   PanelRight,
   PawPrint,
   Pilcrow,
@@ -83,6 +84,7 @@ type ToolbarProps = {
   editor: Editor;
   onLinkRequest: () => void;
   onImageInsertRequest: () => void;
+  onDrawingRequest: () => void;
   onAiRequest: () => void;
   onAiCheckRequest: () => void;
   onAiSettingsRequest: () => void;
@@ -558,6 +560,7 @@ export function Toolbar({
   editor,
   onLinkRequest,
   onImageInsertRequest,
+  onDrawingRequest,
   onAiRequest,
   onAiCheckRequest,
   onAiSettingsRequest,
@@ -915,6 +918,19 @@ export function Toolbar({
           onClick={onImageInsertRequest}
         >
           <ImagePlus />
+        </Button>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="outline"
+          aria-label={t("toolbar.insertDrawing")}
+          title={t("toolbar.insertDrawing")}
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
+          onClick={onDrawingRequest}
+        >
+          <PencilLine />
         </Button>
         <CalloutMenu editor={editor} />
         <Button

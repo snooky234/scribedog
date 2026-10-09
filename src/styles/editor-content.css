@@ -826,6 +826,41 @@
   cursor: nwse-resize;
 }
 
+/* "Edit drawing" on a selected drawing (see ImageView). Shown for every
+   pointer: a double click is the mouse way in, this is the way a finger
+   finds. Inset from the corner so it stays clear of the resize handle. */
+.editor-image-wrapper__edit-drawing {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border-radius: 9999px;
+  background: rgb(var(--on-image-bg-rgb));
+  color: rgb(var(--on-image-fg-rgb));
+  border: 1px solid rgba(var(--on-image-edge-rgb), 0.45);
+  box-shadow: 0 1px 3px rgba(var(--on-image-edge-rgb), 0.35);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.editor-image-wrapper__edit-drawing svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+@media (pointer: coarse) {
+  .editor-image-wrapper__edit-drawing {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
 /* "Line above / below" buttons on a selected image (see ImageView). Only a
    coarse pointer gets them: with a mouse and keyboard, Enter and the gap
    cursor already cover it, and the buttons would sit on top of the image. */
