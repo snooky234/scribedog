@@ -10,6 +10,13 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # vite 8.2+ crashes `vite build` with a stack overflow on Windows.
+      - dependency-name: "vite"
+        versions: [">=8.2.0"]
+      # TypeScript 7 drops `baseUrl` and needs a few type fixes first.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "cargo"
     directory: "/src-tauri"
@@ -21,6 +28,11 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # cpal 0.18 changed its API (StreamError, SampleRate, StreamConfig) and
+      # voice.rs does not compile against it yet.
+      - dependency-name: "cpal"
+        versions: [">=0.16.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
