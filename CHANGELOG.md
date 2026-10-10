@@ -3,6 +3,17 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.20.0] - 2026-10-10
+
+### Highlights
+- Draw right in your note: a new toolbar button opens a drawing surface for
+  the mouse, a finger or a pen, with a pen and a stroke eraser, four line
+  widths, a colour palette, and undo and redo. The sketch is saved as an SVG
+  image in your vault and inserted like any other image. Double-click it to
+  edit it again.
+- A new setting shows the first table row like any other row instead of as a
+  header
+
 ## [0.19.2] - 2026-10-06
 
 ### Highlights
