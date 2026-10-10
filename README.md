@@ -29,7 +29,7 @@ you trust.
 
 - 🧠 **A knowledge base of your own notes.** Link notes, see backlinks, and let the AI answer from them with the sources it used.
 - 🔒 **Private by default.** No account, no telemetry, nothing leaves your device unless you set it up.
-- ✍️ **Easy to write.** True WYSIWYG: headings, tables, images and lists look like a document.
+- ✍️ **Easy to write.** True WYSIWYG: headings, tables, images and lists look like a document, and you can sketch right in a note.
 - 🤖 **Supported by local AI.** Ollama, Jan.ai and LM Studio work out of the box. Cloud providers are strictly opt-in.
 - 🧘 **Distraction free.** A full-screen Zen mode with just your text.
 - 🎨 **Yours to style.** Six built-in themes and a theme builder for your own.
@@ -54,7 +54,9 @@ you trust.
 Headings, tables, images, code blocks and task lists render as formatted
 content. The file on disk stays clean Markdown. Highlight passages, move lines
 with the keyboard, paste Markdown and see it rendered at once, and copy as
-formatted text, Markdown or plain text.
+formatted text, Markdown or plain text. If you do not want the header look on
+the first row of a table, [one setting](docs/customizing.md#tables) turns it
+off.
 
 <img src="docs/images/scribe-dog-light-theme.png" alt="ScribeDog main window with file tree, editor and chat" width="700">
 
@@ -63,8 +65,8 @@ formatted text, Markdown or plain text.
 ### Sketch right in your note
 
 Draw with the mouse, a finger or a pen, pick a line width and colour, and
-insert the sketch at the cursor. It is saved as an SVG image in your vault, and
-a double-click opens it again for editing.
+insert the sketch at the cursor. It is saved as an SVG image in your vault, so
+the note stays plain Markdown, and a double-click opens it again for editing.
 
 [Read more →](docs/writing.md#drawings)
 

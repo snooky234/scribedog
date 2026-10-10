@@ -29,8 +29,14 @@ Undo and redo work from the toolbar and with `Ctrl+Z` and `Ctrl+Y`.
 
 The pencil button next to "Insert image" opens a drawing surface. Sketch with
 the mouse, a finger or a pen; a pen's pressure makes the line thinner or
-thicker. Pick one of four line widths and a colour from the palette, or choose
-your own.
+thicker. Pick one of four line widths and one of the nine palette colours
+(black, grey, red, orange, yellow, green, blue, purple and white), or choose
+your own. The dialog starts with ink that suits your theme: light in the dark
+theme, dark in the light one.
+
+1. Click the pencil button in the toolbar, next to "Insert image".
+2. Draw. Switch to the eraser to remove lines, and use undo if you slip.
+3. Click **Insert**. The sketch appears at the cursor.
 
 | Tool | What it does |
 | --- | --- |
