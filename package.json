@@ -56,7 +56,7 @@
     "lowlight": "^3.3.0",
     "lucide-react": "^1.25.0",
     "mammoth": "^1.12.0",
-    "markdown-it": "^14.3.0",
+    "markdown-it": "^15.0.2",
     "markdown-it-ins": "^4.0.0",
     "markdown-it-mark": "^4.0.0",
     "mermaid": "^12.0.0",
