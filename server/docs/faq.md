@@ -236,9 +236,9 @@ The variable replaces the default list. Put `default,` in front of your own
 entries to keep the cloud providers.
 
 **I set `SCRIBEDOG_LLM_ALLOWED_HOSTS` and nothing changed.**
-Your `docker-compose.yml` is probably older than the setting and does not
-pass it to the container. See the note in
-[AI](ai.md#a-model-server-elsewhere-in-your-network).
+Either your `docker-compose.yml` is older than the setting and does not pass
+it on, or the container was restarted with `restart` instead of `up -d`. See
+[If it does not work](ai.md#if-it-does-not-work).
 
 **Can I show the chat an image?**
 Yes: drag it onto the chat panel, paste it from the clipboard, or use the

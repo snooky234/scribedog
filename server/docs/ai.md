@@ -105,68 +105,71 @@ settings.
 
 ## A model server elsewhere in your network
 
-Ollama, Jan.ai or LM Studio can also run on another machine, say the PC with
-the big graphics card, and be used from every device. Enter its network
-address as the API URL, for example `http://192.168.1.50:1337` for Jan.ai.
+Ollama, Jan.ai or LM Studio can run on another machine, say the PC with the
+big graphics card. A page served over https may not call a plain http
+address, so the ScribeDog server forwards these requests, but only to
+addresses you allow.
 
-A page served over https may not call a plain http address, so the browser
-does not reach that machine itself. The request goes through the ScribeDog
-server, which forwards it only if the address is in its allowlist. Add it to
-the server's `.env` and restart the server:
+### Setting it up
 
-```env
-SCRIBEDOG_LLM_ALLOWED_HOSTS=default,http://192.168.1.50:1337
-```
+1. **Open the model server to the network.** Jan.ai: Local API Server, set
+   *Server Host* to `0.0.0.0`. Ollama: start it with `OLLAMA_HOST=0.0.0.0`.
+   LM Studio: enable *Serve on Local Network*. Allow the port in that
+   machine's firewall.
 
-`default` stands for the three cloud providers. Leave it out and only the
-model server is allowed; without the variable at all, only the cloud
-providers are. The settings dialog shows the exact line for the address you
-entered, and a refused request says it again.
+2. **Allow the address** in the server's `.env`:
 
-> **Note:** Compose only hands the container the variables its
-> `docker-compose.yml` names. A file from before this setting existed does
-> not name it yet, and the server then behaves as if the line were not
-> there. Update the file from the repository, or add this line under the
-> `scribedog` service's `environment:` yourself:
-> `SCRIBEDOG_LLM_ALLOWED_HOSTS: ${SCRIBEDOG_LLM_ALLOWED_HOSTS:-}`
+   ```env
+   SCRIBEDOG_LLM_ALLOWED_HOSTS=default,http://192.168.1.50:1337
+   ```
+
+   `default` keeps OpenAI, Anthropic and Mistral. Without it, only the
+   model server is allowed.
+
+3. **Check that `docker-compose.yml` passes it on:**
+
+   ```bash
+   grep LLM_ALLOWED_HOSTS docker-compose.yml
+   ```
+
+   No output means your file is older than this setting. This adds the line
+   to every ScribeDog service, also in a setup with several instances:
+
+   ```bash
+   sed -i 's/^\( *\)SCRIBEDOG_BASE_PATH: .*/&\n\1SCRIBEDOG_LLM_ALLOWED_HOSTS: ${SCRIBEDOG_LLM_ALLOWED_HOSTS:-}/' docker-compose.yml
+   ```
+
+4. **Apply it** with `docker compose up -d`. A plain `docker compose restart`
+   keeps the old values.
+
+5. **Enter the address** in Settings → AI as the API URL, e.g.
+   `http://192.168.1.50:1337`. If the model server asks for an API key, enter
+   it in the API key field; it is stored encrypted on the server like a cloud
+   key.
+
+### If it does not work
+
+| The app says | Check |
+| --- | --- |
+| "The ScribeDog server is not allowed to reach …" | The server does not know the address. `docker compose config \| grep LLM_ALLOWED_HOSTS` has to show your line; if not, step 3 or 4 is missing. |
+| "… could not be reached" | `docker compose exec scribedog wget -qO- http://192.168.1.50:1337/v1/models` (with several instances `scribedog-1`). No answer: step 1. |
+| OpenAI is refused now | `default,` is missing in front of your entries. |
+
+### Which addresses are allowed
 
 | Entry | Meaning |
 | --- | --- |
 | `default` | OpenAI, Anthropic and Mistral, over https |
-| `gateway.example.com` | That host over https on port 443, e.g. your own gateway |
+| `gateway.example.com` | That host over https, e.g. your own gateway |
 | `http://192.168.1.50:1337` | Exactly this address and port, over plain http |
-| `http://jan.fritz.box:1337` | A name in your network. Each request checks that it resolves to an address in the network. |
+| `http://jan.fritz.box:1337` | A name in your network; each request checks it resolves to one |
 
-Plain http is accepted only for addresses in your own network: `10.x.x.x`,
-`172.16.x.x` to `172.31.x.x`, `192.168.x.x`, or a name ending in `.local`,
-`.lan`, `.home.arpa`, `.internal` or `.fritz.box`. Anything else stops the
-server at start with a message saying so, since it would send your notes
-unencrypted across the internet.
-
-> **Note:** "Your network" is the network the *server* is in. Opening
-> ScribeDog from outside your home still works: the server reaches the model
-> server, your phone does not have to.
-
-On the model server's side, two settings matter:
-
-- It has to listen on the network, not only on its own machine. Jan.ai: set
-  the server host to `0.0.0.0` in the Local API Server settings. Ollama:
-  `OLLAMA_HOST=0.0.0.0`. LM Studio: enable "Serve on Local Network".
-- Its firewall has to let the port through.
-
-If the model server asks for an API key (Jan.ai's API key, an LM Studio
-token), enter it in Settings → AI like a cloud provider's key. It is stored
-on the server in the same encrypted way, and the server fills it in on the
-way out.
-
-Whether the container reaches the machine can be tested from the server:
-
-```bash
-docker compose exec scribedog wget -qO- http://192.168.1.50:1337/v1/models
-```
-
-The CORS settings from the previous section do not apply here, because the
-request comes from the server, not from a page.
+Plain http works only inside your own network: `10.x.x.x`, `172.16.x.x` to
+`172.31.x.x`, `192.168.x.x`, or names ending in `.local`, `.lan`,
+`.home.arpa`, `.internal` or `.fritz.box`. Anything else stops the server at
+start, since it would send your notes unencrypted across the internet.
+"Your network" is the server's network, so this also works when you open
+ScribeDog from outside your home.
 
 **In the desktop app** none of this applies: with a [server vault](desktop-app.md)
 the app talks to the model on your computer directly, as it does with a local
