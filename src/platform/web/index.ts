@@ -84,7 +84,8 @@ export const platform: Platform = {
     session: true,
     browserLocalModels: true,
     remoteVaults: false,
-    sharedVaults: true
+    sharedVaults: true,
+    cameraCapture: true
   },
 
   vaultStorage: remoteVaultStorage,
@@ -181,14 +182,21 @@ export const platform: Platform = {
 
   dialogs: null,
   imagePicker: {
-    pickImages: ({ extensions }) =>
+    pickImages: ({ extensions, source }) =>
       new Promise((resolve) => {
         const input = document.createElement("input");
         input.type = "file";
-        input.multiple = true;
-        // The extensions keep a desktop browser to what the editor renders;
-        // "image/*" is what makes a phone offer the camera and the library.
-        input.accept = [...extensions.map((extension) => `.${extension}`), "image/*"].join(",");
+
+        if (source === "camera") {
+          // Straight to the rear camera; the browser hands back one JPEG.
+          input.accept = "image/*";
+          input.capture = "environment";
+        } else {
+          input.multiple = true;
+          // The extensions keep a desktop browser to what the editor renders;
+          // "image/*" is what makes a phone offer its photo library.
+          input.accept = [...extensions.map((extension) => `.${extension}`), "image/*"].join(",");
+        }
         input.addEventListener("change", () => {
           resolve(
             Array.from(input.files ?? []).map((file) => ({

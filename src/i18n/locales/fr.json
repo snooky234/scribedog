@@ -829,6 +829,8 @@
     "indentDecrease": "Diminuer le retrait",
     "indentIncrease": "Augmenter le retrait",
     "insertImage": "Insérer une image",
+    "imageFromFiles": "Choisir un fichier",
+    "imageFromCamera": "Prendre une photo",
     "insertDrawing": "Insérer un dessin",
     "calloutMenu": "Insérer une bannière d'information",
     "calloutSuccess": "Succès",

@@ -828,6 +828,8 @@
     "indentDecrease": "减少缩进",
     "indentIncrease": "增加缩进",
     "insertImage": "插入图片",
+    "imageFromFiles": "选择文件",
+    "imageFromCamera": "拍照",
     "insertDrawing": "插入手绘",
     "calloutMenu": "插入提示横幅",
     "calloutSuccess": "成功",

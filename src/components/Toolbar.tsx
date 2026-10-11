@@ -17,6 +17,8 @@ import {
   Heading5,
   Heading6,
   Highlighter,
+  Camera,
+  FolderOpen,
   ImagePlus,
   IndentDecrease,
   IndentIncrease,
@@ -46,7 +48,14 @@ import {
   Undo2,
   X
 } from "lucide-react";
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode
+} from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
@@ -65,7 +74,7 @@ import {
   MenuTrigger
 } from "@/components/ui/menu";
 import { Toggle } from "@/components/ui/toggle";
-import { useLayoutMode } from "@/hooks/useLayoutMode";
+import { useCoarsePointer, useLayoutMode } from "@/hooks/useLayoutMode";
 import { useShortcutLabel } from "@/hooks/useShortcutLabel";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import { PageLinesMenuItem } from "@/components/PageLinesMenuItem";
@@ -79,11 +88,13 @@ import { useAiModelsStore } from "@/store/useAiModelsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { useChatStore } from "@/store/useChatStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
+import { platform } from "@/platform";
+import type { ImageSource } from "@/platform/types";
 
 type ToolbarProps = {
   editor: Editor;
   onLinkRequest: () => void;
-  onImageInsertRequest: () => void;
+  onImageInsertRequest: (source?: ImageSource) => void;
   onDrawingRequest: () => void;
   onAiRequest: () => void;
   onAiCheckRequest: () => void;
@@ -492,6 +503,55 @@ const CALLOUT_LABEL_KEYS: Record<CalloutVariant, string> = {
   warning: "toolbar.calloutWarning",
   danger: "toolbar.calloutDanger"
 };
+
+// The image button. A mouse opens the file picker straight away, as it always
+// did; a touch screen in the browser gets a choice first, because Android's
+// photo picker behind a plain file input has no way to take a photo.
+function ImageButton({ onRequest }: { onRequest: (source?: ImageSource) => void }) {
+  const { t } = useTranslation();
+  const offerCamera = useCoarsePointer() && platform.features.cameraCapture;
+
+  const buttonProps = {
+    type: "button",
+    size: "icon-sm",
+    variant: "outline",
+    "aria-label": t("toolbar.insertImage"),
+    title: t("toolbar.insertImage"),
+    onMouseDown: (event: ReactMouseEvent) => {
+      event.preventDefault();
+    }
+  } as const;
+
+  if (!offerCamera) {
+    return (
+      <Button {...buttonProps} onClick={() => onRequest("files")}>
+        <ImagePlus />
+      </Button>
+    );
+  }
+
+  return (
+    <Menu>
+      <MenuTrigger render={<Button {...buttonProps} />}>
+        <ImagePlus />
+      </MenuTrigger>
+      <MenuPortal>
+        <MenuPositioner align="end">
+          <MenuPopup>
+            <MenuItem onClick={() => onRequest("files")}>
+              <FolderOpen className="size-4" />
+              {t("toolbar.imageFromFiles")}
+            </MenuItem>
+            <MenuItem onClick={() => onRequest("camera")}>
+              <Camera className="size-4" />
+              {t("toolbar.imageFromCamera")}
+            </MenuItem>
+          </MenuPopup>
+        </MenuPositioner>
+      </MenuPortal>
+    </Menu>
+  );
+}
 
 // Dropdown next to the image button that inserts (or re-colors) a hint banner.
 function CalloutMenu({ editor }: { editor: Editor }) {
@@ -906,19 +966,7 @@ export function Toolbar({
         <TableGridPicker editor={editor} />
         {editor.isActive("table") ? <TableMenu editor={editor} /> : null}
         <EmojiPicker editor={editor} />
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="outline"
-          aria-label={t("toolbar.insertImage")}
-          title={t("toolbar.insertImage")}
-          onMouseDown={(event) => {
-            event.preventDefault();
-          }}
-          onClick={onImageInsertRequest}
-        >
-          <ImagePlus />
-        </Button>
+        <ImageButton onRequest={onImageInsertRequest} />
         <Button
           type="button"
           size="icon-sm"

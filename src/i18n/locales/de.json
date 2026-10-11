@@ -829,6 +829,8 @@
     "indentDecrease": "Einzug verkleinern",
     "indentIncrease": "Einzug vergrößern",
     "insertImage": "Bild einfügen",
+    "imageFromFiles": "Datei wählen",
+    "imageFromCamera": "Foto aufnehmen",
     "insertDrawing": "Zeichnung einfügen",
     "calloutMenu": "Hinweisbanner einfügen",
     "calloutSuccess": "Erfolg",

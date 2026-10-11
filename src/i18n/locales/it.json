@@ -829,6 +829,8 @@
     "indentDecrease": "Riduci rientro",
     "indentIncrease": "Aumenta rientro",
     "insertImage": "Inserisci immagine",
+    "imageFromFiles": "Scegli file",
+    "imageFromCamera": "Scatta foto",
     "insertDrawing": "Inserisci disegno",
     "calloutMenu": "Inserisci banner informativo",
     "calloutSuccess": "Successo",

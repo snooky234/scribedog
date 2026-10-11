@@ -61,7 +61,8 @@ export const platform: Platform = {
     remoteVaults: true,
     // Shared vaults of whichever server vault is open; a local folder has
     // none, which setActiveRemoteServer reports as "no shared vaults".
-    sharedVaults: true
+    sharedVaults: true,
+    cameraCapture: false
   },
 
   vaultStorage: localVaultStorage,

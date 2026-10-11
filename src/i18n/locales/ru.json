@@ -841,6 +841,8 @@
     "indentDecrease": "Уменьшить отступ",
     "indentIncrease": "Увеличить отступ",
     "insertImage": "Вставить изображение",
+    "imageFromFiles": "Выбрать файл",
+    "imageFromCamera": "Сделать фото",
     "insertDrawing": "Вставить рисунок",
     "calloutMenu": "Вставить баннер-подсказку",
     "calloutSuccess": "Успех",

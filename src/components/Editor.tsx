@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 
 import { getVaultCapabilities, platform, vaultCapabilityHint } from "@/platform";
-import type { PickedImageFile } from "@/platform/types";
+import type { ImageSource, PickedImageFile } from "@/platform/types";
 import { readFile, writeFile } from "@/platform/vaultFs";
 import { EditorContent, type Editor as TipTapEditor, useEditor } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
@@ -688,7 +688,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   // Toolbar image button: pick one or more image files through the shell's
   // picker (the native dialog opened at the current vault, or the browser's
   // file input), then insert them like a paste/drop.
-  const handleImageInsertRequest = async () => {
+  const handleImageInsertRequest = async (source: ImageSource = "files") => {
     const currentEditor = editorRef.current;
 
     if (!currentEditor) {
@@ -710,7 +710,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         defaultPath: folderPath ?? getLastOpenedFolderPath() ?? undefined,
         title: t("editor.imageDialogTitle"),
         filterName: t("editor.imageDialogFilter"),
-        extensions: EDITOR_IMAGE_EXTENSIONS
+        extensions: EDITOR_IMAGE_EXTENSIONS,
+        source
       });
     } catch (error) {
       ai.setAiStatus({

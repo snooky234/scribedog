@@ -14,9 +14,10 @@ Below about 640 px wide:
   desktop has a dropdown; a dot on that button means no model is chosen yet.
 - Saving is the icon button in the header: it is highlighted while there is
   something to save and greyed out once there is not.
-- The image button in the toolbar opens the phone's own picker, so a photo
-  can come straight from the camera or the photo library. It is stored in
-  the vault's `images/` folder like a pasted one.
+- The image button in the toolbar asks first: "Choose file" opens the
+  phone's own picker for the photo library and files, "Take photo" opens the
+  camera directly. Either way the image is stored in the vault's `images/`
+  folder like a pasted one.
 - Everything else the toolbar offers on the desktop (find and replace,
   details, zoom, zen mode, print, spell check, versions, back and forward)
   is in the header's menu.

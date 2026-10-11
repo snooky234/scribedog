@@ -197,13 +197,20 @@ export type ImagePickerOptions = {
   filterName: string;
   /** Without the dot. */
   extensions: string[];
+  /**
+   * "camera" takes one photo instead of picking files. Only where
+   * `features.cameraCapture` is set; the default is "files".
+   */
+  source?: ImageSource;
 };
+
+export type ImageSource = "files" | "camera";
 
 /**
  * The toolbar's image button. Both shells have one: the desktop opens the
  * native dialog and reads the files from disk, the browser uses an
- * `<input type="file">`, which on a phone is what offers the camera and the
- * photo library. Paste and drop bypass this and hand the bytes over directly.
+ * `<input type="file">`. Paste and drop bypass this and hand the bytes over
+ * directly.
  */
 export type ImagePickerApi = {
   pickImages(options: ImagePickerOptions): Promise<PickedImageFile[]>;
@@ -592,6 +599,12 @@ export type PlatformFeatures = {
    * note about what the server has to allow.
    */
   browserLocalModels: boolean;
+  /**
+   * The image picker can open the camera (`source: "camera"`). Android's
+   * photo picker, which a plain image file input leads to, has no camera
+   * entry, so a touch screen offers it as a choice of its own.
+   */
+  cameraCapture: boolean;
 };
 
 export type Platform = {

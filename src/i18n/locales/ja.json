@@ -828,6 +828,8 @@
     "indentDecrease": "インデントを減らす",
     "indentIncrease": "インデントを増やす",
     "insertImage": "画像を挿入",
+    "imageFromFiles": "ファイルを選択",
+    "imageFromCamera": "写真を撮る",
     "insertDrawing": "手描きを挿入",
     "calloutMenu": "情報バナーを挿入",
     "calloutSuccess": "成功",

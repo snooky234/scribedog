@@ -7,6 +7,7 @@ import {
   layoutModeForWidth,
   type LayoutMode
 } from "@/lib/layoutMode";
+import { COARSE_POINTER_QUERY } from "@/lib/openGesture";
 
 // One media query list per query for the whole app; every subscriber sees the
 // same answer as the stylesheets, which use the same breakpoints.
@@ -83,4 +84,16 @@ export function useLayoutMode(): LayoutMode {
  */
 export function useSidebarAsSheet(): boolean {
   return useSyncExternalStore(subscribe, sidebarSheetSnapshot, () => false);
+}
+
+function subscribeCoarsePointer(onChange: () => void): () => void {
+  const list = queryList(COARSE_POINTER_QUERY);
+  list?.addEventListener("change", onChange);
+
+  return () => list?.removeEventListener("change", onChange);
+}
+
+/** Whether the primary pointer is a finger; a tablet can gain a mouse mid-session. */
+export function useCoarsePointer(): boolean {
+  return useSyncExternalStore(subscribeCoarsePointer, () => matches(COARSE_POINTER_QUERY), () => false);
 }

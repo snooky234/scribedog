@@ -829,6 +829,8 @@
     "indentDecrease": "Decrease indent",
     "indentIncrease": "Increase indent",
     "insertImage": "Insert image",
+    "imageFromFiles": "Choose file",
+    "imageFromCamera": "Take photo",
     "insertDrawing": "Insert drawing",
     "calloutMenu": "Insert hint banner",
     "calloutSuccess": "Success",

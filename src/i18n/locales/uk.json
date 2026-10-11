@@ -841,6 +841,8 @@
     "indentDecrease": "Зменшити відступ",
     "indentIncrease": "Збільшити відступ",
     "insertImage": "Вставити зображення",
+    "imageFromFiles": "Вибрати файл",
+    "imageFromCamera": "Зробити фото",
     "insertDrawing": "Вставити малюнок",
     "calloutMenu": "Вставити банер-підказку",
     "calloutSuccess": "Успіх",
