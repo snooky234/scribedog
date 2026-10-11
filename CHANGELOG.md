@@ -3,6 +3,15 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.21.1] - 2026-10-12
+
+### Highlights
+- Use Ollama, Jan.ai or LM Studio on another computer in your network by
+  entering its address as the API URL. The browser edition reaches it through
+  the server once the address is allowed in `SCRIBEDOG_LLM_ALLOWED_HOSTS`.
+- Local model servers can have an API key too, in the AI settings and in the
+  knowledge base connection.
+
 ## [0.21.0] - 2026-10-11
 
 ### Highlights
