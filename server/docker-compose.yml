@@ -31,6 +31,8 @@ services:
       SCRIBEDOG_INIT_PASSWORD: ${SCRIBEDOG_INIT_PASSWORD:-}
       # Empty = app at "/". Set e.g. "/anna" to run under a path prefix.
       SCRIBEDOG_BASE_PATH: ${SCRIBEDOG_BASE_PATH:-}
+      # Empty = the built-in cloud providers. See .env.example.
+      SCRIBEDOG_LLM_ALLOWED_HOSTS: ${SCRIBEDOG_LLM_ALLOWED_HOSTS:-}
     volumes:
       # A bind mount on purpose: the notes are ordinary files in an ordinary
       # folder, readable and backed up with any tool you already use.

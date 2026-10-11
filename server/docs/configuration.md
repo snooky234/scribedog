@@ -33,7 +33,7 @@ ones that matter; you only need them if you run the server without it.
 | `SCRIBEDOG_LOGIN_LOCK_SECONDS` | `60` | How long the first lock lasts. Each further series of failures multiplies it by five. |
 | `SCRIBEDOG_LOGIN_LOCK_MAX_SECONDS` | `900` | Upper limit for that escalation. |
 | `SCRIBEDOG_ALLOWED_ORIGINS` | *(empty)* | Extra origins accepted on requests that change something, e.g. `https://notes.example.com`. Only needed if your proxy passes on a different host than the browser uses. |
-| `SCRIBEDOG_LLM_ALLOWED_HOSTS` | the three cloud providers | Hosts the server may forward AI requests to. Add your own gateway here if you use one. |
+| `SCRIBEDOG_LLM_ALLOWED_HOSTS` | `default` | Where the server may forward AI requests to. `default` is the three cloud providers; add your own gateway as a host name, or a model server in your network as `http://<address>:<port>`, e.g. `default,http://192.168.1.50:1337`. Setting it replaces the default, so keep `default,` in front to add to it. See [AI](ai.md#a-model-server-elsewhere-in-your-network). |
 | `SCRIBEDOG_LOG_LEVEL` | `info` | Log level (`debug`, `info`, `warn`, `error`). |
 | `SCRIBEDOG_WEB_DIST_DIR` | `../dist-web` | Directory with the built web client (see [Development](development.md)). The Docker image sets it. |
 | `SCRIBEDOG_USER` | *(empty)* | The name this instance's person has for the others in a [shared-vault setup](multiuser.md#shared-vaults): lowercase letters, digits, `-` and `_`, up to 32. The multi-instance example sets it from `PERSON<N>_USER`. |

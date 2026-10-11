@@ -1,4 +1,6 @@
+import i18n from "@/i18n";
 import { guessImageMimeType } from "@/lib/imageMimeTypes";
+import { isPrivateNetworkHttpUrl, serverAllowlistLine } from "@/lib/networkAddress";
 import { SessionError } from "@/platform/errors";
 import { secretRef } from "@/platform/secretRef";
 import type { CredentialsStatus, Platform } from "@/platform/types";
@@ -49,18 +51,54 @@ async function readSecretStatus(): Promise<RemoteSecretStatus> {
  * A request to a cloud AI provider cannot leave the tab directly: the browser
  * would block it (CORS) and the API key would have to be in the page to send
  * it. Anything aimed at another https host therefore goes to the server's LLM
- * proxy, which fills in the key and streams the answer back. Same-origin
- * requests and local endpoints (a model running on the user's own machine)
- * stay in the browser.
+ * proxy, which fills in the key and streams the answer back.
+ *
+ * So does a model server on another machine in the network: a page served over
+ * https may not call a plain-http address at all (mixed content), and the
+ * proxy is also where the server admin decides which of those machines may be
+ * reached. Same-origin requests and loopback endpoints (a model running on the
+ * user's own machine) stay in the browser.
  */
 function llmTarget(url: string): string | null {
   try {
     const target = new URL(url, window.location.href);
+    const crossOriginHttps = target.protocol === "https:" && target.host !== window.location.host;
 
-    return target.protocol === "https:" && target.host !== window.location.host ? target.toString() : null;
+    return crossOriginHttps || isPrivateNetworkHttpUrl(target.toString()) ? target.toString() : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * The proxy refuses a target the server's allowlist does not name and says
+ * which entry would allow it. That reaches the user as one sentence with the
+ * exact line for the server's .env, instead of a bare status code: the person
+ * reading it is often the one who runs the server.
+ */
+async function explainRefusedTarget(response: Response, target: string): Promise<Response> {
+  if (response.status !== 400) {
+    return response;
+  }
+
+  const payload: unknown = await response
+    .clone()
+    .json()
+    .catch(() => null);
+
+  if (typeof payload !== "object" || payload === null) {
+    return response;
+  }
+
+  const { error, entry } = payload as { error?: unknown; entry?: unknown };
+
+  if (error !== "endpoint_not_allowed" || typeof entry !== "string") {
+    return response;
+  }
+
+  throw new Error(
+    i18n.t("aiClient.serverEndpointNotAllowed", { host: new URL(target).host, line: serverAllowlistLine(entry) })
+  );
 }
 
 /**
@@ -134,7 +172,9 @@ export const platform: Platform = {
       const headers = new Headers(init?.headers);
       headers.set(LLM_TARGET_HEADER, target);
 
-      return window.fetch(llmProxyUrl(), { ...init, headers, credentials: "same-origin" });
+      return window
+        .fetch(llmProxyUrl(), { ...init, headers, credentials: "same-origin" })
+        .then((response) => explainRefusedTarget(response, target));
     }
   },
   window: {

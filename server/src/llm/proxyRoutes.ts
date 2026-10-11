@@ -8,6 +8,7 @@ import type { SessionConfig } from "../auth/session.js";
 import { dataKeyFor } from "../secrets/routes.js";
 import { resolveSecretRefs, secretRefIds } from "../secrets/secretRef.js";
 import type { SecretStore } from "../secrets/secretStore.js";
+import { resolvesToPrivateNetwork } from "./privateAddress.js";
 import { assertAllowedTarget, forwardableRequestHeaders, forwardableResponseHeaders, LlmTargetError } from "./target.js";
 
 export type LlmRoutesOptions = {
@@ -30,7 +31,8 @@ export const TARGET_HEADER = "x-scribedog-llm-url";
 const UPSTREAM_TIMEOUT_MS = 200_000;
 
 /**
- * Forwards one request to a cloud AI provider.
+ * Forwards one request to a cloud AI provider, or to a model server elsewhere
+ * in the server's network that the admin allowed.
  *
  * Everything about the request is the frontend's: `src/lib/aiClient.ts` builds
  * it exactly as it does on the desktop, and the web platform sends it here
@@ -63,10 +65,19 @@ export async function llmRoutes(app: FastifyInstance, options: LlmRoutesOptions)
         target = assertAllowedTarget(request.headers[TARGET_HEADER], allowedHosts);
       } catch (error) {
         if (error instanceof LlmTargetError) {
-          return reply.code(400).send({ error: "invalid_endpoint", message: error.message });
+          return error.entry
+            ? reply.code(400).send({ error: "endpoint_not_allowed", message: error.message, entry: error.entry })
+            : reply.code(400).send({ error: "invalid_endpoint", message: error.message });
         }
 
         throw error;
+      }
+
+      if (target.protocol === "http:" && (await resolvesToPrivateNetwork(target.hostname)) === false) {
+        return reply.code(400).send({
+          error: "invalid_endpoint",
+          message: `${target.hostname} resolves to an address outside your network, so it is not reached over plain http.`
+        });
       }
 
       const headers = forwardableRequestHeaders(request.headers);

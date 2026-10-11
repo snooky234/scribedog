@@ -35,9 +35,18 @@ describe("isLocalApiUrl", () => {
     expect(isLocalApiUrl("http://ollama.localhost")).toBe(true);
   });
 
-  it("rejects remote hosts and non-http schemes", () => {
-    expect(isLocalApiUrl("http://192.168.1.10:11434")).toBe(false);
+  it("accepts plain-http hosts in the user's own network", () => {
+    expect(isLocalApiUrl("http://192.168.1.50:1337")).toBe(true);
+    expect(isLocalApiUrl("http://10.0.0.5:11434")).toBe(true);
+    expect(isLocalApiUrl("http://jan.fritz.box:1337")).toBe(true);
+  });
+
+  it("rejects public hosts and non-http schemes", () => {
+    expect(isLocalApiUrl("http://8.8.8.8:11434")).toBe(false);
     expect(isLocalApiUrl("http://evil.com")).toBe(false);
+    expect(isLocalApiUrl("http://192.168.1.1.evil.com")).toBe(false);
+    expect(isLocalApiUrl("http://169.254.169.254/latest/meta-data")).toBe(false);
+    expect(isLocalApiUrl("https://192.168.1.10")).toBe(false);
     expect(isLocalApiUrl("https://localhost")).toBe(false);
     expect(isLocalApiUrl("not a url")).toBe(false);
   });
@@ -56,7 +65,8 @@ describe("isHttpsUrl", () => {
 });
 
 // Security invariant from CLAUDE.md / the README privacy notice: cloud
-// providers must be HTTPS + keyed, local providers must stay on loopback.
+// providers must be HTTPS + keyed, local providers must stay on this machine
+// or in the user's own network.
 describe("assertValidEndpoint", () => {
   it("accepts a valid cloud endpoint", () => {
     expect(() => assertValidEndpoint("openai", "https://api.openai.com/v1", "sk-test")).not.toThrow();
@@ -74,8 +84,12 @@ describe("assertValidEndpoint", () => {
     expect(() => assertValidEndpoint("ollama", "http://localhost:11434", "")).not.toThrow();
   });
 
-  it("rejects a non-loopback endpoint for a local provider", () => {
-    expect(() => assertValidEndpoint("ollama", "http://192.168.1.10:11434", "")).toThrow();
+  it("accepts an endpoint in the user's own network for a local provider", () => {
+    expect(() => assertValidEndpoint("jan", "http://192.168.1.10:1337", "")).not.toThrow();
+  });
+
+  it("rejects a public endpoint for a local provider", () => {
+    expect(() => assertValidEndpoint("ollama", "http://203.0.113.10:11434", "")).toThrow();
     expect(() => assertValidEndpoint("lmstudio", "https://evil.com/v1", "key")).toThrow();
   });
 });

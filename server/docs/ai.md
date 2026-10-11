@@ -20,10 +20,13 @@ a stray script in the page has nothing to find.
 
 **The server talks to the provider, not the browser.** Browsers block direct
 calls to another site's API, and sending the key to the tab to try would give
-up what the paragraph above buys. The server only forwards to the three
-provider hosts over https; anything else is refused, so this cannot become a
-way to reach something else on your network. If you use your own gateway in
-front of a provider, add its host to `SCRIBEDOG_LLM_ALLOWED_HOSTS`.
+up what the paragraph above buys. The server only forwards to the hosts in
+its allowlist, by default the three providers over https; anything else is
+refused, so this cannot become a way to reach something else on your network.
+If you use your own gateway in front of a provider, add its host to
+`SCRIBEDOG_LLM_ALLOWED_HOSTS` (see
+[A model server elsewhere in your network](#a-model-server-elsewhere-in-your-network)
+for how the list is written).
 
 The AI settings themselves live in the browser, so each device keeps its own
 provider and model choice. The API key is stored once on the server and works
@@ -93,6 +96,66 @@ has no such prompt. Safari has not been tested.
 
 A phone without a model server simply picks a cloud provider in its own
 settings.
+
+## A model server elsewhere in your network
+
+Ollama, Jan.ai or LM Studio can also run on another machine, say the PC with
+the big graphics card, and be used from every device. Enter its network
+address as the API URL, for example `http://192.168.1.50:1337` for Jan.ai.
+
+A page served over https may not call a plain http address, so the browser
+does not reach that machine itself. The request goes through the ScribeDog
+server, which forwards it only if the address is in its allowlist. Add it to
+the server's `.env` and restart the server:
+
+```env
+SCRIBEDOG_LLM_ALLOWED_HOSTS=default,http://192.168.1.50:1337
+```
+
+`default` stands for the three cloud providers. Leave it out and only the
+model server is allowed; without the variable at all, only the cloud
+providers are. The settings dialog shows the exact line for the address you
+entered, and a refused request says it again.
+
+> **Note:** Compose only hands the container the variables its
+> `docker-compose.yml` names. A file from before this setting existed does
+> not name it yet, and the server then behaves as if the line were not
+> there. Update the file from the repository, or add this line under the
+> `scribedog` service's `environment:` yourself:
+> `SCRIBEDOG_LLM_ALLOWED_HOSTS: ${SCRIBEDOG_LLM_ALLOWED_HOSTS:-}`
+
+| Entry | Meaning |
+| --- | --- |
+| `default` | OpenAI, Anthropic and Mistral, over https |
+| `gateway.example.com` | That host over https on port 443, e.g. your own gateway |
+| `http://192.168.1.50:1337` | Exactly this address and port, over plain http |
+| `http://jan.fritz.box:1337` | A name in your network. Each request checks that it resolves to an address in the network. |
+
+Plain http is accepted only for addresses in your own network: `10.x.x.x`,
+`172.16.x.x` to `172.31.x.x`, `192.168.x.x`, or a name ending in `.local`,
+`.lan`, `.home.arpa`, `.internal` or `.fritz.box`. Anything else stops the
+server at start with a message saying so, since it would send your notes
+unencrypted across the internet.
+
+> **Note:** "Your network" is the network the *server* is in. Opening
+> ScribeDog from outside your home still works: the server reaches the model
+> server, your phone does not have to.
+
+On the model server's side, two settings matter:
+
+- It has to listen on the network, not only on its own machine. Jan.ai: set
+  the server host to `0.0.0.0` in the Local API Server settings. Ollama:
+  `OLLAMA_HOST=0.0.0.0`. LM Studio: enable "Serve on Local Network".
+- Its firewall has to let the port through.
+
+Whether the container reaches the machine can be tested from the server:
+
+```bash
+docker compose exec scribedog wget -qO- http://192.168.1.50:1337/v1/models
+```
+
+The CORS settings from the previous section do not apply here, because the
+request comes from the server, not from a page.
 
 **In the desktop app** none of this applies: with a [server vault](desktop-app.md)
 the app talks to the model on your computer directly, as it does with a local

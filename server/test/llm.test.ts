@@ -2,21 +2,106 @@ import { request as httpRequest } from "node:http";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ConfigError, DEFAULT_LLM_HOSTS, loadConfig } from "../src/config.js";
+import { isPrivateNetworkHostname, resolvesToPrivateNetwork } from "../src/llm/privateAddress.js";
 import { assertAllowedTarget, forwardableRequestHeaders, LlmTargetError } from "../src/llm/target.js";
 import { KEY_COOKIE_NAME } from "../src/secrets/keyCookie.js";
 import { secretRef } from "../src/secrets/secretRef.js";
 import { createTestContext, type TestContext } from "./helpers.js";
 
-const ALLOWED = ["api.openai.com", "api.anthropic.com"];
+const ALLOWED = ["api.openai.com", "api.anthropic.com", "http://192.168.1.50:1337"];
+
+describe("SCRIBEDOG_LLM_ALLOWED_HOSTS", () => {
+  const hosts = (raw?: string) => loadConfig({ SCRIBEDOG_LLM_ALLOWED_HOSTS: raw }).llmAllowedHosts;
+
+  it("keeps the built-in providers when unset, as in every existing .env", () => {
+    expect(hosts()).toEqual(DEFAULT_LLM_HOSTS);
+    expect(hosts("  ")).toEqual(DEFAULT_LLM_HOSTS);
+  });
+
+  it("replaces them with what is listed, so a list can be narrowed", () => {
+    expect(hosts("gateway.example.com")).toEqual(["gateway.example.com"]);
+  });
+
+  it("expands \"default\" to the built-in providers", () => {
+    expect(hosts("default,http://192.168.1.50:1337")).toEqual([...DEFAULT_LLM_HOSTS, "http://192.168.1.50:1337"]);
+    expect(hosts("DEFAULT gateway.example.com api.openai.com")).toEqual([...DEFAULT_LLM_HOSTS, "gateway.example.com"]);
+  });
+
+  it("normalizes http entries to their origin and https entries to their host", () => {
+    expect(hosts("HTTP://Jan.Fritz.Box:1337/,https://Gateway.Example.com")).toEqual([
+      "http://jan.fritz.box:1337",
+      "gateway.example.com"
+    ]);
+  });
+
+  it("refuses plain http to anything outside the network", () => {
+    for (const entry of ["http://8.8.8.8:11434", "http://evil.example:1337", "http://localhost:11434", "http://169.254.169.254"]) {
+      expect(() => hosts(entry), entry).toThrow(ConfigError);
+    }
+  });
+
+  it("refuses entries that are more than an address", () => {
+    for (const entry of ["http://192.168.1.2:1337/v1", "http://user:pw@192.168.1.2:1337", "https://gw.example.com:8443", "ftp://192.168.1.2"]) {
+      expect(() => hosts(entry), entry).toThrow(ConfigError);
+    }
+  });
+});
+
+describe("private network addresses", () => {
+  it("knows the private ranges and home-network names", () => {
+    for (const host of ["10.0.0.1", "172.20.0.1", "192.168.1.50", "jan.fritz.box", "ollama.local"]) {
+      expect(isPrivateNetworkHostname(host), host).toBe(true);
+    }
+
+    for (const host of ["172.32.0.1", "127.0.0.1", "169.254.169.254", "fritz.box", "evil.example"]) {
+      expect(isPrivateNetworkHostname(host), host).toBe(false);
+    }
+  });
+
+  it("checks what a name resolves to", async () => {
+    const resolveTo = (...addresses: string[]) => async () => addresses.map((address) => ({ address }));
+
+    expect(await resolvesToPrivateNetwork("jan.fritz.box", resolveTo("192.168.1.50"))).toBe(true);
+    expect(await resolvesToPrivateNetwork("jan.fritz.box", resolveTo("192.168.1.50", "fd00::12"))).toBe(true);
+    expect(await resolvesToPrivateNetwork("jan.lan", resolveTo("192.168.1.50", "93.184.216.34"))).toBe(false);
+    expect(await resolvesToPrivateNetwork("gone.lan", resolveTo())).toBeNull();
+    expect(await resolvesToPrivateNetwork("192.168.1.50")).toBe(true);
+  });
+});
 
 describe("proxy target", () => {
   it("accepts an allowed https host", () => {
     expect(assertAllowedTarget("https://api.openai.com/v1/chat/completions", ALLOWED).hostname).toBe("api.openai.com");
   });
 
+  it("accepts an allowed model server in the network over plain http", () => {
+    expect(assertAllowedTarget("http://192.168.1.50:1337/v1/chat/completions", ALLOWED).host).toBe("192.168.1.50:1337");
+  });
+
+  it("names the entry that would allow a refused target", () => {
+    const entryFor = (target: string) => {
+      try {
+        assertAllowedTarget(target, ALLOWED);
+      } catch (error) {
+        return (error as LlmTargetError).entry;
+      }
+
+      return "allowed";
+    };
+
+    expect(entryFor("http://192.168.1.51:1337/v1/models")).toBe("http://192.168.1.51:1337");
+    expect(entryFor("http://192.168.1.50:11434/api/tags")).toBe("http://192.168.1.50:11434");
+    expect(entryFor("https://gateway.example.com/v1")).toBe("gateway.example.com");
+    // Plain http to the internet is never a matter of the allowlist.
+    expect(entryFor("http://evil.example/v1")).toBeNull();
+  });
+
   it("refuses anything else", () => {
     const refused = [
       "http://api.openai.com/v1",
+      "http://192.168.1.50:1338/v1",
+      "http://user:pass@192.168.1.50:1337/v1",
       "https://evil.example/v1",
       "https://api.openai.com.evil.example/v1",
       "http://localhost:11434/api/chat",
@@ -98,8 +183,33 @@ describe("llm proxy route", () => {
     const response = await call({ "x-scribedog-llm-url": "https://evil.example/v1" });
 
     expect(response.statusCode).toBe(400);
-    expect(response.json()).toMatchObject({ error: "invalid_endpoint" });
+    expect(response.json()).toMatchObject({ error: "endpoint_not_allowed", entry: "evil.example" });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("tells the client which entry would allow a refused model server", async () => {
+    const response = await call({ "x-scribedog-llm-url": "http://192.168.1.50:1337/v1/chat/completions" });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: "endpoint_not_allowed", entry: "http://192.168.1.50:1337" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("forwards to a model server in the network the admin allowed", async () => {
+    await context.cleanup();
+    context = await createTestContext({ SCRIBEDOG_LLM_ALLOWED_HOSTS: "default,http://192.168.1.50:1337" });
+    cookie = await context.login();
+
+    fetchMock.mockResolvedValue(new Response('{"data":[]}', { status: 200, headers: { "content-type": "application/json" } }));
+
+    const response = await context.app.inject({
+      method: "GET",
+      url: "/api/llm/request",
+      headers: { cookie, "x-scribedog-llm-url": "http://192.168.1.50:1337/v1/models" }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect((fetchMock.mock.calls[0] as [URL])[0].toString()).toBe("http://192.168.1.50:1337/v1/models");
   });
 
   it("substitutes the stored key and passes the body through untouched", async () => {

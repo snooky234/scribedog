@@ -221,12 +221,24 @@ a sync tool) and it shows up in the tree.
 **Which AI providers work in the browser?**
 OpenAI, Anthropic and Mistral through the server (the key never reaches the
 browser), and Ollama, Jan.ai or LM Studio running on the device you browse
-from, if they allow the page's origin. See [AI](ai.md).
+from, if they allow the page's origin, or on another machine in your
+network, if the server allows its address. See [AI](ai.md).
 
-**Can the server use the Ollama on my home server?**
-Not yet: the server only forwards to the cloud providers, and a browser
-reaches a local model server directly. The desktop app with a server vault
-uses the model on your computer, as always.
+**Can I use the Ollama or Jan.ai on another computer in my network?**
+Yes. Enter its address as the API URL (e.g. `http://192.168.1.50:1337`) and
+allow it on the server with
+`SCRIBEDOG_LLM_ALLOWED_HOSTS=default,http://192.168.1.50:1337` in the
+`.env`. The model server has to listen on the network, not only on
+localhost. See [AI](ai.md#a-model-server-elsewhere-in-your-network).
+
+**I set `SCRIBEDOG_LLM_ALLOWED_HOSTS` and now OpenAI is refused.**
+The variable replaces the default list. Put `default,` in front of your own
+entries to keep the cloud providers.
+
+**I set `SCRIBEDOG_LLM_ALLOWED_HOSTS` and nothing changed.**
+Your `docker-compose.yml` is probably older than the setting and does not
+pass it to the container. See the note in
+[AI](ai.md#a-model-server-elsewhere-in-your-network).
 
 **Can I show the chat an image?**
 Yes: drag it onto the chat panel, paste it from the clipboard, or use the

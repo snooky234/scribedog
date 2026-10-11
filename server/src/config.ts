@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import { isPrivateNetworkHostname } from "./llm/privateAddress.js";
+
 /**
  * Everything the server takes from the environment, parsed once at startup.
  * All of these are deployment decisions (where the vault is, which prefix the
@@ -59,7 +61,9 @@ export type ServerConfig = {
    * Hosts the LLM proxy may forward to. Cloud provider APIs cannot be called
    * from the browser directly (CORS, and the API key would have to travel to
    * the tab), so the server forwards those requests; this list is what keeps
-   * that from becoming a way to reach anything else.
+   * that from becoming a way to reach anything else. Bare host names mean
+   * https; an http origin (http://192.168.1.50:1337) is a model server in
+   * the server's network.
    */
   llmAllowedHosts: string[];
   /**
@@ -216,6 +220,66 @@ function parseList(raw: string | undefined, fallback: string[]): string[] {
  */
 export const DEFAULT_LLM_HOSTS = ["api.openai.com", "api.anthropic.com", "api.mistral.ai"];
 
+/**
+ * SCRIBEDOG_LLM_ALLOWED_HOSTS replaces the defaults rather than adding to
+ * them, so an admin can narrow the list down to one gateway. The entry
+ * "default" stands for the built-in providers, which makes adding one host a
+ * matter of "default,<host>" instead of copying a list that may grow.
+ *
+ * Bare host names are reached over https. A model server elsewhere in the
+ * network is written as its origin, http://<address>:<port>, and is accepted
+ * only for an address in the network (see llm/privateAddress.ts): plain http
+ * to anywhere else would carry the document unencrypted across the internet.
+ */
+function parseLlmAllowedHosts(raw: string | undefined): string[] {
+  const entries = parseList(raw, ["default"]).flatMap((entry): string[] => {
+    if (entry.toLowerCase() === "default") {
+      return DEFAULT_LLM_HOSTS;
+    }
+
+    if (!entry.includes("://")) {
+      return [entry.toLowerCase()];
+    }
+
+    let url: URL;
+
+    try {
+      url = new URL(entry);
+    } catch {
+      throw new ConfigError(`SCRIBEDOG_LLM_ALLOWED_HOSTS entry "${entry}" is not a URL.`);
+    }
+
+    if (url.username || url.password || (url.pathname !== "/" && url.pathname !== "") || url.search || url.hash) {
+      throw new ConfigError(
+        `SCRIBEDOG_LLM_ALLOWED_HOSTS entry "${entry}" must be an address and port only, e.g. "http://192.168.1.50:1337".`
+      );
+    }
+
+    if (url.protocol === "https:") {
+      if (url.port && url.port !== "443") {
+        throw new ConfigError(`SCRIBEDOG_LLM_ALLOWED_HOSTS entry "${entry}" must use the standard https port.`);
+      }
+
+      return [url.hostname];
+    }
+
+    if (url.protocol !== "http:") {
+      throw new ConfigError(`SCRIBEDOG_LLM_ALLOWED_HOSTS entry "${entry}" must be http or https.`);
+    }
+
+    if (!isPrivateNetworkHostname(url.hostname)) {
+      throw new ConfigError(
+        `SCRIBEDOG_LLM_ALLOWED_HOSTS entry "${entry}" uses plain http, which is only allowed for addresses in your own network ` +
+          "(10.x.x.x, 172.16-31.x.x, 192.168.x.x or a name ending in .local, .lan, .home.arpa, .internal or .fritz.box)."
+      );
+    }
+
+    return [url.origin];
+  });
+
+  return [...new Set(entries)];
+}
+
 function parseOrigins(raw: string | undefined): string[] {
   return parseList(raw, []).map((entry) => {
     let url: URL;
@@ -255,7 +319,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     loginLockSeconds: parseInteger(env.SCRIBEDOG_LOGIN_LOCK_SECONDS, 60, "SCRIBEDOG_LOGIN_LOCK_SECONDS"),
     loginLockMaxSeconds: parseInteger(env.SCRIBEDOG_LOGIN_LOCK_MAX_SECONDS, 900, "SCRIBEDOG_LOGIN_LOCK_MAX_SECONDS"),
     allowedOrigins: parseOrigins(env.SCRIBEDOG_ALLOWED_ORIGINS),
-    llmAllowedHosts: parseList(env.SCRIBEDOG_LLM_ALLOWED_HOSTS, DEFAULT_LLM_HOSTS).map((host) => host.toLowerCase()),
+    llmAllowedHosts: parseLlmAllowedHosts(env.SCRIBEDOG_LLM_ALLOWED_HOSTS),
     ...parseSharing(env)
   };
 }

@@ -1,5 +1,6 @@
 import i18n from "@/i18n";
-import { isHttpsUrl, isLocalApiUrl } from "@/lib/aiClient";
+import { isHttpsUrl } from "@/lib/aiClient";
+import { isLoopbackHttpUrl } from "@/lib/networkAddress";
 import { platform, setActiveVaultStorage, SessionError } from "@/platform";
 import { createRemoteVaultStorage } from "@/platform/remote/remoteStorage";
 import {
@@ -58,9 +59,10 @@ export type RemoteVaultEntry = {
 const STORAGE_KEY = "scribedog:remoteVaults";
 
 /**
- * The same rule the AI endpoints follow (assertValidEndpoint in aiClient):
- * HTTPS everywhere except on the machine itself. Returns the URL in the form
- * the identity is built from.
+ * HTTPS everywhere except on the machine itself. Stricter than the local AI
+ * endpoints, which may also sit elsewhere in the user's network: a password
+ * and an access token travel to this server, and they do not cross a network
+ * unencrypted. Returns the URL in the form the identity is built from.
  */
 export function normalizeServerUrl(input: string): string {
   const trimmed = input.trim();
@@ -76,7 +78,7 @@ export function normalizeServerUrl(input: string): string {
     throw new Error(i18n.t("remoteVaults.invalidUrl"));
   }
 
-  if (!isHttpsUrl(url.toString()) && !isLocalApiUrl(url.toString())) {
+  if (!isHttpsUrl(url.toString()) && !isLoopbackHttpUrl(url.toString())) {
     throw new Error(i18n.t("remoteVaults.urlMustBeHttps"));
   }
 

@@ -1,3 +1,5 @@
+import { isPrivateNetworkHostname } from "./privateAddress.js";
+
 /**
  * Which addresses the LLM proxy may forward to.
  *
@@ -5,17 +7,42 @@
  * and the API key would have to travel to the tab to try). That turns the
  * server into something that makes outbound requests on behalf of a client,
  * which is the shape of every SSRF hole, so the rule is an allowlist of exact
- * hosts over HTTPS rather than "anything the client asks for".
+ * entries rather than "anything the client asks for".
  *
- * Local providers (Ollama, Jan.ai, LM Studio) are deliberately not reachable
- * here: on a server "localhost" is the container, not the user's machine. The
- * browser talks to those directly, and forwarding to a LAN address is a
- * separate decision that the plan puts after this stage.
+ * Two kinds of entry (config.ts builds the list):
+ *
+ *  - a bare host name, reached over https on the standard port: the cloud
+ *    providers and any gateway in front of them;
+ *  - an origin like http://192.168.1.50:1337: a model server (Ollama,
+ *    Jan.ai, LM Studio) on another machine in the server's network. Plain http
+ *    is accepted only for addresses in the network (privateAddress.ts), and
+ *    only for the exact host and port the admin wrote down.
+ *
+ * Loopback stays out: on a server "localhost" is the server, not the user's
+ * machine, and the browser talks to a model on the user's machine directly.
  */
 
-export class LlmTargetError extends Error {}
+export class LlmTargetError extends Error {
+  /**
+   * The allowlist entry that would let this target through, when there is
+   * one: the client turns it into the exact line for the server's .env.
+   */
+  constructor(
+    message: string,
+    readonly entry: string | null = null
+  ) {
+    super(message);
+  }
+}
 
-export function assertAllowedTarget(rawUrl: unknown, allowedHosts: readonly string[]): URL {
+function notAllowed(entry: string): LlmTargetError {
+  return new LlmTargetError(
+    `${entry} is not an allowed AI endpoint. Add it to SCRIBEDOG_LLM_ALLOWED_HOSTS (e.g. "default,${entry}") to allow it.`,
+    entry
+  );
+}
+
+export function assertAllowedTarget(rawUrl: unknown, allowed: readonly string[]): URL {
   if (typeof rawUrl !== "string" || rawUrl.trim() === "") {
     throw new LlmTargetError("No target URL given.");
   }
@@ -28,22 +55,32 @@ export function assertAllowedTarget(rawUrl: unknown, allowedHosts: readonly stri
     throw new LlmTargetError(`"${rawUrl}" is not a URL.`);
   }
 
-  if (url.protocol !== "https:") {
-    throw new LlmTargetError("The AI endpoint must use https.");
-  }
-
   if (url.username || url.password) {
     throw new LlmTargetError("The AI endpoint must not carry credentials.");
+  }
+
+  if (url.protocol === "http:") {
+    if (!isPrivateNetworkHostname(url.hostname)) {
+      throw new LlmTargetError("The AI endpoint must use https unless it is in your own network.");
+    }
+
+    if (!allowed.includes(url.origin)) {
+      throw notAllowed(url.origin);
+    }
+
+    return url;
+  }
+
+  if (url.protocol !== "https:") {
+    throw new LlmTargetError("The AI endpoint must use https.");
   }
 
   if (url.port && url.port !== "443") {
     throw new LlmTargetError("The AI endpoint must use the standard https port.");
   }
 
-  if (!allowedHosts.includes(url.hostname.toLowerCase())) {
-    throw new LlmTargetError(
-      `${url.hostname} is not an allowed AI endpoint. Add it to SCRIBEDOG_LLM_ALLOWED_HOSTS if you run your own gateway.`
-    );
+  if (!allowed.includes(url.hostname.toLowerCase())) {
+    throw notAllowed(url.hostname.toLowerCase());
   }
 
   return url;

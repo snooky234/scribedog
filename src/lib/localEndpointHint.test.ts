@@ -57,6 +57,13 @@ describe("explainLocalEndpointFailure", () => {
     );
   });
 
+  it("does not probe a model server elsewhere in the network from the tab", async () => {
+    diagnose.mockResolvedValue("cors");
+
+    expect(await explainLocalEndpointFailure("jan", "http://192.168.1.50:1337", networkError)).toBeNull();
+    expect(diagnose).not.toHaveBeenCalled();
+  });
+
   it("stays out of it when the request works again, on the desktop, for cloud providers and other errors", async () => {
     diagnose.mockResolvedValue("ok" as LocalEndpointDiagnosis);
     expect(await explainLocalEndpointFailure("ollama", "http://localhost:11434", networkError)).toBeNull();

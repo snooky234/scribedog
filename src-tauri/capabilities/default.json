@@ -19,6 +19,14 @@
       "allow": [
         { "url": "http://localhost:*/*" },
         { "url": "http://127.0.0.1:*/*" },
+        { "url": "http://10.([0-9]+).([0-9]+).([0-9]+):*/*" },
+        { "url": "http://172.(1[6-9]|2[0-9]|3[01]).([0-9]+).([0-9]+):*/*" },
+        { "url": "http://192.168.([0-9]+).([0-9]+):*/*" },
+        { "url": "http://*.local:*/*" },
+        { "url": "http://*.lan:*/*" },
+        { "url": "http://*.home.arpa:*/*" },
+        { "url": "http://*.internal:*/*" },
+        { "url": "http://*.fritz.box:*/*" },
         { "url": "https://api.openai.com/*" },
         { "url": "https://api.anthropic.com/*" },
         { "url": "https://api.mistral.ai/*" }

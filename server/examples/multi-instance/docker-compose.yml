@@ -43,6 +43,7 @@ services:
       SCRIBEDOG_USER: ${PERSON1_USER:-}
       SCRIBEDOG_SHARED_PATH: /shared
       SCRIBEDOG_SHARED_GID: ${SHARED_GID:-1500}
+      SCRIBEDOG_LLM_ALLOWED_HOSTS: ${SCRIBEDOG_LLM_ALLOWED_HOSTS:-}
     volumes:
       - ./${PERSON1_DATA_DIR:-person1-data}:/data
       - ./${SHARED_DIR:-shared}:/shared
@@ -57,6 +58,7 @@ services:
       SCRIBEDOG_USER: ${PERSON2_USER:-}
       SCRIBEDOG_SHARED_PATH: /shared
       SCRIBEDOG_SHARED_GID: ${SHARED_GID:-1500}
+      SCRIBEDOG_LLM_ALLOWED_HOSTS: ${SCRIBEDOG_LLM_ALLOWED_HOSTS:-}
     volumes:
       - ./${PERSON2_DATA_DIR:-person2-data}:/data
       - ./${SHARED_DIR:-shared}:/shared

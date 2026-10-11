@@ -3,6 +3,7 @@ import { platform } from "@/platform";
 
 import { isCloudProvider, PROVIDER_DISPLAY_NAME } from "@/lib/aiClient";
 import { formatAiError } from "@/lib/editor/errorMessages";
+import { isPrivateNetworkHttpUrl } from "@/lib/networkAddress";
 import type { AiProvider, AiSettings } from "@/store/useAiSettingsStore";
 
 /**
@@ -30,7 +31,8 @@ const NETWORK_FAILURE = /failed to fetch|networkerror|network request failed|loa
 /**
  * Turns the browser's "Failed to fetch" for a local model server into a
  * sentence that says what to do. Null when this is not that case: not the
- * browser, a cloud provider, or an error that already says something.
+ * browser, a cloud provider, a server in the network (the proxy explains its
+ * own refusals), or an error that already says something.
  */
 export async function explainLocalEndpointFailure(
   provider: AiProvider,
@@ -40,7 +42,9 @@ export async function explainLocalEndpointFailure(
   const localModels = platform.localModels;
   const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
 
-  if (!localModels || isCloudProvider(provider) || !NETWORK_FAILURE.test(message)) {
+  // A model server elsewhere in the network is reached through the ScribeDog
+  // server, so probing it from the tab would diagnose the wrong path.
+  if (!localModels || isCloudProvider(provider) || isPrivateNetworkHttpUrl(apiUrl) || !NETWORK_FAILURE.test(message)) {
     return null;
   }
 

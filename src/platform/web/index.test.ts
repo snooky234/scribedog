@@ -20,6 +20,7 @@ const { platform } = await import("./index");
 const { secretRef } = await import("@/platform/secretRef");
 const { LLM_TARGET_HEADER } = await import("./serverApi");
 const { SessionError } = await import("@/platform/errors");
+const { default: i18n } = await import("@/i18n");
 
 const fetchMock = vi.fn();
 
@@ -108,6 +109,43 @@ describe("web platform http", () => {
 
     await platform.http.fetch(`${window.location.origin}/api/health`);
     expect(fetchMock.mock.calls[1][0]).toBe(`${window.location.origin}/api/health`);
+  });
+
+  // An https page may not call a plain-http address in the network at all.
+  it("sends a model server elsewhere in the network through the proxy", async () => {
+    await platform.http.fetch("http://192.168.1.50:1337/v1/models", { method: "GET" });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+
+    expect(url).toBe("/api/llm/request");
+    expect((init.headers as Headers).get(LLM_TARGET_HEADER)).toBe("http://192.168.1.50:1337/v1/models");
+  });
+
+  it("turns a refused target into the line the server admin needs", async () => {
+    const t = vi.spyOn(i18n, "t");
+
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: "endpoint_not_allowed", message: "no", entry: "http://192.168.1.50:1337" }), {
+        status: 400,
+        headers: { "content-type": "application/json" }
+      })
+    );
+
+    await expect(platform.http.fetch("http://192.168.1.50:1337/v1/chat/completions", { method: "POST" })).rejects.toThrow();
+    expect(t).toHaveBeenCalledWith("aiClient.serverEndpointNotAllowed", {
+      host: "192.168.1.50:1337",
+      line: "SCRIBEDOG_LLM_ALLOWED_HOSTS=default,http://192.168.1.50:1337"
+    });
+
+    t.mockRestore();
+  });
+
+  it("hands any other proxy error back as a response", async () => {
+    fetchMock.mockResolvedValue(new Response('{"error":"upstream_unreachable"}', { status: 502 }));
+
+    const response = await platform.http.fetch("http://192.168.1.50:1337/v1/models", { method: "GET" });
+
+    expect(response.status).toBe(502);
   });
 });
 

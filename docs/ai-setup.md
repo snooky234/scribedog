@@ -51,6 +51,24 @@ You need exactly one of these:
 > GPU. That is enough to rewrite paragraphs, fix tone and grammar, draft a
 > letter or summarize notes.
 
+### A runner on another computer
+
+The runner does not have to run on the computer you write on. If the PC with
+the graphics card sits elsewhere in your home, run the runner there and enter
+its network address in **AI settings**, for example
+`http://192.168.1.50:1337` for Jan.ai. Two things on that computer:
+
+- The runner has to listen on the network, not only on its own machine.
+  Jan.ai: set the server host to `0.0.0.0` in the Local API Server settings.
+  Ollama: start it with `OLLAMA_HOST=0.0.0.0`. LM Studio: enable "Serve on
+  Local Network".
+- Its firewall has to let the port through.
+
+ScribeDog accepts addresses in your own network (`192.168.x.x`, `10.x.x.x`,
+`172.16.x.x` to `172.31.x.x`, or a name ending in `.local`, `.lan`,
+`.home.arpa`, `.internal` or `.fritz.box`). Plain http to an address on the
+internet is refused, since it would carry your text unencrypted.
+
 ### Which model size?
 
 | Model size | What to expect |

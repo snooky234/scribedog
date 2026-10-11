@@ -2,6 +2,7 @@ import { platform } from "@/platform";
 
 import i18n, { getCurrentLanguageEnglishName } from "@/i18n";
 import { recoverInlineToolCall } from "@/lib/chat/inlineToolCalls";
+import { isLoopbackHttpUrl, isPrivateNetworkHttpUrl } from "@/lib/networkAddress";
 import { type AiProvider, type AiSettings, type AiThinkingMode } from "@/store/useAiSettingsStore";
 
 export type AiActionMode = "insert" | "rewrite" | "check";
@@ -72,20 +73,13 @@ export function supportsEmbeddings(provider: AiProvider): boolean {
   return EMBEDDING_PROVIDERS.includes(provider);
 }
 
+/**
+ * A local provider's endpoint: plain http to this machine or to another one in
+ * the user's own network (see @/lib/networkAddress). Typing the address is the
+ * consent; the check keeps an unencrypted request from reaching the internet.
+ */
 export function isLocalApiUrl(apiUrl: string): boolean {
-  try {
-    const url = new URL(apiUrl);
-
-    return (
-      url.protocol === "http:" &&
-      (url.hostname === "localhost" ||
-        url.hostname === "127.0.0.1" ||
-        url.hostname === "[::1]" ||
-        url.hostname.endsWith(".localhost"))
-    );
-  } catch {
-    return false;
-  }
+  return isLoopbackHttpUrl(apiUrl) || isPrivateNetworkHttpUrl(apiUrl);
 }
 
 export function isHttpsUrl(apiUrl: string): boolean {
@@ -97,7 +91,7 @@ export function isHttpsUrl(apiUrl: string): boolean {
 }
 
 // Cloud providers require HTTPS + an API key; local providers must stay on
-// localhost/127.0.0.1 (see README privacy notice).
+// this machine or in the user's own network (see README privacy notice).
 export function assertValidEndpoint(provider: AiProvider, apiUrl: string, apiKey: string): void {
   if (isCloudProvider(provider)) {
     if (!isHttpsUrl(apiUrl)) {
@@ -426,6 +420,13 @@ async function extractResponseErrorMessage(response: Response): Promise<string> 
 
     if (typeof payload === "object" && payload !== null) {
       const errorField = (payload as { error?: unknown }).error;
+      const topMessage = (payload as { message?: unknown }).message;
+
+      // {"error": "<code>", "message": "<sentence>"} (the ScribeDog server's
+      // own shape, e.g. from its AI proxy): the sentence is what helps.
+      if (typeof errorField === "string" && typeof topMessage === "string" && topMessage.trim()) {
+        return topMessage.trim();
+      }
 
       if (typeof errorField === "string" && errorField.trim()) {
         return errorField.trim();
@@ -466,9 +467,11 @@ const REQUEST_TIMEOUT_MS = 180_000;
 // get an explicit localhost origin; being allowed to override that header at all
 // is what the plugin's `unsafe-headers` feature is turned on for in Cargo.toml.
 //
-// Only local endpoints: assertValidEndpoint has already pinned those to
-// localhost/127.0.0.1, so the claim is true rather than forged. Cloud endpoints
-// keep the webview origin — none of them inspect it.
+// Only local endpoints: assertValidEndpoint has already pinned those to this
+// machine or the user's own network. For a model server on another machine
+// the header still names localhost, because that is the origin Ollama's
+// default allowlist accepts; the request does come from the user's own app.
+// Cloud endpoints keep the webview origin, none of them inspect it.
 const LOCAL_ENDPOINT_ORIGIN = "http://localhost";
 
 type HttpFetchInit = Omit<RequestInit, "headers"> & { headers?: Record<string, string> };

@@ -19,14 +19,18 @@ provider.
 ## AI providers
 
 - **Local providers** (Ollama, Jan.ai, LM Studio): the only network call is
-  to the local endpoint you configure. With a local model, no byte leaves
-  your computer.
+  to the local endpoint you configure. With a model on your own computer, no
+  byte leaves it; with a model on another machine in your network, your text
+  goes to that machine and nowhere else.
 - **Cloud providers** (OpenAI, Anthropic, Mistral): bring your own key. Your
   text goes to that provider, under its terms and privacy policy. The
   settings dialog shows a clear notice whenever a cloud provider is selected.
 
 Cloud endpoints must use HTTPS and need an API key. Local endpoints must
-resolve to your own machine.
+point to your own machine or to an address in your own network
+(`192.168.x.x`, `10.x.x.x`, `172.16.x.x` to `172.31.x.x`, or a name ending in
+`.local`, `.lan`, `.home.arpa`, `.internal` or `.fritz.box`). A plain http
+address on the internet is refused.
 
 ## API keys
 
