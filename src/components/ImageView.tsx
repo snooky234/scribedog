@@ -9,6 +9,7 @@ import { PencilLine, Plus } from "lucide-react";
 
 import { isScribeDogDrawingSvg } from "@/lib/drawing/drawingSvg";
 import { EditorFileContext } from "@/lib/editorFileContext";
+import { startImageLongPress } from "@/lib/editor/imageLongPressDrag";
 import { subscribeImageFileChanged } from "@/lib/editor/imageRevisions";
 import { ABSOLUTE_URL_PATTERN, guessImageMimeType } from "@/lib/fileSystem";
 
@@ -38,6 +39,7 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
   const absolutePathRef = useRef<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const dragWidthRef = useRef<number | null>(null);
+  const cancelLongPressRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     absolutePathRef.current = null;
@@ -102,6 +104,8 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
       }),
     []
   );
+
+  useEffect(() => () => cancelLongPressRef.current?.(), []);
 
   const canEditDrawing = drawingPath !== null && onEditDrawing !== null && editor.isEditable;
 
@@ -177,6 +181,18 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
     event.preventDefault();
     const { state } = editor;
     editor.view.dispatch(state.tr.setSelection(NodeSelection.create(state.doc, pos)));
+
+    // Holding the image instead of tapping it picks it up to move it.
+    if (editor.isEditable) {
+      cancelLongPressRef.current?.();
+      cancelLongPressRef.current = startImageLongPress(
+        editor.view,
+        event.nativeEvent,
+        getPos,
+        event.currentTarget,
+        imgRef.current
+      );
+    }
   };
 
   // Two images in a row have no text position between them. With a keyboard

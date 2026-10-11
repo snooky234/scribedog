@@ -45,6 +45,11 @@ On a touch screen every row in the file tree has a "…" button for its menu
 (a long press works on Android too), and **Move to…** in that menu does what
 dragging does with a mouse.
 
+To move an image, hold your finger on it for a moment until a small copy
+lifts off, then drag it where it should go; a line shows where it will land,
+and the note scrolls when you get close to the top or bottom edge. A quick
+swipe over an image still just scrolls. The move is one step for undo.
+
 Selecting text brings up the system's own menu, with its copy entry, as in
 any other app; that copy is the one that keeps the formatting. The editor's
 own selection menu behind the right mouse button stays closed on touch, since

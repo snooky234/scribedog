@@ -902,6 +902,52 @@
   }
 }
 
+/* Moving an image with a long press (imageLongPressDrag.ts). The picture
+   that follows the finger and the insertion line live on <body>, outside the
+   editor, so a scrolling note does not drag them along. A long press on an
+   image must not raise the browser's own image menu (iOS) or select it as
+   text instead. */
+@media (pointer: coarse) {
+  .editor-image-wrapper .editor-image-wrapper__img {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+.editor-image-wrapper[data-dragging] {
+  opacity: 0.4;
+}
+
+.image-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  max-width: none;
+  margin: 0;
+  border-radius: 0.5rem;
+  opacity: 0.85;
+  box-shadow: 0 4px 16px rgba(var(--on-image-edge-rgb), 0.35);
+  pointer-events: none;
+}
+
+.image-drag-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: rgb(var(--accent-rgb));
+  pointer-events: none;
+}
+
+.image-drag-indicator[hidden] {
+  display: none;
+}
+
 /* The gap cursor: the caret ProseMirror places between two block nodes that
    have no text position of their own — e.g. two images in a row, or the end
    of the document after a trailing image. StarterKit enables the extension,

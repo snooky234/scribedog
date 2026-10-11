@@ -4,6 +4,7 @@ import { CellSelection } from "@tiptap/pm/tables";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 
 import i18n from "@/i18n";
+import { edgeStep, editorScrollContainer } from "@/lib/editor/dragAutoscroll";
 import {
   currentTableCell,
   hasMergedCells,
@@ -53,10 +54,6 @@ const GRIPS_CLASS = "table-grips";
 const DRAG_THRESHOLD_PX = 5;
 // Gap between a grip and the table edge.
 const GRIP_GAP_PX = 3;
-// Distance from a scroll edge at which a drag starts scrolling, and the
-// fastest step per frame.
-const AUTOSCROLL_EDGE_PX = 40;
-const AUTOSCROLL_MAX_STEP_PX = 14;
 
 const LABEL_KEYS: Record<GripKind, string> = {
   row: "tableMenu.gripRow",
@@ -106,23 +103,6 @@ function tableElements(view: EditorView, tablePos: number): TableElements | null
 
   const table = dom.querySelector("table");
   return table ? { wrapper: dom, table } : null;
-}
-
-function scrollContainer(view: EditorView): HTMLElement | null {
-  return view.dom.closest<HTMLElement>(".editor-view__scroll");
-}
-
-// Scroll speed grows towards the edge; zero outside the edge zone.
-function edgeStep(position: number, start: number, end: number): number {
-  if (position < start + AUTOSCROLL_EDGE_PX) {
-    return -Math.ceil(((start + AUTOSCROLL_EDGE_PX - position) / AUTOSCROLL_EDGE_PX) * AUTOSCROLL_MAX_STEP_PX);
-  }
-
-  if (position > end - AUTOSCROLL_EDGE_PX) {
-    return Math.ceil(((position - end + AUTOSCROLL_EDGE_PX) / AUTOSCROLL_EDGE_PX) * AUTOSCROLL_MAX_STEP_PX);
-  }
-
-  return 0;
 }
 
 class TableGripsView {
@@ -415,7 +395,7 @@ class TableGripsView {
       return;
     }
 
-    const scroller = scrollContainer(this.view);
+    const scroller = editorScrollContainer(this.view);
 
     if (scroller) {
       const rect = scroller.getBoundingClientRect();

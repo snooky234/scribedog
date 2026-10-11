@@ -18,7 +18,8 @@ The editor is built on [TipTap](https://tiptap.dev/) and ProseMirror.
 - **Tables**, with a visual grid picker and a context menu for rows and
   columns
 - **Images**, shown inline. Resize by dragging, and the width is saved back
-  into the Markdown.
+  into the Markdown. Drag an image to move it; on a touch screen, hold it
+  for a moment first.
 - **Drawings**, sketched by hand right in the note (see [Drawings](#drawings))
 - **Code blocks**, with a one-click copy button
 - An **emoji picker** with search, including keywords in your language
