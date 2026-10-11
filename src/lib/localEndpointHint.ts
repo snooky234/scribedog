@@ -3,7 +3,7 @@ import { platform } from "@/platform";
 
 import { isCloudProvider, PROVIDER_DISPLAY_NAME } from "@/lib/aiClient";
 import { formatAiError } from "@/lib/editor/errorMessages";
-import { isPrivateNetworkHttpUrl } from "@/lib/networkAddress";
+import { isLoopbackHttpUrl, isPrivateNetworkHttpUrl } from "@/lib/networkAddress";
 import type { AiProvider, AiSettings } from "@/store/useAiSettingsStore";
 
 /**
@@ -79,4 +79,30 @@ export async function describeAiError(error: unknown, settings: Pick<AiSettings,
   const explanation = await explainLocalEndpointFailure(settings.provider, settings.apiUrl, error).catch(() => null);
 
   return explanation ?? formatAiError(error, i18n.t);
+}
+
+/**
+ * The line under an API key field. A cloud provider always needs the key; a
+ * local model server only when it is set up to ask for one, and where it runs
+ * decides what the user should know about it: in the network it travels over
+ * plain http, and in the browser a server on this device never gets a stored
+ * key, because the tab only holds a placeholder for it (see web/index.ts).
+ */
+export function apiKeyHint(provider: AiProvider, apiUrl: string): string {
+  if (isCloudProvider(provider)) {
+    return i18n.t(platform.features.session ? "settingsDialog.apiKeyServerHint" : "settingsDialog.apiKeyShort");
+  }
+
+  const name = PROVIDER_DISPLAY_NAME[provider];
+  const url = apiUrl.trim();
+
+  if (platform.localModels && isLoopbackHttpUrl(url)) {
+    return i18n.t("settingsDialog.apiKeyLocalBrowserHint", { provider: name });
+  }
+
+  if (isPrivateNetworkHttpUrl(url)) {
+    return i18n.t("settingsDialog.apiKeyNetworkHint", { provider: name });
+  }
+
+  return i18n.t("settingsDialog.apiKeyLocalHint", { provider: name });
 }

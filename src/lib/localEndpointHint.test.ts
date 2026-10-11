@@ -6,8 +6,9 @@ vi.mock("@tauri-apps/api/path", () => ({ join: async (...parts: string[]) => par
 vi.mock("@tauri-apps/plugin-fs", () => ({}));
 
 const diagnose = vi.fn<LocalModelsApi["diagnose"]>();
-const platform: { localModels: LocalModelsApi | null } = {
-  localModels: { origin: "https://notes.example.com", diagnose }
+const platform: { localModels: LocalModelsApi | null; features: { session: boolean } } = {
+  localModels: { origin: "https://notes.example.com", diagnose },
+  features: { session: true }
 };
 
 vi.mock("@/platform", () => ({ platform, PlatformUnavailableError: class extends Error {} }));
@@ -17,7 +18,9 @@ vi.mock("@/i18n", () => ({
   default: { t: (key: string, vars?: Record<string, string>) => `${key} ${JSON.stringify(vars ?? {})}` }
 }));
 
-const { describeAiError, explainLocalEndpointFailure, localOriginInstruction } = await import("./localEndpointHint");
+const { apiKeyHint, describeAiError, explainLocalEndpointFailure, localOriginInstruction } = await import(
+  "./localEndpointHint"
+);
 
 const networkError = new TypeError("Failed to fetch");
 
@@ -96,5 +99,35 @@ describe("describeAiError", () => {
 
     expect(text).toContain("Failed to fetch");
     expect(text).toContain("editor.aiTipConnection");
+  });
+});
+
+describe("apiKeyHint", () => {
+  beforeEach(() => {
+    platform.localModels = { origin: "https://notes.example.com", diagnose };
+    platform.features = { session: true };
+  });
+
+  it("keeps the cloud wording, per shell", () => {
+    expect(apiKeyHint("openai", "https://api.openai.com")).toContain("settingsDialog.apiKeyServerHint");
+
+    platform.features = { session: false };
+    expect(apiKeyHint("openai", "https://api.openai.com")).toContain("settingsDialog.apiKeyShort");
+  });
+
+  it("says a stored key does not reach a model server on this device from the browser", () => {
+    expect(apiKeyHint("jan", " http://localhost:1337 ")).toContain("settingsDialog.apiKeyLocalBrowserHint");
+  });
+
+  it("says the key travels over plain http within the network", () => {
+    expect(apiKeyHint("jan", "http://192.168.1.50:1337")).toContain("settingsDialog.apiKeyNetworkHint");
+  });
+
+  it("calls the key optional on the desktop", () => {
+    platform.localModels = null;
+    platform.features = { session: false };
+
+    expect(apiKeyHint("ollama", "http://localhost:11434")).toContain("settingsDialog.apiKeyLocalHint");
+    expect(apiKeyHint("ollama", "http://localhost:11434")).toContain('"provider":"Ollama"');
   });
 });

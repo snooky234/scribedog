@@ -110,6 +110,13 @@ export function assertValidEndpoint(provider: AiProvider, apiUrl: string, apiKey
   }
 }
 
+// Every provider but Anthropic takes its key as a bearer token: the cloud APIs
+// require one, and a local model server may ask for one too (Jan.ai's API key,
+// LM Studio's token, an Ollama behind a reverse proxy). No key, no header. The
+// key is stored per provider (useAiSettingsStore, useRagEmbeddingStore), so a
+// cloud key never reaches a local server under that server's name, and
+// assertValidEndpoint keeps a local one on this machine or in the user's own
+// network.
 function bearerAuthHeaders(apiKey: string): Record<string, string> {
   return apiKey.trim() ? { Authorization: `Bearer ${apiKey.trim()}` } : {};
 }
@@ -556,7 +563,7 @@ async function fetchAvailableModelsInternal(
   assertValidEndpoint(provider, apiUrl, apiKey);
 
   if (provider === "ollama") {
-    const payload = (await getJson(new URL("/api/tags", apiUrl).toString(), signal)) as {
+    const payload = (await getJson(new URL("/api/tags", apiUrl).toString(), signal, bearerAuthHeaders(apiKey))) as {
       models?: Array<{ name?: string; model?: string }>;
     };
 
@@ -578,10 +585,7 @@ async function fetchAvailableModelsInternal(
   const payload = (await getJson(
     new URL("/v1/models", apiUrl).toString(),
     signal,
-    // Local providers (jan/lmstudio) deliberately never get an auth header: a
-    // leftover cloud API key from a previously selected provider must not be
-    // forwarded to the local server.
-    isCloudProvider(provider) ? bearerAuthHeaders(apiKey) : {}
+    bearerAuthHeaders(apiKey)
   )) as { data?: Array<{ id?: string }> };
 
   return (payload.data ?? []).map((entry) => entry.id ?? "").filter((id): id is string => Boolean(id));
@@ -797,7 +801,12 @@ async function requestOllama(
     body.think = false;
   }
 
-  const payload = await postJson(new URL("/api/chat", settings.apiUrl).toString(), body, undefined, signal);
+  const payload = await postJson(
+    new URL("/api/chat", settings.apiUrl).toString(),
+    body,
+    bearerAuthHeaders(settings.apiKey),
+    signal
+  );
 
   return extractResponseContent(payload, true);
 }
@@ -849,7 +858,8 @@ export async function streamOllamaMarkdown(
       const message = payload.message as { content?: string } | undefined;
       return message?.content ?? null;
     },
-    signal
+    signal,
+    bearerAuthHeaders(settings.apiKey)
   );
 }
 
@@ -859,10 +869,7 @@ export async function streamOllamaMarkdown(
 // extension, which only local backends (Jan/LM Studio) understand — cloud
 // providers might reject an unknown field.
 function buildOpenAiCompatibleAuthHeaders(settings: AiSettings): Record<string, string> {
-  // See fetchAvailableModelsInternal: a cloud key must never be sent to a
-  // local provider, even if left over in dialog state from a previously
-  // selected cloud provider.
-  return isCloudProvider(settings.provider) ? bearerAuthHeaders(settings.apiKey) : {};
+  return bearerAuthHeaders(settings.apiKey);
 }
 
 function supportsThinkingExtension(provider: AiProvider): boolean {
@@ -2590,7 +2597,7 @@ async function generateAiChatStepRaw(
     const payload = (await postJson(
       new URL("/api/chat", settings.apiUrl).toString(),
       { ...ollamaChatStepBody(settings, request), stream: false },
-      undefined,
+      bearerAuthHeaders(settings.apiKey),
       signal
     )) as {
       message?: {
@@ -2876,7 +2883,7 @@ async function streamOllamaChatStep(
   await consumeChatStepStream(
     new URL("/api/chat", settings.apiUrl).toString(),
     { ...ollamaChatStepBody(settings, request), stream: true },
-    undefined,
+    bearerAuthHeaders(settings.apiKey),
     signal,
     (line) => {
       const parsed = parseStreamLinePayload(line);
@@ -3142,7 +3149,8 @@ async function streamOllamaChat(
       const message = payload.message as { content?: string } | undefined;
       return message?.content ?? null;
     },
-    signal
+    signal,
+    bearerAuthHeaders(settings.apiKey)
   );
 }
 
@@ -3449,7 +3457,7 @@ export async function generateOcrMarkdown(
           num_ctx: settings.contextLength
         }
       },
-      undefined,
+      bearerAuthHeaders(settings.apiKey),
       signal
     );
 
@@ -3584,7 +3592,7 @@ function parseEmbeddingVectors(payload: unknown, expectedCount: number): number[
  *
  * Routed through this file rather than through Rust for one reason:
  * assertValidEndpoint below is the same guard the chat gets — cloud means
- * HTTPS plus a key, local means localhost. A second endpoint check somewhere
+ * HTTPS plus a key, local means this machine or the user's own network. A second endpoint check somewhere
  * else is the likeliest place for this feature to grow a security hole.
  */
 export async function embedTexts(
@@ -3610,7 +3618,7 @@ export async function embedTexts(
     const payload = await postJson(
       new URL("/api/embed", settings.apiUrl).toString(),
       { model: settings.model, input: texts },
-      undefined,
+      bearerAuthHeaders(settings.apiKey),
       signal
     );
 
@@ -3620,9 +3628,7 @@ export async function embedTexts(
   const payload = await postJson(
     new URL("/v1/embeddings", settings.apiUrl).toString(),
     { model: settings.model, input: texts },
-    // Local providers never get an auth header — a leftover cloud key must not
-    // travel to the local server (same rule as fetchAvailableModelsInternal).
-    isCloudProvider(settings.provider) ? bearerAuthHeaders(settings.apiKey) : {},
+    bearerAuthHeaders(settings.apiKey),
     signal
   );
 

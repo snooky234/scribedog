@@ -52,7 +52,7 @@ import {
 } from "@/store/useAiSettingsStore";
 import { persistLanguage, type SupportedLanguage } from "@/i18n";
 import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
-import { describeAiError, localOriginInstruction } from "@/lib/localEndpointHint";
+import { apiKeyHint, describeAiError, localOriginInstruction } from "@/lib/localEndpointHint";
 import { isPrivateNetworkHttpUrl, serverAllowlistLine } from "@/lib/networkAddress";
 import { isWindowsPlatform } from "@/lib/platform";
 import { platform } from "@/platform";
@@ -852,60 +852,56 @@ export function SettingsDialog({
                     />
                   </SettingRow>
 
-                  {isCloudProvider(provider) ? (
-                    <SettingRow
-                      full
-                      label={t("settingsDialog.apiKey")}
-                      hint={
-                        platform.features.session
-                          ? t("settingsDialog.apiKeyServerHint")
-                          : t("settingsDialog.apiKeyShort")
-                      }
-                    >
-                      {({ id, describedBy }) => (
-                        <>
-                          <div className="ai-dialog__model-field">
-                            {/* A stored key the server keeps to itself shows as an
-                                empty field with a "stored" placeholder: there is no
-                                value to display, and typing replaces it. */}
-                            <input
-                              id={id}
-                              type={showApiKey && !isApiKeyStored ? "text" : "password"}
-                              value={isApiKeyStored ? "" : apiKey}
-                              autoComplete="off"
-                              onChange={(event) => setApiKey(event.target.value)}
-                              onBlur={() => void loadModels(provider, apiUrl, apiKey)}
-                              placeholder={
-                                isApiKeyStored ? t("settingsDialog.apiKeyStored") : t("settingsDialog.apiKeyPlaceholder")
-                              }
-                              aria-describedby={describedBy}
-                              data-testid="api-key"
-                            />
-                            {isApiKeyStored ? null : (
-                              <button
-                                type="button"
-                                className="ai-dialog__model-refresh"
-                                onClick={() => setShowApiKey((value) => !value)}
-                                aria-label={t(showApiKey ? "settingsDialog.hideApiKey" : "settingsDialog.showApiKey")}
-                                title={t(showApiKey ? "settingsDialog.hideApiKey" : "settingsDialog.showApiKey")}
-                              >
-                                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                              </button>
-                            )}
-                          </div>
-                          {credentialsStatus.state === "locked" ? (
-                            <span className="ai-dialog__error" role="status">
-                              {t("settingsDialog.apiKeyLocked")}
-                            </span>
-                          ) : credentialsStatus.discardedAt ? (
-                            <span className="ai-dialog__error" role="status">
-                              {t("settingsDialog.apiKeyDiscarded")}
-                            </span>
-                          ) : null}
-                        </>
-                      )}
-                    </SettingRow>
-                  ) : null}
+                  {/* Every provider: a cloud API needs the key, a local model
+                      server only when it is set up to ask for one. */}
+                  <SettingRow
+                    full
+                    label={t("settingsDialog.apiKey")}
+                    hint={apiKeyHint(provider, apiUrl)}
+                  >
+                    {({ id, describedBy }) => (
+                      <>
+                        <div className="ai-dialog__model-field">
+                          {/* A stored key the server keeps to itself shows as an
+                              empty field with a "stored" placeholder: there is no
+                              value to display, and typing replaces it. */}
+                          <input
+                            id={id}
+                            type={showApiKey && !isApiKeyStored ? "text" : "password"}
+                            value={isApiKeyStored ? "" : apiKey}
+                            autoComplete="off"
+                            onChange={(event) => setApiKey(event.target.value)}
+                            onBlur={() => void loadModels(provider, apiUrl, apiKey)}
+                            placeholder={
+                              isApiKeyStored ? t("settingsDialog.apiKeyStored") : t("settingsDialog.apiKeyPlaceholder")
+                            }
+                            aria-describedby={describedBy}
+                            data-testid="api-key"
+                          />
+                          {isApiKeyStored ? null : (
+                            <button
+                              type="button"
+                              className="ai-dialog__model-refresh"
+                              onClick={() => setShowApiKey((value) => !value)}
+                              aria-label={t(showApiKey ? "settingsDialog.hideApiKey" : "settingsDialog.showApiKey")}
+                              title={t(showApiKey ? "settingsDialog.hideApiKey" : "settingsDialog.showApiKey")}
+                            >
+                              {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          )}
+                        </div>
+                        {credentialsStatus.state === "locked" ? (
+                          <span className="ai-dialog__error" role="status">
+                            {t("settingsDialog.apiKeyLocked")}
+                          </span>
+                        ) : credentialsStatus.discardedAt ? (
+                          <span className="ai-dialog__error" role="status">
+                            {t("settingsDialog.apiKeyDiscarded")}
+                          </span>
+                        ) : null}
+                      </>
+                    )}
+                  </SettingRow>
 
                   {isCloudProvider(provider) ? (
                     <div className="ai-dialog__field--full ai-dialog__notice" role="note">

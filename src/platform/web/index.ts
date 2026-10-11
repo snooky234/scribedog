@@ -2,7 +2,7 @@ import i18n from "@/i18n";
 import { guessImageMimeType } from "@/lib/imageMimeTypes";
 import { isPrivateNetworkHttpUrl, serverAllowlistLine } from "@/lib/networkAddress";
 import { SessionError } from "@/platform/errors";
-import { secretRef } from "@/platform/secretRef";
+import { containsSecretRef, secretRef } from "@/platform/secretRef";
 import type { CredentialsStatus, Platform } from "@/platform/types";
 
 import { browserDownloads } from "./downloads";
@@ -68,6 +68,28 @@ function llmTarget(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * A request the tab sends itself (a model server on the user's own machine)
+ * cannot carry a stored key: only the server knows it, and the tab holds the
+ * placeholder. Sending that would hand the model server a string that is not
+ * a key, so the header is left out and the server sees an unauthenticated
+ * request. The settings dialog says so where the key is entered.
+ */
+function withoutSecretRefs(init: RequestInit | undefined): RequestInit | undefined {
+  if (!init?.headers) {
+    return init;
+  }
+
+  const headers = new Headers(init.headers);
+  const placeholders = [...headers].filter(([, value]) => containsSecretRef(value)).map(([name]) => name);
+
+  for (const name of placeholders) {
+    headers.delete(name);
+  }
+
+  return { ...init, headers };
 }
 
 /**
@@ -166,7 +188,7 @@ export const platform: Platform = {
       const target = llmTarget(url);
 
       if (!target) {
-        return window.fetch(url, init);
+        return window.fetch(url, withoutSecretRefs(init));
       }
 
       const headers = new Headers(init?.headers);

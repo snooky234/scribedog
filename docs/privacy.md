@@ -36,7 +36,9 @@ address on the internet is refused.
 
 Keys are stored in your operating system credential store: the Windows
 Credential Manager or the Linux Secret Service. They are not written to disk
-in plain text, and they are sent only to the provider you chose.
+in plain text, and they are sent only to the provider you chose. That
+includes a key for a local runner, if you set one: it goes to that runner and
+nowhere else.
 
 ## The knowledge base
 

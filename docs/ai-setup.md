@@ -13,7 +13,7 @@ are stored on your device.
 |---|---|---|
 | Where the model runs | On your computer | At the provider |
 | Your text leaves the device | No | Yes, to that provider |
-| Account and API key | Not needed | Your own API key |
+| Account and API key | Not needed (optional, if your runner asks for one) | Your own API key |
 | Cost | Free | Pay per use |
 
 If privacy is the point for you, use a local model. Cloud providers are
@@ -68,6 +68,19 @@ ScribeDog accepts addresses in your own network (`192.168.x.x`, `10.x.x.x`,
 `172.16.x.x` to `172.31.x.x`, or a name ending in `.local`, `.lan`,
 `.home.arpa`, `.internal` or `.fritz.box`). Plain http to an address on the
 internet is refused, since it would carry your text unencrypted.
+
+### An API key for the runner
+
+A runner does not need a key out of the box. If you set one up, for example
+the API key in Jan.ai's Local API Server settings, an LM Studio token, or an
+Ollama behind a reverse proxy that checks one, enter it in the **API key**
+field in **AI settings**. ScribeDog sends it as a bearer token, the same way
+as to a cloud provider.
+
+The key is stored per provider in your operating system credential store, so
+your Jan.ai key and your OpenAI key never get mixed up. The knowledge base
+keeps its own key next to its own connection. On the way to a runner in your
+network the key travels over plain http, just like your text.
 
 ### Which model size?
 

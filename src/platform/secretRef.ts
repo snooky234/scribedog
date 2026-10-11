@@ -32,3 +32,8 @@ export function secretRef(id: string): string {
 export function isSecretRef(value: string | null | undefined): boolean {
   return typeof value === "string" && value.startsWith(PREFIX) && value.endsWith(SUFFIX);
 }
+
+/** True when a placeholder appears anywhere in `value`, e.g. "Bearer {{scribedog-secret:jan}}". */
+export function containsSecretRef(value: string): boolean {
+  return value.includes(PREFIX);
+}

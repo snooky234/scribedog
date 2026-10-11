@@ -7,10 +7,10 @@ import { RagRebuildDialog } from "@/components/rag/RagRebuildDialog";
 import {
   EMBEDDING_PROVIDERS,
   fetchAvailableModels,
-  isCloudProvider,
   PROVIDER_DEFAULT_API_URL,
   PROVIDER_DISPLAY_NAME
 } from "@/lib/aiClient";
+import { apiKeyHint } from "@/lib/localEndpointHint";
 import { type AiProvider } from "@/store/useAiSettingsStore";
 import { useRagIndexStore } from "@/store/useRagIndexStore";
 import {
@@ -179,31 +179,29 @@ export function RagConnectionSettings({ includedFileCount }: { includedFileCount
           />
         </label>
 
-        {isCloudProvider(form.provider) ? (
-          <label className="ai-dialog__field ai-dialog__field--full">
-            <span>{t("settingsDialog.apiKey")}</span>
-            <div className="ai-dialog__model-field">
-              <input
-                type={showApiKey ? "text" : "password"}
-                value={form.apiKey}
-                autoComplete="off"
-                onChange={(event) => setForm((current) => ({ ...current, apiKey: event.target.value }))}
-                onBlur={() => void loadModels(form)}
-                placeholder={t("settingsDialog.apiKeyPlaceholder")}
-              />
-              <button
-                type="button"
-                className="ai-dialog__model-refresh"
-                onClick={() => setShowApiKey((value) => !value)}
-                aria-label={t(showApiKey ? "settingsDialog.hideApiKey" : "settingsDialog.showApiKey")}
-                title={t(showApiKey ? "settingsDialog.hideApiKey" : "settingsDialog.showApiKey")}
-              >
-                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-            <span className="ai-dialog__model-hint">{t("settingsDialog.apiKeyShort")}</span>
-          </label>
-        ) : null}
+        <label className="ai-dialog__field ai-dialog__field--full">
+          <span>{t("settingsDialog.apiKey")}</span>
+          <div className="ai-dialog__model-field">
+            <input
+              type={showApiKey ? "text" : "password"}
+              value={form.apiKey}
+              autoComplete="off"
+              onChange={(event) => setForm((current) => ({ ...current, apiKey: event.target.value }))}
+              onBlur={() => void loadModels(form)}
+              placeholder={t("settingsDialog.apiKeyPlaceholder")}
+            />
+            <button
+              type="button"
+              className="ai-dialog__model-refresh"
+              onClick={() => setShowApiKey((value) => !value)}
+              aria-label={t(showApiKey ? "settingsDialog.hideApiKey" : "settingsDialog.showApiKey")}
+              title={t(showApiKey ? "settingsDialog.hideApiKey" : "settingsDialog.showApiKey")}
+            >
+              {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          <span className="ai-dialog__model-hint">{apiKeyHint(form.provider, form.apiUrl)}</span>
+        </label>
 
         <label className="ai-dialog__field ai-dialog__field--full">
           <span>{t("ragSettings.connection.model")}</span>

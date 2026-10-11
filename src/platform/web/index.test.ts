@@ -140,6 +140,43 @@ describe("web platform http", () => {
     t.mockRestore();
   });
 
+  // Only the server can fill in a stored key, so a request the tab sends
+  // itself must not carry the placeholder to the model server.
+  it("leaves a stored key's placeholder out of a request to this machine", async () => {
+    await platform.http.fetch("http://localhost:1337/v1/models", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${secretRef("jan")}`, "Content-Type": "application/json" }
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = new Headers(init.headers);
+
+    expect(headers.get("authorization")).toBeNull();
+    expect(headers.get("content-type")).toBe("application/json");
+  });
+
+  it("keeps a key typed into the tab for a request to this machine", async () => {
+    await platform.http.fetch("http://localhost:1337/v1/models", {
+      method: "GET",
+      headers: { Authorization: "Bearer typed-key" }
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+
+    expect(new Headers(init.headers).get("authorization")).toBe("Bearer typed-key");
+  });
+
+  it("passes the placeholder to the proxy, which fills in the key", async () => {
+    await platform.http.fetch("http://192.168.1.50:1337/v1/models", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${secretRef("jan")}` }
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+
+    expect((init.headers as Headers).get("authorization")).toBe(`Bearer ${secretRef("jan")}`);
+  });
+
   it("hands any other proxy error back as a response", async () => {
     fetchMock.mockResolvedValue(new Response('{"error":"upstream_unreachable"}', { status: 502 }));
 

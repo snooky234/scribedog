@@ -87,6 +87,12 @@ open ScribeDog, with the port if it is not 443):
 | Jan.ai | Settings, Local API Server: keep CORS on and add `<host>` (host name and port, no scheme) to *Trusted Hosts*. |
 | LM Studio | In the server settings, enable CORS. |
 
+**A stored API key does not reach it.** The server keeps keys to itself,
+and here the browser sends the request, so it has nothing to send. If the
+model server on your device asks for a key, enter the device's network
+address instead of `localhost` (see the next section; the server then sends
+the request and the key), or use the desktop app.
+
 **Over a public address, the browser asks once.** Chrome and Edge (since 142)
 treat a page loaded from the internet reaching into your local network as
 something you have to allow: a prompt appears on the first request, and the
@@ -147,6 +153,11 @@ On the model server's side, two settings matter:
   the server host to `0.0.0.0` in the Local API Server settings. Ollama:
   `OLLAMA_HOST=0.0.0.0`. LM Studio: enable "Serve on Local Network".
 - Its firewall has to let the port through.
+
+If the model server asks for an API key (Jan.ai's API key, an LM Studio
+token), enter it in Settings → AI like a cloud provider's key. It is stored
+on the server in the same encrypted way, and the server fills it in on the
+way out.
 
 Whether the container reaches the machine can be tested from the server:
 

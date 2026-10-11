@@ -61,7 +61,8 @@ above one that only a single search found.
 
 1. Open the **Knowledge base** tab.
 2. Connect an **embedding model**. Locally through Ollama, Jan.ai or
-   LM Studio, or in the cloud through OpenAI or Mistral with your own key.
+   LM Studio (with a key, if your runner asks for one), or in the cloud
+   through OpenAI or Mistral with your own key.
    Anthropic offers no embeddings, and the tab tells you so.
 3. Let the one-time preparation finish. It reads your included notes, and
    afterwards only updates what changed.

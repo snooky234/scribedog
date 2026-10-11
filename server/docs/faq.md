@@ -257,6 +257,12 @@ Encrypted on the server, under a key derived from your password. The browser
 sees a placeholder that says "stored". A password reset (not a change) makes
 them unreadable; enter them again then.
 
+**My Jan.ai or LM Studio asks for an API key. Where does it go?**
+In Settings → AI, like a cloud provider's key. It works when the model server
+is reached through the server, i.e. by its network address. For `localhost`
+the browser sends the request itself and has no key to send; use the network
+address or the desktop app there. See [AI](ai.md#a-model-server-elsewhere-in-your-network).
+
 **Is there dictation?**
 Not in the web app; use the system's dictation (Win+H, the macOS dictation
 key, the keyboard microphone on phones), which types straight into the
