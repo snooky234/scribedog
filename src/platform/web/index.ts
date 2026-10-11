@@ -5,6 +5,7 @@ import type { CredentialsStatus, Platform } from "@/platform/types";
 
 import { browserDownloads } from "./downloads";
 import { subscribeToVaultChanges, watchRoot } from "./liveUpdates";
+import { getStartupVault, rememberOpenedVault } from "./lastVault";
 import { browserLocalModels } from "./localModels";
 import { posixPaths } from "@/platform/remote/paths";
 import { REMOTE_VAULT_ROOT, remoteVaultStorage } from "./remoteStorage";
@@ -94,15 +95,18 @@ export const platform: Platform = {
     allowFolderAccess: async () => undefined,
     allowFileAccess: async () => undefined,
     // One change stream per tab, pointed at the vault that was just opened:
-    // the instance's own, or a shared one under its id.
+    // the instance's own, or a shared one under its id. Called once per
+    // successful open, which is also when the next start's vault is noted.
     watchFolder: async (folderPath) => {
+      rememberOpenedVault(folderPath);
       const sharedId = sharedVaultIdOf(folderPath);
       watchRoot(folderPath, sharedId ? sharedVaultScope(sharedId) : "");
     },
     // There are no local folders in the browser, so nothing ever goes missing.
     folderExists: async () => true,
-    // The instance's own vault; shared ones are opened from the sidebar.
-    getStartupFolderPath: async () => REMOTE_VAULT_ROOT,
+    // The shared vault the tab was in last, while the person is still in it;
+    // otherwise the instance's own vault.
+    getStartupFolderPath: () => getStartupVault(() => webSharedVaults.overview(REMOTE_VAULT_ROOT)),
     onFolderFilesChanged: async (handler) => subscribeToVaultChanges(handler),
     // A shared vault's own name is added by formatFolderLabel; this is the
     // instance the browser is talking to.

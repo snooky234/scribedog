@@ -241,6 +241,11 @@ When a vault you have open is deleted, or you are taken off it, a message
 says so and takes you back to your own vault. Members who were not there
 when it was deleted see a one-time note under the vault name.
 
+The browser remembers which vault you had open last. Reloading the page or
+opening ScribeDog from a home screen shortcut takes you back to that shared
+vault (and, with **Reopen the last note on start** on, to the note you had open
+there), as long as you are still in it. Otherwise you land in your own vault.
+
 The desktop app does the same once it is connected to your instance: the
 vault menu in its sidebar lists your shared vaults under the server they
 belong to, next to your local folders, and creating, managing and the
