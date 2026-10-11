@@ -3,6 +3,18 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.21.0] - 2026-10-11
+
+### Highlights
+- Move images with a long press on touch screens: hold an image to lift it,
+  drag it to a new spot with an insertion line showing where it lands, and
+  let go. The note scrolls near its edges and the move is one undo step. A
+  quick swipe over an image still scrolls.
+- Take a photo from the image button on touch screens in the browser. It now
+  asks whether to choose a file or use the camera. The desktop app still opens
+  the file dialog directly.
+- The browser edition reopens the last shared vault on start
+
 ## [0.20.0] - 2026-10-10
 
 ### Highlights
