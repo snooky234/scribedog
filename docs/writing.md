@@ -21,7 +21,8 @@ The editor is built on [TipTap](https://tiptap.dev/) and ProseMirror.
   into the Markdown. Drag an image to move it; on a touch screen, hold it
   for a moment first.
 - **Drawings**, sketched by hand right in the note (see [Drawings](#drawings))
-- **Code blocks**, with a one-click copy button
+- **Code blocks**, with a one-click copy button. Inside a list the block
+  stays part of its list item, so a numbered step can carry its own code.
 - An **emoji picker** with search, including keywords in your language
 
 Undo and redo work from the toolbar and with `Ctrl+Z` and `Ctrl+Y`.
