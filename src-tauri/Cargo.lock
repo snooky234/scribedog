@@ -3739,6 +3739,7 @@ dependencies = [
  "futures-util",
  "keyring",
  "notify",
+ "regex",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -3753,6 +3754,8 @@ dependencies = [
  "tauri-plugin-window-state",
  "tokio",
  "tokio-tungstenite",
+ "url",
+ "urlpattern",
  "whisper-rs",
  "windows-sys 0.61.2",
 ]

@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod http_scope;
 mod portable;
 mod print_preview;
 mod rag;

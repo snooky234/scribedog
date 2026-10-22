@@ -75,7 +75,8 @@ A runner does not need a key out of the box. If you set one up, for example
 the API key in Jan.ai's Local API Server settings, an LM Studio token, or an
 Ollama behind a reverse proxy that checks one, enter it in the **API key**
 field in **AI settings**. ScribeDog sends it as a bearer token, the same way
-as to a cloud provider.
+as to a cloud provider: in the `Authorization: Bearer <key>` header. A reverse
+proxy has to check that header, not a custom one such as `X-API-Key`.
 
 The key is stored per provider in your operating system credential store, so
 your Jan.ai key and your OpenAI key never get mixed up. The knowledge base

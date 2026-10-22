@@ -60,3 +60,9 @@ tauri-plugin-process = "2"
 # tree through Tauri; only this one API surface is enabled.
 windows-sys = { version = "0.61", features = ["Win32_UI_Input_KeyboardAndMouse"] }
 
+[dev-dependencies]
+# http_scope.rs evaluates capabilities/default.json with the same crates
+# tauri-plugin-http matches requests with; versions follow Cargo.lock.
+urlpattern = "0.3"
+regex = "1"
+url = "2"

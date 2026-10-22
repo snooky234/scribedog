@@ -73,8 +73,12 @@ describe("serverAllowlistLine", () => {
 
 // The desktop app's http scope has to let through exactly what the endpoint
 // check accepts: an address the check takes but the shell refuses fails with
-// a message about permissions instead of the endpoint. Node evaluates the
-// scope's patterns with the same URLPattern rules the Tauri plugin uses.
+// a message about permissions instead of the endpoint. Node's URLPattern only
+// checks that the patterns say what they are meant to say. It is NOT the engine
+// the shell uses: the Rust crate behind tauri-plugin-http normalizes literal
+// `192.168.` in a host pattern as an IPv4 address and then matches nothing,
+// which Node accepts without complaint. The authoritative test of the same
+// file runs in Rust (src-tauri/src/http_scope.rs).
 describe("desktop http scope", () => {
   type Pattern = { test(input: string): boolean };
   const UrlPattern = (globalThis as unknown as { URLPattern: new (pattern: string) => Pattern }).URLPattern;
