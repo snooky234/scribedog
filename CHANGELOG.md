@@ -3,6 +3,28 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.22.0] - 2026-10-22
+
+### Highlights
+- Reminders on paragraphs, headings, list and checklist items. A bell marks
+  the line, a dialog sets, snoozes or removes the reminder, and the sidebar
+  lists every reminder in the vault. The reminder is stored in the note
+  itself, so it moves with its text. Due reminders show a system
+  notification while the app runs, and ones missed while it was closed are
+  announced once when the vault opens.
+- Snooze a due reminder by an hour or until its own time tomorrow. On phones
+  and tablets the sidebar button shows a pulsing dot while something is due.
+
+### Bug Fixes
+- The desktop app now reaches Ollama, Jan.ai or LM Studio on another computer
+  by IP address. Before, the address passed the settings check but was then
+  refused with "url not allowed on the configured scope".
+- Code blocks stay inside list items (#79).
+- Moving a block with Alt+Shift+Arrow no longer makes the view jump, and
+  ArrowDown at the end of a code block in a list moves to the next item
+  instead of adding an empty line.
+- The AI settings stay inside the dialog on narrow screens.
+
 ## [0.21.1] - 2026-10-12
 
 ### Highlights

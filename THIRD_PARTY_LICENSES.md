@@ -3290,10 +3290,37 @@ SOFTWARE.
 
 </details>
 
-### @tauri-apps/api@2.11.1
+### @tauri-apps/api@2.12.4
 
 - License: Apache-2.0 OR MIT
 - Repository: https://github.com/tauri-apps/tauri
+
+<details><summary>License text</summary>
+
+```
+SPDXVersion: SPDX-2.1
+DataLicense: CC0-1.0
+PackageName: tauri
+DataFormat: SPDXRef-1
+PackageSupplier: Organization: The Tauri Programme in the Commons Conservancy
+PackageHomePage: https://tauri.app
+PackageLicenseDeclared: Apache-2.0
+PackageLicenseDeclared: MIT
+PackageCopyrightText: 2019-2025, The Tauri Programme in the Commons Conservancy
+PackageSummary: <text>Tauri is a rust project that enables developers to make secure
+and small desktop applications using a web frontend.
+                </text>
+PackageComment: <text>The package includes the following libraries; see
+Relationship information.
+                </text>
+Created: 2019-05-20T09:00:00Z
+PackageDownloadLocation: git://github.com/tauri-apps/tauri
+PackageDownloadLocation: git+https://github.com/tauri-apps/tauri.git
+PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
+Creator: Person: Daniel Thompson-Yvetot
+```
+
+</details>
 
 ### @tauri-apps/plugin-dialog@2.7.2
 
@@ -3360,6 +3387,38 @@ Creator: Person: Daniel Thompson-Yvetot
 </details>
 
 ### @tauri-apps/plugin-http@2.5.9
+
+- License: MIT OR Apache-2.0
+- Repository: https://github.com/tauri-apps/plugins-workspace
+
+<details><summary>License text</summary>
+
+```
+SPDXVersion: SPDX-2.1
+DataLicense: CC0-1.0
+PackageName: tauri
+DataFormat: SPDXRef-1
+PackageSupplier: Organization: The Tauri Programme in the Commons Conservancy
+PackageHomePage: https://tauri.app
+PackageLicenseDeclared: Apache-2.0
+PackageLicenseDeclared: MIT
+PackageCopyrightText: 2019-2022, The Tauri Programme in the Commons Conservancy
+PackageSummary: <text>Tauri is a rust project that enables developers to make secure
+and small desktop applications using a web frontend.
+                </text>
+PackageComment: <text>The package includes the following libraries; see
+Relationship information.
+                </text>
+Created: 2019-05-20T09:00:00Z
+PackageDownloadLocation: git://github.com/tauri-apps/tauri
+PackageDownloadLocation: git+https://github.com/tauri-apps/tauri.git
+PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
+Creator: Person: Daniel Thompson-Yvetot
+```
+
+</details>
+
+### @tauri-apps/plugin-notification@2.7.0
 
 - License: MIT OR Apache-2.0
 - Repository: https://github.com/tauri-apps/plugins-workspace
@@ -16734,6 +16793,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | new_debug_unreachable | 1.0.6 | MIT |
 | nom | 7.1.3 | MIT |
 | notify | 8.2.0 | CC0-1.0 |
+| notify-rust | 4.18.2 | MIT OR Apache-2.0 |
 | notify-types | 2.1.0 | MIT OR Apache-2.0 |
 | num-conv | 0.2.2 | MIT OR Apache-2.0 |
 | num-traits | 0.2.19 | MIT OR Apache-2.0 |
@@ -16753,6 +16813,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | png | 0.17.16 | MIT OR Apache-2.0 |
 | potential_utf | 0.1.5 | Unicode-3.0 |
 | powerfmt | 0.2.0 | MIT OR Apache-2.0 |
+| ppv-lite86 | 0.2.21 | MIT OR Apache-2.0 |
 | precomputed-hash | 0.1.1 | MIT |
 | prettyplease | 0.2.37 | MIT OR Apache-2.0 |
 | proc-macro2 | 1.0.106 | MIT OR Apache-2.0 |
@@ -16763,7 +16824,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | quinn-proto | 0.11.16 | MIT OR Apache-2.0 |
 | quinn-udp | 0.5.15 | MIT OR Apache-2.0 |
 | quote | 1.0.46 | MIT OR Apache-2.0 |
+| rand | 0.9.5 | MIT OR Apache-2.0 |
 | rand | 0.10.2 | MIT OR Apache-2.0 |
+| rand_chacha | 0.9.0 | MIT OR Apache-2.0 |
+| rand_core | 0.9.5 | MIT OR Apache-2.0 |
 | rand_core | 0.10.1 | MIT OR Apache-2.0 |
 | rand_pcg | 0.10.2 | MIT OR Apache-2.0 |
 | raw-window-handle | 0.6.2 | MIT OR Apache-2.0 OR Zlib |
@@ -16835,6 +16899,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | tauri-plugin-dialog | 2.7.2 | Apache-2.0 OR MIT |
 | tauri-plugin-fs | 2.5.1 | Apache-2.0 OR MIT |
 | tauri-plugin-http | 2.5.9 | Apache-2.0 OR MIT |
+| tauri-plugin-notification | 2.4.0 | Apache-2.0 OR MIT |
 | tauri-plugin-opener | 2.5.4 | Apache-2.0 OR MIT |
 | tauri-plugin-process | 2.3.1 | Apache-2.0 OR MIT |
 | tauri-plugin-updater | 2.10.1 | Apache-2.0 OR MIT |
@@ -16843,6 +16908,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | tauri-runtime-wry | 2.11.4 | Apache-2.0 OR MIT |
 | tauri-utils | 2.9.3 | Apache-2.0 OR MIT |
 | tauri-winres | 0.3.6 | MIT |
+| tauri-winrt-notification | 0.8.1 | MIT OR Apache-2.0 |
 | tempfile | 3.27.0 | MIT OR Apache-2.0 |
 | tendril | 0.5.0 | MIT OR Apache-2.0 |
 | thiserror | 1.0.69 | MIT OR Apache-2.0 |
@@ -16907,17 +16973,22 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | window-vibrancy | 0.6.0 | Apache-2.0 OR MIT |
 | windows | 0.54.0 | MIT OR Apache-2.0 |
 | windows | 0.61.3 | MIT OR Apache-2.0 |
+| windows | 0.62.2 | MIT OR Apache-2.0 |
 | windows_x86_64_msvc | 0.52.6 | MIT OR Apache-2.0 |
 | windows_x86_64_msvc | 0.53.1 | MIT OR Apache-2.0 |
 | windows-collections | 0.2.0 | MIT OR Apache-2.0 |
+| windows-collections | 0.3.2 | MIT OR Apache-2.0 |
 | windows-core | 0.54.0 | MIT OR Apache-2.0 |
 | windows-core | 0.61.2 | MIT OR Apache-2.0 |
+| windows-core | 0.62.2 | MIT OR Apache-2.0 |
 | windows-future | 0.2.1 | MIT OR Apache-2.0 |
+| windows-future | 0.3.2 | MIT OR Apache-2.0 |
 | windows-implement | 0.60.2 | MIT OR Apache-2.0 |
 | windows-interface | 0.59.3 | MIT OR Apache-2.0 |
 | windows-link | 0.1.3 | MIT OR Apache-2.0 |
 | windows-link | 0.2.1 | MIT OR Apache-2.0 |
 | windows-numerics | 0.2.0 | MIT OR Apache-2.0 |
+| windows-numerics | 0.3.1 | MIT OR Apache-2.0 |
 | windows-registry | 0.6.1 | MIT OR Apache-2.0 |
 | windows-result | 0.1.2 | MIT OR Apache-2.0 |
 | windows-result | 0.3.4 | MIT OR Apache-2.0 |
@@ -16930,6 +17001,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | windows-targets | 0.52.6 | MIT OR Apache-2.0 |
 | windows-targets | 0.53.5 | MIT OR Apache-2.0 |
 | windows-threading | 0.1.0 | MIT OR Apache-2.0 |
+| windows-threading | 0.2.1 | MIT OR Apache-2.0 |
 | windows-version | 0.1.7 | MIT OR Apache-2.0 |
 | winnow | 0.7.15 | MIT |
 | winnow | 1.0.3 | MIT |
@@ -16938,6 +17010,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 | wry | 0.55.1 | Apache-2.0 OR MIT |
 | yoke | 0.8.3 | Unicode-3.0 |
 | yoke-derive | 0.8.2 | Unicode-3.0 |
+| zerocopy | 0.8.63 | BSD-2-Clause OR Apache-2.0 OR MIT |
 | zerofrom | 0.1.8 | Unicode-3.0 |
 | zerofrom-derive | 0.1.7 | Unicode-3.0 |
 | zeroize | 1.9.0 | Apache-2.0 OR MIT |
