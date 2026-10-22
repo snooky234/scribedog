@@ -1487,7 +1487,6 @@
       "notePlaceholder": "Показывается перед текстом, например «Переработать»",
       "snooze": "Отложить:",
       "snoozeHour": "На 1 час",
-      "snoozeTomorrow": "Завтра в 9:00",
       "remove": "Удалить",
       "save": "Сохранить",
       "snoozeSameTimeTomorrow": "Завтра в {{time}}"

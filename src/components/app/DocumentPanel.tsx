@@ -23,6 +23,7 @@ import { join } from "@/platform/paths";
 import { EmojiPickerPopover } from "@/components/EmojiPicker";
 import { useBreadcrumbScroll } from "@/hooks/useBreadcrumbScroll";
 import { useLayoutMode, useSidebarAsSheet } from "@/hooks/useLayoutMode";
+import { ReminderDueDot } from "@/components/reminders/ReminderBell";
 import { getPathCrumbs } from "@/lib/breadcrumbPath";
 import { getVaultIcon, type VaultIconMap } from "@/lib/vaultIcons";
 import { anchorForTrigger, type PopoverAnchor } from "@/lib/usePopoverOverflowAlign";
@@ -314,6 +315,7 @@ export function DocumentPanel({
                   onClick={onOpenSidebar}
                 >
                   <PanelLeft />
+                  <ReminderDueDot />
                 </Button>
               ) : null}
               {/* Navigation across notes belongs to the document as a whole, so
@@ -615,6 +617,7 @@ export function DocumentPanel({
                 onClick={onOpenSidebar}
               >
                 <PanelLeft />
+                <ReminderDueDot />
               </Button>
               <span className="detail-panel__app-name">ScribeDog</span>
             </div>

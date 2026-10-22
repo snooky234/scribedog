@@ -9,8 +9,8 @@ describe("snoozeDue", () => {
     expect(snoozeDue("hour", now)).toBe("2026-10-22 17:13");
   });
 
-  it("moves to tomorrow at 9:00", () => {
-    expect(snoozeDue("tomorrow", now)).toBe("2026-10-23 09:00");
+  it("falls back to tomorrow at 9:00 without a readable time", () => {
+    expect(snoozeDue("sameTimeTomorrow", now, "tomorrow")).toBe("2026-10-23 09:00");
   });
 
   it("moves to tomorrow at the reminder's own time, counted from today", () => {

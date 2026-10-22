@@ -1473,7 +1473,6 @@
       "notePlaceholder": "Shown before the text, e.g. \"Rework\"",
       "snooze": "Snooze:",
       "snoozeHour": "1 hour",
-      "snoozeTomorrow": "Tomorrow 9:00",
       "remove": "Remove",
       "save": "Save",
       "snoozeSameTimeTomorrow": "Tomorrow {{time}}"

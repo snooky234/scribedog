@@ -173,15 +173,16 @@ if you like. Without a note, the reminder is simply the paragraph's text.
 
 A small bell at the end of the line marks the reminder. It turns to the accent
 colour once the reminder is due. Click it to open the same dialog again:
-change the time, snooze a due reminder (by an hour, to tomorrow morning or to
-its own time tomorrow), or remove it. **Remove** is the only way to take a
+change the time, snooze a due reminder (by an hour, or to its own time
+tomorrow), or remove it. **Remove** is the only way to take a
 reminder off without deleting its text, and `Ctrl+Z` brings it back.
 
 ### Where you find them
 
 The bell in the sidebar's header lists every reminder in the vault, due ones
 first, and shows how many are due. Pick one to open its note with the
-paragraph selected.
+paragraph selected. On a phone or tablet, where the sidebar is hidden, a
+pulsing dot on the sidebar button says that something is due.
 
 While ScribeDog is running, a due reminder also shows up as a notification of
 your operating system (in the browser edition, as a browser notification once

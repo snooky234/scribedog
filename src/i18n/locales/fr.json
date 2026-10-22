@@ -1473,7 +1473,6 @@
       "notePlaceholder": "Affichée avant le texte, p. ex. « Retravailler »",
       "snooze": "Reporter :",
       "snoozeHour": "1 heure",
-      "snoozeTomorrow": "Demain 9:00",
       "remove": "Supprimer",
       "save": "Enregistrer",
       "snoozeSameTimeTomorrow": "Demain {{time}}"

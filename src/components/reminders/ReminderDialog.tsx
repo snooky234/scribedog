@@ -190,15 +190,9 @@ export function ReminderDialog({ state, onSave, onRemove, onCancel }: ReminderDi
               <Button type="button" variant="outline" size="sm" onClick={() => snooze("hour")}>
                 {t("reminders.dialog.snoozeHour")}
               </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => snooze("tomorrow")}>
-                {t("reminders.dialog.snoozeTomorrow")}
+              <Button type="button" variant="outline" size="sm" onClick={() => snooze("sameTimeTomorrow")}>
+                {t("reminders.dialog.snoozeSameTimeTomorrow", { time: ownTime })}
               </Button>
-              {/* Tomorrow at the reminder's own time; left out when that is 9:00 anyway. */}
-              {ownTime && ownTime !== "09:00" ? (
-                <Button type="button" variant="outline" size="sm" onClick={() => snooze("sameTimeTomorrow")}>
-                  {t("reminders.dialog.snoozeSameTimeTomorrow", { time: ownTime })}
-                </Button>
-              ) : null}
             </div>
           ) : null}
 

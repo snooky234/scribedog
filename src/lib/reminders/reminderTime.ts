@@ -38,7 +38,7 @@ export function defaultDue(now: Date = new Date()): string {
   return dateToDue(date);
 }
 
-export type SnoozeOption = "hour" | "tomorrow" | "sameTimeTomorrow";
+export type SnoozeOption = "hour" | "sameTimeTomorrow";
 
 /** The time of day of a due time ("18:30"). */
 export function dueTimeOfDay(due: string): string {
@@ -46,8 +46,8 @@ export function dueTimeOfDay(due: string): string {
 }
 
 /**
- * The new due time after snoozing from `now`: an hour later, tomorrow at
- * 9:00, or tomorrow at the reminder's own time of day (`due`).
+ * The new due time after snoozing from `now`: an hour later, or tomorrow at
+ * the reminder's own time of day (`due`; 9:00 when that cannot be read).
  */
 export function snoozeDue(option: SnoozeOption, now: Date = new Date(), due?: string): string {
   if (option === "hour") {

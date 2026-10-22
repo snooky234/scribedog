@@ -1473,7 +1473,6 @@
       "notePlaceholder": "Appare prima del testo, ad es. «Rivedere»",
       "snooze": "Posticipa:",
       "snoozeHour": "1 ora",
-      "snoozeTomorrow": "Domani 9:00",
       "remove": "Rimuovi",
       "save": "Salva",
       "snoozeSameTimeTomorrow": "Domani {{time}}"

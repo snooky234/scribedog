@@ -1473,7 +1473,6 @@
       "notePlaceholder": "Aparece antes do texto, p. ex. \"Revisar\"",
       "snooze": "Adiar:",
       "snoozeHour": "1 hora",
-      "snoozeTomorrow": "Amanhã 9:00",
       "remove": "Remover",
       "save": "Salvar",
       "snoozeSameTimeTomorrow": "Amanhã {{time}}"

@@ -27,6 +27,33 @@ export function useClock(): number {
   return now;
 }
 
+/** How many reminders of the vault are due right now. */
+export function useDueReminderCount(): number {
+  const byFile = useRemindersStore((state) => state.byFile);
+  const now = useClock();
+
+  return useMemo(() => listVaultReminders(byFile).filter((reminder) => isReminderDue(reminder, now)).length, [byFile, now]);
+}
+
+/**
+ * A pulsing dot on the button that opens the sidebar where it is a sheet
+ * (phone, tablet): the bell with its count sits inside the sheet, out of sight.
+ */
+export function ReminderDueDot() {
+  const { t } = useTranslation();
+  const count = useDueReminderCount();
+
+  if (count === 0) {
+    return null;
+  }
+
+  return (
+    <span className="reminder-due-dot">
+      <span className="sr-only">{t("reminders.sidebar.buttonDue", { count })}</span>
+    </span>
+  );
+}
+
 type ReminderBellProps = {
   disabled: boolean;
   onOpenReminder: (reminder: VaultReminder) => void;

@@ -1472,7 +1472,6 @@
       "notePlaceholder": "テキストの前に表示されます (例: 「見直す」)",
       "snooze": "スヌーズ:",
       "snoozeHour": "1 時間",
-      "snoozeTomorrow": "明日 9:00",
       "remove": "削除",
       "save": "保存",
       "snoozeSameTimeTomorrow": "明日 {{time}}"

@@ -1472,7 +1472,6 @@
       "notePlaceholder": "显示在文本前面，例如“修改”",
       "snooze": "稍后提醒：",
       "snoozeHour": "1 小时",
-      "snoozeTomorrow": "明天 9:00",
       "remove": "删除",
       "save": "保存",
       "snoozeSameTimeTomorrow": "明天 {{time}}"

@@ -260,6 +260,42 @@
   text-decoration: line-through;
 }
 
+/* The dot on the sheet button of phone and tablet layouts: something is due
+   in the sidebar that is out of sight. */
+.detail-panel__sidebar-button:has(.reminder-due-dot) {
+  position: relative;
+}
+
+.reminder-due-dot {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgb(var(--accent-rgb));
+  box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.6);
+  animation: reminder-dot-pulse 2s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes reminder-dot-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.6);
+  }
+
+  70%,
+  100% {
+    box-shadow: 0 0 0 0.45rem rgba(var(--accent-rgb), 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reminder-due-dot {
+    animation: none;
+  }
+}
+
 /* Notices (a join that discarded a reminder, reminders missed while closed) */
 .reminder-toast {
   position: fixed;
