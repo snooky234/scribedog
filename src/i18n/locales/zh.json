@@ -694,7 +694,8 @@
       "moveTableColumnLeft": "左移表格列",
       "moveTableColumnRight": "右移表格列",
       "toggleDetailsPanel": "显示/隐藏详情面板（大纲、链接、反向链接与文件信息）",
-      "closeWorkingSetEntry": "关闭“进行中”里的笔记"
+      "closeWorkingSetEntry": "关闭“进行中”里的笔记",
+      "reminder": "设置或编辑提醒"
     },
     "recording": "请按键 …",
     "recordHint": "按下新的快捷键组合（必须包含 Ctrl 或 Alt），按 Esc 取消。",
@@ -860,7 +861,9 @@
     "pageLinesToggle": "显示分页（PDF，{{size}}）",
     "printButton": "打印",
     "downloadMarkdown": "下载为 Markdown",
-    "spellcheckDictionaryMissing": "未找到“{{code}}”的拼写检查词典。请通过你的包管理器安装 Hunspell 词典（例如 hunspell-{{code}}）。"
+    "spellcheckDictionaryMissing": "未找到“{{code}}”的拼写检查词典。请通过你的包管理器安装 Hunspell 词典（例如 hunspell-{{code}}）。",
+    "reminder": "设置提醒",
+    "reminderEdit": "编辑提醒"
   },
   "findReplace": {
     "panelLabel": "查找和替换",
@@ -1452,5 +1455,42 @@
     "serverDisconnect": "断开连接",
     "serverDisconnectConfirm": "确定断开？",
     "serverDisconnectHint": "断开会在服务器上吊销本设备的访问密钥。服务器上的笔记不受影响。"
+  },
+  "reminders": {
+    "bell": "提醒：{{due}}",
+    "bellDue": "提醒已到期：{{due}}",
+    "dialog": {
+      "eyebrow": "提醒",
+      "title": "设置提醒",
+      "titleEdit": "提醒",
+      "dueSince": "自 {{due}} 起到期",
+      "contentLabel": "提醒内容",
+      "emptyBlock": "（空行）",
+      "date": "日期",
+      "time": "时间",
+      "note": "备注（可选）",
+      "notePlaceholder": "显示在文本前面，例如“修改”",
+      "snooze": "稍后提醒：",
+      "snoozeHour": "1 小时",
+      "snoozeTomorrow": "明天 9:00",
+      "remove": "删除",
+      "save": "保存",
+      "snoozeSameTimeTomorrow": "明天 {{time}}"
+    },
+    "droppedOnJoin_other": "合并段落时删除了 {{count}} 条提醒，保留了上方段落的提醒。",
+    "undo": "撤销",
+    "overdueOnOpen_other": "{{count}} 条提醒已过期。",
+    "show": "显示",
+    "sidebar": {
+      "button": "提醒",
+      "buttonDue_other": "提醒（{{count}} 条到期）",
+      "empty": "此库中没有提醒。可以用编辑器工具栏中的铃铛设置提醒。",
+      "due": "已到期",
+      "upcoming": "即将到来",
+      "inNote": "笔记“{{note}}”"
+    },
+    "notification": {
+      "title": "ScribeDog 提醒"
+    }
   }
 }

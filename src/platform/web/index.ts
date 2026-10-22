@@ -9,6 +9,7 @@ import { browserDownloads } from "./downloads";
 import { subscribeToVaultChanges, watchRoot } from "./liveUpdates";
 import { getStartupVault, rememberOpenedVault } from "./lastVault";
 import { browserLocalModels } from "./localModels";
+import { browserNotifications } from "./notifications";
 import { posixPaths } from "@/platform/remote/paths";
 import { REMOTE_VAULT_ROOT, remoteVaultStorage } from "./remoteStorage";
 import { sharedVaultIdOf, sharedVaultScope } from "./sharedVaultRoot";
@@ -145,7 +146,8 @@ export const platform: Platform = {
     browserLocalModels: true,
     remoteVaults: false,
     sharedVaults: true,
-    cameraCapture: true
+    cameraCapture: true,
+    systemNotifications: typeof window !== "undefined" && "Notification" in window
   },
 
   vaultStorage: remoteVaultStorage,
@@ -325,5 +327,6 @@ export const platform: Platform = {
   },
   localModels: browserLocalModels,
   remoteVaults: null,
-  sharedVaults: webSharedVaults
+  sharedVaults: webSharedVaults,
+  notifications: browserNotifications
 };

@@ -695,7 +695,8 @@
       "moveTableColumnLeft": "Tabellenspalte nach links verschieben",
       "moveTableColumnRight": "Tabellenspalte nach rechts verschieben",
       "toggleDetailsPanel": "Details-Panel (Gliederung, Links, Backlinks & Datei-Info) ein-/ausblenden",
-      "closeWorkingSetEntry": "Notiz aus „In Arbeit“ schließen"
+      "closeWorkingSetEntry": "Notiz aus „In Arbeit“ schließen",
+      "reminder": "Erinnerung setzen oder bearbeiten"
     },
     "recording": "Taste drücken …",
     "recordHint": "Neue Tastenkombination drücken (muss Strg oder Alt enthalten) — Esc bricht ab.",
@@ -861,7 +862,9 @@
     "pageLinesToggle": "Seitenumbrüche anzeigen (PDF, {{size}})",
     "printButton": "Drucken",
     "downloadMarkdown": "Als Markdown herunterladen",
-    "spellcheckDictionaryMissing": "Kein Rechtschreib-Wörterbuch für „{{code}}\" gefunden. Installiere z. B. ein Hunspell-Wörterbuch (etwa hunspell-{{code}}) über deinen Paketmanager."
+    "spellcheckDictionaryMissing": "Kein Rechtschreib-Wörterbuch für „{{code}}\" gefunden. Installiere z. B. ein Hunspell-Wörterbuch (etwa hunspell-{{code}}) über deinen Paketmanager.",
+    "reminder": "Erinnerung setzen",
+    "reminderEdit": "Erinnerung bearbeiten"
   },
   "findReplace": {
     "panelLabel": "Suchen & Ersetzen",
@@ -1453,5 +1456,45 @@
     "serverDisconnect": "Verbindung trennen",
     "serverDisconnectConfirm": "Wirklich trennen?",
     "serverDisconnectHint": "Beim Trennen wird der Zugriffsschlüssel dieses Geräts auf dem Server widerrufen. Die Notizen auf dem Server bleiben unberührt."
+  },
+  "reminders": {
+    "bell": "Erinnerung: {{due}}",
+    "bellDue": "Fällige Erinnerung: {{due}}",
+    "dialog": {
+      "eyebrow": "Erinnerung",
+      "title": "Erinnerung setzen",
+      "titleEdit": "Erinnerung",
+      "dueSince": "Fällig seit {{due}}",
+      "contentLabel": "Inhalt der Erinnerung",
+      "emptyBlock": "(leere Zeile)",
+      "date": "Datum",
+      "time": "Uhrzeit",
+      "note": "Hinweis (optional)",
+      "notePlaceholder": "Steht vor dem Text, z. B. „Überarbeiten“",
+      "snooze": "Schlummern:",
+      "snoozeHour": "1 Stunde",
+      "snoozeTomorrow": "Morgen 9:00",
+      "remove": "Entfernen",
+      "save": "Speichern",
+      "snoozeSameTimeTomorrow": "Morgen {{time}}"
+    },
+    "droppedOnJoin_one": "Beide Absätze hatten eine Erinnerung. Behalten wurde die obere.",
+    "droppedOnJoin_other": "Beim Zusammenführen wurden {{count}} Erinnerungen entfernt.",
+    "undo": "Rückgängig",
+    "overdueOnOpen_one": "{{count}} Erinnerung ist überfällig.",
+    "overdueOnOpen_other": "{{count}} Erinnerungen sind überfällig.",
+    "show": "Anzeigen",
+    "sidebar": {
+      "button": "Erinnerungen",
+      "buttonDue_one": "Erinnerungen ({{count}} fällig)",
+      "buttonDue_other": "Erinnerungen ({{count}} fällig)",
+      "empty": "Keine Erinnerungen in diesem Vault. Setzen kannst du eine mit der Glocke in der Editor-Toolbar.",
+      "due": "Fällig",
+      "upcoming": "Anstehend",
+      "inNote": "In der Notiz „{{note}}“"
+    },
+    "notification": {
+      "title": "ScribeDog-Erinnerung"
+    }
   }
 }

@@ -695,7 +695,8 @@
       "moveTableColumnLeft": "Move table column left",
       "moveTableColumnRight": "Move table column right",
       "toggleDetailsPanel": "Toggle the details panel (outline, links, backlinks & file info)",
-      "closeWorkingSetEntry": "Close note in \"In progress\""
+      "closeWorkingSetEntry": "Close note in \"In progress\"",
+      "reminder": "Set or edit a reminder"
     },
     "recording": "Press a key …",
     "recordHint": "Press the new key combination (must include Ctrl or Alt) — Esc cancels.",
@@ -861,7 +862,9 @@
     "pageLinesToggle": "Show page breaks (PDF, {{size}})",
     "printButton": "Print",
     "downloadMarkdown": "Download as Markdown",
-    "spellcheckDictionaryMissing": "No spell-check dictionary found for \"{{code}}\". Install a Hunspell dictionary (e.g. hunspell-{{code}}) via your package manager."
+    "spellcheckDictionaryMissing": "No spell-check dictionary found for \"{{code}}\". Install a Hunspell dictionary (e.g. hunspell-{{code}}) via your package manager.",
+    "reminder": "Set reminder",
+    "reminderEdit": "Edit reminder"
   },
   "findReplace": {
     "panelLabel": "Find & replace",
@@ -1453,5 +1456,45 @@
     "serverDisconnect": "Disconnect",
     "serverDisconnectConfirm": "Really disconnect?",
     "serverDisconnectHint": "Disconnecting revokes this device's access key on the server. The notes on the server stay untouched."
+  },
+  "reminders": {
+    "bell": "Reminder: {{due}}",
+    "bellDue": "Reminder due: {{due}}",
+    "dialog": {
+      "eyebrow": "Reminder",
+      "title": "Set a reminder",
+      "titleEdit": "Reminder",
+      "dueSince": "Due since {{due}}",
+      "contentLabel": "Content of the reminder",
+      "emptyBlock": "(empty line)",
+      "date": "Date",
+      "time": "Time",
+      "note": "Note (optional)",
+      "notePlaceholder": "Shown before the text, e.g. \"Rework\"",
+      "snooze": "Snooze:",
+      "snoozeHour": "1 hour",
+      "snoozeTomorrow": "Tomorrow 9:00",
+      "remove": "Remove",
+      "save": "Save",
+      "snoozeSameTimeTomorrow": "Tomorrow {{time}}"
+    },
+    "droppedOnJoin_one": "Both paragraphs had a reminder. The upper one was kept.",
+    "droppedOnJoin_other": "{{count}} reminders were removed when the paragraphs were joined.",
+    "undo": "Undo",
+    "overdueOnOpen_one": "{{count}} reminder is overdue.",
+    "overdueOnOpen_other": "{{count}} reminders are overdue.",
+    "show": "Show",
+    "sidebar": {
+      "button": "Reminders",
+      "buttonDue_one": "Reminders ({{count}} due)",
+      "buttonDue_other": "Reminders ({{count}} due)",
+      "empty": "No reminders in this vault. Set one with the bell in the editor toolbar.",
+      "due": "Due",
+      "upcoming": "Upcoming",
+      "inNote": "In the note \"{{note}}\""
+    },
+    "notification": {
+      "title": "ScribeDog reminder"
+    }
   }
 }

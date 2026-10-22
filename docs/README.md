@@ -16,7 +16,8 @@ it front to back. Pick the page for the thing you want to do.
 - [Writing](writing.md): the WYSIWYG editor, drawings, highlighting, heading numbering,
   Zen mode, copy and paste.
 - [Notes and your vault](notes-and-vault.md): the file tree, folder notes,
-  linked notes, the details panel, pinned notes, auto-save, version history.
+  linked notes, the details panel, pinned notes, auto-save, version history,
+  reminders.
 - [Import and export](import-export.md): bring Word, PDF, HTML and images in,
   send PDF, DOCX, ODT and HTML out.
 - [Voice input](voice.md): dictate into a note or an AI prompt, fully offline.

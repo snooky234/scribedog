@@ -6,6 +6,7 @@ import markPlugin from "markdown-it-mark";
 import { calloutMarkdownItPlugin } from "@/lib/editor/extensions/callout";
 import { pageBreakMarkdownItPlugin } from "@/lib/editor/extensions/pageBreak";
 import { tableLineBreakMarkdownItPlugin } from "@/lib/editor/extensions/table";
+import { reminderStripMarkdownItPlugin } from "@/lib/reminders/reminderMarkdownIt";
 
 // Shared intermediate representation for the PDF/DOCX/ODT exporters: markdown
 // is parsed exactly once into these blocks; each output format only has to
@@ -83,6 +84,8 @@ export function createExportMarkdownIt(): MarkdownIt {
   markdownIt.use(tableLineBreakMarkdownItPlugin);
   // The manual page break line; without the rule it exports as visible text.
   markdownIt.use(pageBreakMarkdownItPlugin);
+  // A reminder is a comment at the end of a block; an export never shows it.
+  markdownIt.use(reminderStripMarkdownItPlugin);
   return markdownIt;
 }
 

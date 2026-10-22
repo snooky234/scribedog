@@ -605,6 +605,19 @@ export type PlatformFeatures = {
    * entry, so a touch screen offers it as a choice of its own.
    */
   cameraCapture: boolean;
+  /** Notifications outside the app window when a reminder comes due (see NotificationsApi). */
+  systemNotifications: boolean;
+};
+
+/**
+ * The operating system's (or the browser's) own notifications. Showing one
+ * may need the user's permission; `prepare` asks for it while a click is
+ * still being handled, which browsers require, and `notify` stays silent when
+ * the permission is missing rather than asking at an arbitrary moment.
+ */
+export type NotificationsApi = {
+  prepare(): Promise<void>;
+  notify(title: string, body: string): Promise<void>;
 };
 
 export type Platform = {
@@ -647,4 +660,5 @@ export type Platform = {
   localModels: LocalModelsApi | null;
   remoteVaults: RemoteVaultsApi | null;
   sharedVaults: SharedVaultsApi | null;
+  notifications: NotificationsApi | null;
 };

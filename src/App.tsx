@@ -29,6 +29,7 @@ import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useLayoutMode, useSidebarAsSheet } from "@/hooks/useLayoutMode";
 import { useMoveTarget } from "@/hooks/useMoveTarget";
 import { useRagIndexAutoUpdate } from "@/hooks/useRagIndexAutoUpdate";
+import { ReminderNotices } from "@/components/reminders/ReminderNotices";
 import { useRemoteVaultDialog } from "@/hooks/useRemoteVaultDialog";
 import { useSidebarSwipe } from "@/hooks/useSidebarSwipe";
 import {
@@ -1265,6 +1266,8 @@ function App() {
         onOpenVault={(targetFolderPath) => void openRecentFolderSafely(targetFolderPath)}
         onForceOpenVault={(targetFolderPath) => void openFolderAtPath(targetFolderPath)}
       />
+
+      <ReminderNotices onRevealSidebar={() => setIsSidebarSheetOpen(true)} />
 
       <AppDialogs
         closingFileLabel={

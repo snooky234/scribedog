@@ -47,6 +47,7 @@ export type ShortcutActionId =
   | "inlineCode"
   | "codeBlock"
   | "insertPageBreak"
+  | "reminder"
   | "heading1"
   | "heading2"
   | "heading3"
@@ -358,6 +359,13 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     // Mod-Enter (a hard line break) gives way; Shift+Enter still makes one.
     // The key "enter" also matches the numpad's Enter.
     defaultBinding: combo(CTRL, "Enter", "enter", "Enter")
+  },
+  {
+    id: "reminder",
+    scope: "editor",
+    category: "format",
+    descriptionKey: "shortcutsDialog.items.reminder",
+    defaultBinding: letter({ ctrl: true, alt: true }, "R")
   },
   {
     id: "heading1",

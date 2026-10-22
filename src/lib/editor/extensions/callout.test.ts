@@ -33,7 +33,7 @@ function json(editor: Editor): JSONContent {
 }
 
 function paragraph(text: string): JSONContent {
-  return { type: "paragraph", content: [{ type: "text", text }] };
+  return { type: "paragraph", attrs: { reminder: null }, content: [{ type: "text", text }] };
 }
 
 function callout(text: string): JSONContent {
@@ -156,7 +156,7 @@ describe("setCallout", () => {
 
     expect(list?.content?.[0].content).toEqual([
       paragraph("one"),
-      { type: "callout", attrs: { variant: "danger" }, content: [{ type: "paragraph" }] }
+      { type: "callout", attrs: { variant: "danger" }, content: [{ type: "paragraph", attrs: { reminder: null } }] }
     ]);
     expect(list?.content?.[1].content).toEqual([paragraph("two")]);
 

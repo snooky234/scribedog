@@ -161,4 +161,52 @@ Open the popover from the note header to see every snapshot with its time.
 Versions live locally next to your files, in the same hidden `.scribedog`
 folder. Nothing leaves your machine.
 
+## Reminders
+
+Any paragraph, heading or list item can carry a reminder: a checklist item
+you want to be reminded of, or a paragraph you still have to rework. Put the
+cursor in it (no need to select anything) and click the bell in the editor
+toolbar, or press `Ctrl+Alt+R`. Pick a date and a time, and add a short note
+if you like. Without a note, the reminder is simply the paragraph's text.
+
+<img src="images/scribe-dog-reminders.png" alt="ScribeDog reminders: bells in the note and the list in the sidebar" width="700">
+
+A small bell at the end of the line marks the reminder. It turns to the accent
+colour once the reminder is due. Click it to open the same dialog again:
+change the time, snooze a due reminder (by an hour, to tomorrow morning or to
+its own time tomorrow), or remove it. **Remove** is the only way to take a
+reminder off without deleting its text, and `Ctrl+Z` brings it back.
+
+### Where you find them
+
+The bell in the sidebar's header lists every reminder in the vault, due ones
+first, and shows how many are due. Pick one to open its note with the
+paragraph selected.
+
+While ScribeDog is running, a due reminder also shows up as a notification of
+your operating system (in the browser edition, as a browser notification once
+you allow it). Reminders that came due while the app was closed are announced
+once, when you open the vault.
+
+### What happens when you edit the text
+
+| You... | The reminder... |
+|---|---|
+| edit the paragraph | stays |
+| delete the paragraph | goes with it (undo brings both back) |
+| press Enter inside the paragraph | stays on the first part |
+| press Enter at the very start | stays with the text, the new empty line has none |
+| join it with the paragraph above | moves up, unless that one has its own: then the upper one wins and a notice offers to undo |
+| copy whole paragraphs | is copied too |
+| tick or untick a checkbox | stays (ticked items are shown crossed out in the list) |
+
+> **It is part of the note.** A reminder is stored at the end of its line as
+> an HTML comment, for example
+> `<!-- reminder: 2026-10-25 09:00 "Rework" -->`. Other Markdown tools show
+> the text without it, exports and prints leave it out, and it travels with
+> the paragraph when you move or rename the note, sync the folder or restore
+> a version. The time is your local time.
+
+Reminders cannot go into table cells or code blocks.
+
 [Back to the documentation index](README.md)

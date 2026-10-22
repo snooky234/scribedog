@@ -707,7 +707,8 @@
       "moveTableColumnLeft": "Переместить столбец таблицы влево",
       "moveTableColumnRight": "Переместить столбец таблицы вправо",
       "toggleDetailsPanel": "Показать/скрыть панель сведений (структура, ссылки, обратные ссылки и сведения о файле)",
-      "closeWorkingSetEntry": "Закрыть заметку в «В работе»"
+      "closeWorkingSetEntry": "Закрыть заметку в «В работе»",
+      "reminder": "Добавить или изменить напоминание"
     },
     "recording": "Нажмите клавишу …",
     "recordHint": "Нажмите новую комбинацию (должна содержать Ctrl или Alt) — Esc отменяет.",
@@ -873,7 +874,9 @@
     "pageLinesToggle": "Показывать разрывы страниц (PDF, {{size}})",
     "printButton": "Печать",
     "downloadMarkdown": "Скачать как Markdown",
-    "spellcheckDictionaryMissing": "Словарь для проверки орфографии для «{{code}}» не найден. Установите словарь Hunspell (например, hunspell-{{code}}) через ваш пакетный менеджер."
+    "spellcheckDictionaryMissing": "Словарь для проверки орфографии для «{{code}}» не найден. Установите словарь Hunspell (например, hunspell-{{code}}) через ваш пакетный менеджер.",
+    "reminder": "Добавить напоминание",
+    "reminderEdit": "Изменить напоминание"
   },
   "findReplace": {
     "panelLabel": "Поиск и замена",
@@ -1467,5 +1470,51 @@
     "serverDisconnect": "Отключить",
     "serverDisconnectConfirm": "Точно отключить?",
     "serverDisconnectHint": "При отключении ключ доступа этого устройства на сервере отзывается. Заметки на сервере остаются нетронутыми."
+  },
+  "reminders": {
+    "bell": "Напоминание: {{due}}",
+    "bellDue": "Напоминание наступило: {{due}}",
+    "dialog": {
+      "eyebrow": "Напоминание",
+      "title": "Добавить напоминание",
+      "titleEdit": "Напоминание",
+      "dueSince": "Наступило {{due}}",
+      "contentLabel": "Содержание напоминания",
+      "emptyBlock": "(пустая строка)",
+      "date": "Дата",
+      "time": "Время",
+      "note": "Примечание (необязательно)",
+      "notePlaceholder": "Показывается перед текстом, например «Переработать»",
+      "snooze": "Отложить:",
+      "snoozeHour": "На 1 час",
+      "snoozeTomorrow": "Завтра в 9:00",
+      "remove": "Удалить",
+      "save": "Сохранить",
+      "snoozeSameTimeTomorrow": "Завтра в {{time}}"
+    },
+    "droppedOnJoin_one": "В обоих абзацах было напоминание. Сохранено верхнее.",
+    "droppedOnJoin_few": "При объединении абзацев удалено {{count}} напоминания.",
+    "droppedOnJoin_many": "При объединении абзацев удалено {{count}} напоминаний.",
+    "droppedOnJoin_other": "При объединении абзацев удалено {{count}} напоминаний.",
+    "undo": "Отменить",
+    "overdueOnOpen_one": "{{count}} напоминание просрочено.",
+    "overdueOnOpen_few": "{{count}} напоминания просрочены.",
+    "overdueOnOpen_many": "{{count}} напоминаний просрочено.",
+    "overdueOnOpen_other": "{{count}} напоминаний просрочено.",
+    "show": "Показать",
+    "sidebar": {
+      "button": "Напоминания",
+      "buttonDue_one": "Напоминания (наступило: {{count}})",
+      "buttonDue_few": "Напоминания (наступило: {{count}})",
+      "buttonDue_many": "Напоминания (наступило: {{count}})",
+      "buttonDue_other": "Напоминания (наступило: {{count}})",
+      "empty": "В этом хранилище нет напоминаний. Добавьте его кнопкой с колокольчиком на панели редактора.",
+      "due": "Наступившие",
+      "upcoming": "Предстоящие",
+      "inNote": "В заметке «{{note}}»"
+    },
+    "notification": {
+      "title": "Напоминание ScribeDog"
+    }
   }
 }

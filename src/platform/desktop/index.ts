@@ -6,6 +6,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check as checkForUpdate } from "@tauri-apps/plugin-updater";
@@ -62,7 +63,8 @@ export const platform: Platform = {
     // Shared vaults of whichever server vault is open; a local folder has
     // none, which setActiveRemoteServer reports as "no shared vaults".
     sharedVaults: true,
-    cameraCapture: false
+    cameraCapture: false,
+    systemNotifications: true
   },
 
   vaultStorage: localVaultStorage,
@@ -259,5 +261,17 @@ export const platform: Platform = {
   session: null,
   localModels: null,
   remoteVaults: desktopRemoteVaults,
-  sharedVaults: desktopSharedVaults
+  sharedVaults: desktopSharedVaults,
+  notifications: {
+    prepare: async () => {
+      if (!(await isPermissionGranted())) {
+        await requestPermission();
+      }
+    },
+    notify: async (title, body) => {
+      if (await isPermissionGranted()) {
+        sendNotification({ title, body });
+      }
+    }
+  }
 };

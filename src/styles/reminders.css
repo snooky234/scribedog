@@ -1,0 +1,310 @@
+/* The bell at the end of a block with a reminder. It is a widget, not text:
+   inline, small, and out of the caret's way. */
+.reminder-bell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35em;
+  height: 1.35em;
+  margin-left: 0.3em;
+  border: none;
+  border-radius: 0.4em;
+  background: transparent;
+  padding: 0.12em;
+  color: rgba(var(--text-rgb), 0.45);
+  vertical-align: -0.2em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reminder-bell svg {
+  width: 100%;
+  height: 100%;
+}
+
+.reminder-bell:hover {
+  background: rgba(var(--overlay-rgb), 0.08);
+  color: rgba(var(--text-rgb), 0.8);
+}
+
+.reminder-bell--due {
+  color: rgb(var(--accent-rgb));
+  background: rgba(var(--accent-rgb), 0.12);
+}
+
+.reminder-bell--due:hover {
+  color: rgb(var(--accent-rgb));
+  background: rgba(var(--accent-rgb), 0.2);
+}
+
+/* A due bell rings briefly every two seconds: enough to catch the eye while
+   scrolling, rare enough not to pull it away from the text all the time. The
+   swing pivots at the bell's top, where a real one hangs. */
+.reminder-bell--due svg {
+  transform-origin: 50% 8%;
+  animation: reminder-bell-ring 2s ease-in-out infinite;
+}
+
+.reminder-bell--due:hover svg {
+  animation: none;
+}
+
+/* The sidebar's bell rings along while anything in the vault is due. */
+.reminder-bell-button--due svg {
+  transform-origin: 50% 8%;
+  animation: reminder-bell-ring 2s ease-in-out infinite;
+}
+
+@keyframes reminder-bell-ring {
+  0%,
+  32%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  4% {
+    transform: rotate(16deg);
+  }
+
+  10% {
+    transform: rotate(-14deg);
+  }
+
+  16% {
+    transform: rotate(10deg);
+  }
+
+  22% {
+    transform: rotate(-6deg);
+  }
+
+  28% {
+    transform: rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reminder-bell--due svg,
+  .reminder-bell-button--due svg {
+    animation: none;
+  }
+}
+
+/* Dialog */
+.reminder-dialog__panel {
+  width: min(100%, 30rem);
+}
+
+.reminder-dialog__due {
+  margin: 0.25rem 0 0;
+  color: rgb(var(--accent-rgb));
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.reminder-dialog__preview {
+  margin: 0.85rem 0 0;
+  border-left: 3px solid rgba(var(--accent-rgb), 0.5);
+  border-radius: 0 0.6rem 0.6rem 0;
+  background: rgba(var(--overlay-rgb), 0.04);
+  padding: 0.55rem 0.8rem;
+  color: rgba(var(--text-rgb), 0.82);
+  font-size: 0.9rem;
+  font-style: normal;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.reminder-dialog__preview--checked {
+  color: rgba(var(--text-rgb), 0.55);
+  text-decoration: line-through;
+}
+
+.reminder-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.reminder-dialog__when {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.reminder-dialog__note {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid rgba(var(--overlay-rgb), 0.14);
+  border-radius: 0.7rem;
+  background: rgba(var(--surface-rgb), 0.85);
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  font-size: 0.92rem;
+  color: inherit;
+}
+
+.reminder-dialog__note:focus {
+  outline: 2px solid rgba(var(--overlay-rgb), 0.22);
+  outline-offset: 1px;
+}
+
+.reminder-dialog__snooze {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: rgba(var(--text-rgb), 0.72);
+}
+
+.reminder-dialog__remove {
+  margin-right: auto;
+}
+
+/* The bell in the sidebar header and its list */
+.reminder-bell-button {
+  position: relative;
+}
+
+.reminder-bell-button--due {
+  color: rgb(var(--accent-rgb));
+}
+
+.reminder-bell-button__count {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  background: rgb(var(--accent-rgb));
+  padding: 0 0.25rem;
+  color: var(--accent-foreground);
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.05rem;
+  text-align: center;
+}
+
+.reminder-list {
+  width: min(22rem, calc(100vw - 2rem));
+}
+
+.reminder-list__heading {
+  margin: 0;
+  padding: 0.45rem 0.5rem 0.2rem;
+  color: rgba(var(--text-rgb), 0.55);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reminder-list__empty {
+  margin: 0;
+  padding: 0.6rem 0.5rem;
+  color: rgba(var(--text-rgb), 0.62);
+  font-size: 0.85rem;
+}
+
+.reminder-list__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.1rem 0.6rem;
+  align-items: baseline;
+}
+
+.reminder-list__due {
+  color: rgba(var(--text-rgb), 0.62);
+  font-size: 0.75rem;
+}
+
+.reminder-list__due--due {
+  color: rgb(var(--accent-rgb));
+  font-weight: 600;
+}
+
+.reminder-list__file {
+  grid-column: 2;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 9rem;
+  overflow: hidden;
+  color: rgba(var(--text-rgb), 0.5);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reminder-list__file svg {
+  flex-shrink: 0;
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.reminder-list__text {
+  grid-column: 1 / -1;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.86rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.reminder-list__text--checked {
+  color: rgba(var(--text-rgb), 0.55);
+  text-decoration: line-through;
+}
+
+/* Notices (a join that discarded a reminder, reminders missed while closed) */
+.reminder-toast {
+  position: fixed;
+  z-index: 70;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: min(28rem, calc(100vw - 2rem));
+  border: 1px solid rgba(var(--overlay-rgb), 0.12);
+  border-radius: 0.95rem;
+  background: rgba(var(--surface-strong-rgb), 0.97);
+  padding: 0.6rem 0.6rem 0.6rem 0.9rem;
+  box-shadow: 0 12px 32px rgba(var(--shadow-rgb), 0.14);
+  font-size: 0.88rem;
+}
+
+.dark .reminder-toast {
+  box-shadow: 0 20px 48px rgba(var(--shadow-rgb), 0.45);
+}
+
+.reminder-toast__message {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.reminder-toast__dismiss {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  padding: 0.25rem;
+}
+
+.reminder-toast__dismiss:hover,
+.reminder-toast__dismiss:focus-visible {
+  background: rgba(var(--overlay-rgb), 0.08);
+}
+
+.reminder-toast__dismiss svg {
+  width: 1rem;
+  height: 1rem;
+}

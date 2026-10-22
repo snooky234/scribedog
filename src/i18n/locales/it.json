@@ -695,7 +695,8 @@
       "moveTableColumnLeft": "Sposta la colonna della tabella a sinistra",
       "moveTableColumnRight": "Sposta la colonna della tabella a destra",
       "toggleDetailsPanel": "Mostra/nascondi il pannello dei dettagli (struttura, collegamenti, backlink e info file)",
-      "closeWorkingSetEntry": "Chiudi la nota in «In lavorazione»"
+      "closeWorkingSetEntry": "Chiudi la nota in «In lavorazione»",
+      "reminder": "Imposta o modifica un promemoria"
     },
     "recording": "Premi un tasto …",
     "recordHint": "Premi la nuova combinazione (deve includere Ctrl o Alt) — Esc annulla.",
@@ -861,7 +862,9 @@
     "pageLinesToggle": "Mostra interruzioni di pagina (PDF, {{size}})",
     "printButton": "Stampa",
     "downloadMarkdown": "Scarica come Markdown",
-    "spellcheckDictionaryMissing": "Nessun dizionario ortografico trovato per \"{{code}}\". Installa un dizionario Hunspell (ad es. hunspell-{{code}}) tramite il gestore pacchetti."
+    "spellcheckDictionaryMissing": "Nessun dizionario ortografico trovato per \"{{code}}\". Installa un dizionario Hunspell (ad es. hunspell-{{code}}) tramite il gestore pacchetti.",
+    "reminder": "Imposta promemoria",
+    "reminderEdit": "Modifica promemoria"
   },
   "findReplace": {
     "panelLabel": "Trova e sostituisci",
@@ -1453,5 +1456,45 @@
     "serverDisconnect": "Disconnetti",
     "serverDisconnectConfirm": "Disconnettere davvero?",
     "serverDisconnectHint": "Disconnettendo si revoca la chiave di accesso di questo dispositivo sul server. Le note sul server restano intatte."
+  },
+  "reminders": {
+    "bell": "Promemoria: {{due}}",
+    "bellDue": "Promemoria scaduto: {{due}}",
+    "dialog": {
+      "eyebrow": "Promemoria",
+      "title": "Imposta un promemoria",
+      "titleEdit": "Promemoria",
+      "dueSince": "Scaduto dal {{due}}",
+      "contentLabel": "Contenuto del promemoria",
+      "emptyBlock": "(riga vuota)",
+      "date": "Data",
+      "time": "Ora",
+      "note": "Nota (facoltativa)",
+      "notePlaceholder": "Appare prima del testo, ad es. «Rivedere»",
+      "snooze": "Posticipa:",
+      "snoozeHour": "1 ora",
+      "snoozeTomorrow": "Domani 9:00",
+      "remove": "Rimuovi",
+      "save": "Salva",
+      "snoozeSameTimeTomorrow": "Domani {{time}}"
+    },
+    "droppedOnJoin_one": "Entrambi i paragrafi avevano un promemoria. È stato mantenuto quello in alto.",
+    "droppedOnJoin_other": "Unendo i paragrafi sono stati rimossi {{count}} promemoria.",
+    "undo": "Annulla",
+    "overdueOnOpen_one": "{{count}} promemoria è scaduto.",
+    "overdueOnOpen_other": "{{count}} promemoria sono scaduti.",
+    "show": "Mostra",
+    "sidebar": {
+      "button": "Promemoria",
+      "buttonDue_one": "Promemoria ({{count}} scaduto)",
+      "buttonDue_other": "Promemoria ({{count}} scaduti)",
+      "empty": "Nessun promemoria in questo vault. Impostane uno con la campanella nella barra dell'editor.",
+      "due": "Scaduti",
+      "upcoming": "In arrivo",
+      "inNote": "Nella nota «{{note}}»"
+    },
+    "notification": {
+      "title": "Promemoria di ScribeDog"
+    }
   }
 }

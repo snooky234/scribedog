@@ -211,6 +211,15 @@ once and every page keeps a line free at the bottom, so the browser's print
 fits too. Scaling in the print dialog ("Fit to page", 90 %) is the one thing
 that still moves them.
 
+**Do reminders work in the browser?**
+Yes. A reminder is stored in the note itself (a comment at the end of the
+paragraph), so it is the same reminder in the browser, on the phone and in
+the desktop app. The bell in the sidebar lists them. A notification when one
+comes due needs an open tab: the browser asks for permission the first time
+you save a reminder, and nothing is sent while no tab is open. The server
+itself does not send reminders (no e-mail, no push) yet; a reminder that came
+due in the meantime is announced when you open the vault again.
+
 **Can I import files in the browser?**
 Not yet; the import runs in the desktop app, also with a server vault. In
 the browser, paste the text or upload the file to the server folder (SSH,

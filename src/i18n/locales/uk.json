@@ -707,7 +707,8 @@
       "moveTableColumnLeft": "Перемістити стовпець таблиці ліворуч",
       "moveTableColumnRight": "Перемістити стовпець таблиці праворуч",
       "toggleDetailsPanel": "Показати/сховати панель відомостей (структура, посилання, зворотні посилання та про файл)",
-      "closeWorkingSetEntry": "Закрити нотатку в «У роботі»"
+      "closeWorkingSetEntry": "Закрити нотатку в «У роботі»",
+      "reminder": "Додати або змінити нагадування"
     },
     "recording": "Натисніть клавішу …",
     "recordHint": "Натисніть нову комбінацію (має містити Ctrl або Alt) — Esc скасовує.",
@@ -873,7 +874,9 @@
     "pageLinesToggle": "Показувати розриви сторінок (PDF, {{size}})",
     "printButton": "Друк",
     "downloadMarkdown": "Завантажити як Markdown",
-    "spellcheckDictionaryMissing": "Словник для перевірки орфографії для «{{code}}» не знайдено. Встановіть словник Hunspell (наприклад, hunspell-{{code}}) через ваш пакетний менеджер."
+    "spellcheckDictionaryMissing": "Словник для перевірки орфографії для «{{code}}» не знайдено. Встановіть словник Hunspell (наприклад, hunspell-{{code}}) через ваш пакетний менеджер.",
+    "reminder": "Додати нагадування",
+    "reminderEdit": "Змінити нагадування"
   },
   "findReplace": {
     "panelLabel": "Пошук і заміна",
@@ -1467,5 +1470,51 @@
     "serverDisconnect": "Відключити",
     "serverDisconnectConfirm": "Справді відключити?",
     "serverDisconnectHint": "Під час відключення ключ доступу цього пристрою на сервері відкликається. Нотатки на сервері лишаються недоторканими."
+  },
+  "reminders": {
+    "bell": "Нагадування: {{due}}",
+    "bellDue": "Нагадування настало: {{due}}",
+    "dialog": {
+      "eyebrow": "Нагадування",
+      "title": "Додати нагадування",
+      "titleEdit": "Нагадування",
+      "dueSince": "Настало {{due}}",
+      "contentLabel": "Зміст нагадування",
+      "emptyBlock": "(порожній рядок)",
+      "date": "Дата",
+      "time": "Час",
+      "note": "Примітка (необов'язково)",
+      "notePlaceholder": "Показується перед текстом, наприклад «Переробити»",
+      "snooze": "Відкласти:",
+      "snoozeHour": "На 1 годину",
+      "snoozeTomorrow": "Завтра о 9:00",
+      "remove": "Видалити",
+      "save": "Зберегти",
+      "snoozeSameTimeTomorrow": "Завтра о {{time}}"
+    },
+    "droppedOnJoin_one": "В обох абзацах було нагадування. Залишено верхнє.",
+    "droppedOnJoin_few": "Під час об'єднання абзаців видалено {{count}} нагадування.",
+    "droppedOnJoin_many": "Під час об'єднання абзаців видалено {{count}} нагадувань.",
+    "droppedOnJoin_other": "Під час об'єднання абзаців видалено {{count}} нагадувань.",
+    "undo": "Скасувати",
+    "overdueOnOpen_one": "{{count}} нагадування прострочене.",
+    "overdueOnOpen_few": "{{count}} нагадування прострочені.",
+    "overdueOnOpen_many": "{{count}} нагадувань прострочено.",
+    "overdueOnOpen_other": "{{count}} нагадувань прострочено.",
+    "show": "Показати",
+    "sidebar": {
+      "button": "Нагадування",
+      "buttonDue_one": "Нагадування (настало: {{count}})",
+      "buttonDue_few": "Нагадування (настало: {{count}})",
+      "buttonDue_many": "Нагадування (настало: {{count}})",
+      "buttonDue_other": "Нагадування (настало: {{count}})",
+      "empty": "У цьому сховищі немає нагадувань. Додайте його кнопкою з дзвіночком на панелі редактора.",
+      "due": "Наставші",
+      "upcoming": "Майбутні",
+      "inNote": "У нотатці «{{note}}»"
+    },
+    "notification": {
+      "title": "Нагадування ScribeDog"
+    }
   }
 }

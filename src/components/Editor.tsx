@@ -17,6 +17,8 @@ import { FindReplacePanel } from "@/components/FindReplacePanel";
 import { AiRewriteDialog } from "@/components/AiRewriteDialog";
 import { DrawingDialog } from "@/components/DrawingDialog";
 import { LinkDialog, type LinkDialogResult } from "@/components/LinkDialog";
+import { ReminderDialog } from "@/components/reminders/ReminderDialog";
+import { ReminderToast } from "@/components/reminders/ReminderToast";
 import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { Toolbar } from "@/components/Toolbar";
@@ -37,6 +39,7 @@ import {
 } from "@/hooks/useDetailsPanelWidth";
 import { useAiEditorActions } from "@/components/editor/useAiEditorActions";
 import { useEditorDictation } from "@/components/editor/useEditorDictation";
+import { useEditorReminders } from "@/components/editor/useEditorReminders";
 import { useFileLinkSuggestion } from "@/components/editor/useFileLinkSuggestion";
 import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
 import {
@@ -1712,6 +1715,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           case "insertLink":
             handleLinkRequest();
             break;
+          case "reminder":
+            openReminderDialogRef.current();
+            break;
           case "bulletList":
             chain()?.toggleBulletList().run();
             break;
@@ -1765,6 +1771,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   if (editor) {
     editorRef.current = editor;
   }
+
+  const reminders = useEditorReminders(editor, filePath);
+  // The keyboard handler is created once with the editor; it reaches the
+  // current callback through this ref.
+  const openReminderDialogRef = useRef(reminders.openReminderDialog);
+  openReminderDialogRef.current = reminders.openReminderDialog;
 
   // Not in Zen mode, and not while a staged proposal is shown: the document
   // then holds the red/green review, not the text that will be exported.
@@ -2068,6 +2080,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     <Toolbar
       editor={editor}
       onLinkRequest={handleLinkRequest}
+      onReminderRequest={reminders.openReminderDialog}
       onImageInsertRequest={handleImageInsertRequest}
       onDrawingRequest={handleDrawingInsertRequest}
       onAiRequest={ai.openAiDraftFromSelection}
@@ -2289,6 +2302,22 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         onRemove={handleLinkRemove}
         onCancel={() => setLinkDialog(null)}
       />
+
+      <ReminderDialog
+        state={reminders.reminderDialog}
+        onSave={reminders.saveReminder}
+        onRemove={reminders.removeReminder}
+        onCancel={reminders.closeReminderDialog}
+      />
+
+      {reminders.droppedReminderCount > 0 ? (
+        <ReminderToast
+          message={t("reminders.droppedOnJoin", { count: reminders.droppedReminderCount })}
+          actionLabel={t("reminders.undo")}
+          onAction={reminders.undoReminderDrop}
+          onDismiss={reminders.dismissReminderDrop}
+        />
+      ) : null}
 
       {drawingDialog ? (
         <DrawingDialog

@@ -1,4 +1,6 @@
 import {
+  BellPlus,
+  BellRing,
   Bold,
   Brain,
   Check,
@@ -83,6 +85,7 @@ import { TableMenu } from "@/components/TableMenu";
 import { ZoomControl } from "@/components/ZoomControl";
 import { CALLOUT_VARIANTS, type CalloutVariant } from "@/lib/editor/extensions/callout";
 import { isHighlighterModeActive } from "@/lib/editor/extensions/highlight";
+import { findReminderBlock } from "@/lib/editor/extensions/reminder";
 import { checkSpellcheckDictionary } from "@/lib/spellcheckDictionary";
 import { useAiModelsStore } from "@/store/useAiModelsStore";
 import { useAiSettingsStore } from "@/store/useAiSettingsStore";
@@ -94,6 +97,8 @@ import type { ImageSource } from "@/platform/types";
 type ToolbarProps = {
   editor: Editor;
   onLinkRequest: () => void;
+  /** Opens the reminder dialog for the block under the caret. */
+  onReminderRequest: () => void;
   onImageInsertRequest: (source?: ImageSource) => void;
   onDrawingRequest: () => void;
   onAiRequest: () => void;
@@ -420,6 +425,34 @@ function EditorOptionsMenu({
   );
 }
 
+// Sets a reminder on the block under the caret, or opens the one it has.
+// Disabled where a reminder cannot go (a table cell, a code block, an empty
+// line) and in a note that is locked for review.
+function ReminderButton({ editor, onRequest }: { editor: Editor; onRequest: () => void }) {
+  const { t } = useTranslation();
+  const shortcut = useShortcutLabel("reminder");
+  const block = editor.isEditable ? findReminderBlock(editor.state) : null;
+  const label = block?.reminder ? t("toolbar.reminderEdit") : t("toolbar.reminder");
+
+  return (
+    <Button
+      type="button"
+      size="icon-sm"
+      variant="outline"
+      aria-label={label}
+      title={shortcut ? `${label} (${shortcut})` : label}
+      disabled={!block}
+      aria-pressed={Boolean(block?.reminder)}
+      onMouseDown={(event) => {
+        event.preventDefault();
+      }}
+      onClick={onRequest}
+    >
+      {block?.reminder ? <BellRing /> : <BellPlus />}
+    </Button>
+  );
+}
+
 const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const;
 type HeadingLevel = (typeof HEADING_LEVELS)[number];
 
@@ -619,6 +652,7 @@ function CalloutMenu({ editor }: { editor: Editor }) {
 export function Toolbar({
   editor,
   onLinkRequest,
+  onReminderRequest,
   onImageInsertRequest,
   onDrawingRequest,
   onAiRequest,
@@ -996,6 +1030,7 @@ export function Toolbar({
         >
           <SeparatorHorizontal />
         </Button>
+        <ReminderButton editor={editor} onRequest={onReminderRequest} />
       </div>
 
       {/* View controls: on phone and tablet these live in the document

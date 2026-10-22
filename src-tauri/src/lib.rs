@@ -386,7 +386,10 @@ pub fn run() {
         .manage(print_preview::PrintPreviewState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_opener::init())
+        // Reminders that come due while the app is running (see the frontend's
+        // platform notifications); the plugin has no state of its own on disk.
+        .plugin(tauri_plugin_notification::init());
 
     // The plugin writes into Tauri's app config directory and that path cannot
     // be redirected, so in portable mode `window_state` takes over and writes

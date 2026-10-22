@@ -21,6 +21,7 @@ import { Highlight } from "./highlight";
 import { EditorImage } from "./image";
 import { ListBackspace } from "./listBackspace";
 import { PageBreak } from "./pageBreak";
+import { Heading, Paragraph, Reminders } from "./reminder";
 import { HardBreak, Table, TableCell, TableHeader, TableRow } from "./table";
 import { TaskItem, TaskList, TaskListMarkdown } from "./taskList";
 import { Text } from "./text";
@@ -41,13 +42,18 @@ function buildContentExtensions(): Extensions {
     StarterKit.configure({
       codeBlock: false,
       hardBreak: false,
+      heading: false,
       link: false,
+      paragraph: false,
       text: false,
       underline: false
     }),
     // Replaces StarterKit's text node: tiptap-markdown's serializer for it
     // would escape "<" and ">" into entities on every save (text.ts).
     Text,
+    // Paragraph and heading carry a block's reminder (reminder.ts).
+    Paragraph,
+    Heading,
     CodeBlock,
     ListBackspace,
     HardBreak,
@@ -100,7 +106,8 @@ export function buildEditorExtensions(): Extensions {
     HeadingNumbering,
     TableGrips,
     InactiveSelection,
-    PageLines
+    PageLines,
+    Reminders
   ];
 }
 

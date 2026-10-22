@@ -41,6 +41,8 @@ import {
 import { FileTree, type BatchEntry, type PendingEntryRename } from "@/components/FileTree";
 import type { VaultIconMap } from "@/lib/vaultIcons";
 import { WorkingSetPanel } from "@/components/sidebar/WorkingSetPanel";
+import { ReminderBell } from "@/components/reminders/ReminderBell";
+import { useRemindersStore } from "@/store/useRemindersStore";
 import {
   SharedVaultCreateAction,
   SharedVaultItems,
@@ -466,6 +468,17 @@ export function Sidebar({
               </MenuPositioner>
             </MenuPortal>
           </Menu>
+
+          <ReminderBell
+            disabled={isLoading || folderPath === null}
+            onOpenReminder={(reminder) => {
+              useRemindersStore
+                .getState()
+                .requestReveal({ filePath: reminder.filePath, ordinal: reminder.ordinal, due: reminder.due });
+              void onSelectFilePath(reminder.filePath);
+              onClose?.();
+            }}
+          />
 
           <Button
             type="button"

@@ -694,7 +694,8 @@
       "moveTableColumnLeft": "表の列を左へ移動",
       "moveTableColumnRight": "表の列を右へ移動",
       "toggleDetailsPanel": "詳細パネル（アウトライン・リンク・バックリンク・ファイル情報）の表示を切り替え",
-      "closeWorkingSetEntry": "「作業中」のノートを閉じる"
+      "closeWorkingSetEntry": "「作業中」のノートを閉じる",
+      "reminder": "リマインダーを設定または編集"
     },
     "recording": "キーを押してください …",
     "recordHint": "新しいキーの組み合わせを押してください（Ctrl または Alt を含める必要があります）。Esc で中止します。",
@@ -860,7 +861,9 @@
     "pageLinesToggle": "改ページを表示（PDF、{{size}}）",
     "printButton": "印刷",
     "downloadMarkdown": "Markdown としてダウンロード",
-    "spellcheckDictionaryMissing": "「{{code}}」用のスペルチェック辞書が見つかりません。パッケージマネージャーで Hunspell 辞書（例: hunspell-{{code}}）をインストールしてください。"
+    "spellcheckDictionaryMissing": "「{{code}}」用のスペルチェック辞書が見つかりません。パッケージマネージャーで Hunspell 辞書（例: hunspell-{{code}}）をインストールしてください。",
+    "reminder": "リマインダーを設定",
+    "reminderEdit": "リマインダーを編集"
   },
   "findReplace": {
     "panelLabel": "検索と置換",
@@ -1452,5 +1455,42 @@
     "serverDisconnect": "接続を解除",
     "serverDisconnectConfirm": "本当に解除しますか？",
     "serverDisconnectHint": "解除すると、この端末のアクセスキーがサーバー上で無効になります。サーバー上のノートはそのまま残ります。"
+  },
+  "reminders": {
+    "bell": "リマインダー: {{due}}",
+    "bellDue": "期限のリマインダー: {{due}}",
+    "dialog": {
+      "eyebrow": "リマインダー",
+      "title": "リマインダーを設定",
+      "titleEdit": "リマインダー",
+      "dueSince": "{{due}} から期限切れ",
+      "contentLabel": "リマインダーの内容",
+      "emptyBlock": "(空の行)",
+      "date": "日付",
+      "time": "時刻",
+      "note": "メモ (任意)",
+      "notePlaceholder": "テキストの前に表示されます (例: 「見直す」)",
+      "snooze": "スヌーズ:",
+      "snoozeHour": "1 時間",
+      "snoozeTomorrow": "明日 9:00",
+      "remove": "削除",
+      "save": "保存",
+      "snoozeSameTimeTomorrow": "明日 {{time}}"
+    },
+    "droppedOnJoin_other": "段落を結合したため、リマインダーが {{count}} 件削除されました。上の段落のものを残しています。",
+    "undo": "元に戻す",
+    "overdueOnOpen_other": "{{count}} 件のリマインダーが期限切れです。",
+    "show": "表示",
+    "sidebar": {
+      "button": "リマインダー",
+      "buttonDue_other": "リマインダー (期限 {{count}} 件)",
+      "empty": "このボールトにはリマインダーがありません。エディターのツールバーのベルで設定できます。",
+      "due": "期限",
+      "upcoming": "今後",
+      "inNote": "ノート「{{note}}」"
+    },
+    "notification": {
+      "title": "ScribeDog リマインダー"
+    }
   }
 }

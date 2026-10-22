@@ -695,7 +695,8 @@
       "moveTableColumnLeft": "Mover columna de la tabla a la izquierda",
       "moveTableColumnRight": "Mover columna de la tabla a la derecha",
       "toggleDetailsPanel": "Mostrar/ocultar el panel de detalles (esquema, enlaces, retroenlaces e información del archivo)",
-      "closeWorkingSetEntry": "Cerrar la nota de «En curso»"
+      "closeWorkingSetEntry": "Cerrar la nota de «En curso»",
+      "reminder": "Crear o editar un recordatorio"
     },
     "recording": "Pulsa una tecla …",
     "recordHint": "Pulsa la nueva combinación (debe incluir Ctrl o Alt); Esc cancela.",
@@ -861,7 +862,9 @@
     "pageLinesToggle": "Mostrar saltos de página (PDF, {{size}})",
     "printButton": "Imprimir",
     "downloadMarkdown": "Descargar como Markdown",
-    "spellcheckDictionaryMissing": "No se encontró ningún diccionario ortográfico para «{{code}}». Instala un diccionario Hunspell (p. ej. hunspell-{{code}}) mediante tu gestor de paquetes."
+    "spellcheckDictionaryMissing": "No se encontró ningún diccionario ortográfico para «{{code}}». Instala un diccionario Hunspell (p. ej. hunspell-{{code}}) mediante tu gestor de paquetes.",
+    "reminder": "Crear recordatorio",
+    "reminderEdit": "Editar recordatorio"
   },
   "findReplace": {
     "panelLabel": "Buscar y reemplazar",
@@ -1453,5 +1456,45 @@
     "serverDisconnect": "Desconectar",
     "serverDisconnectConfirm": "¿Desconectar de verdad?",
     "serverDisconnectHint": "Al desconectar se revoca la clave de acceso de este dispositivo en el servidor. Las notas del servidor no se tocan."
+  },
+  "reminders": {
+    "bell": "Recordatorio: {{due}}",
+    "bellDue": "Recordatorio vencido: {{due}}",
+    "dialog": {
+      "eyebrow": "Recordatorio",
+      "title": "Crear un recordatorio",
+      "titleEdit": "Recordatorio",
+      "dueSince": "Vencido desde {{due}}",
+      "contentLabel": "Contenido del recordatorio",
+      "emptyBlock": "(línea vacía)",
+      "date": "Fecha",
+      "time": "Hora",
+      "note": "Nota (opcional)",
+      "notePlaceholder": "Aparece antes del texto, p. ej. «Revisar»",
+      "snooze": "Posponer:",
+      "snoozeHour": "1 hora",
+      "snoozeTomorrow": "Mañana 9:00",
+      "remove": "Quitar",
+      "save": "Guardar",
+      "snoozeSameTimeTomorrow": "Mañana {{time}}"
+    },
+    "droppedOnJoin_one": "Ambos párrafos tenían un recordatorio. Se conservó el de arriba.",
+    "droppedOnJoin_other": "Al unir los párrafos se quitaron {{count}} recordatorios.",
+    "undo": "Deshacer",
+    "overdueOnOpen_one": "{{count}} recordatorio está vencido.",
+    "overdueOnOpen_other": "{{count}} recordatorios están vencidos.",
+    "show": "Mostrar",
+    "sidebar": {
+      "button": "Recordatorios",
+      "buttonDue_one": "Recordatorios ({{count}} vencido)",
+      "buttonDue_other": "Recordatorios ({{count}} vencidos)",
+      "empty": "No hay recordatorios en este vault. Crea uno con la campana de la barra del editor.",
+      "due": "Vencidos",
+      "upcoming": "Próximos",
+      "inNote": "En la nota «{{note}}»"
+    },
+    "notification": {
+      "title": "Recordatorio de ScribeDog"
+    }
   }
 }

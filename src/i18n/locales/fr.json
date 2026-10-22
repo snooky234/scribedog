@@ -695,7 +695,8 @@
       "moveTableColumnLeft": "Déplacer la colonne du tableau vers la gauche",
       "moveTableColumnRight": "Déplacer la colonne du tableau vers la droite",
       "toggleDetailsPanel": "Afficher/masquer le panneau de détails (plan, liens, rétroliens et infos du fichier)",
-      "closeWorkingSetEntry": "Fermer la note dans « En cours »"
+      "closeWorkingSetEntry": "Fermer la note dans « En cours »",
+      "reminder": "Ajouter ou modifier un rappel"
     },
     "recording": "Appuyez sur une touche …",
     "recordHint": "Appuyez sur la nouvelle combinaison (elle doit contenir Ctrl ou Alt) — Échap annule.",
@@ -861,7 +862,9 @@
     "pageLinesToggle": "Afficher les sauts de page (PDF, {{size}})",
     "printButton": "Imprimer",
     "downloadMarkdown": "Télécharger en Markdown",
-    "spellcheckDictionaryMissing": "Aucun dictionnaire orthographique trouvé pour « {{code}} ». Installez un dictionnaire Hunspell (par ex. hunspell-{{code}}) via votre gestionnaire de paquets."
+    "spellcheckDictionaryMissing": "Aucun dictionnaire orthographique trouvé pour « {{code}} ». Installez un dictionnaire Hunspell (par ex. hunspell-{{code}}) via votre gestionnaire de paquets.",
+    "reminder": "Ajouter un rappel",
+    "reminderEdit": "Modifier le rappel"
   },
   "findReplace": {
     "panelLabel": "Rechercher et remplacer",
@@ -1453,5 +1456,45 @@
     "serverDisconnect": "Déconnecter",
     "serverDisconnectConfirm": "Vraiment déconnecter ?",
     "serverDisconnectHint": "La déconnexion révoque la clé d'accès de cet appareil sur le serveur. Les notes sur le serveur restent intactes."
+  },
+  "reminders": {
+    "bell": "Rappel : {{due}}",
+    "bellDue": "Rappel échu : {{due}}",
+    "dialog": {
+      "eyebrow": "Rappel",
+      "title": "Ajouter un rappel",
+      "titleEdit": "Rappel",
+      "dueSince": "Échu depuis {{due}}",
+      "contentLabel": "Contenu du rappel",
+      "emptyBlock": "(ligne vide)",
+      "date": "Date",
+      "time": "Heure",
+      "note": "Note (facultative)",
+      "notePlaceholder": "Affichée avant le texte, p. ex. « Retravailler »",
+      "snooze": "Reporter :",
+      "snoozeHour": "1 heure",
+      "snoozeTomorrow": "Demain 9:00",
+      "remove": "Supprimer",
+      "save": "Enregistrer",
+      "snoozeSameTimeTomorrow": "Demain {{time}}"
+    },
+    "droppedOnJoin_one": "Les deux paragraphes avaient un rappel. Celui du haut a été conservé.",
+    "droppedOnJoin_other": "{{count}} rappels ont été supprimés lors de la fusion des paragraphes.",
+    "undo": "Annuler",
+    "overdueOnOpen_one": "{{count}} rappel est en retard.",
+    "overdueOnOpen_other": "{{count}} rappels sont en retard.",
+    "show": "Afficher",
+    "sidebar": {
+      "button": "Rappels",
+      "buttonDue_one": "Rappels ({{count}} échu)",
+      "buttonDue_other": "Rappels ({{count}} échus)",
+      "empty": "Aucun rappel dans ce vault. Ajoutez-en un avec la cloche de la barre d'outils de l'éditeur.",
+      "due": "Échus",
+      "upcoming": "À venir",
+      "inNote": "Dans la note « {{note}} »"
+    },
+    "notification": {
+      "title": "Rappel ScribeDog"
+    }
   }
 }

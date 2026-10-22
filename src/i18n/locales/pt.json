@@ -695,7 +695,8 @@
       "moveTableColumnLeft": "Mover coluna da tabela para a esquerda",
       "moveTableColumnRight": "Mover coluna da tabela para a direita",
       "toggleDetailsPanel": "Mostrar/ocultar o painel de detalhes (estrutura, links, backlinks e informações do arquivo)",
-      "closeWorkingSetEntry": "Fechar a nota em \"Em andamento\""
+      "closeWorkingSetEntry": "Fechar a nota em \"Em andamento\"",
+      "reminder": "Definir ou editar um lembrete"
     },
     "recording": "Prima uma tecla …",
     "recordHint": "Prima a nova combinação (tem de incluir Ctrl ou Alt) — Esc cancela.",
@@ -861,7 +862,9 @@
     "pageLinesToggle": "Mostrar quebras de página (PDF, {{size}})",
     "printButton": "Imprimir",
     "downloadMarkdown": "Transferir como Markdown",
-    "spellcheckDictionaryMissing": "Nenhum dicionário ortográfico encontrado para \"{{code}}\". Instale um dicionário Hunspell (por ex. hunspell-{{code}}) através do seu gerenciador de pacotes."
+    "spellcheckDictionaryMissing": "Nenhum dicionário ortográfico encontrado para \"{{code}}\". Instale um dicionário Hunspell (por ex. hunspell-{{code}}) através do seu gerenciador de pacotes.",
+    "reminder": "Definir lembrete",
+    "reminderEdit": "Editar lembrete"
   },
   "findReplace": {
     "panelLabel": "Localizar e substituir",
@@ -1453,5 +1456,45 @@
     "serverDisconnect": "Desligar",
     "serverDisconnectConfirm": "Desligar mesmo?",
     "serverDisconnectHint": "Ao desligar, a chave de acesso deste dispositivo é revogada no servidor. As notas no servidor ficam intactas."
+  },
+  "reminders": {
+    "bell": "Lembrete: {{due}}",
+    "bellDue": "Lembrete vencido: {{due}}",
+    "dialog": {
+      "eyebrow": "Lembrete",
+      "title": "Definir um lembrete",
+      "titleEdit": "Lembrete",
+      "dueSince": "Vencido desde {{due}}",
+      "contentLabel": "Conteúdo do lembrete",
+      "emptyBlock": "(linha vazia)",
+      "date": "Data",
+      "time": "Hora",
+      "note": "Nota (opcional)",
+      "notePlaceholder": "Aparece antes do texto, p. ex. \"Revisar\"",
+      "snooze": "Adiar:",
+      "snoozeHour": "1 hora",
+      "snoozeTomorrow": "Amanhã 9:00",
+      "remove": "Remover",
+      "save": "Salvar",
+      "snoozeSameTimeTomorrow": "Amanhã {{time}}"
+    },
+    "droppedOnJoin_one": "Os dois parágrafos tinham um lembrete. Foi mantido o de cima.",
+    "droppedOnJoin_other": "Ao juntar os parágrafos, {{count}} lembretes foram removidos.",
+    "undo": "Desfazer",
+    "overdueOnOpen_one": "{{count}} lembrete está atrasado.",
+    "overdueOnOpen_other": "{{count}} lembretes estão atrasados.",
+    "show": "Mostrar",
+    "sidebar": {
+      "button": "Lembretes",
+      "buttonDue_one": "Lembretes ({{count}} vencido)",
+      "buttonDue_other": "Lembretes ({{count}} vencidos)",
+      "empty": "Nenhum lembrete neste vault. Defina um com o sino na barra do editor.",
+      "due": "Vencidos",
+      "upcoming": "Próximos",
+      "inNote": "Na nota \"{{note}}\""
+    },
+    "notification": {
+      "title": "Lembrete do ScribeDog"
+    }
   }
 }
