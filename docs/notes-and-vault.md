@@ -169,10 +169,11 @@ cursor in it (no need to select anything) and click the bell in the editor
 toolbar, or press `Ctrl+Alt+R`. Pick a date and a time, and add a short note
 if you like. Without a note, the reminder is simply the paragraph's text.
 
-<img src="images/scribe-dog-reminders.png" alt="ScribeDog reminders: bells in the note and the list in the sidebar" width="700">
+<img src="images/scribe-dog-reminders.png" alt="ScribeDog reminders: bells in the note and the list in the sidebar" width="623">
 
-A small bell at the end of the line marks the reminder. It turns to the accent
-colour once the reminder is due. Click it to open the same dialog again:
+A small bell at the end of the line marks the reminder. Once the reminder is
+due, it turns to the accent colour and rings briefly every two seconds (not
+when your system is set to reduce motion). Click it to open the same dialog again:
 change the time, snooze a due reminder (by an hour, or to its own time
 tomorrow), or remove it. **Remove** is the only way to take a
 reminder off without deleting its text, and `Ctrl+Z` brings it back.
@@ -180,7 +181,8 @@ reminder off without deleting its text, and `Ctrl+Z` brings it back.
 ### Where you find them
 
 The bell in the sidebar's header lists every reminder in the vault, due ones
-first, and shows how many are due. Pick one to open its note with the
+first and each with the note it is in, and shows how many are due. It rings
+along while something is due. Pick one to open its note with the
 paragraph selected. On a phone or tablet, where the sidebar is hidden, a
 pulsing dot on the sidebar button says that something is due.
 

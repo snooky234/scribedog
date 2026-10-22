@@ -24,6 +24,9 @@ The editor is built on [TipTap](https://tiptap.dev/) and ProseMirror.
 - **Code blocks**, with a one-click copy button. Inside a list the block
   stays part of its list item, so a numbered step can carry its own code.
 - An **emoji picker** with search, including keywords in your language
+- **Reminders** on any paragraph, heading or list item, set with the bell in
+  the toolbar or `Ctrl+Alt+R` (see
+  [Reminders](notes-and-vault.md#reminders))
 
 Undo and redo work from the toolbar and with `Ctrl+Z` and `Ctrl+Y`.
 
