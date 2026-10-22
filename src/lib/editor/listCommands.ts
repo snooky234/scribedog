@@ -2,6 +2,81 @@ import { Fragment, type Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { NodeSelection, TextSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 
+// Space kept between a moved block and the edge of the scroll area.
+const REVEAL_MARGIN = 24;
+
+function scrollParent(element: HTMLElement): HTMLElement | null {
+  for (let current = element.parentElement; current; current = current.parentElement) {
+    if (current.scrollHeight > current.clientHeight && /(auto|scroll)/.test(getComputedStyle(current).overflowY)) {
+      return current;
+    }
+  }
+
+  return null;
+}
+
+// Scrolls a moved block into view, in place of tr.scrollIntoView. That one
+// measures the caret during the dispatch, and moving a code block down
+// rebuilds its node view (ProseMirror keeps the sibling's DOM and recreates
+// the block's), whose content React has not attached yet: the caret measured
+// at the top of the window, ProseMirror scrolled up by the height of
+// everything above the editor, and the next move jumped back down. Moving up
+// keeps the block's DOM, which is why only the way down jumped. The outer
+// elements of the moved nodes are in place right after the dispatch, so the
+// view scrolls just far enough to show the whole block; a block taller than
+// the view keeps the caret visible instead, measured once its content is in.
+function revealMovedRange(view: EditorView, start: number, end: number): void {
+  const reveal = () => {
+    if (view.isDestroyed) {
+      return;
+    }
+
+    const scroller = scrollParent(view.dom);
+
+    if (!scroller) {
+      return;
+    }
+
+    const area = scroller.getBoundingClientRect();
+    const top = area.top + REVEAL_MARGIN;
+    const bottom = area.bottom - REVEAL_MARGIN;
+    // The outer elements of the first and the last moved node: ProseMirror
+    // puts those in place during the dispatch, while a node view's inner
+    // content may still be on its way.
+    const lastNode = view.state.doc.resolve(end).nodeBefore;
+    const first = view.nodeDOM(start);
+    const last = lastNode ? view.nodeDOM(end - lastNode.nodeSize) : null;
+
+    if (!(first instanceof HTMLElement) || !(last instanceof HTMLElement)) {
+      return;
+    }
+
+    let rangeTop = first.getBoundingClientRect().top;
+    let rangeBottom = last.getBoundingClientRect().bottom;
+
+    if (rangeBottom - rangeTop > bottom - top) {
+      if (!view.domAtPos(view.state.selection.head).node.isConnected) {
+        return;
+      }
+
+      const caret = view.coordsAtPos(view.state.selection.head);
+      rangeTop = caret.top;
+      rangeBottom = caret.bottom;
+    }
+
+    if (rangeBottom > bottom) {
+      scroller.scrollTop += Math.min(rangeBottom - bottom, rangeTop - top);
+    } else if (rangeTop < top) {
+      scroller.scrollTop -= top - rangeTop;
+    }
+  };
+
+  // Right away, so the block does not show below the edge for a frame, and
+  // once more when the node views have rendered and the sizes are final.
+  reveal();
+  requestAnimationFrame(reveal);
+}
+
 // Shared implementation behind moveListItem and moveLine: swaps the node(s)
 // at `depth` that the selection spans with the adjacent sibling in that
 // direction. Both callers just pick a different depth — a list item's own
@@ -59,9 +134,11 @@ function moveSiblingsAtDepth(view: EditorView, direction: "up" | "down", depth: 
       ? NodeSelection.create(tr.doc, from + offset)
       : TextSelection.create(tr.doc, from + offset, to + offset)
   );
-  tr.scrollIntoView();
-
+  // No tr.scrollIntoView(): revealMovedRange scrolls instead (see there).
   view.dispatch(tr);
+
+  const movedStart = direction === "up" ? newRangeStart : newRangeStart + sibling.nodeSize;
+  revealMovedRange(view, movedStart, movedStart + (rangeEnd - rangeStart));
   return true;
 }
 
@@ -160,9 +237,9 @@ function moveListItemAcrossBlock(view: EditorView, direction: "up" | "down", ite
       ? NodeSelection.create(tr.doc, newItemStart + anchor)
       : TextSelection.create(tr.doc, newItemStart + anchor, newItemStart + head)
   );
-  tr.scrollIntoView();
-
+  // No tr.scrollIntoView(): revealMovedRange scrolls instead (see there).
   view.dispatch(tr);
+  revealMovedRange(view, newItemStart - 1, newItemStart - 1 + item.nodeSize);
   return true;
 }
 

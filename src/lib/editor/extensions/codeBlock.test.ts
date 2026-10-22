@@ -370,3 +370,46 @@ describe("toggling a code block in a paragraph with line breaks", () => {
     expect(after).toEqual(before);
   });
 });
+
+describe("ArrowDown at the end of a code block", () => {
+  const codeBlock = (text: string): JSONContent => ({ type: "codeBlock", content: [{ type: "text", text }] });
+
+  function arrowDownAtEndOf(doc: JSONContent, code: string): { doc: JSONNode; caretIn: string } {
+    const editor = createEditor(doc);
+    placeCaret(editor, code, code.length);
+    // Straight to ProseMirror: the keyboardShortcut command keeps only the
+    // document steps of what a key does, not a caret that merely moves.
+    const event = new KeyboardEvent("keydown", { key: "ArrowDown" });
+    editor.view.someProp("handleKeyDown", (handler) => handler(editor.view, event));
+
+    const result = { doc: editor.getJSON() as JSONNode, caretIn: editor.state.selection.$from.parent.textContent };
+    editor.destroy();
+
+    return result;
+  }
+
+  it("moves to the next list item instead of adding a line to this one", () => {
+    const doc: JSONContent = { type: "doc", content: [orderedList([paragraph("eins"), codeBlock("code")], [paragraph("zwei")]), paragraph("Ende")] };
+    const { doc: after, caretIn } = arrowDownAtEndOf(doc, "code");
+
+    expect(shape(after.content?.[0]?.content?.[0])).toEqual(["eins", { code: "code" }]);
+    expect(caretIn).toBe("zwei");
+  });
+
+  it("leaves a nested list for the next item of the outer one", () => {
+    const doc: JSONContent = {
+      type: "doc",
+      content: [orderedList([paragraph("eins"), orderedList([paragraph("innen"), codeBlock("code")])], [paragraph("zwei")]), paragraph("Ende")]
+    };
+    const { doc: after, caretIn } = arrowDownAtEndOf(doc, "code");
+
+    expect(shape(after.content?.[0]?.content?.[0]?.content?.[1]?.content?.[0])).toEqual(["innen", { code: "code" }]);
+    expect(caretIn).toBe("zwei");
+  });
+
+  it("still adds a line after a block that ends the document", () => {
+    const { doc: after } = arrowDownAtEndOf({ type: "doc", content: [paragraph("eins"), codeBlock("code")] }, "code");
+
+    expect(after.content?.map((child) => child.type)).toEqual(["paragraph", "codeBlock", "paragraph"]);
+  });
+});

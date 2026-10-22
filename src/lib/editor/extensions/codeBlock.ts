@@ -1,8 +1,8 @@
 import { InputRule } from "@tiptap/core";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import type { Node as ProseMirrorNode, NodeType } from "@tiptap/pm/model";
-import { TextSelection } from "@tiptap/pm/state";
-import type { Selection, Transaction } from "@tiptap/pm/state";
+import { Selection, TextSelection } from "@tiptap/pm/state";
+import type { Transaction } from "@tiptap/pm/state";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import type MarkdownIt from "markdown-it";
 
@@ -270,6 +270,35 @@ export const CodeBlock = CodeBlockLowlight.extend({
 
           return commands.toggleNode(this.name, "paragraph", attributes);
         }
+    };
+  },
+
+  addKeyboardShortcuts() {
+    const parent = this.parent?.() ?? {};
+
+    return {
+      ...parent,
+      // TipTap only looks for a node right after the block inside the same
+      // parent. A block that ends a list item has none there, so ArrowDown at
+      // its end called exitCode and put a new empty line into the item,
+      // instead of moving on to the next item below. The caret now goes to
+      // whatever comes next in the document; a new line after the block only
+      // appears where nothing follows at all (Enter three times still adds one
+      // on purpose).
+      ArrowDown: (props) => {
+        const { state, view } = props.editor;
+        const { $from, empty } = state.selection;
+        const atEnd = empty && $from.parent.type === this.type && $from.parentOffset === $from.parent.content.size;
+        const next = atEnd && this.options.exitOnArrowDown ? Selection.findFrom(state.doc.resolve($from.after()), 1) : null;
+
+        if (!next) {
+          return parent.ArrowDown?.(props) ?? false;
+        }
+
+        view.dispatch(state.tr.setSelection(next).scrollIntoView());
+
+        return true;
+      }
     };
   },
 
