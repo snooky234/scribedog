@@ -3,6 +3,12 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.22.1] - 2026-10-24
+
+### Highlights
+- Let the agent set, change and list reminders
+- List the reminders of every vault in the bell
+
 ## [0.22.0] - 2026-10-22
 
 ### Highlights
