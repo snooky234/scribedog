@@ -1496,10 +1496,11 @@
       "button": "Lembretes",
       "buttonDue_one": "Lembretes ({{count}} vencido)",
       "buttonDue_other": "Lembretes ({{count}} vencidos)",
-      "empty": "Nenhum lembrete neste vault. Defina um com o sino na barra do editor.",
+      "empty": "Nenhum lembrete nos seus vaults. Defina um com o sino na barra do editor.",
       "due": "Vencidos",
       "upcoming": "Próximos",
-      "inNote": "Na nota \"{{note}}\""
+      "inNote": "Na nota \"{{note}}\"",
+      "inVaultNote": "Na nota \"{{note}}\" do vault \"{{vault}}\""
     },
     "notification": {
       "title": "Lembrete do ScribeDog"

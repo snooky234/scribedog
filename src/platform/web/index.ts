@@ -167,6 +167,7 @@ export const platform: Platform = {
     },
     // There are no local folders in the browser, so nothing ever goes missing.
     folderExists: async () => true,
+    readReminderNotes: null,
     // The shared vault the tab was in last, while the person is still in it;
     // otherwise the instance's own vault.
     getStartupFolderPath: () => getStartupVault(() => webSharedVaults.overview(REMOTE_VAULT_ROOT)),

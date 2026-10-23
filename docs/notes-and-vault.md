@@ -180,16 +180,24 @@ reminder off without deleting its text, and `Ctrl+Z` brings it back.
 
 ### Where you find them
 
-The bell in the sidebar's header lists every reminder in the vault, due ones
-first and each with the note it is in, and shows how many are due. It rings
-along while something is due. Pick one to open its note with the
-paragraph selected. On a phone or tablet, where the sidebar is hidden, a
-pulsing dot on the sidebar button says that something is due.
+The bell in the sidebar's header lists your reminders, due ones first and
+each with the note it is in, and shows how many are due. It rings along while
+something is due. Pick one to open its note with the paragraph selected. On a
+phone or tablet, where the sidebar is hidden, a pulsing dot on the sidebar
+button says that something is due.
+
+The list is not limited to the open vault. It covers every vault in the vault
+menu: your local folders, server vaults and the shared vaults listed under
+them. A reminder from another vault names that vault next to the note, and
+picking it switches to that vault first. The open vault is kept up to date as
+you type; the others are read again every few minutes and whenever you open
+the list. A server that cannot be reached, or whose sign-in has expired, is
+skipped quietly until it answers again.
 
 While ScribeDog is running, a due reminder also shows up as a notification of
 your operating system (in the browser edition, as a browser notification once
-you allow it). Reminders that came due while the app was closed are announced
-once, when you open the vault.
+you allow it), whichever vault it is in. Reminders that came due while the
+app was closed are announced once, after the start.
 
 ### What happens when you edit the text
 
@@ -212,10 +220,10 @@ once, when you open the vault.
 
 Reminders cannot go into table cells or code blocks.
 
-[Back to the documentation index](README.md)
 ### Let the chat set them
 
 You can also ask the [AI chat](ai-chat.md#reminders): "remind me on Friday
 to rework this paragraph" or "what is due this week?". It sets, moves and
 removes reminders on the right paragraph and lists what is coming up.
 
+[Back to the documentation index](README.md)

@@ -466,6 +466,35 @@ export async function activateVaultStorage(folderPath: string): Promise<void> {
 }
 
 /**
+ * Read access to a server vault (or one of its shared vaults) that is not
+ * open, for the reminders listed across vaults. Nothing is activated, and
+ * nothing asks for a sign-in: the client gets refusal handlers of its own, so
+ * a server whose token was revoked is simply left out instead of opening the
+ * sign-in dialog out of nowhere. Null where the vault cannot be read without
+ * the user (no token, a server that was forgotten).
+ */
+export async function backgroundRemoteVaultStorage(root: string): Promise<VaultStorage | null> {
+  const entry = remoteVaultFor(serverRootOf(root));
+
+  if (!entry) {
+    return null;
+  }
+
+  const client = clientFor(entry);
+  await loadToken(entry, client);
+
+  if (!client.token) {
+    return null;
+  }
+
+  await requireShell().allowServer(originOf(entry.url));
+  const shared = parseSharedVaultRoot(root);
+  const transport = shared ? scopedTransport(client.transport, `/v/${shared.vaultId}`) : client.transport;
+
+  return createRemoteVaultStorage(createServerApi(transport).api, root);
+}
+
+/**
  * The storage of one shared vault: the same client as its server, pointed at
  * that vault's own file API (`/api/v/<id>`), and the person the vault is
  * opened as, which is what gives them their own chat history and proposals

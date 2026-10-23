@@ -1492,10 +1492,11 @@
     "sidebar": {
       "button": "リマインダー",
       "buttonDue_other": "リマインダー (期限 {{count}} 件)",
-      "empty": "このボールトにはリマインダーがありません。エディターのツールバーのベルで設定できます。",
+      "empty": "ボールトにリマインダーがありません。エディターのツールバーのベルで設定できます。",
       "due": "期限",
       "upcoming": "今後",
-      "inNote": "ノート「{{note}}」"
+      "inNote": "ノート「{{note}}」",
+      "inVaultNote": "ボールト「{{vault}}」のノート「{{note}}」"
     },
     "notification": {
       "title": "ScribeDog リマインダー"

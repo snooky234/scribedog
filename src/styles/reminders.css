@@ -232,12 +232,17 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  max-width: 9rem;
+  max-width: 12rem;
   overflow: hidden;
   color: rgba(var(--text-rgb), 0.5);
   font-size: 0.72rem;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The name clips, the icon in front of it stays. */
+.reminder-list__file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .reminder-list__file svg {

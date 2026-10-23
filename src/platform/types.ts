@@ -54,6 +54,9 @@ export type FileSystemApi = {
   remove(path: string, options?: { recursive?: boolean }): Promise<void>;
 };
 
+/** A note as `VaultAccessApi.readReminderNotes` lists it; `content` only where it was read. */
+export type ReminderNoteRecord = MarkdownFileRecord & { content: string | null };
+
 export type MarkdownFileRecord = {
   /** Absolute path in the platform's own notation (see `PathApi`). */
   filePath: string;
@@ -230,6 +233,13 @@ export type VaultAccessApi = {
    * recent-vaults list). Never widens any access.
    */
   folderExists(folderPath: string): Promise<boolean>;
+  /**
+   * The notes of a local vault that is not open, for the reminder list
+   * across vaults: every note with its mtime, and the text of those whose
+   * mtime differs from `known` and that carry a reminder marker. Reads
+   * without widening any access; null where there are no local folders.
+   */
+  readReminderNotes: ((folderPath: string, known: Record<string, number>) => Promise<ReminderNoteRecord[]>) | null;
   /** Called once at startup; null means "no vault to open automatically". */
   getStartupFolderPath(): Promise<string | null>;
   /**

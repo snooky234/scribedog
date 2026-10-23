@@ -3,6 +3,7 @@ mod http_scope;
 mod portable;
 mod print_preview;
 mod rag;
+mod reminders;
 mod remote_vault;
 mod voice;
 mod window_state;
@@ -19,7 +20,7 @@ use tauri_plugin_fs::FsExt;
 pub(crate) const FOLDER_FILES_CHANGED_EVENT: &str = "scribedog-folder-files-changed";
 
 /// Mirrors VAULT_META_DIR_NAME in src/lib/fileSystem.ts.
-const VAULT_META_DIR_NAME: &str = ".scribedog";
+pub(crate) const VAULT_META_DIR_NAME: &str = ".scribedog";
 
 // The app writes its own state into the vault (staged changes, chat sessions,
 // checkpoints, sort order), and every one of those writes lands under the
@@ -465,6 +466,7 @@ pub fn run() {
             store_api_key,
             get_api_key,
             print_preview::set_print_preview_open,
+            reminders::read_reminder_notes,
             remote_vault::allow_remote_vault_origin,
             remote_vault::remote_vault_request,
             remote_vault::store_remote_vault_token,

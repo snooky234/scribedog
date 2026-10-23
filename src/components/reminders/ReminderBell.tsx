@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Menu, MenuItem, MenuPopup, MenuPortal, MenuPositioner, MenuTrigger } from "@/components/ui/menu";
+import { getFolderBasename } from "@/lib/fileSystem";
 import { formatDueLabel, isReminderDue } from "@/lib/reminders/reminderTime";
 import type { VaultReminder } from "@/lib/reminders/vaultReminders";
-import { listVaultReminders, useRemindersStore } from "@/store/useRemindersStore";
+import { listAllReminders, useRemindersStore } from "@/store/useRemindersStore";
 
 const CLOCK_INTERVAL_MS = 30_000;
 
@@ -27,12 +28,21 @@ export function useClock(): number {
   return now;
 }
 
-/** How many reminders of the vault are due right now. */
-export function useDueReminderCount(): number {
+/** Every reminder of every vault in the vault menu, earliest first. */
+function useAllReminders(): VaultReminder[] {
+  const folderPath = useRemindersStore((state) => state.folderPath);
   const byFile = useRemindersStore((state) => state.byFile);
+  const otherVaults = useRemindersStore((state) => state.otherVaults);
+
+  return useMemo(() => listAllReminders({ folderPath, byFile, otherVaults }), [folderPath, byFile, otherVaults]);
+}
+
+/** How many reminders are due right now, across the vaults. */
+export function useDueReminderCount(): number {
+  const reminders = useAllReminders();
   const now = useClock();
 
-  return useMemo(() => listVaultReminders(byFile).filter((reminder) => isReminderDue(reminder, now)).length, [byFile, now]);
+  return useMemo(() => reminders.filter((reminder) => isReminderDue(reminder, now)).length, [reminders, now]);
 }
 
 /**
@@ -60,38 +70,48 @@ type ReminderBellProps = {
 };
 
 /**
- * The bell in the sidebar's header: how many reminders of the vault are due,
- * and the list of all of them, due ones first. Picking one opens its note and
+ * The bell in the sidebar's header: how many reminders are due, and the list
+ * of all of them, due ones first. It spans every vault of the vault menu, so
+ * a reminder in another vault is not out of sight; an entry from another
+ * vault names it. Picking one opens its note (and its vault, if need be) and
  * selects the block.
  */
 export function ReminderBell({ disabled, onOpenReminder }: ReminderBellProps) {
   const { t } = useTranslation();
-  const byFile = useRemindersStore((state) => state.byFile);
+  const folderPath = useRemindersStore((state) => state.folderPath);
   const open = useRemindersStore((state) => state.popoverOpen);
   const setOpen = useRemindersStore((state) => state.setPopoverOpen);
   const now = useClock();
-  const reminders = useMemo(() => listVaultReminders(byFile), [byFile]);
+  const reminders = useAllReminders();
   const due = reminders.filter((reminder) => isReminderDue(reminder, now));
   const upcoming = reminders.filter((reminder) => !isReminderDue(reminder, now));
   const label = due.length > 0 ? t("reminders.sidebar.buttonDue", { count: due.length }) : t("reminders.sidebar.button");
 
-  const renderItem = (reminder: VaultReminder, isDue: boolean) => (
-    <MenuItem
-      key={`${reminder.filePath}:${reminder.ordinal}`}
-      className="reminder-list__item"
-      onClick={() => onOpenReminder(reminder)}
-    >
-      <span className={`reminder-list__due${isDue ? " reminder-list__due--due" : ""}`}>{formatDueLabel(reminder.due)}</span>
-      <span className={`reminder-list__text${reminder.checked ? " reminder-list__text--checked" : ""}`}>
-        {reminder.note ? <strong>{reminder.note} </strong> : null}
-        {reminder.text || t("reminders.dialog.emptyBlock")}
-      </span>
-      <span className="reminder-list__file" title={t("reminders.sidebar.inNote", { note: fileLabel(reminder.filePath) })}>
-        <FileText aria-hidden="true" />
-        {fileLabel(reminder.filePath)}
-      </span>
-    </MenuItem>
-  );
+  const renderItem = (reminder: VaultReminder, isDue: boolean) => {
+    const note = fileLabel(reminder.filePath);
+    const vault = reminder.vaultRoot === folderPath ? null : getFolderBasename(reminder.vaultRoot);
+
+    return (
+      <MenuItem
+        key={`${reminder.vaultRoot}:${reminder.filePath}:${reminder.ordinal}`}
+        className="reminder-list__item"
+        onClick={() => onOpenReminder(reminder)}
+      >
+        <span className={`reminder-list__due${isDue ? " reminder-list__due--due" : ""}`}>{formatDueLabel(reminder.due)}</span>
+        <span className={`reminder-list__text${reminder.checked ? " reminder-list__text--checked" : ""}`}>
+          {reminder.note ? <strong>{reminder.note} </strong> : null}
+          {reminder.text || t("reminders.dialog.emptyBlock")}
+        </span>
+        <span
+          className="reminder-list__file"
+          title={vault ? t("reminders.sidebar.inVaultNote", { note, vault }) : t("reminders.sidebar.inNote", { note })}
+        >
+          <FileText aria-hidden="true" />
+          <span className="reminder-list__file-name">{vault ? `${vault} / ${note}` : note}</span>
+        </span>
+      </MenuItem>
+    );
+  };
 
   return (
     <Menu open={open} onOpenChange={setOpen}>

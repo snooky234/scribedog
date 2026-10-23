@@ -1496,10 +1496,11 @@
       "button": "Recordatorios",
       "buttonDue_one": "Recordatorios ({{count}} vencido)",
       "buttonDue_other": "Recordatorios ({{count}} vencidos)",
-      "empty": "No hay recordatorios en este vault. Crea uno con la campana de la barra del editor.",
+      "empty": "No hay recordatorios en tus vaults. Crea uno con la campana de la barra del editor.",
       "due": "Vencidos",
       "upcoming": "Próximos",
-      "inNote": "En la nota «{{note}}»"
+      "inNote": "En la nota «{{note}}»",
+      "inVaultNote": "En la nota «{{note}}» del vault «{{vault}}»"
     },
     "notification": {
       "title": "Recordatorio de ScribeDog"

@@ -214,7 +214,8 @@ that still moves them.
 **Do reminders work in the browser?**
 Yes. A reminder is stored in the note itself (a comment at the end of the
 paragraph), so it is the same reminder in the browser, on the phone and in
-the desktop app. The bell in the sidebar lists them. A notification when one
+the desktop app. The bell in the sidebar lists them, from your own vault and
+from the shared vaults you are in. A notification when one
 comes due needs an open tab: the browser asks for permission the first time
 you save a reminder, and nothing is sent while no tab is open. The server
 itself does not send reminders (no e-mail, no push) yet; a reminder that came

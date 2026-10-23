@@ -42,7 +42,6 @@ import { FileTree, type BatchEntry, type PendingEntryRename } from "@/components
 import type { VaultIconMap } from "@/lib/vaultIcons";
 import { WorkingSetPanel } from "@/components/sidebar/WorkingSetPanel";
 import { ReminderBell } from "@/components/reminders/ReminderBell";
-import { useRemindersStore } from "@/store/useRemindersStore";
 import {
   SharedVaultCreateAction,
   SharedVaultItems,
@@ -59,6 +58,7 @@ import {
   type DropPayload
 } from "@/lib/dragDrop/droppedSources";
 import { canDownloadFolderArchive } from "@/lib/export/markdownDownload";
+import type { VaultReminder } from "@/lib/reminders/vaultReminders";
 import { formatFolderLabel, getFolderBasename, pruneMissingRecentFolderPaths } from "@/lib/fileSystem";
 import {
   getRemoteVaultsSnapshot,
@@ -108,6 +108,8 @@ type SidebarProps = {
   onOpenFolder: () => void;
   recentFolderPaths: string[];
   onOpenRecentFolder: (folderPath: string) => void;
+  /** Opens a reminder's note, in whichever vault of the vault menu it lives. */
+  onOpenReminder: (reminder: VaultReminder) => void;
   /** "Add server vault…"; absent where the shell cannot reach a server. */
   onAddRemoteVault?: () => void;
   onCreateFile: () => void;
@@ -166,6 +168,7 @@ export function Sidebar({
   onOpenFolder,
   recentFolderPaths,
   onOpenRecentFolder,
+  onOpenReminder,
   onAddRemoteVault,
   onCreateFile,
   onCreateFileRequest,
@@ -469,13 +472,11 @@ export function Sidebar({
             </MenuPortal>
           </Menu>
 
+          {/* Not tied to an open vault: the list spans every vault of the menu. */}
           <ReminderBell
-            disabled={isLoading || folderPath === null}
+            disabled={isLoading}
             onOpenReminder={(reminder) => {
-              useRemindersStore
-                .getState()
-                .requestReveal({ filePath: reminder.filePath, ordinal: reminder.ordinal, due: reminder.due });
-              void onSelectFilePath(reminder.filePath);
+              onOpenReminder(reminder);
               onClose?.();
             }}
           />

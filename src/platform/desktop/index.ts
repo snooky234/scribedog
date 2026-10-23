@@ -18,6 +18,7 @@ import { isRemoteVaultPath } from "@/platform/remote/vaultRoot";
 import type {
   Platform,
   PortableStatus,
+  ReminderNoteRecord,
   SpellcheckDictionaryStatus,
   VoiceModelDownloadProgress,
   VoiceModelStatus
@@ -91,6 +92,7 @@ export const platform: Platform = {
     allowFileAccess: (filePath) => invoke("allow_file_scope", { filePath }),
     watchFolder: (folderPath) => invoke("watch_folder", { folderPath }),
     folderExists: (folderPath) => invoke<boolean>("folder_exists", { folderPath }),
+    readReminderNotes: (folderPath, known) => invoke<ReminderNoteRecord[]>("read_reminder_notes", { folderPath, known }),
     getStartupFolderPath: () => invoke<string | null>("get_startup_folder_path"),
     onFolderFilesChanged: (handler) =>
       listen<string>(FOLDER_FILES_CHANGED_EVENT, (event) => handler(event.payload)),

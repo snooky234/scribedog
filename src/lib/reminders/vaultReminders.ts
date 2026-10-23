@@ -14,7 +14,11 @@ export type NoteReminder = Reminder & {
   ordinal: number;
 };
 
-export type VaultReminder = NoteReminder & { filePath: string };
+export type VaultReminder = NoteReminder & {
+  filePath: string;
+  /** The root of the vault the note lives in; the list spans every vault of the vault menu. */
+  vaultRoot: string;
+};
 
 // The same rule the editor and the export use, so a marker counts here
 // exactly where it would show up as a bell (not in a code block, not in the

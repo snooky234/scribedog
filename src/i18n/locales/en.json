@@ -1496,10 +1496,11 @@
       "button": "Reminders",
       "buttonDue_one": "Reminders ({{count}} due)",
       "buttonDue_other": "Reminders ({{count}} due)",
-      "empty": "No reminders in this vault. Set one with the bell in the editor toolbar.",
+      "empty": "No reminders in your vaults. Set one with the bell in the editor toolbar.",
       "due": "Due",
       "upcoming": "Upcoming",
-      "inNote": "In the note \"{{note}}\""
+      "inNote": "In the note \"{{note}}\"",
+      "inVaultNote": "In the note \"{{note}}\" in the vault \"{{vault}}\""
     },
     "notification": {
       "title": "ScribeDog reminder"

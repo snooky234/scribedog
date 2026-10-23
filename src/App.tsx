@@ -51,6 +51,7 @@ import {
   getRelativeDisplayPath,
   subscribeToRecentFolderPaths
 } from "@/lib/fileSystem";
+import type { VaultReminder } from "@/lib/reminders/vaultReminders";
 import { allowKnownRemoteServers } from "@/lib/remoteVaults";
 import {
   describeNotePath,
@@ -82,6 +83,7 @@ import { useAiSettingsStore } from "@/store/useAiSettingsStore";
 import { useChatStore } from "@/store/useChatStore";
 import { useRagEmbeddingStore } from "@/store/useRagEmbeddingStore";
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
+import { useRemindersStore } from "@/store/useRemindersStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useNavigationHistoryStore } from "@/store/useNavigationHistoryStore";
 import { useSessionStore } from "@/store/useSessionStore";
@@ -981,6 +983,35 @@ function App() {
       setLastOpenedRelativePath(folderPath, null);
     }
   }, [folderPath, isLoading, filePaths, reopenLastNote, selectedFilePath, selectFilePath]);
+
+  // The bell lists the reminders of every vault in the vault menu. One in
+  // another vault opens that vault first, and its note instead of the one
+  // the vault would reopen on its own, which would otherwise race it.
+  const openReminderSafely = async (reminder: VaultReminder) => {
+    const reveal = () =>
+      useRemindersStore.getState().requestReveal({ filePath: reminder.filePath, ordinal: reminder.ordinal, due: reminder.due });
+
+    if (reminder.vaultRoot === folderPath) {
+      reveal();
+      await selectFilePathSafely(reminder.filePath);
+      setIsSidebarSheetOpen(false);
+      return;
+    }
+
+    if (!(await leaveCurrentNote())) {
+      return;
+    }
+
+    restoredFolderRef.current = reminder.vaultRoot;
+
+    if (!(await openFolderAtPath(reminder.vaultRoot))) {
+      return;
+    }
+
+    reveal();
+    await selectFilePath(reminder.filePath);
+    setIsSidebarSheetOpen(false);
+  };
   useRagIndexAutoUpdate();
   useGlobalShortcuts({
     selectedFilePath,
@@ -1030,6 +1061,7 @@ function App() {
       onOpenFolder={openFolderSafely}
       recentFolderPaths={recentFolderPaths}
       onOpenRecentFolder={(targetFolderPath) => void openRecentFolderSafely(targetFolderPath)}
+      onOpenReminder={(reminder) => void openReminderSafely(reminder)}
       onAddRemoteVault={platform.features.remoteVaults ? remoteVaultDialog.openAddDialog : undefined}
       onCreateFile={() => void handleCreateFile()}
       onCreateFileRequest={(targetDirectory) => void handleCreateFile(targetDirectory)}

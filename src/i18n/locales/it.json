@@ -1496,10 +1496,11 @@
       "button": "Promemoria",
       "buttonDue_one": "Promemoria ({{count}} scaduto)",
       "buttonDue_other": "Promemoria ({{count}} scaduti)",
-      "empty": "Nessun promemoria in questo vault. Impostane uno con la campanella nella barra dell'editor.",
+      "empty": "Nessun promemoria nei tuoi vault. Impostane uno con la campanella nella barra dell'editor.",
       "due": "Scaduti",
       "upcoming": "In arrivo",
-      "inNote": "Nella nota «{{note}}»"
+      "inNote": "Nella nota «{{note}}»",
+      "inVaultNote": "Nella nota «{{note}}» del vault «{{vault}}»"
     },
     "notification": {
       "title": "Promemoria di ScribeDog"

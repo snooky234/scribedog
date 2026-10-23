@@ -1496,10 +1496,11 @@
       "button": "Rappels",
       "buttonDue_one": "Rappels ({{count}} échu)",
       "buttonDue_other": "Rappels ({{count}} échus)",
-      "empty": "Aucun rappel dans ce vault. Ajoutez-en un avec la cloche de la barre d'outils de l'éditeur.",
+      "empty": "Aucun rappel dans vos vaults. Ajoutez-en un avec la cloche de la barre d'outils de l'éditeur.",
       "due": "Échus",
       "upcoming": "À venir",
-      "inNote": "Dans la note « {{note}} »"
+      "inNote": "Dans la note « {{note}} »",
+      "inVaultNote": "Dans la note « {{note}} » du vault « {{vault}} »"
     },
     "notification": {
       "title": "Rappel ScribeDog"

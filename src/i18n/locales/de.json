@@ -1496,10 +1496,11 @@
       "button": "Erinnerungen",
       "buttonDue_one": "Erinnerungen ({{count}} fällig)",
       "buttonDue_other": "Erinnerungen ({{count}} fällig)",
-      "empty": "Keine Erinnerungen in diesem Vault. Setzen kannst du eine mit der Glocke in der Editor-Toolbar.",
+      "empty": "Keine Erinnerungen in deinen Vaults. Setzen kannst du eine mit der Glocke in der Editor-Toolbar.",
       "due": "Fällig",
       "upcoming": "Anstehend",
-      "inNote": "In der Notiz „{{note}}“"
+      "inNote": "In der Notiz „{{note}}“",
+      "inVaultNote": "In der Notiz „{{note}}“ im Vault „{{vault}}“"
     },
     "notification": {
       "title": "ScribeDog-Erinnerung"

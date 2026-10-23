@@ -1492,10 +1492,11 @@
     "sidebar": {
       "button": "提醒",
       "buttonDue_other": "提醒（{{count}} 条到期）",
-      "empty": "此库中没有提醒。可以用编辑器工具栏中的铃铛设置提醒。",
+      "empty": "你的库中没有提醒。可以用编辑器工具栏中的铃铛设置提醒。",
       "due": "已到期",
       "upcoming": "即将到来",
-      "inNote": "笔记“{{note}}”"
+      "inNote": "笔记“{{note}}”",
+      "inVaultNote": "库“{{vault}}”中的笔记“{{note}}”"
     },
     "notification": {
       "title": "ScribeDog 提醒"

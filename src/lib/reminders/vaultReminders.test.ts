@@ -38,7 +38,8 @@ describe("compareReminders", () => {
     text: "x",
     checked: null,
     ordinal,
-    filePath
+    filePath,
+    vaultRoot: "/v"
   });
 
   it("sorts by time, then file, then position", () => {
