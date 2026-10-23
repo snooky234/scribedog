@@ -5,13 +5,21 @@
 // store — a non-serializable value that would otherwise force awkward prop
 // drilling through components that have nothing to do with the chat.
 
-import { EDITING_TOOL_NAMES, FLAG_SUGGESTION_TOOL_NAME, type VaultSourceRef } from "@/lib/aiClient";
+import {
+  EDITING_TOOL_NAMES,
+  FLAG_SUGGESTION_TOOL_NAME,
+  REMINDER_TOOL_NAMES,
+  type VaultSourceRef
+} from "@/lib/aiClient";
 import { normalizeImageSrc, resolveDocumentImagePath } from "@/lib/chat/imageAttachments";
 import { decodeEscapedLineBreaks, normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { executeFileTool } from "@/lib/chat/vaultFileTools";
 import { explainMermaidError, mermaidNoteFor, repairMermaidArgs } from "@/lib/diagrams/mermaidDiagnostics";
 import { mermaidSyntaxNote } from "@/lib/diagrams/mermaidToolCheck";
 import { isSemanticSearchActive, readNote, searchVault } from "@/lib/ragSearch";
+import { executeReminderTool } from "@/lib/chat/reminderTools";
+import type { Reminder } from "@/lib/reminders/reminderMarker";
+import { stripReminderMarkers, type ReminderEditOutcome } from "@/lib/reminders/reminderTarget";
 
 // What set_image_width did, so the tool result can name the resulting size.
 // width === null means the image was reset to its natural size.
@@ -78,6 +86,11 @@ export type EditorToolBridge = {
   // doesn't sit in). The new size is visible in the document immediately and
   // Ctrl+Z takes it back, which is the review.
   setImageWidth: (src: string, request: { width?: number; scale?: number }) => ImageWidthChange | null;
+  // Sets (null: removes) the reminder of the block whose text matches. Applied
+  // directly for the same reason as the image width: a reminder is a block
+  // attribute, there is no wording to review, the bell shows the result and
+  // Ctrl+Z takes it back.
+  setBlockReminder: (text: string, reminder: Reminder | null) => ReminderEditOutcome;
 };
 
 let bridge: EditorToolBridge | null = null;
@@ -773,6 +786,13 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<Too
     return fileResult;
   }
 
+  // Before the editor check for the same reason: a reminder on another note
+  // needs no editor. The open note's half reaches the editor through the
+  // bridge handed in here.
+  if (REMINDER_TOOL_NAMES.includes(name)) {
+    return executeReminderTool(name, args, bridge);
+  }
+
   if (!bridge) {
     return { content: "Error: no editor is open." };
   }
@@ -861,7 +881,10 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<Too
           "with the complete Markdown you want in the document."
       });
     case "replace_passage": {
-      const oldText = asString(args.old_text);
+      // A model quoting a block from get_document quotes its reminder marker
+      // along with it, but the marker is a block attribute in the editor, not
+      // text the passage could be found by.
+      const oldText = stripReminderMarkers(asString(args.old_text));
 
       if (IMAGE_ONLY_PASSAGE.test(oldText)) {
         return {

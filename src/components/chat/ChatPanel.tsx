@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
+  Bell,
   Brain,
   Check,
   Eye,
@@ -38,6 +39,8 @@ import i18n from "@/i18n";
 import {
   EDITING_TOOL_NAMES,
   FLAG_SUGGESTION_TOOL_NAME,
+  REMINDER_TOOL_NAMES,
+  REMINDER_WRITE_TOOL_NAMES,
   STAGING_TOOL_NAMES,
   type AiChatMessage,
   type VaultSourceRef
@@ -123,7 +126,10 @@ const TOOL_LABEL_KEYS: Record<string, string> = {
   get_outline: "chat.toolGetOutline",
   create_plan: "chat.toolPlanCreated",
   update_plan: "chat.toolPlanUpdated",
-  complete_step: "chat.toolPlanStepDone"
+  complete_step: "chat.toolPlanStepDone",
+  set_reminder: "chat.toolSetReminder",
+  remove_reminder: "chat.toolRemoveReminder",
+  list_reminders: "chat.toolListReminders"
 };
 
 // Distinct wording for the failure case of each tool — reusing the success
@@ -151,7 +157,10 @@ const TOOL_ERROR_LABEL_KEYS: Record<string, string> = {
   get_outline: "chat.toolGetOutlineFailed",
   create_plan: "chat.toolPlanFailed",
   update_plan: "chat.toolPlanFailed",
-  complete_step: "chat.toolPlanFailed"
+  complete_step: "chat.toolPlanFailed",
+  set_reminder: "chat.toolSetReminderFailed",
+  remove_reminder: "chat.toolRemoveReminderFailed",
+  list_reminders: "chat.toolListRemindersFailed"
 };
 
 // What the agent is doing right now, per tool — present tense, unlike the
@@ -183,6 +192,9 @@ const TOOL_ACTIVITY_KEYS: Record<string, string> = {
   create_plan: "chat.activityPlanning",
   update_plan: "chat.activityPlanning",
   complete_step: "chat.activityPlanning",
+  set_reminder: "chat.activityEditing",
+  remove_reminder: "chat.activityEditing",
+  list_reminders: "chat.activityReadingReminders",
   [PLANNING_ACTIVITY]: "chat.activityPlanning"
 };
 
@@ -268,6 +280,10 @@ function toolIcon(toolName: string, isError: boolean) {
     return X;
   }
 
+  if (REMINDER_TOOL_NAMES.includes(toolName)) {
+    return Bell;
+  }
+
   return PencilLine;
 }
 
@@ -334,7 +350,8 @@ function hiddenToolStatuses(messages: AiChatMessage[], answering: boolean): Set<
       // editor widget: once one succeeded, the turn's earlier stumbles are
       // steps on the way and not worth a line of their own.
       (EDITING_TOOL_NAMES.includes(message.toolName) ||
-        STAGING_TOOL_NAMES.includes(message.toolName)) &&
+        STAGING_TOOL_NAMES.includes(message.toolName) ||
+        REMINDER_WRITE_TOOL_NAMES.includes(message.toolName)) &&
       !message.content.startsWith("Error:")
     ) {
       turnProposed = true;

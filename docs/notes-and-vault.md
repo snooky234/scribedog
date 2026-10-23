@@ -213,3 +213,9 @@ once, when you open the vault.
 Reminders cannot go into table cells or code blocks.
 
 [Back to the documentation index](README.md)
+### Let the chat set them
+
+You can also ask the [AI chat](ai-chat.md#reminders): "remind me on Friday
+to rework this paragraph" or "what is due this week?". It sets, moves and
+removes reminders on the right paragraph and lists what is coming up.
+

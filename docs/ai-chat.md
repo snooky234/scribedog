@@ -28,6 +28,7 @@ can:
 - replace a specific passage
 - resize an embedded image
 - look at an image from your note, if the model supports vision
+- set, change and list [reminders](#reminders)
 
 The chat supports several sessions, renders the replies as Markdown, shows a
 running indicator while the model thinks, and has a request timeout so a
@@ -38,6 +39,10 @@ stalled call never hangs the panel.
 Every proposed edit goes through the same red and green review as the rest of
 ScribeDog. You accept it, discard it, or ask for another version. Only then
 is anything written.
+
+Two small changes in the open note are applied straight away, because there
+is no wording to review: resizing an image and setting a reminder. The
+result is visible in the note at once, and `Ctrl+Z` takes it back.
 
 ## Edits across your whole vault
 
@@ -74,6 +79,33 @@ Turn it on in the agent settings. There are two modes:
 
 Every capability of the agent has its own switch in the agent settings, so
 you can enable only what your model can handle.
+
+## Reminders
+
+Ask the chat to remind you of something, and it sets a
+[reminder](notes-and-vault.md#reminders) on the paragraph, heading or list
+item you mean:
+
+- "Remind me on Friday to check the sources"
+- "Move the reminder on the budget item to next Monday, 14:00"
+- "What is due this week?"
+
+The agent knows today's date and turns "Friday" or "next week" into a date
+itself. If you name a day but no time, it picks 9:00. It never rewrites the
+text of the paragraph: only the bell is added, changed or removed.
+
+| Where | What happens |
+|---|---|
+| The open note | The reminder is set right away. The bell appears at the end of the line, `Ctrl+Z` undoes it. |
+| Another note | The change is staged like any other edit to that note and waits for your review. This needs the agent's file access. |
+
+Without file access, the agent only sees and sets reminders in the open note.
+When several paragraphs match what you said, it asks for more detail instead
+of guessing.
+
+> **Switch:** Reminders have their own switch in the agent settings and are
+> on by default. If your model keeps putting reminders on the wrong day,
+> switch it off and set them with the bell in the editor.
 
 ## Custom assistants
 

@@ -1246,7 +1246,20 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
   list_notes: "list_files",
   read_file_content: "read_file",
   find_files: "search_files",
-  create_directory: "create_folder"
+  create_directory: "create_folder",
+  // Reminders. Changing one is set_reminder on the same block, so the
+  // update/edit names land there too.
+  add_reminder: "set_reminder",
+  create_reminder: "set_reminder",
+  schedule_reminder: "set_reminder",
+  update_reminder: "set_reminder",
+  edit_reminder: "set_reminder",
+  change_reminder: "set_reminder",
+  delete_reminder: "remove_reminder",
+  clear_reminder: "remove_reminder",
+  cancel_reminder: "remove_reminder",
+  get_reminders: "list_reminders",
+  show_reminders: "list_reminders"
 };
 
 /**
@@ -1387,6 +1400,10 @@ export type AiChatRequest = {
   // Offers create_plan/update_plan/complete_step, i.e. the model keeps its own
   // task list (agentPlanning === "model").
   planToolsEnabled?: boolean;
+  // Offers set_reminder/remove_reminder/list_reminders (agentReminders). For
+  // notes other than the open one they still need fileAccessEnabled, which the
+  // tools check where they run.
+  remindersEnabled?: boolean;
   // Drops every tool from the request and every agent rule from the system
   // prompt: the assistant is a plain conversation partner (Assistant.chatOnly).
   //
@@ -1785,6 +1802,84 @@ const FILE_TOOL_SPECS = [
   }
 ] as const;
 
+/** The reminder tools; offered while agentReminders is on. */
+export const REMINDER_TOOL_NAMES: readonly string[] = ["set_reminder", "remove_reminder", "list_reminders"];
+
+/**
+ * The reminder tools that change a note. A turn that called one has done what
+ * it was asked, so it needs no "apply this reply" button either. Kept out of
+ * EDITING_TOOL_NAMES (the open-review guard: a reminder is an attribute, not a
+ * widget that could collide with an open proposal) and out of
+ * STAGING_TOOL_NAMES (on the open note nothing is staged).
+ */
+export const REMINDER_WRITE_TOOL_NAMES: readonly string[] = ["set_reminder", "remove_reminder"];
+
+const REMINDER_TOOL_SPECS = [
+  {
+    name: "set_reminder",
+    description:
+      "Set a reminder on one paragraph, heading or list item of a note: at the due time the user is reminded " +
+      "of that block. Find the block with a few of its words. On the open note it is applied immediately, " +
+      "there is nothing for the user to accept; on another note (path) it is staged for review like any other " +
+      "change to that note. A block has at most one reminder, so setting one on a block that already has one " +
+      "replaces it: that is also how you change a reminder's time or note.",
+    parameters: {
+      type: "object",
+      properties: {
+        text: {
+          type: "string",
+          description: "A few distinctive words of the block, copied from the note, e.g. \"Check the sources\"."
+        },
+        due: {
+          type: "string",
+          description: "The user's local date and time, \"YYYY-MM-DD HH:MM\", e.g. \"2026-10-30 09:00\". No time zone."
+        },
+        note: {
+          type: "string",
+          description: "Optional short text shown with the reminder, e.g. what to do. Omit when the block says it all."
+        },
+        path: {
+          type: "string",
+          description:
+            "Only for a note other than the open one: its path exactly as list_files reports it. Omit for the open note."
+        }
+      },
+      required: ["text", "due"]
+    }
+  },
+  {
+    name: "remove_reminder",
+    description:
+      "Remove the reminder from one paragraph, heading or list item of a note, found by a few of its words. " +
+      "Applied immediately on the open note, staged for review on another one.",
+    parameters: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "A few distinctive words of the block, copied from the note." },
+        path: {
+          type: "string",
+          description: "Only for a note other than the open one: its path exactly as list_files reports it."
+        }
+      },
+      required: ["text"]
+    }
+  },
+  {
+    name: "list_reminders",
+    description:
+      "List the user's reminders, earliest first: due time, whether it is already due, the note, the block " +
+      "it is on and its note. Use it for \"what is due\", \"what is coming up this week\" and before changing " +
+      "or removing a reminder you have not seen yet.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Optional: only the reminders of this note." }
+      },
+      required: []
+    }
+  }
+] as const;
+
 /**
  * The tools of the model-driven plan mode (agentPlanning === "model"). The
  * store owns the list either way — these only let the model write it.
@@ -1808,6 +1903,7 @@ export function isDocumentedToolName(name: string): boolean {
     FILE_TOOL_NAMES.includes(name) ||
     STAGING_TOOL_NAMES.includes(name) ||
     PLAN_TOOL_NAMES.includes(name) ||
+    REMINDER_TOOL_NAMES.includes(name) ||
     name === FLAG_SUGGESTION_TOOL_NAME ||
     name === "get_document" ||
     name === "get_selection" ||
@@ -1905,6 +2001,8 @@ const FILE_TOOLS_OPENAI = toOpenAiTools(FILE_TOOL_SPECS as readonly ToolSpec[]);
 const FILE_TOOLS_ANTHROPIC = toAnthropicTools(FILE_TOOL_SPECS as readonly ToolSpec[]);
 const PLAN_TOOLS_OPENAI = toOpenAiTools(PLAN_TOOL_SPECS as readonly ToolSpec[]);
 const PLAN_TOOLS_ANTHROPIC = toAnthropicTools(PLAN_TOOL_SPECS as readonly ToolSpec[]);
+const REMINDER_TOOLS_OPENAI = toOpenAiTools(REMINDER_TOOL_SPECS as readonly ToolSpec[]);
+const REMINDER_TOOLS_ANTHROPIC = toAnthropicTools(REMINDER_TOOL_SPECS as readonly ToolSpec[]);
 
 // Applies request.toolNames. Narrowing the offered tools is the guard that lets
 // a follow-up step ask the model a question without giving it the means to
@@ -1933,6 +2031,7 @@ function requestTools<T extends { name: string } | { function: { name: string } 
   vault: T[],
   file: T[],
   plan: T[],
+  reminder: T[],
   request: AiChatRequest
 ): T[] {
   if (request.toolsDisabled) {
@@ -1969,6 +2068,10 @@ function requestTools<T extends { name: string } | { function: { name: string } 
 
   if (request.planToolsEnabled) {
     composed.push(...plan);
+  }
+
+  if (request.remindersEnabled) {
+    composed.push(...reminder);
   }
 
   return offeredTools(composed, request.toolNames);
@@ -2190,6 +2293,58 @@ const PLAN_INSTRUCTION =
   "Completed steps stay as they are — pass only what is still outstanding.\n" +
   "P4. The plan is not the work. Never finish a turn having only written or revised a plan.";
 
+// Always part of the agent rules, whether or not the reminder tools are on:
+// get_document and the file tools hand the model the raw markers, and a
+// rewrite that leaves one out deletes the user's reminder when it is accepted.
+const REMINDER_MARKER_INSTRUCTION =
+  "Some lines of a note end in a reminder marker such as <!-- reminder: 2026-10-30 09:00 \"Chapter 3 " +
+  "first\" -->. It is the user's reminder for that paragraph, heading or list item, which they see as a bell " +
+  "in the editor. When you rewrite or move a line that carries one, keep the marker unchanged at the end of " +
+  "that same line. Never drop it, edit it or write a new one into text yourself.";
+
+// Added when agentReminders is on.
+const REMINDER_INSTRUCTION =
+  "You can set reminders on the user's notes.\n" +
+  "R1. A reminder belongs to one paragraph, heading or list item. Set it with set_reminder: text is a few " +
+  "words of that block, due is the user's local time as \"YYYY-MM-DD HH:MM\". Work out relative dates " +
+  "(\"tomorrow\", \"on Friday\", \"next week\") from the current date at the end of these instructions; " +
+  "when the user names a day but no time, use 09:00.\n" +
+  "R2. To change a reminder's time or note, call set_reminder again on the same block; it replaces the old " +
+  "one. remove_reminder takes one off. Never change a marker through the editing or file tools.\n" +
+  "R3. A reminder goes on text that is already in the note. When the text the user means is not there yet, " +
+  "propose it first, and set the reminder once the user has accepted it.\n" +
+  "R4. For \"what is due\", \"what is coming up\" and the like, call list_reminders and answer from its " +
+  "result.";
+
+const REMINDER_FILE_INSTRUCTION =
+  "R5. For a note other than the open one, pass its path exactly as list_files reports it. That change is " +
+  "staged for review like your other file changes.";
+
+const REMINDER_NO_FILE_ACCESS_INSTRUCTION =
+  "R5. You can set reminders only in the open note, and list_reminders only shows the open note's: other " +
+  "notes need the agent's file access, which is switched off.";
+
+const REMINDERS_OFF_INSTRUCTION =
+  "Setting reminders is switched off for you. When the user asks for one, tell them in one sentence that " +
+  "they can set it with the bell in the editor, or enable it for the agent in the AI settings.";
+
+/**
+ * The current local date and time, for the end of the system prompt.
+ *
+ * Without it no model can turn "on Friday" into a date. At the end rather
+ * than near the top because it changes every minute: local providers reuse
+ * their cache for the unchanged start of the prompt, and a line that changes
+ * at the top would throw all of it away on every request.
+ */
+export function currentDateInstruction(now: Date): string {
+  const weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()];
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const time = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  return `Current date and time (the user's local time): ${weekday}, ${date} ${time}.`;
+}
+
 function buildChatSystemPrompt(
   request: AiChatRequest,
   thinkingMode: AiThinkingMode,
@@ -2234,6 +2389,16 @@ function buildChatSystemPrompt(
   // old behaviour covers: say nothing.
   const noFileAccessSection = agentToolsLive && !request.fileAccessEnabled ? NO_FILE_ACCESS_INSTRUCTION : "";
   const noDocumentSection = agentToolsLive && request.documentOpen === false ? NO_DOCUMENT_INSTRUCTION : "";
+  const reminderSection = agentToolsLive
+    ? [
+        REMINDER_MARKER_INSTRUCTION,
+        request.remindersEnabled
+          ? `${REMINDER_INSTRUCTION}\n${
+              request.fileAccessEnabled ? REMINDER_FILE_INSTRUCTION : REMINDER_NO_FILE_ACCESS_INSTRUCTION
+            }`
+          : REMINDERS_OFF_INSTRUCTION
+      ].join("\n\n")
+    : "";
 
   return [
     baseInstruction,
@@ -2246,8 +2411,10 @@ function buildChatSystemPrompt(
     noFileAccessSection,
     noDocumentSection,
     planSection,
+    reminderSection,
     thinkingInstruction,
-    documentSection
+    documentSection,
+    currentDateInstruction(new Date())
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -2504,7 +2671,14 @@ function anthropicChatStepBody(settings: AiSettings, request: AiChatRequest): Re
     model: settings.model,
     system: buildChatSystemPrompt(request, settings.thinkingMode, true),
     max_tokens: resolveMaxOutputTokens(settings.contextLength),
-    tools: requestTools(AGENT_TOOLS_ANTHROPIC, VAULT_TOOLS_ANTHROPIC, FILE_TOOLS_ANTHROPIC, PLAN_TOOLS_ANTHROPIC, request),
+    tools: requestTools(
+      AGENT_TOOLS_ANTHROPIC,
+      VAULT_TOOLS_ANTHROPIC,
+      FILE_TOOLS_ANTHROPIC,
+      PLAN_TOOLS_ANTHROPIC,
+      REMINDER_TOOLS_ANTHROPIC,
+      request
+    ),
     messages: toAnthropicMessages(request)
   };
 }
@@ -2513,7 +2687,14 @@ function ollamaChatStepBody(settings: AiSettings, request: AiChatRequest): Recor
   const body: Record<string, unknown> = {
     model: settings.model,
     messages: toOpenAiCompatMessages(request, settings.thinkingMode, true),
-    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, FILE_TOOLS_OPENAI, PLAN_TOOLS_OPENAI, request),
+    tools: requestTools(
+      AGENT_TOOLS_OPENAI,
+      VAULT_TOOLS_OPENAI,
+      FILE_TOOLS_OPENAI,
+      PLAN_TOOLS_OPENAI,
+      REMINDER_TOOLS_OPENAI,
+      request
+    ),
     options: { num_ctx: settings.contextLength, num_predict: resolveMaxOutputTokens(settings.contextLength) }
   };
 
@@ -2528,7 +2709,14 @@ function openAiCompatibleChatStepBody(settings: AiSettings, request: AiChatReque
   const body: Record<string, unknown> = {
     model: settings.model,
     messages: toOpenAiCompatMessages(request, settings.thinkingMode, false),
-    tools: requestTools(AGENT_TOOLS_OPENAI, VAULT_TOOLS_OPENAI, FILE_TOOLS_OPENAI, PLAN_TOOLS_OPENAI, request),
+    tools: requestTools(
+      AGENT_TOOLS_OPENAI,
+      VAULT_TOOLS_OPENAI,
+      FILE_TOOLS_OPENAI,
+      PLAN_TOOLS_OPENAI,
+      REMINDER_TOOLS_OPENAI,
+      request
+    ),
     tool_choice: "auto",
     temperature: 0.2,
     max_tokens: resolveMaxOutputTokens(settings.contextLength)

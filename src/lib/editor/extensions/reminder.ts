@@ -11,6 +11,7 @@ import i18n from "@/i18n";
 import { REMINDER_DATA_ATTRIBUTE, reminderMarkdownItPlugin } from "@/lib/reminders/reminderMarkdownIt";
 import { formatReminderMarker, normalizeReminder, type Reminder } from "@/lib/reminders/reminderMarker";
 import { formatDueLabel, isReminderDue } from "@/lib/reminders/reminderTime";
+import { editOutcome, pickReminderTarget, type ReminderEditOutcome } from "@/lib/reminders/reminderTarget";
 
 // A reminder is an attribute of a text block (paragraph or heading; a list or
 // checklist item's text is a paragraph), not an inline node. As an inline
@@ -226,6 +227,54 @@ export function setReminderTransaction(tr: Transaction, pos: number, reminder: R
   }
 
   return tr.setNodeMarkup(pos, undefined, { ...node.attrs, reminder }).setMeta(REMINDER_EDIT_META, true);
+}
+
+/**
+ * The chat agent's way of setting (or, with null, removing) a reminder: the
+ * block is found by its text instead of by the selection, and only its
+ * attribute changes, so the text cannot drift along the way. `tr` is null
+ * when there is nothing to dispatch.
+ */
+export function agentReminderTransaction(
+  state: EditorState,
+  needle: string,
+  reminder: Reminder | null
+): { outcome: ReminderEditOutcome; tr: Transaction | null } {
+  const candidates: { pos: number; node: ProseMirrorNode }[] = [];
+
+  state.doc.descendants((node, pos) => {
+    if (NO_REMINDER_ANCESTORS.has(node.type.name)) {
+      return false;
+    }
+
+    if (!node.isTextblock) {
+      return true;
+    }
+
+    if (REMINDER_BLOCK_TYPES.has(node.type.name) && node.content.size > 0) {
+      candidates.push({ pos, node });
+    }
+
+    return false;
+  });
+
+  const match = pickReminderTarget(
+    candidates.map(({ node }) => node.textContent),
+    needle
+  );
+
+  if (match.kind !== "found") {
+    return { outcome: match, tr: null };
+  }
+
+  const { pos, node } = candidates[match.index];
+  const outcome = editOutcome(node.textContent, normalizeReminder(node.attrs.reminder), reminder);
+
+  if (outcome.kind !== "set" && outcome.kind !== "removed") {
+    return { outcome, tr: null };
+  }
+
+  return { outcome, tr: setReminderTransaction(state.tr, pos, reminder) };
 }
 
 function sameReminder(a: Reminder | null, b: Reminder | null): boolean {

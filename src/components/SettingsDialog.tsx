@@ -75,6 +75,7 @@ type AgentSettings = Pick<
   | "agentMultiEdit"
   | "agentMaxIterations"
   | "agentMaxPlanSteps"
+  | "agentReminders"
 >;
 
 function pickAgentSettings(settings: AiSettings): AgentSettings {
@@ -85,7 +86,8 @@ function pickAgentSettings(settings: AiSettings): AgentSettings {
     agentCompactContext: settings.agentCompactContext,
     agentMultiEdit: settings.agentMultiEdit,
     agentMaxIterations: settings.agentMaxIterations,
-    agentMaxPlanSteps: settings.agentMaxPlanSteps
+    agentMaxPlanSteps: settings.agentMaxPlanSteps,
+    agentReminders: settings.agentReminders
   };
 }
 
@@ -98,7 +100,7 @@ function clampAgentNumber(raw: string, min: number, max: number, fallback: numbe
 /**
  * The vault agent's capabilities, behind a collapsed section.
  *
- * Seven switches are a lot for an app whose appeal is quiet — so they sit
+ * Eight switches are a lot for an app whose appeal is quiet — so they sit
  * folded away, with defaults nobody has to touch. Each one carries a line
  * saying which model class it realistically needs: without that the user cannot
  * tell whether their model can carry a capability, and ends up switching either
@@ -192,6 +194,18 @@ function AgentSettingsSection({
             checked={value.agentMultiEdit}
             disabled={!value.agentFileAccess}
             onChange={(event) => onChange({ agentMultiEdit: event.target.checked })}
+          />
+        </SettingRow>
+
+        <SettingRow
+          layout="switch"
+          label={t("settingsDialog.agentRemindersLabel")}
+          hint={t("settingsDialog.agentRemindersHint")}
+        >
+          <input
+            type="checkbox"
+            checked={value.agentReminders}
+            onChange={(event) => onChange({ agentReminders: event.target.checked })}
           />
         </SettingRow>
 

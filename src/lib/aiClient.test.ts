@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertValidEndpoint,
+  canonicalToolName,
+  currentDateInstruction,
   extractAnthropicContent,
   extractResponseContent,
   isCloudProvider,
@@ -12,7 +14,8 @@ import {
   resolveMaxOutputTokens,
   splitThinkingTags,
   stripJsonCodeFence,
-  stripThinkingBlocks
+  stripThinkingBlocks,
+  toOpenAiCompatMessages
 } from "@/lib/aiClient";
 import { AI_PROVIDERS } from "@/store/useAiSettingsStore";
 
@@ -266,5 +269,50 @@ describe("extractAnthropicContent", () => {
 
   it("throws when the payload is not an object", () => {
     expect(() => extractAnthropicContent(null)).toThrow();
+  });
+});
+
+describe("currentDateInstruction", () => {
+  it("names the weekday, date and time in local time", () => {
+    expect(currentDateInstruction(new Date(2026, 9, 30, 9, 5))).toBe(
+      "Current date and time (the user's local time): Friday, 2026-10-30 09:05."
+    );
+  });
+});
+
+describe("chat system prompt", () => {
+  function systemPrompt(extra: Record<string, unknown> = {}): string {
+    const [system] = toOpenAiCompatMessages(
+      { messages: [{ role: "user", content: "hi" }], assistantInstruction: "", ...extra },
+      "off",
+      true
+    );
+
+    return String(system.content);
+  }
+
+  it("ends with the current date, so the cached start of the prompt stays unchanged", () => {
+    expect(systemPrompt()).toMatch(/Current date and time \(the user's local time\): \w+, \d{4}-\d{2}-\d{2} \d{2}:\d{2}\.$/);
+  });
+
+  it("asks to keep reminder markers whether or not the reminder tools are on", () => {
+    expect(systemPrompt()).toContain("keep the marker unchanged");
+    expect(systemPrompt({ remindersEnabled: true })).toContain("keep the marker unchanged");
+    expect(systemPrompt({ toolsDisabled: true })).not.toContain("keep the marker unchanged");
+  });
+
+  it("explains the reminder tools only when they are offered", () => {
+    expect(systemPrompt()).not.toContain("set_reminder");
+    expect(systemPrompt({ remindersEnabled: true })).toContain("set_reminder");
+    expect(systemPrompt({ remindersEnabled: true, fileAccessEnabled: true })).toContain("pass its path");
+  });
+});
+
+describe("canonicalToolName", () => {
+  it("maps the reminder names models invent", () => {
+    expect(canonicalToolName("add_reminder")).toBe("set_reminder");
+    expect(canonicalToolName("Create_Reminder")).toBe("set_reminder");
+    expect(canonicalToolName("delete_reminder")).toBe("remove_reminder");
+    expect(canonicalToolName("get_reminders")).toBe("list_reminders");
   });
 });

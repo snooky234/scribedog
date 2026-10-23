@@ -96,7 +96,8 @@ inline or side by side, and restore with one click.
 Set a date and time on a checklist item or on a paragraph you still have to
 rework. A bell marks the line, the sidebar lists everything that is due, and
 your system notifies you while ScribeDog runs. The reminder is stored in the
-note itself, so it moves with the text.
+note itself, so it moves with the text, and the AI chat can set one for you
+("remind me on Friday").
 
 <img src="docs/images/scribe-dog-reminders.png" alt="ScribeDog reminders: bells in the note and the list in the sidebar" width="500">
 

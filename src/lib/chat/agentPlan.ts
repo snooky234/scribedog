@@ -16,6 +16,7 @@ import {
   FLAG_SUGGESTION_TOOL_NAME,
   generateAiChatStep,
   PLAN_TOOL_NAMES,
+  REMINDER_WRITE_TOOL_NAMES,
   STAGING_TOOL_NAMES,
   stripJsonCodeFence
 } from "@/lib/aiClient";
@@ -407,7 +408,10 @@ export function toolEffect(name: string, result: string): StepEffect {
   }
 
   return {
-    wrote: EDITING_TOOL_NAMES.includes(name) || STAGING_TOOL_NAMES.includes(name),
+    wrote:
+      EDITING_TOOL_NAMES.includes(name) ||
+      STAGING_TOOL_NAMES.includes(name) ||
+      REMINDER_WRITE_TOOL_NAMES.includes(name),
     usedTool: true
   };
 }

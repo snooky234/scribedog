@@ -62,6 +62,10 @@ export type AiSettings = {
   // opposite directions.
   agentMaxIterations: number;
   agentMaxPlanSteps: number;
+  // set_reminder/remove_reminder/list_reminders. On by default: on the open
+  // note a reminder is one undo step and no text changes, and every other note
+  // stays behind agentFileAccess.
+  agentReminders: boolean;
 };
 
 function clampInteger(value: unknown, min: number, max: number, fallback: number): number {
@@ -101,7 +105,8 @@ export const defaultAiSettings: AiSettings = {
   agentCompactContext: true,
   agentMultiEdit: true,
   agentMaxIterations: AGENT_MAX_ITERATIONS_DEFAULT,
-  agentMaxPlanSteps: AGENT_MAX_PLAN_STEPS_DEFAULT
+  agentMaxPlanSteps: AGENT_MAX_PLAN_STEPS_DEFAULT,
+  agentReminders: true
 };
 
 function normalizeSettings(rawSettings: Partial<AiSettings> | null): AiSettings {
@@ -145,7 +150,8 @@ function normalizeSettings(rawSettings: Partial<AiSettings> | null): AiSettings 
       AGENT_MAX_PLAN_STEPS_MIN,
       AGENT_MAX_PLAN_STEPS_MAX,
       AGENT_MAX_PLAN_STEPS_DEFAULT
-    )
+    ),
+    agentReminders: rawSettings?.agentReminders !== false
   };
 }
 

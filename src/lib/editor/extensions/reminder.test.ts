@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { buildPreviewExtensions } from "@/lib/editor/extensions";
 import {
+  agentReminderTransaction,
   collectReminderBlocks,
   findReminderBlock,
   Reminders,
@@ -233,5 +234,44 @@ describe("findReminderBlock", () => {
     placeCaret(editor, "c", 0);
 
     expect(findReminderBlock(editor.state)).toBeNull();
+  });
+});
+
+describe("agentReminderTransaction", () => {
+  const FRIDAY = { due: "2026-10-30 09:00", note: null };
+
+  function apply(editor: Editor, text: string, reminder: Reminder | null) {
+    const { outcome, tr } = agentReminderTransaction(editor.state, text, reminder);
+
+    if (tr) {
+      editor.view.dispatch(tr);
+    }
+
+    return outcome;
+  }
+
+  it("sets the attribute on the block the text names, leaving its text alone", () => {
+    const editor = createEditor("# Plan\n\n- [ ] Check the sources\n- [ ] Ask Anna\n");
+
+    expect(apply(editor, "- [ ] Ask Anna", FRIDAY)).toEqual({ kind: "set", blockText: "Ask Anna", previous: null });
+    expect(getMarkdown(editor)).toContain("- [ ] Ask Anna <!-- reminder: 2026-10-30 09:00 -->");
+    expect(getMarkdown(editor)).toContain("- [ ] Check the sources\n");
+  });
+
+  it("replaces and removes the reminder of the block", () => {
+    const editor = createEditor(`Hello ${A}\n`);
+
+    expect(apply(editor, "Hello", FRIDAY)).toMatchObject({ kind: "set", previous: { due: "2026-10-25 09:00" } });
+    expect(reminders(editor)).toEqual([{ text: "Hello", due: "2026-10-30 09:00" }]);
+    expect(apply(editor, "Hello", null)).toMatchObject({ kind: "removed" });
+    expect(reminders(editor)).toEqual([]);
+  });
+
+  it("refuses an ambiguous text and text in a table cell", () => {
+    const editor = createEditor("Check A\n\nCheck B\n\n| Cell text | b |\n| --- | --- |\n| c | d |\n");
+
+    expect(apply(editor, "Check", FRIDAY)).toEqual({ kind: "ambiguous", count: 2 });
+    expect(apply(editor, "Cell text", FRIDAY)).toEqual({ kind: "not-found" });
+    expect(reminders(editor)).toEqual([]);
   });
 });

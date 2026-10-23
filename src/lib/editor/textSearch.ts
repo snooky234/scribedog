@@ -368,3 +368,13 @@ export function findTextRange(
 
   return toDocRange(positions, foldedHaystack.map[approximate.start], foldedHaystack.map[approximate.end]);
 }
+
+/**
+ * A text in the form the tolerant passes above compare: Markdown constructs,
+ * block markers and markup dropped, whitespace collapsed, typography and case
+ * folded. For callers that match whole blocks rather than a passage inside
+ * one, and need both sides compared the way findTextRange would compare them.
+ */
+export function comparableText(text: string): string {
+  return foldForCompare(normalizeForSearch(stripMarkdownConstructs(text))).value.trim();
+}

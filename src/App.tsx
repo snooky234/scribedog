@@ -816,7 +816,9 @@ function App() {
         editorHandleRef.current?.proposeInsertion(text, anchorText) ?? "failed",
       proposePassageReplacement: (oldText, newText) =>
         editorHandleRef.current?.proposePassageReplacement(oldText, newText) ?? "failed",
-      setImageWidth: (src, request) => editorHandleRef.current?.setImageWidth(src, request) ?? null
+      setImageWidth: (src, request) => editorHandleRef.current?.setImageWidth(src, request) ?? null,
+      setBlockReminder: (text, reminder) =>
+        editorHandleRef.current?.setBlockReminder(text, reminder) ?? { kind: "locked" }
     });
 
     return () => registerEditorToolBridge(null);

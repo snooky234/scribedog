@@ -43,7 +43,8 @@ function registerBridge(
     proposeSelectionReplacement: () => "proposed",
     proposeInsertion,
     proposePassageReplacement,
-    setImageWidth
+    setImageWidth,
+    setBlockReminder: () => ({ kind: "not-found" })
   });
 }
 
@@ -187,6 +188,17 @@ describe("replace_passage on an image", () => {
     await executeTool("replace_passage", { old_text: "Here is ![image](images/photo.png)", new_text: "Here" });
 
     expect(proposePassageReplacement).toHaveBeenCalled();
+  });
+});
+
+describe("replace_passage on a line with a reminder", () => {
+  it("searches for the text without the marker the model quoted along with it", async () => {
+    await executeTool("replace_passage", {
+      old_text: "Hello <!-- reminder: 2026-10-30 09:00 -->",
+      new_text: "Hi <!-- reminder: 2026-10-30 09:00 -->"
+    });
+
+    expect(proposePassageReplacement).toHaveBeenCalledWith("Hello", "Hi <!-- reminder: 2026-10-30 09:00 -->");
   });
 });
 

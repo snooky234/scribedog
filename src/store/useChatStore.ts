@@ -7,6 +7,7 @@ import {
   FLAG_SUGGESTION_TOOL_NAME,
   IMAGE_UNSUPPORTED_TOOL_RESULT,
   PLAN_TOOL_NAMES,
+  REMINDER_WRITE_TOOL_NAMES,
   STAGING_TOOL_NAMES,
   streamAiChatStep,
   stripChatImages,
@@ -709,7 +710,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // The same switches, enforced a second time where the tools run: a tool
     // name resolved through an alias must not slip past the consent gate that
     // "the model was never offered this tool" normally provides.
-    setAgentCapabilities({ fileAccess: fileAccessEnabled, allowDelete: aiSettings.agentAllowDelete });
+    const remindersEnabled = aiSettings.agentReminders && !toolsDisabled;
+    setAgentCapabilities({
+      fileAccess: fileAccessEnabled,
+      allowDelete: aiSettings.agentAllowDelete,
+      reminders: remindersEnabled
+    });
     const planToolsEnabled = aiSettings.agentPlanning === "model" && !toolsDisabled;
     const maxIterations = aiSettings.agentMaxIterations;
     const maxPlanSteps = aiSettings.agentMaxPlanSteps;
@@ -925,6 +931,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               deleteEnabled: aiSettings.agentAllowDelete,
               multiEditEnabled: aiSettings.agentMultiEdit,
               planToolsEnabled,
+              remindersEnabled,
               toolsDisabled
             },
             {
@@ -984,7 +991,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             !turnProposedEdit &&
             !step.toolCalls.some(
               (call) =>
-                EDITING_TOOL_NAMES.includes(call.name) || STAGING_TOOL_NAMES.includes(call.name)
+                EDITING_TOOL_NAMES.includes(call.name) ||
+                STAGING_TOOL_NAMES.includes(call.name) ||
+                REMINDER_WRITE_TOOL_NAMES.includes(call.name)
             )
               ? { suggestsEdit: true }
               : {})
@@ -997,7 +1006,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
           if (
             step.toolCalls.some(
               (call) =>
-                EDITING_TOOL_NAMES.includes(call.name) || STAGING_TOOL_NAMES.includes(call.name)
+                EDITING_TOOL_NAMES.includes(call.name) ||
+                STAGING_TOOL_NAMES.includes(call.name) ||
+                REMINDER_WRITE_TOOL_NAMES.includes(call.name)
             )
           ) {
             turnProposedEdit = true;

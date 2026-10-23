@@ -62,19 +62,31 @@ export function extractNoteReminders(markdown: string): NoteReminder[] {
       continue;
     }
 
-    let text = plainText(tokens[i + 1] as unknown as InlineToken);
-    let checked: boolean | null = null;
-    const checkbox = CHECKBOX_PATTERN.exec(text);
-
-    if (checkbox && i >= 1 && tokens[i - 1].type === "list_item_open") {
-      checked = checkbox[1] !== " ";
-      text = text.slice(checkbox[0].length);
-    }
-
-    found.push({ ...reminder, text, checked, ordinal: found.length });
+    found.push({ ...reminder, ...readableBlockText(tokens, i), ordinal: found.length });
   }
 
   return found;
+}
+
+/**
+ * The text of the paragraph or heading opened at `openIndex`, as it reads in
+ * the editor, and for a checklist item whether it is ticked (the checkbox is
+ * not part of the text there either).
+ */
+export function readableBlockText(
+  tokens: readonly { type: string }[],
+  openIndex: number
+): { text: string; checked: boolean | null } {
+  let text = plainText(tokens[openIndex + 1] as unknown as InlineToken);
+  let checked: boolean | null = null;
+  const checkbox = CHECKBOX_PATTERN.exec(text);
+
+  if (checkbox && openIndex >= 1 && tokens[openIndex - 1].type === "list_item_open") {
+    checked = checkbox[1] !== " ";
+    text = text.slice(checkbox[0].length);
+  }
+
+  return { text, checked };
 }
 
 /** Earliest first; reminders with an unreadable time go last. */

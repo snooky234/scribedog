@@ -218,7 +218,8 @@ the desktop app. The bell in the sidebar lists them. A notification when one
 comes due needs an open tab: the browser asks for permission the first time
 you save a reminder, and nothing is sent while no tab is open. The server
 itself does not send reminders (no e-mail, no push) yet; a reminder that came
-due in the meantime is announced when you open the vault again.
+due in the meantime is announced when you open the vault again. The chat
+agent can set, move and list reminders in the browser too.
 
 **Can I import files in the browser?**
 Not yet; the import runs in the desktop app, also with a server vault. In

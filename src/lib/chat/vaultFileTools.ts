@@ -4,6 +4,9 @@ import { decodeEscapedLineBreaks } from "@/lib/editor/markdownNormalize";
 import { getRelativeDisplayPath, readMarkdownFile } from "@/lib/fileSystem";
 import { getFolderNoteFolderPath, isFolderNotePath } from "@/lib/folderNotes";
 import { mermaidNoteFor } from "@/lib/diagrams/mermaidDiagnostics";
+import { setMarkdownBlockReminder } from "@/lib/reminders/markdownReminderEdit";
+import type { Reminder } from "@/lib/reminders/reminderMarker";
+import type { ReminderEditOutcome } from "@/lib/reminders/reminderTarget";
 import { useAppStore } from "@/store/useAppStore";
 import { useStagedChangesStore } from "@/store/useStagedChangesStore";
 
@@ -73,10 +76,17 @@ export function setAgentTurnContext(sessionId: string, messageIndex: number): vo
  * with the consent switch off. Closed by default, so a caller that forgets to
  * set them gets no file access rather than all of it.
  */
-let capabilities = { fileAccess: false, allowDelete: false };
+let capabilities = { fileAccess: false, allowDelete: false, reminders: false };
 
-export function setAgentCapabilities(next: { fileAccess: boolean; allowDelete: boolean }): void {
+export type AgentCapabilities = typeof capabilities;
+
+export function setAgentCapabilities(next: AgentCapabilities): void {
   capabilities = { ...next };
+}
+
+/** The switches as set for the current turn; the reminder tools check theirs there. */
+export function agentCapabilities(): AgentCapabilities {
+  return { ...capabilities };
 }
 
 function disabledResult(what: string): FileToolResult {
@@ -912,6 +922,84 @@ const FILE_TOOL_DISPATCH = new Set([
   "search_files",
   "get_outline"
 ]);
+
+/**
+ * Whether a model-supplied path names the note open in the editor. The
+ * reminder tools route that one to the editor and every other note through
+ * staging, the same split the file tools enforce with openDocumentGuard.
+ */
+export function isOpenDocumentPath(rawPath: unknown): boolean {
+  const context = vaultContext();
+
+  if (!context?.openRelativePath) {
+    return false;
+  }
+
+  try {
+    return vaultPathKey(assertVaultPath(rawPath)) === vaultPathKey(context.openRelativePath);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Stages a reminder change on a note that is not open: the note's current
+ * (or already staged) text with only the marker of one block changed. Goes
+ * through the staging layer like every other change the agent makes to such a
+ * note, so it is reviewed and applied with the rest, and a second call for the
+ * same note updates the one entry.
+ */
+export async function stageReminderEdit(
+  rawPath: unknown,
+  text: string,
+  reminder: Reminder | null
+): Promise<{ relativePath: string; outcome: ReminderEditOutcome } | FileToolResult> {
+  if (!capabilities.fileAccess) {
+    return disabledResult("working on notes other than the open one");
+  }
+
+  const context = vaultContext();
+
+  if (!context) {
+    return noVaultResult();
+  }
+
+  let relativePath: string;
+
+  try {
+    relativePath = assertVaultPath(rawPath);
+  } catch (error) {
+    return pathError(error);
+  }
+
+  const blocked = openDocumentGuard(context, relativePath);
+
+  if (blocked) {
+    return blocked;
+  }
+
+  const { content, staged } = await effectiveContent(context, relativePath);
+
+  if (content === null) {
+    return unknownFileResult(relativePath);
+  }
+
+  const outcome = setMarkdownBlockReminder(content, text, reminder);
+  const next = outcome.content;
+
+  if (next !== undefined) {
+    const baseContent = staged ? staged.baseContent : await baselineContent(context, relativePath);
+
+    stageEntry({
+      path: staged ? staged.path : baseContent === null ? "" : relativePath,
+      targetPath: staged ? staged.targetPath || relativePath : relativePath,
+      baseContent,
+      content: next
+    });
+  }
+
+  return { relativePath, outcome };
+}
 
 /** Dispatch. Returns null for a name that is not a file tool. */
 export async function executeFileTool(

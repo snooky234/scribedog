@@ -79,7 +79,7 @@ beforeEach(() => {
   // What a turn with the consent switches on looks like. The module defaults to
   // no file access at all, so this is also the state every test but the
   // capability ones below has to set up explicitly.
-  setAgentCapabilities({ fileAccess: true, allowDelete: true });
+  setAgentCapabilities({ fileAccess: true, allowDelete: true, reminders: false });
 });
 
 function addFile(relativePath: string, content: string) {
@@ -401,7 +401,7 @@ it("answers null for a tool that is not a file tool", async () => {
 // canonicalToolName in aiClient.ts).
 describe("consent switches", () => {
   it("refuses every file tool while file access is off", async () => {
-    setAgentCapabilities({ fileAccess: false, allowDelete: true });
+    setAgentCapabilities({ fileAccess: false, allowDelete: true, reminders: false });
     addFile("A.md", "Text");
 
     const result = await executeFileTool("write_file", { path: "B.md", content: "Neu" });
@@ -411,7 +411,7 @@ describe("consent switches", () => {
   });
 
   it("names the setting instead of reporting a malfunction", async () => {
-    setAgentCapabilities({ fileAccess: false, allowDelete: true });
+    setAgentCapabilities({ fileAccess: false, allowDelete: true, reminders: false });
 
     const result = await executeFileTool("list_files", {});
 
@@ -419,7 +419,7 @@ describe("consent switches", () => {
   });
 
   it("refuses deletion while only that sub-switch is off", async () => {
-    setAgentCapabilities({ fileAccess: true, allowDelete: false });
+    setAgentCapabilities({ fileAccess: true, allowDelete: false, reminders: false });
     addFile("A.md", "Text");
 
     const deletion = await executeFileTool("delete_file", { path: "A.md" });
@@ -430,7 +430,7 @@ describe("consent switches", () => {
   });
 
   it("still passes a name that is not a file tool through to the editor tools", async () => {
-    setAgentCapabilities({ fileAccess: false, allowDelete: false });
+    setAgentCapabilities({ fileAccess: false, allowDelete: false, reminders: false });
 
     expect(await executeFileTool("get_document", {})).toBeNull();
   });

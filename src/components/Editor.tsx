@@ -50,6 +50,9 @@ import {
   setAiSuggestionOverride
 } from "@/lib/aiSuggestionWidget";
 import type { ImageWidthChange, ProposalOutcome } from "@/lib/chat/agentTools";
+import { agentReminderTransaction } from "@/lib/editor/extensions/reminder";
+import type { Reminder } from "@/lib/reminders/reminderMarker";
+import type { ReminderEditOutcome } from "@/lib/reminders/reminderTarget";
 import {
   findStagedChange,
   normalizeVaultPath,
@@ -187,6 +190,7 @@ export type EditorHandle = {
     src: string,
     request: { width?: number; scale?: number }
   ) => ImageWidthChange | null;
+  setBlockReminder: (text: string, reminder: Reminder | null) => ReminderEditOutcome;
 };
 
 type DrawingDialogState =
@@ -1066,6 +1070,26 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     return { src: target, width: nextWidth, previousWidth };
   };
 
+  // Like the image width, a reminder is a block attribute the agent sets
+  // straight away: one undo step, and the bell in the document is the result.
+  // A note showing a staged proposal is read-only, and stays that way here
+  // too: the proposal was computed against the text as it is.
+  const setBlockReminder = (text: string, reminder: Reminder | null): ReminderEditOutcome => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor || currentEditor.isDestroyed || !currentEditor.isEditable) {
+      return { kind: "locked" };
+    }
+
+    const { outcome, tr } = agentReminderTransaction(currentEditor.state, text, reminder);
+
+    if (tr) {
+      currentEditor.view.dispatch(tr);
+    }
+
+    return outcome;
+  };
+
   const createSuggestionId = () =>
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
@@ -1286,7 +1310,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       proposeSelectionReplacement,
       proposeInsertion,
       proposePassageReplacement,
-      setImageWidth
+      setImageWidth,
+      setBlockReminder
     }),
     [ai, markdown]
   );
