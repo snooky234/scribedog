@@ -317,6 +317,12 @@ AI is optional. To use a local model, install one model runner
 choose the provider in **AI settings**. For the cloud, pick OpenAI, Anthropic or
 Mistral and paste your own API key.
 
+> **Own server with an OpenAI-compatible API** (llama.cpp's `llama-server`, vLLM
+> and the like)? Do not pick *OpenAI*: that provider is treated as the cloud and
+> insists on `https://`. Pick **LM Studio** or **Jan.ai** instead and enter your
+> address, for example `http://192.168.1.50:8080/v1`. Plain http is fine for
+> `localhost` and addresses in your home network.
+
 [Full AI setup guide →](docs/ai-setup.md)
 
 ---

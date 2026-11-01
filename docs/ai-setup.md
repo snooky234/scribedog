@@ -69,6 +69,21 @@ ScribeDog accepts addresses in your own network (`192.168.x.x`, `10.x.x.x`,
 `.home.arpa`, `.internal` or `.fritz.box`). Plain http to an address on the
 internet is refused, since it would carry your text unencrypted.
 
+### llama-server, vLLM and other OpenAI-compatible servers
+
+Any server that speaks the OpenAI API works, for example `llama-server` from
+llama.cpp or vLLM. Choose **LM Studio** or **Jan.ai** as the provider, not
+*OpenAI*, and enter the address of your server including the `/v1` part, such
+as `http://192.168.1.50:8080/v1`.
+
+The provider called *OpenAI* is meant for the real cloud service, so ScribeDog
+requires `https://` and an API key for it. An address like
+`http://192.168.1.50:8080/v1` is then refused with the message that the URL of
+this cloud provider must begin with `https://`. The two local providers speak
+the same protocol and accept plain http for `localhost` and for addresses in
+your own network. If your server was started with an API key (`--api-key` for
+`llama-server`), enter it in the **API key** field.
+
 ### An API key for the runner
 
 A runner does not need a key out of the box. If you set one up, for example
