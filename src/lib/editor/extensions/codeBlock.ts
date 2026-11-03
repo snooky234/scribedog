@@ -3,16 +3,44 @@ import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import type { Node as ProseMirrorNode, NodeType } from "@tiptap/pm/model";
 import { Selection, TextSelection } from "@tiptap/pm/state";
 import type { Transaction } from "@tiptap/pm/state";
+import type { EditorView } from "@tiptap/pm/view";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import type MarkdownIt from "markdown-it";
 
 import { CodeBlockView } from "@/components/CodeBlockView";
 import { codeBlockLowlight } from "@/lib/codeLanguages";
+import { scrollParent } from "@/lib/editor/listCommands";
 
 const LIST_ITEM_TYPES = ["listItem", "taskItem"];
 
 // The same patterns as TipTap's own input rules (```js or ~~~ plus a space).
 const FENCE_INPUT_RULES = [/^```([a-z]+)?[\s\n]$/, /^~~~([a-z]+)?[\s\n]$/];
+
+// Turning a line into a code block (or back) must not move the view. The
+// block's node view is rebuilt during the dispatch and React has not filled it
+// yet, so ProseMirror's scroll-to-caret measures a caret at the wrong place
+// and jumps, and the toolbar's focus() scrolls once more a frame later. The
+// scroll offset is put back right after the dispatch and after those frames.
+function keepScrollPosition(view: EditorView): void {
+  const scroller = scrollParent(view.dom);
+
+  if (!scroller) {
+    return;
+  }
+
+  const top = scroller.scrollTop;
+  const restore = () => {
+    if (!view.isDestroyed && scroller.scrollTop !== top) {
+      scroller.scrollTop = top;
+    }
+  };
+
+  queueMicrotask(restore);
+  requestAnimationFrame(() => {
+    restore();
+    requestAnimationFrame(restore);
+  });
+}
 
 // Depth of the paragraph the selection sits in when that paragraph is the
 // first block of a list item, otherwise -1. A list item has to start with a
@@ -240,7 +268,11 @@ export const CodeBlock = CodeBlockLowlight.extend({
       ...parent,
       toggleCodeBlock:
         (attributes) =>
-        ({ state, dispatch, commands }) => {
+        ({ state, dispatch, commands, view }) => {
+          if (dispatch) {
+            keepScrollPosition(view);
+          }
+
           if (dispatch && state.selection.$from.parent.type.name === "paragraph") {
             isolateSelectedLines(state.tr);
           }

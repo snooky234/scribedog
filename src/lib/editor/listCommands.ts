@@ -5,7 +5,7 @@ import type { EditorView } from "@tiptap/pm/view";
 // Space kept between a moved block and the edge of the scroll area.
 const REVEAL_MARGIN = 24;
 
-function scrollParent(element: HTMLElement): HTMLElement | null {
+export function scrollParent(element: HTMLElement): HTMLElement | null {
   for (let current = element.parentElement; current; current = current.parentElement) {
     if (current.scrollHeight > current.clientHeight && /(auto|scroll)/.test(getComputedStyle(current).overflowY)) {
       return current;
