@@ -995,6 +995,7 @@
     "copy": "Copia codice",
     "language": "Linguaggio",
     "plain": "Testo semplice",
+    "auto": "auto",
     "editDiagram": "Fai clic per modificare il diagramma",
     "diagramError": "Il diagramma Mermaid contiene un errore:"
   },

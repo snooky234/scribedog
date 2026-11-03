@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { NodeViewContent, NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
@@ -14,7 +14,7 @@ import {
   MenuRadioItemIndicator,
   MenuTrigger
 } from "@/components/ui/menu";
-import { CODE_LANGUAGES } from "@/lib/codeLanguages";
+import { CODE_LANGUAGES, detectCodeLanguage, resolveCodeLanguage } from "@/lib/codeLanguages";
 import { isMermaidLanguage } from "@/lib/diagrams/mermaidBlocks";
 import { currentMermaidMode, mermaidErrorMessage, renderMermaidSvg, type MermaidRenderMode } from "@/lib/diagrams/mermaidRenderer";
 
@@ -86,10 +86,17 @@ export function CodeBlockView({ node, updateAttributes, selected, editor, getPos
     event.preventDefault();
     editor.chain().focus().setTextSelection(position + 1).run();
   };
-  const known = CODE_LANGUAGES.find((entry) => entry.value === language);
+  // "sh" in the fence is the Bash entry; the fence itself is left as written.
+  const resolved = resolveCodeLanguage(language);
+  const known = CODE_LANGUAGES.find((entry) => entry.value === resolved);
+  // A block without a language is coloured by a guess. The badge says which
+  // one, but the fence stays bare until the user picks the language.
+  const text = node.textContent;
+  const detected = useMemo(() => (language || isDiagram ? null : detectCodeLanguage(text)), [language, isDiagram, text]);
+  const detectedLabel = CODE_LANGUAGES.find((entry) => entry.value === detected)?.label;
   // A fence language outside the curated set (```haskell) stays selectable so
   // switching away from it is possible without losing the fence info first.
-  const label = known?.label ?? (language || t("codeBlock.plain"));
+  const label = known?.label ?? (detectedLabel ? `${detectedLabel} (${t("codeBlock.auto")})` : language || t("codeBlock.plain"));
 
   const handleCopy = async () => {
     try {
@@ -134,7 +141,7 @@ export function CodeBlockView({ node, updateAttributes, selected, editor, getPos
             <MenuPositioner align="end">
               <MenuPopup className="max-h-72 overflow-y-auto">
                 <MenuRadioGroup
-                  value={language}
+                  value={resolved ?? language}
                   onValueChange={(value) =>
                     updateAttributes({ language: value === PLAIN_VALUE ? null : (value as string) })
                   }
@@ -143,7 +150,7 @@ export function CodeBlockView({ node, updateAttributes, selected, editor, getPos
                     {t("codeBlock.plain")}
                     <MenuRadioItemIndicator />
                   </MenuRadioItem>
-                  {!known && language ? (
+                  {!resolved && language ? (
                     <MenuRadioItem value={language}>
                       {language}
                       <MenuRadioItemIndicator />

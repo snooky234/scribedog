@@ -994,6 +994,7 @@
     "copy": "コードをコピー",
     "language": "言語",
     "plain": "プレーンテキスト",
+    "auto": "自動",
     "editDiagram": "クリックして図を編集",
     "diagramError": "Mermaid 図にエラーがあります:"
   },

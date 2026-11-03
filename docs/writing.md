@@ -21,8 +21,13 @@ The editor is built on [TipTap](https://tiptap.dev/) and ProseMirror.
   into the Markdown. Drag an image to move it; on a touch screen, hold it
   for a moment first.
 - **Drawings**, sketched by hand right in the note (see [Drawings](#drawings))
-- **Code blocks**, with a one-click copy button. Inside a list the block
-  stays part of its list item, so a numbered step can carry its own code.
+- **Code blocks**, with a one-click copy button and syntax colouring for
+  about 30 languages (PowerShell, Bash, INI/TOML, Dockerfile, Nginx, C, C++,
+  Kotlin and more). The badge on the block's edge switches the language. A
+  block without a language is recognised automatically and the badge says so
+  ("PowerShell (auto)"); the Markdown file stays unchanged until you pick the
+  language yourself. Inside a list the block stays part of its list item, so
+  a numbered step can carry its own code.
 - An **emoji picker** with search, including keywords in your language
 - **Reminders** on any paragraph, heading or list item, set with the bell in
   the toolbar or `Ctrl+Alt+R` (see

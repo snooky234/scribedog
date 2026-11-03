@@ -994,6 +994,7 @@
     "copy": "复制代码",
     "language": "语言",
     "plain": "纯文本",
+    "auto": "自动",
     "editDiagram": "点击编辑图表",
     "diagramError": "Mermaid 图表中有错误："
   },
