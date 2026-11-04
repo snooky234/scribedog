@@ -3,6 +3,26 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.23.0] - 2026-11-04
+
+### Highlights
+- Syntax highlighting for 33 languages in code blocks, including PowerShell,
+  INI/TOML, Dockerfile, Nginx, C/C++ and Kotlin. Common fence spellings such
+  as sh, ps1 or toml resolve to their picker entry.
+- Code blocks without a language are highlighted by a guess, and the badge
+  says so. The fence stays bare until you pick a language.
+- Import your own TTF and WOFF fonts into the vault (Settings, Fonts). They
+  work in the editor, print and every export, and the PDF embeds the font
+  files. WOFF2, variable fonts, collections and CFF outlines are refused.
+- Fonts with icons (Nerd Fonts and the like) are recognised, and their icons
+  show up in documents set in any other font.
+- Pick icons of imported icon fonts from a new Icons tab in the emoji popover,
+  with Ctrl+Shift+M to open it at the cursor or for the selected file or
+  folder. Files and folders can use such an icon.
+
+### Bug Fixes
+- Toggling a code block keeps the scroll position instead of jumping.
+
 ## [0.22.1] - 2026-10-24
 
 ### Highlights
