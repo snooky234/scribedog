@@ -84,6 +84,7 @@ import { useChatStore } from "@/store/useChatStore";
 import { useRagEmbeddingStore } from "@/store/useRagEmbeddingStore";
 import { useRagSettingsStore } from "@/store/useRagSettingsStore";
 import { useRemindersStore } from "@/store/useRemindersStore";
+import { useCustomFontsStore } from "@/store/useCustomFontsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useNavigationHistoryStore } from "@/store/useNavigationHistoryStore";
 import { useSessionStore } from "@/store/useSessionStore";
@@ -564,6 +565,12 @@ function App() {
   // vault is open.
   useEffect(() => {
     void useEditorSettingsStore.getState().loadHeadingNumbering(folderPath);
+  }, [folderPath]);
+
+  // Imported fonts live in the same folder; the document font stays what it
+  // was while a vault without them is open, and comes back with them.
+  useEffect(() => {
+    void useCustomFontsStore.getState().load(folderPath);
   }, [folderPath]);
 
   // The single writer of the navigation history: whichever way a note ends up

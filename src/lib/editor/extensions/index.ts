@@ -7,6 +7,7 @@ import { AiDiffWidget } from "@/lib/aiDiffWidget";
 import { AiStreamWidget } from "@/lib/aiStreamWidget";
 import { AiSuggestionWidget } from "@/lib/aiSuggestionWidget";
 import { CodeBlockLinks } from "@/lib/editor/codeBlockLinks";
+import { IconGlyphs } from "@/lib/editor/iconGlyphs";
 import { HeadingNumbering } from "@/lib/editor/headingNumbering";
 import { InactiveSelection } from "@/lib/inactiveSelection";
 import { OutlineHighlight } from "@/lib/editor/outlineHighlight";
@@ -102,6 +103,7 @@ export function buildEditorExtensions(): Extensions {
     AiSuggestionWidget,
     SearchHighlight,
     CodeBlockLinks,
+    IconGlyphs,
     OutlineHighlight,
     HeadingNumbering,
     TableGrips,

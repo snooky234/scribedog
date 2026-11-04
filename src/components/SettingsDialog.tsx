@@ -8,6 +8,7 @@ import { AccountSettings } from "@/components/web/AccountSettings";
 import { LicensesDialog } from "@/components/LicensesDialog";
 import { RagSettings } from "@/components/RagSettings";
 import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
+import { CustomFontOptions } from "@/components/settings/CustomFontOptions";
 import { InfoPopover } from "@/components/settings/InfoPopover";
 import { SettingRow } from "@/components/settings/SettingRow";
 import { SettingsNav } from "@/components/settings/SettingsNav";
@@ -35,6 +36,7 @@ import {
   FONT_SIZE_PT_MAX,
   FONT_SIZE_PT_MIN,
   FONT_SIZE_PT_STEP,
+  getFontDefinition,
   getFontScale
 } from "@/lib/fonts";
 import { useChatStore } from "@/store/useChatStore";
@@ -302,7 +304,7 @@ function FontSetting() {
       </div>
       <p className="font-setting__hint">{t("settingsDialog.fontShort")}</p>
 
-      <div className="font-setting__options" role="radiogroup" aria-label={t("settingsDialog.font")}>
+      <CustomFontOptions label={t("settingsDialog.font")}>
         {APP_FONT_IDS.map((id) => {
           const definition = APP_FONTS[id];
           const label = definition.label ?? t("settingsDialog.fontSystem");
@@ -329,7 +331,7 @@ function FontSetting() {
             </button>
           );
         })}
-      </div>
+      </CustomFontOptions>
 
       <div className="font-setting__size">
         <label className="font-setting__size-label" htmlFor="settings-font-size">
@@ -375,7 +377,7 @@ function FontSetting() {
         <p
           className="font-setting__size-preview"
           style={{
-            fontFamily: APP_FONTS[fontId].cssStack,
+            fontFamily: getFontDefinition(fontId).cssStack,
             fontSize: `calc(1rem * ${getFontScale(fontSizePt)})`
           }}
         >

@@ -1149,6 +1149,103 @@
   color: var(--dialog-hint);
 }
 
+/* A font the user imported: the card is the same button as a bundled one,
+   with the delete control laid over its corner (a button inside a button is
+   not valid, so the two are siblings in a wrapper). */
+.font-setting__custom {
+  position: relative;
+  display: flex;
+}
+
+.font-setting__custom > .font-setting__option {
+  flex: 1;
+  min-width: 0;
+}
+
+.font-setting__delete {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--dialog-hint);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.font-setting__custom:hover .font-setting__delete,
+.font-setting__delete:focus-visible {
+  opacity: 1;
+}
+
+.font-setting__delete:hover {
+  background: rgba(var(--overlay-rgb),0.14);
+  color: inherit;
+}
+
+/* Hover does not exist on a touch screen: the control stays visible there. */
+@media (hover: none) {
+  .font-setting__delete {
+    opacity: 1;
+  }
+}
+
+.font-setting__badge {
+  margin-left: 0.4rem;
+  border: 1px solid rgba(var(--overlay-rgb),0.2);
+  border-radius: 999px;
+  padding: 0 0.4rem;
+  font-size: 0.68rem;
+}
+
+.font-setting__option--confirm {
+  cursor: default;
+  justify-content: space-between;
+}
+
+.font-setting__confirm-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/* Under the cards and set off by a rule: this is a separate action, not one
+   more font. */
+.font-setting__import {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+  border-top: 1px solid rgba(var(--overlay-rgb),0.14);
+  padding-top: 0.9rem;
+}
+
+.font-setting__import-hint {
+  font-size: var(--dialog-hint-size);
+  color: var(--dialog-hint);
+}
+
+.font-setting__status {
+  margin-top: 0.5rem;
+  font-size: var(--dialog-hint-size);
+  line-height: 1.45;
+  color: var(--dialog-hint);
+}
+
+.font-setting__status p {
+  margin: 0.1rem 0;
+}
+
+.font-setting__status[data-tone="error"] {
+  color: var(--error-fg);
+}
+
 .font-setting__preview {
   font-size: 1.15rem;
   line-height: 1.3;

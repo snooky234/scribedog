@@ -1,6 +1,6 @@
 import {
   DEFAULT_DOCUMENT_STYLE,
-  getFontDefinition,
+  getDocumentFontStack,
   getFontScale,
   type DocumentStyle,
   type TableWidth
@@ -319,7 +319,7 @@ export function renderHtmlDocument(
     '<meta name="viewport" content="width=device-width, initial-scale=1" />',
     `<title>${escapeHtml(title)}</title>`,
     `<style>${documentCss(
-      getFontDefinition(style.fontId).cssStack,
+      getDocumentFontStack(style.fontId),
       Math.round(16 * getFontScale(style.fontSizePt) * 100) / 100,
       style.tableWidth ?? "full"
     )}</style>`,

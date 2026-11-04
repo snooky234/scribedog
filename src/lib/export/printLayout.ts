@@ -1,4 +1,4 @@
-import { APP_FONTS, getFontScale, type AppFontId } from "@/lib/fonts";
+import { getDocumentFontStack, getFontDefinition, getFontScale, getIconFonts, type AppFontId } from "@/lib/fonts";
 
 import {
   COURIER_PDF_LINE_HEIGHT,
@@ -43,9 +43,9 @@ const COURIER_STACK = '"Courier New", Courier, monospace';
 
 /** The face the print sets the body in, matching the one the PDF embeds. */
 export function getPrintFont(fontId: AppFontId): PrintFont {
-  const definition = APP_FONTS[fontId];
+  const definition = getFontDefinition(fontId);
 
-  if (fontId === "system") {
+  if (definition.id === "system") {
     return {
       cssStack: ROBOTO_STACK,
       boldWeight: 500,
@@ -60,11 +60,18 @@ export function getPrintFont(fontId: AppFontId): PrintFont {
     };
   }
 
+  // The icon fonts are part of the stack, so their faces have to be there
+  // before the print measures anything.
+  const iconFonts = getIconFonts(definition.id);
+
   return {
-    cssStack: definition.cssStack,
+    cssStack: getDocumentFontStack(fontId),
     boldWeight: 700,
     lineHeight: definition.pdfLineHeight,
-    loadStyles: definition.loadStyles
+    loadStyles:
+      definition.loadStyles || iconFonts.length > 0
+        ? () => Promise.all([definition.loadStyles?.(), ...iconFonts.map((font) => font.loadStyles?.())])
+        : null
   };
 }
 

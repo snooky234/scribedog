@@ -1,5 +1,14 @@
 import { bytesToBase64 } from "@/lib/imageEncoding";
-import { APP_FONTS, type AppFontId } from "@/lib/fonts";
+import {
+  FONT_STYLE_NAMES,
+  fillStyleFallbacks,
+  getCustomFontDefinition,
+  getFontDefinition,
+  type AppFontId,
+  type BuiltinFontId,
+  type CustomFontDefinition,
+  type FontStyleName
+} from "@/lib/fonts";
 
 // Registers a catalog font with pdfmake. pdfmake embeds a subset of the face
 // into the PDF, so it needs the actual font bytes — the WOFF1 files, since
@@ -59,7 +68,7 @@ type PdfFontRegistrar = {
   addFonts: (fonts: Record<string, unknown>) => void;
 };
 
-export const PDF_EMBEDDABLE_FONTS: Partial<Record<AppFontId, PdfFontStyleUrls>> = {
+export const PDF_EMBEDDABLE_FONTS: Partial<Record<BuiltinFontId, PdfFontStyleUrls>> = {
   "eb-garamond": {
     normal: ebGaramondNormal,
     bold: ebGaramondBold,
@@ -106,7 +115,7 @@ export const PDF_EMBEDDABLE_FONTS: Partial<Record<AppFontId, PdfFontStyleUrls>> 
 
 // pdfmake keeps its VFS on the module singleton, so a face registered once
 // stays registered for the rest of the session.
-const registeredFontIds = new Set<AppFontId>();
+const registeredFontKeys = new Set<string>();
 
 async function fetchFontBase64(url: string): Promise<string> {
   const response = await fetch(url);
@@ -119,23 +128,83 @@ async function fetchFontBase64(url: string): Promise<string> {
 }
 
 /**
+ * A font the user imported: the bytes come out of the vault, not from the
+ * bundle. Styles the user did not provide reuse another file (bold falls back
+ * to regular), and a file used for several styles is registered once.
+ */
+async function registerCustomPdfFont(
+  pdfMake: PdfFontRegistrar,
+  font: CustomFontDefinition,
+  regularOnly: boolean
+): Promise<string> {
+  // The revision is part of the name: a replaced font has to be registered
+  // again, and pdfmake keeps whatever it loaded under a name for good.
+  // An icon font only ever supplies glyphs, in one style: reading and
+  // encoding all four files of a Nerd Font would cost megabytes for nothing.
+  const fontName = `${font.id}@${font.revision}${regularOnly ? ":regular" : ""}`;
+
+  if (registeredFontKeys.has(fontName)) {
+    return fontName;
+  }
+
+  const source = fillStyleFallbacks(regularOnly ? { normal: true } : font.styles);
+  const sources = [...new Set(FONT_STYLE_NAMES.map((style) => source[style]))];
+  const base64BySource = new Map<FontStyleName, string>();
+
+  await Promise.all(
+    sources.map(async (style) => {
+      base64BySource.set(style, bytesToBase64(await font.readStyle(style)));
+    })
+  );
+
+  const vfs: Record<string, string> = {};
+  const fontFiles: Record<string, string> = {};
+
+  for (const [style, base64] of base64BySource) {
+    vfs[`${fontName}-${style}.ttf`] = base64;
+  }
+
+  for (const style of FONT_STYLE_NAMES) {
+    fontFiles[style] = `${fontName}-${source[style]}.ttf`;
+  }
+
+  pdfMake.addVirtualFileSystem(vfs);
+  pdfMake.addFonts({ [fontName]: fontFiles });
+  registeredFontKeys.add(fontName);
+
+  return fontName;
+}
+
+/**
  * Makes `fontId` available to pdfmake and returns the font name to use in the
  * document definition. Falls back to Roboto for the system font and whenever
  * loading the face fails, so an export never dies over a font.
  */
 export async function registerPdfFont(
   pdfMake: PdfFontRegistrar,
-  fontId: AppFontId
+  fontId: AppFontId,
+  options: { regularOnly?: boolean } = {}
 ): Promise<string> {
-  const styles = PDF_EMBEDDABLE_FONTS[fontId];
+  const custom = getCustomFontDefinition(fontId);
+
+  if (custom) {
+    try {
+      return await registerCustomPdfFont(pdfMake, custom, options.regularOnly === true);
+    } catch {
+      return PDF_DEFAULT_FONT;
+    }
+  }
+
+  const definition = getFontDefinition(fontId);
+  const styles = PDF_EMBEDDABLE_FONTS[definition.id as BuiltinFontId];
 
   if (!styles) {
     return PDF_DEFAULT_FONT;
   }
 
-  const fontName = APP_FONTS[fontId].familyName;
+  const fontName = definition.familyName;
 
-  if (registeredFontIds.has(fontId)) {
+  if (registeredFontKeys.has(fontName)) {
     return fontName;
   }
 
@@ -149,14 +218,14 @@ export async function registerPdfFont(
     const fontFiles: Record<string, string> = {};
 
     styleNames.forEach((styleName, index) => {
-      const virtualFileName = `${fontId}-${styleName}.woff`;
+      const virtualFileName = `${definition.id}-${styleName}.woff`;
       vfs[virtualFileName] = base64ByStyle[index];
       fontFiles[styleName] = virtualFileName;
     });
 
     pdfMake.addVirtualFileSystem(vfs);
     pdfMake.addFonts({ [fontName]: fontFiles });
-    registeredFontIds.add(fontId);
+    registeredFontKeys.add(fontName);
 
     return fontName;
   } catch {

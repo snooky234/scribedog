@@ -539,6 +539,18 @@
 /* A URL inside a code block (src/lib/editor/codeBlockLinks.ts): plain text
    under a decoration, so it keeps the code colour and only gains the
    underline and pointer that say "this opens". */
+/* A glyph of an icon font overhangs the advance its font reserves (a Nerd Font
+   icon: up to 1em on 0.6em), so it gets room on its right instead of sitting
+   on the next letter (lib/editor/iconGlyphs.ts). */
+.editor-view__surface .icon-glyph {
+  margin-right: 0.4em;
+}
+
+/* A space after it is room already. */
+.editor-view__surface .icon-glyph--spaced {
+  margin-right: 0.1em;
+}
+
 .editor-view__surface .code-block-link {
   cursor: pointer;
   text-decoration: underline;

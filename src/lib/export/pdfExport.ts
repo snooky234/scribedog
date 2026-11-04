@@ -1,9 +1,10 @@
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 
 import {
-  APP_FONTS,
   DEFAULT_DOCUMENT_STYLE,
+  getFontDefinition,
   getFontScale,
+  getIconFonts,
   type DocumentStyle,
   type TableWidth
 } from "@/lib/fonts";
@@ -25,7 +26,8 @@ import {
   type PagedDocument
 } from "./pagePlan";
 import { splitEmojiSegments } from "./emojiSegments";
-import { registerPdfFont } from "./pdfFonts";
+import { splitIconSegments, type PdfIconFont } from "./iconSegments";
+import { PDF_DEFAULT_FONT, registerPdfFont } from "./pdfFonts";
 import { CELL_CHROME_PT, maxWordLength, maxWordLengthForColumn, splitOverlongWords } from "./pdfTableFit";
 import { computeColumnShares, rowsFitWhole } from "./tableColumns";
 import {
@@ -126,7 +128,7 @@ function checkboxSvg(checked: boolean): string {
 // The text area of a page, which caps every image (computePagedImageSize).
 type ImageBox = { width: number; height: number };
 
-function runsToPdfText(runs: InlineRun[], images: ExportImageMap, box: ImageBox): Content[] {
+function runsToPdfText(runs: InlineRun[], images: ExportImageMap, box: ImageBox, icons: PdfIconFont[]): Content[] {
   const parts: Content[] = [];
 
   for (const run of runs) {
@@ -168,12 +170,17 @@ function runsToPdfText(runs: InlineRun[], images: ExportImageMap, box: ImageBox)
 
     // Emoji glyphs only exist in the embedded NotoEmoji face, so each emoji
     // run of the text is tagged with it while the rest keeps the body font.
+    // Icons of an imported icon font likewise: pdfmake sets a run in one
+    // font, so each icon run is tagged with the font that has its glyphs.
     for (const segment of splitEmojiSegments(run.text)) {
-      parts.push({
-        text: segment.text,
-        font: segment.emoji ? EMOJI_FONT : bodyFont,
-        ...baseStyle
-      } as Content);
+      if (segment.emoji) {
+        parts.push({ text: segment.text, font: EMOJI_FONT, ...baseStyle } as Content);
+        continue;
+      }
+
+      for (const part of splitIconSegments(segment.text, icons)) {
+        parts.push({ text: part.text, font: part.font ?? bodyFont, ...baseStyle } as Content);
+      }
     }
   }
 
@@ -182,13 +189,19 @@ function runsToPdfText(runs: InlineRun[], images: ExportImageMap, box: ImageBox)
 
 // Inline images can't sit inside a pdfmake text array, so a paragraph whose
 // runs contain images is split into alternating text and image chunks.
-function runsToBlockContent(runs: InlineRun[], images: ExportImageMap, box: ImageBox, style?: string): Content[] {
+function runsToBlockContent(
+  runs: InlineRun[],
+  images: ExportImageMap,
+  box: ImageBox,
+  icons: PdfIconFont[],
+  style?: string
+): Content[] {
   const result: Content[] = [];
   let textBuffer: InlineRun[] = [];
 
   const flushText = () => {
     if (textBuffer.length > 0) {
-      result.push({ text: runsToPdfText(textBuffer, images, box), style });
+      result.push({ text: runsToPdfText(textBuffer, images, box, icons), style });
       textBuffer = [];
     }
   };
@@ -226,6 +239,8 @@ type PdfLayout = {
   // Where images have to fit: the text area less the safety zone
   // (pagePlan.ts) and an image's own margins.
   imageBox: ImageBox;
+  // Imported icon fonts that the PDF may have to set icon runs in.
+  iconFonts: PdfIconFont[];
   // False on the endless page of the flow layout: a page break would start a
   // second page there, and the keep-together flags lay parts out in
   // fragments whose recorded positions are off (a table's first row reports
@@ -263,7 +278,7 @@ function fitCellText(parts: Content[], maxLength: number, maxLengthWide: number)
 }
 
 function paragraphContent(block: Extract<ExportBlock, { kind: "paragraph" }>, images: ExportImageMap, layout: PdfLayout): Content[] {
-  return runsToBlockContent(block.runs, images, layout.imageBox, "paragraph").map(
+  return runsToBlockContent(block.runs, images, layout.imageBox, layout.iconFonts, "paragraph").map(
     (chunk) => (block.align && typeof chunk === "object" ? { ...chunk, alignment: block.align } : chunk) as Content
   );
 }
@@ -316,7 +331,7 @@ function blocksToPdfContent(
       case "heading": {
         const level = Math.min(Math.max(block.level, 1), 6);
         content.push({
-          text: runsToPdfText(block.runs, images, layout.imageBox),
+          text: runsToPdfText(block.runs, images, layout.imageBox, layout.iconFonts),
           style: `h${level}`,
           alignment: block.align
         });
@@ -454,7 +469,7 @@ function blocksToPdfContent(
             // Header text is bold (set on the cell below), so it is measured
             // as the wider face.
             text: fitCellText(
-              runsToPdfText(cell.runs, images, layout.imageBox).map((part) =>
+              runsToPdfText(cell.runs, images, layout.imageBox, layout.iconFonts).map((part) =>
                 cell.header ? ({ ...(part as object), bold: true } as Content) : part
               ),
               wordLimits[column].plain,
@@ -519,11 +534,11 @@ function blocksToPdfContent(
 
 // Page, type sizes and the context the block renderer works in, shared by
 // the flow layout and the paged one so both set exactly the same thing.
-function documentSetup(style: DocumentStyle, bodyFont: string) {
+function documentSetup(style: DocumentStyle, bodyFont: string, iconFonts: PdfIconFont[]) {
   const scale = getFontScale(style.fontSizePt);
   const sized = (points: number) => Math.round(points * scale * 100) / 100;
   const page = getPageLayout(style.pageSize, style.pageMargins);
-  const lineHeight = sized(PDF_BODY_SIZE_PT) * PDF_LINE_HEIGHT * APP_FONTS[style.fontId].pdfLineHeight;
+  const lineHeight = sized(PDF_BODY_SIZE_PT) * PDF_LINE_HEIGHT * getFontDefinition(style.fontId).pdfLineHeight;
   // One line of room at the bottom of every page (the safety zone, see
   // pagePlan.ts); an image never gets taller than what is left.
   const capacity = page.contentHeightPt - lineHeight;
@@ -533,6 +548,7 @@ function documentSetup(style: DocumentStyle, bodyFont: string) {
     contentWidth: page.contentWidthPt,
     lineHeight,
     imageBox: { width: page.contentWidthPt, height: capacity - 2 * PDF_IMAGE_MARGIN },
+    iconFonts,
     pageBreaks: true
   };
   const base: Omit<TDocumentDefinitions, "content"> = {
@@ -570,9 +586,10 @@ export function buildPdfDocumentDefinition(
   blocks: ExportBlock[],
   images: ExportImageMap,
   style: DocumentStyle,
-  bodyFont: string
+  bodyFont: string,
+  iconFonts: PdfIconFont[] = []
 ): TDocumentDefinitions {
-  const { page, layout, base } = documentSetup(style, bodyFont);
+  const { page, layout, base } = documentSetup(style, bodyFont, iconFonts);
   const content = blocksToPdfContent(blocks, images, layout, (blockIndex, items) =>
     // The block index travels in the id, which readPageMap reads back.
     items.forEach((item, part) => {
@@ -680,9 +697,10 @@ export function buildFlowDefinition(
   blocks: ExportBlock[],
   images: ExportImageMap,
   style: DocumentStyle,
-  bodyFont: string
+  bodyFont: string,
+  iconFonts: PdfIconFont[] = []
 ): { definition: TDocumentDefinitions; recording: FlowRecording } {
-  const { page, layout, capacity, base } = documentSetup(style, bodyFont);
+  const { page, layout, capacity, base } = documentSetup(style, bodyFont, iconFonts);
   const entries: FlowRecording["entries"] = [];
   let afterManualBreak = false;
 
@@ -927,7 +945,22 @@ async function loadRegisteredPdfMake(style: DocumentStyle) {
     style.fontId
   );
 
-  return { pdfMake, bodyFont };
+  // The imported icon fonts, so that an icon in a note set in some other font
+  // still comes out. Only the regular file of each is read, and only on the
+  // first export of a session.
+  const iconFonts: PdfIconFont[] = [];
+
+  for (const font of getIconFonts(style.fontId)) {
+    const name = await registerPdfFont(pdfMake as unknown as Parameters<typeof registerPdfFont>[0], font.id, {
+      regularOnly: true
+    });
+
+    if (name !== PDF_DEFAULT_FONT) {
+      iconFonts.push({ name, ranges: font.iconRanges });
+    }
+  }
+
+  return { pdfMake, bodyFont, iconFonts };
 }
 
 /**
@@ -940,8 +973,8 @@ export async function planPdfDocument(
   images: ExportImageMap,
   style: DocumentStyle = DEFAULT_DOCUMENT_STYLE
 ): Promise<PagedDocument> {
-  const { pdfMake, bodyFont } = await loadRegisteredPdfMake(style);
-  const { definition, recording } = buildFlowDefinition(blocks, images, style, bodyFont);
+  const { pdfMake, bodyFont, iconFonts } = await loadRegisteredPdfMake(style);
+  const { definition, recording } = buildFlowDefinition(blocks, images, style, bodyFont, iconFonts);
 
   await pdfMake.createPdf(definition).getBuffer();
 
@@ -954,14 +987,14 @@ export async function renderPdfDocument(
   images: ExportImageMap,
   style: DocumentStyle = DEFAULT_DOCUMENT_STYLE
 ): Promise<Uint8Array> {
-  const { pdfMake, bodyFont } = await loadRegisteredPdfMake(style);
-  const flow = buildFlowDefinition(blocks, images, style, bodyFont);
+  const { pdfMake, bodyFont, iconFonts } = await loadRegisteredPdfMake(style);
+  const flow = buildFlowDefinition(blocks, images, style, bodyFont, iconFonts);
 
   await pdfMake.createPdf(flow.definition).getBuffer();
 
   const paged = planFromFlow(blocks, flow.recording);
   const buffer = await pdfMake
-    .createPdf(buildPdfDocumentDefinition(title, paged.blocks, images, style, bodyFont))
+    .createPdf(buildPdfDocumentDefinition(title, paged.blocks, images, style, bodyFont, iconFonts))
     .getBuffer();
 
   return new Uint8Array(buffer);
@@ -979,13 +1012,13 @@ export async function layoutPdfPageMap(
   images: ExportImageMap,
   style: DocumentStyle = DEFAULT_DOCUMENT_STYLE
 ): Promise<PageMap> {
-  const { pdfMake, bodyFont } = await loadRegisteredPdfMake(style);
-  const flow = buildFlowDefinition(blocks, images, style, bodyFont);
+  const { pdfMake, bodyFont, iconFonts } = await loadRegisteredPdfMake(style);
+  const flow = buildFlowDefinition(blocks, images, style, bodyFont, iconFonts);
 
   await pdfMake.createPdf(flow.definition).getBuffer();
 
   const paged = planFromFlow(blocks, flow.recording);
-  const definition = buildPdfDocumentDefinition("", paged.blocks, images, style, bodyFont);
+  const definition = buildPdfDocumentDefinition("", paged.blocks, images, style, bodyFont, iconFonts);
 
   await pdfMake.createPdf(definition).getBuffer();
 

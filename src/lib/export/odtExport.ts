@@ -1,8 +1,8 @@
 import { strToU8, zipSync, type Zippable } from "fflate";
 
 import {
-  APP_FONTS,
   DEFAULT_DOCUMENT_STYLE,
+  getFontDefinition,
   getFontScale,
   getReferencedFontName,
   type AppFontId,
@@ -38,7 +38,7 @@ function formatPt(sizePt: number, scale: number): string {
 }
 
 function odfGenericFamily(fontId: AppFontId): string {
-  const { category } = APP_FONTS[fontId];
+  const { category } = getFontDefinition(fontId);
   return category === "serif" ? "roman" : category === "mono" ? "modern" : "swiss";
 }
 

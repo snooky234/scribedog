@@ -4,8 +4,9 @@ import {
   clampFontSizePt,
   DEFAULT_FONT_ID,
   DEFAULT_FONT_SIZE_PT,
-  ensureFontStylesLoaded,
-  getFontDefinition,
+  ensureDocumentFontLoaded,
+  getDocumentFontStack,
+  getIconFonts,
   getFontScale,
   resolveFontId,
   type AppFontId,
@@ -564,6 +565,12 @@ type EditorSettingsState = {
    */
   fontId: AppFontId;
   setFontId: (fontId: AppFontId) => void;
+  /**
+   * Applies the stored choice again. The set of imported fonts belongs to the
+   * open vault (useCustomFontsStore), so a vault switch or an import can change
+   * what the same id resolves to.
+   */
+  reapplyDocumentFont: () => void;
   /** Document body size in points; travels into every export. */
   fontSizePt: number;
   setFontSizePt: (sizePt: number) => void;
@@ -681,8 +688,18 @@ type EditorSettingsState = {
 function applyDocumentFont(fontId: AppFontId): void {
   document.documentElement.style.setProperty(
     "--font-document",
-    getFontDefinition(fontId).cssStack
+    getDocumentFontStack(fontId)
   );
+
+  // The icons picked for files and folders show in the UI, which has its own
+  // font; the icon fonts are named here so those places can fall back to them.
+  const iconFonts = getIconFonts().map((font) => `"${font.familyName}"`);
+
+  if (iconFonts.length > 0) {
+    document.documentElement.style.setProperty("--icon-fonts", iconFonts.join(", "));
+  } else {
+    document.documentElement.style.removeProperty("--icon-fonts");
+  }
 }
 
 function applyDocumentFontScale(sizePt: number): void {
@@ -697,7 +714,7 @@ const initialFontSizePt = getStoredFontSizePt();
 
 // The stored family has to be in the document before the editor paints, or the
 // first frame renders in the fallback face and visibly reflows.
-void ensureFontStylesLoaded(initialFontId);
+void ensureDocumentFontLoaded(initialFontId);
 applyDocumentFont(initialFontId);
 applyDocumentFontScale(initialFontSizePt);
 
@@ -752,7 +769,12 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
     persistFontId(fontId);
     set({ fontId });
     applyDocumentFont(fontId);
-    void ensureFontStylesLoaded(fontId);
+    void ensureDocumentFontLoaded(fontId);
+  },
+  reapplyDocumentFont: () => {
+    const { fontId } = get();
+    applyDocumentFont(fontId);
+    void ensureDocumentFontLoaded(fontId);
   },
   fontSizePt: initialFontSizePt,
   setFontSizePt: (sizePt: number) => {
