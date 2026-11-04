@@ -171,6 +171,7 @@
 /* Shown only where an icon is actually set (see CrumbIcon): inline, like the
    crumbs themselves, so the bidi algorithm keeps it next to its own name. */
 .detail-panel__crumb-icon {
+  font-family: var(--icon-fonts), system-ui, sans-serif;
   display: inline;
   padding-right: 0.25em;
   font-size: 0.95em;
@@ -182,9 +183,15 @@
   background: none;
   padding: 0 0.25em 0 0;
   font: inherit;
+  font-family: var(--icon-fonts), system-ui, sans-serif;
   cursor: pointer;
   opacity: 0.9;
   transition: opacity 120ms ease;
+}
+
+/* An icon-font glyph overhangs its advance; the extra room keeps it off the name. */
+.detail-panel__crumb-icon--glyph {
+  padding-right: 0.7em;
 }
 
 .detail-panel__crumb-icon--button:hover,

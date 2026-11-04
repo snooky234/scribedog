@@ -395,6 +395,170 @@
   color: rgba(var(--text-rgb), 0.65);
 }
 
+/* The icons of imported icon fonts: a second tab next to the emoji. The panel
+   is as wide as emoji-mart's (nine cells of 36px and a scrollbar), so the
+   popover does not change width when switching. */
+.emoji-picker__modes {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid rgba(var(--overlay-rgb), 0.1);
+  padding: 0.35rem;
+}
+
+.emoji-picker__mode {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: 0.3rem 0.6rem;
+  color: rgba(var(--text-rgb), 0.65);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.emoji-picker__mode:hover {
+  background: rgba(var(--overlay-rgb), 0.08);
+}
+
+.emoji-picker__mode[aria-selected="true"] {
+  background: rgba(var(--accent-light-rgb), 0.18);
+  color: rgba(var(--text-rgb), 1);
+}
+
+.icon-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 22rem;
+  max-width: 100%;
+  min-height: 27rem;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+.icon-picker__font,
+.icon-picker__search {
+  border: 1px solid rgba(var(--overlay-rgb), 0.14);
+  border-radius: 0.5rem;
+  background: rgba(var(--surface-raised-rgb), 1);
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.icon-picker__font {
+  padding: 0.3rem 0.5rem;
+}
+
+.icon-picker__search {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.55rem;
+}
+
+.icon-picker__search:focus-within {
+  border-color: rgba(var(--accent-light-rgb), 0.8);
+}
+
+.icon-picker__search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.icon-picker__groups {
+  display: flex;
+  gap: 0.3rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.icon-picker__chip {
+  flex: none;
+  border: 1px solid rgba(var(--overlay-rgb), 0.16);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.1rem 0.55rem;
+  color: rgba(var(--text-rgb), 0.75);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.icon-picker__chip[data-selected="true"] {
+  border-color: rgba(var(--accent-light-rgb), 0.8);
+  background: rgba(var(--accent-light-rgb), 0.18);
+  color: rgba(var(--text-rgb), 1);
+}
+
+.icon-picker__grid {
+  overflow-y: auto;
+}
+
+.icon-picker__rows {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+}
+
+.icon-picker__recent {
+  display: grid;
+  grid-template-columns: repeat(9, 36px);
+  border-bottom: 1px solid rgba(var(--overlay-rgb), 0.1);
+  padding-bottom: 0.3rem;
+}
+
+.icon-picker__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.icon-picker__cell:hover,
+.icon-picker__cell:focus-visible {
+  background: rgba(var(--accent-light-rgb), 0.22);
+}
+
+.icon-picker__note,
+.icon-picker__preview {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(var(--text-rgb), 0.6);
+}
+
+.icon-picker__note {
+  padding: 1rem 0.25rem;
+}
+
+.icon-picker__preview {
+  min-height: 1.2em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.editor-popover--sheet .icon-picker {
+  width: 100%;
+}
+
 .emoji-picker {
   padding: 0;
   overflow: hidden;

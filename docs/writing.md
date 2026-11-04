@@ -28,7 +28,10 @@ The editor is built on [TipTap](https://tiptap.dev/) and ProseMirror.
   ("PowerShell (auto)"); the Markdown file stays unchanged until you pick the
   language yourself. Inside a list the block stays part of its list item, so
   a numbered step can carry its own code.
-- An **emoji picker** with search, including keywords in your language
+- An **emoji picker** with search, including keywords in your language. Open
+  it from the toolbar or with `Ctrl+Shift+M`, where it appears at the
+  cursor (with the file tree focused, it sets the icon of the selected entry). It remembers whether you were on the Emoji or the
+  [Icons](customizing.md#icon-fonts) tab
 - **Reminders** on any paragraph, heading or list item, set with the bell in
   the toolbar or `Ctrl+Alt+R` (see
   [Reminders](notes-and-vault.md#reminders))

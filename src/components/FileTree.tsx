@@ -27,7 +27,10 @@ import {
 } from "@/store/appStore/workingSet";
 import { EmojiPickerPopover } from "@/components/EmojiPicker";
 import { getVaultIcon, type VaultIconMap } from "@/lib/vaultIcons";
+import { matchesBinding } from "@/lib/shortcuts/binding";
+import { resolveBinding } from "@/lib/shortcuts/resolve";
 import { anchorForTrigger, type PopoverAnchor } from "@/lib/usePopoverOverflowAlign";
+import { useShortcutsStore } from "@/store/useShortcutsStore";
 import type { MoveTreeEntryInput, WorkingSetEntry } from "@/store/useAppStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
@@ -177,6 +180,7 @@ export function FileTree({
   const { contextMenu, setContextMenu, menuRef: contextMenuRef } = useTreeContextMenu();
   // The entry whose icon is being picked, kept after the menu that opened it
   // has closed.
+  const shortcutOverrides = useShortcutsStore((state) => state.overrides);
   const [iconPicker, setIconPicker] = useState<{
     relativePath: string;
     anchor: PopoverAnchor;
@@ -585,6 +589,26 @@ export function FileTree({
   };
 
   const handleTreeKeyDown = (event: React.KeyboardEvent<HTMLUListElement>) => {
+    // The emoji/icon shortcut picks the icon of the active row, the way it
+    // inserts into the note when the editor has the focus.
+    if (
+      activeKey &&
+      !(event.target instanceof HTMLInputElement) &&
+      matchesBinding(event.nativeEvent, resolveBinding(shortcutOverrides, "insertEmoji"))
+    ) {
+      const activeNode = flatNodes.find((node) => getNodeKey(node) === activeKey);
+
+      if (activeNode) {
+        event.preventDefault();
+        setIconPicker({
+          relativePath: activeNode.relativePath,
+          anchor: anchorForTrigger((event.target as HTMLElement).getBoundingClientRect())
+        });
+      }
+
+      return;
+    }
+
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       if (flatNodes.length === 0) {
         return;
@@ -1341,7 +1365,26 @@ export function FileTree({
               onSetVaultIcon(path, emoji)
             );
           }}
-          onClose={() => setIconPicker(null)}
+          onClose={() => {
+            const entry = iconPicker;
+            setIconPicker(null);
+
+            // The picker took the focus with it when it closed; the row it was
+            // opened for gets it back, so the keyboard can carry on from there.
+            // Left alone when the click that dismissed it landed on something
+            // else that takes focus.
+            const node = flatNodes.find((candidate) => candidate.relativePath === entry.relativePath);
+
+            if (node) {
+              window.setTimeout(() => {
+                const active = document.activeElement;
+
+                if (!active || active === document.body) {
+                  focusItem(getNodeKey(node));
+                }
+              }, 0);
+            }
+          }}
         />
       ) : null}
     </>

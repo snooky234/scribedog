@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   getVaultIcon,
   iconPathKey,
+  isGlyphIcon,
   isValidIcon,
   normalizeVaultIcons,
   pruneVaultIcons,
@@ -137,5 +138,15 @@ describe("pruneVaultIcons", () => {
     const icons: VaultIconMap = { "da.md": "📝" };
 
     expect(pruneVaultIcons(icons, ["da.md", "andere.md"])).toBe(icons);
+  });
+});
+
+describe("isGlyphIcon", () => {
+  it("tells an icon-font glyph from an emoji", () => {
+    expect(isGlyphIcon(String.fromCodePoint(0xf308))).toBe(true);
+    expect(isGlyphIcon(String.fromCodePoint(0xf0868))).toBe(true);
+    expect(isGlyphIcon("📕")).toBe(false);
+    expect(isGlyphIcon("🐶")).toBe(false);
+    expect(isGlyphIcon("→")).toBe(false);
   });
 });

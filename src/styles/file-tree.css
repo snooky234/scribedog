@@ -118,9 +118,20 @@
 /* An emoji is a glyph, not an svg: it needs its own size, and it must not
    inherit the muted colour the default folder icon is drawn in. */
 .file-tree__icon--emoji {
+  /* Icons of imported icon fonts (set by applyDocumentFont); without any the
+     variable is unset and the row keeps the inherited font. */
+  font-family: var(--icon-fonts), system-ui, sans-serif;
   color: initial;
   font-size: 0.9rem;
   line-height: 1;
+}
+
+/* A glyph of an icon font is drawn wider than its font reserves for it (a
+   Nerd Font icon runs up to the full em on a 0.6em advance). Centred in the
+   box it would reach into the name, so it starts at the left edge instead and
+   the box keeps the names lined up. */
+.file-tree__icon--glyph {
+  justify-content: flex-start;
 }
 
 .file-tree__chevron {

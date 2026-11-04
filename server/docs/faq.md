@@ -112,6 +112,14 @@ In `./scribedog-data` next to the compose file, as plain `.md` files.
 Everything the app knows is in that folder. See
 [Your data and backups](data-and-backups.md).
 
+**Can I use my own fonts in the browser?**
+Yes. **Settings, Fonts, Import font** takes `.ttf` and `.woff` files from
+your computer and stores them in the vault, in `.scribedog/fonts/`, so every
+browser and device that opens the vault has them, and the PDF export embeds
+them. Variable fonts and WOFF2 are refused, because a PDF cannot embed them.
+Which font is selected is kept per browser. See
+[Fonts](../../docs/customizing.md#fonts).
+
 **Can several people share a vault?**
 Yes, in the multi-instance setup: next to their own vault, people can keep
 shared vaults that only the chosen members see, with a trash that keeps a

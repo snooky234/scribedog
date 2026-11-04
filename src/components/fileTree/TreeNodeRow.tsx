@@ -18,7 +18,7 @@ import { carriesExternalFiles } from "@/lib/dragDrop/droppedSources";
 import { FILE_LINK_DRAG_MIME, getLinkableFilePath, TREE_NODE_DRAG_MIME } from "@/lib/editor/fileLinks";
 import { getNodeMtimeMs, type FileTreeFolderNode, type FileTreeNode } from "@/lib/fileTree";
 import { getNoteDisplayName } from "@/lib/folderNotes";
-import { getVaultIcon, type VaultIconMap } from "@/lib/vaultIcons";
+import { getVaultIcon, isGlyphIcon, type VaultIconMap } from "@/lib/vaultIcons";
 import type { SortMode } from "@/lib/vaultMeta";
 import { DROP_DIRECTORY_ATTRIBUTE, useImportDropStore } from "@/store/useImportDropStore";
 import { getVaultCapabilities } from "@/platform";
@@ -122,7 +122,10 @@ type TreeNodeRowProps = {
 function RowIcon({ icon, fallback }: { icon: string | null; fallback: ReactNode }) {
   if (icon) {
     return (
-      <span className="file-tree__icon file-tree__icon--emoji" aria-hidden="true">
+      <span
+        className={`file-tree__icon file-tree__icon--emoji${isGlyphIcon(icon) ? " file-tree__icon--glyph" : ""}`}
+        aria-hidden="true"
+      >
         {icon}
       </span>
     );

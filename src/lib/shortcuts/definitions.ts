@@ -39,6 +39,7 @@ export type ShortcutActionId =
   | "highlight"
   | "strikethrough"
   | "insertLink"
+  | "insertEmoji"
   | "bulletList"
   | "orderedList"
   | "checkbox"
@@ -299,6 +300,14 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     category: "format",
     descriptionKey: "shortcutsDialog.items.insertLink",
     defaultBinding: letter(CTRL, "L")
+  },
+  {
+    id: "insertEmoji",
+    scope: "editor",
+    category: "format",
+    descriptionKey: "shortcutsDialog.items.insertEmoji",
+    // Not Ctrl+Alt+E: on a German or French keyboard that is AltGr+E, the euro sign.
+    defaultBinding: letter(CTRL_SHIFT, "M")
   },
   {
     id: "bulletList",

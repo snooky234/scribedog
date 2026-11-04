@@ -25,7 +25,7 @@ import { useBreadcrumbScroll } from "@/hooks/useBreadcrumbScroll";
 import { useLayoutMode, useSidebarAsSheet } from "@/hooks/useLayoutMode";
 import { ReminderDueDot } from "@/components/reminders/ReminderBell";
 import { getPathCrumbs } from "@/lib/breadcrumbPath";
-import { getVaultIcon, type VaultIconMap } from "@/lib/vaultIcons";
+import { getVaultIcon, isGlyphIcon, type VaultIconMap } from "@/lib/vaultIcons";
 import { anchorForTrigger, type PopoverAnchor } from "@/lib/usePopoverOverflowAlign";
 import type { FileVersion } from "@/lib/fileVersions";
 import { cn } from "@/lib/utils";
@@ -123,9 +123,11 @@ function CrumbIcon({
     return null;
   }
 
+  const glyph = isGlyphIcon(icon) ? " detail-panel__crumb-icon--glyph" : "";
+
   if (!onPick) {
     return (
-      <span className="detail-panel__crumb-icon" aria-hidden="true">
+      <span className={`detail-panel__crumb-icon${glyph}`} aria-hidden="true">
         {icon}
       </span>
     );
@@ -134,7 +136,7 @@ function CrumbIcon({
   return (
     <button
       type="button"
-      className="detail-panel__crumb-icon detail-panel__crumb-icon--button"
+      className={`detail-panel__crumb-icon detail-panel__crumb-icon--button${glyph}`}
       aria-label={label}
       title={label}
       onClick={(event) => {

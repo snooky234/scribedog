@@ -1,14 +1,19 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { Smile } from "lucide-react";
+import { Shapes, Smile } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { Editor } from "@tiptap/react";
 
+import { IconPickerPanel } from "@/components/IconPickerPanel";
+import { useShortcutLabel } from "@/hooks/useShortcutLabel";
 import { Button } from "@/components/ui/button";
 import { loadEmojiPickerResources } from "@/lib/emojiPickerData";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
+import { readEmojiPickerTab, rememberEmojiPickerTab, type EmojiPickerTab } from "@/lib/emojiPickerTab";
+import type { CustomFontDefinition } from "@/lib/fonts";
+import { useCustomFontsStore } from "@/store/useCustomFontsStore";
 import { useDismissablePopover } from "@/lib/useDismissablePopover";
 import {
   anchorForTrigger,
@@ -94,6 +99,71 @@ function EmojiMartPicker({ language, onEmojiSelect }: EmojiMartPickerProps) {
   return <div ref={hostRef} />;
 }
 
+function useIconFonts() {
+  const fonts = useCustomFontsStore((state) => state.fonts);
+
+  return useMemo(() => fonts.filter((font) => font.hasIcons), [fonts]);
+}
+
+type PickerContentProps = {
+  language: SupportedLanguage;
+  /** Imported icon fonts; with none there is no tab strip and the picker is the plain emoji one. */
+  iconFonts: CustomFontDefinition[];
+  onEmojiSelect: (emoji: EmojiSelection) => void;
+  onCharacter: (character: string) => void;
+};
+
+/**
+ * What a picker popover holds: emoji-mart, and a second tab with the icons of
+ * the imported icon fonts when there are any. It opens on the tab it was left
+ * on last time.
+ */
+function PickerContent({ language, iconFonts, onEmojiSelect, onCharacter }: PickerContentProps) {
+  const { t } = useTranslation();
+  // The tab it was left on. Without icon fonts there is no strip, so a
+  // remembered "icons" falls back to the emoji tab by itself.
+  const [mode, setMode] = useState<EmojiPickerTab>(readEmojiPickerTab);
+  const showIcons = iconFonts.length > 0 && mode === "icons";
+  const chooseMode = (next: EmojiPickerTab) => {
+    setMode(next);
+    rememberEmojiPickerTab(next);
+  };
+
+  return (
+    <>
+      {iconFonts.length > 0 ? (
+        <div className="emoji-picker__modes" role="tablist" aria-label={t("emojiPicker.insertEmoji")}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!showIcons}
+            className="emoji-picker__mode"
+            onClick={() => chooseMode("emoji")}
+          >
+            <Smile className="size-4" aria-hidden="true" />
+            {t("emojiPicker.tabEmoji")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={showIcons}
+            className="emoji-picker__mode"
+            onClick={() => chooseMode("icons")}
+          >
+            <Shapes className="size-4" aria-hidden="true" />
+            {t("emojiPicker.tabIcons")}
+          </button>
+        </div>
+      ) : null}
+      {showIcons ? (
+        <IconPickerPanel fonts={iconFonts} onPick={onCharacter} />
+      ) : (
+        <EmojiMartPicker language={language} onEmojiSelect={onEmojiSelect} />
+      )}
+    </>
+  );
+}
+
 /**
  * The picker itself, anchored to a point on screen instead of to a trigger of
  * its own. Opened from somewhere that already is a menu (a tree row's context
@@ -118,6 +188,9 @@ export function EmojiPickerPopover({
   const [valign, setValign] = useState<"below" | "above">("below");
   const popoverRef = useRef<HTMLDivElement>(null);
   const isSheet = useLayoutMode() === "phone";
+  // Entries of the tree and the breadcrumbs show their icon in the UI, which
+  // falls back to the icon fonts (see --icon-fonts), so the tab is offered here.
+  const iconFonts = useIconFonts();
 
   useDismissablePopover(true, onClose, popoverRef);
   usePopoverOverflowAlign(requestedAnchor, popoverRef, setAlign, setValign);
@@ -131,8 +204,9 @@ export function EmojiPickerPopover({
       style={isSheet ? undefined : popoverStyle(requestedAnchor, align, valign)}
       onClick={(event) => event.stopPropagation()}
     >
-      <EmojiMartPicker
+      <PickerContent
         language={language}
+        iconFonts={iconFonts}
         onEmojiSelect={(emoji) => {
           const value = emoji.native ?? emoji.shortcodes;
 
@@ -140,6 +214,10 @@ export function EmojiPickerPopover({
             onSelect(value);
           }
 
+          onClose();
+        }}
+        onCharacter={(character) => {
+          onSelect(character);
           onClose();
         }}
       />
@@ -156,6 +234,15 @@ export function EmojiPicker({ editor, onSelect, trigger }: EmojiPickerProps) {
   const [valign, setValign] = useState<"below" | "above">("below");
   const popoverRef = useRef<HTMLDivElement>(null);
   const isSheet = useLayoutMode() === "phone";
+  // The icons of imported icon fonts go into the document. A form that wants
+  // an emoji for something else (onSelect, the assistants) does not get the
+  // tab: the place that shows the result is not set up for them.
+  // Only where it inserts into the note: the form variant (an assistant's
+  // emoji) is not what the shortcut opens.
+  const insertShortcut = useShortcutLabel("insertEmoji");
+  const shortcut = editor && !onSelect ? insertShortcut : null;
+  const allIconFonts = useIconFonts();
+  const iconFonts = editor && !onSelect ? allIconFonts : [];
 
   const isOpen = anchor !== null;
 
@@ -165,6 +252,11 @@ export function EmojiPicker({ editor, onSelect, trigger }: EmojiPickerProps) {
 
   useDismissablePopover(isOpen, close, popoverRef);
   usePopoverOverflowAlign(anchor, popoverRef, setAlign, setValign);
+
+  const insertCharacter = (character: string) => {
+    editor?.chain().focus().insertContent(character).run();
+    close();
+  };
 
   const insertEmoji = (emoji: EmojiSelection) => {
     const value = emoji.native ?? emoji.shortcodes;
@@ -188,7 +280,7 @@ export function EmojiPicker({ editor, onSelect, trigger }: EmojiPickerProps) {
         variant="outline"
         aria-label={t("emojiPicker.insertEmoji")}
         aria-expanded={isOpen}
-        title={t("emojiPicker.insertEmoji")}
+        title={shortcut ? `${t("emojiPicker.insertEmoji")} (${shortcut})` : t("emojiPicker.insertEmoji")}
         onMouseDown={(event) => {
           event.preventDefault();
         }}
@@ -221,7 +313,12 @@ export function EmojiPicker({ editor, onSelect, trigger }: EmojiPickerProps) {
               style={isSheet ? undefined : popoverStyle(anchor, align, valign)}
               onClick={(event) => event.stopPropagation()}
             >
-              <EmojiMartPicker language={language} onEmojiSelect={insertEmoji} />
+              <PickerContent
+                language={language}
+                iconFonts={iconFonts}
+                onEmojiSelect={insertEmoji}
+                onCharacter={insertCharacter}
+              />
             </div>,
             document.body
           )

@@ -72,6 +72,16 @@ export function normalizeVaultIcons(parsed: unknown): VaultIconMap {
   return result;
 }
 
+/**
+ * Whether an icon is a glyph of an icon font (Private Use codepoints) rather
+ * than an emoji. Such a glyph is drawn wider than the space its font reserves
+ * for it, so the places that show it leave room beside it (see the --glyph
+ * classes in file-tree.css and detail-panel.css).
+ */
+export function isGlyphIcon(icon: string): boolean {
+  return /[\uE000-\uF8FF\u{F0000}-\u{10FFFD}]/u.test(icon);
+}
+
 export function getVaultIcon(icons: VaultIconMap, relativePath: string): string | null {
   return icons[iconPathKey(relativePath)] ?? null;
 }

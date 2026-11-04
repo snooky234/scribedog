@@ -16,7 +16,9 @@ import { AiCheckDialog } from "@/components/AiCheckDialog";
 import { FindReplacePanel } from "@/components/FindReplacePanel";
 import { AiRewriteDialog } from "@/components/AiRewriteDialog";
 import { DrawingDialog } from "@/components/DrawingDialog";
+import { EmojiPickerPopover } from "@/components/EmojiPicker";
 import { LinkDialog, type LinkDialogResult } from "@/components/LinkDialog";
+import { anchorForTrigger, type PopoverAnchor } from "@/lib/usePopoverOverflowAlign";
 import { ReminderDialog } from "@/components/reminders/ReminderDialog";
 import { ReminderToast } from "@/components/reminders/ReminderToast";
 import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
@@ -308,6 +310,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     handleDetailsPanelResizeKeyDown
   } = useDetailsPanelWidth();
   const [linkDialog, setLinkDialog] = useState<LinkDialogState | null>(null);
+  // The emoji/icon picker opened with its shortcut: it hangs off the cursor,
+  // since the toolbar button may be out of reach or not on screen at all.
+  const [emojiAnchor, setEmojiAnchor] = useState<PopoverAnchor | null>(null);
   const [drawingDialog, setDrawingDialog] = useState<DrawingDialogState | null>(null);
   const [isSavingDrawing, setIsSavingDrawing] = useState(false);
   // Node types the serializer replaced with a placeholder in the last
@@ -1743,6 +1748,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           case "reminder":
             openReminderDialogRef.current();
             break;
+          case "insertEmoji":
+            if (view.editable) {
+              toggleEmojiPickerRef.current();
+            }
+            break;
           case "bulletList":
             chain()?.toggleBulletList().run();
             break;
@@ -1802,6 +1812,18 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   // current callback through this ref.
   const openReminderDialogRef = useRef(reminders.openReminderDialog);
   openReminderDialogRef.current = reminders.openReminderDialog;
+  const toggleEmojiPickerRef = useRef(() => {});
+  toggleEmojiPickerRef.current = () => {
+    const current = editorRef.current;
+
+    if (emojiAnchor !== null || !current) {
+      setEmojiAnchor(null);
+      return;
+    }
+
+    const caret = current.view.coordsAtPos(current.state.selection.head);
+    setEmojiAnchor(anchorForTrigger(new DOMRect(caret.left, caret.top, 0, caret.bottom - caret.top)));
+  };
 
   // Not in Zen mode, and not while a staged proposal is shown: the document
   // then holds the red/green review, not the text that will be exported.
@@ -2313,6 +2335,17 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           suggestion={fileLinkSuggestion}
           onSelect={selectSuggestion}
           onActiveIndexChange={setSuggestionActiveIndex}
+        />
+      ) : null}
+
+      {emojiAnchor ? (
+        <EmojiPickerPopover
+          anchor={emojiAnchor}
+          onSelect={(value) => editor?.chain().focus().insertContent(value).run()}
+          onClose={() => {
+            setEmojiAnchor(null);
+            editor?.commands.focus();
+          }}
         />
       ) : null}
 
