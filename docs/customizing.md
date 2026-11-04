@@ -110,8 +110,10 @@ open folder for that reason, and it works the same in the
 
 ### Icon fonts
 
-Fonts with icons (Nerd Fonts, for example) are marked **Icons** on their card.
-Once one is imported, the emoji button in the toolbar gets a second tab,
+Fonts with icons are marked **Icons** on their card. [Nerd Fonts](https://www.nerdfonts.com/)
+is a popular collection of coding fonts with thousands of icons added: download
+one, import its `.ttf` files, and the icons are yours to use. Once one is
+imported, the emoji button in the toolbar gets a second tab,
 **Icons**. It lists every icon of the font, read from the font file itself, so
 nothing has to be set up. Type part of a name to search ("docker" finds
 `linux-docker` and `dev-docker`), narrow it to one icon set with the chips
