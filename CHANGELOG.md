@@ -3,6 +3,12 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.23.1] - 2026-11-07
+
+### Highlights
+- Paste the clipboard as Markdown with Ctrl+Alt+V, even text copied out of a
+  code block in the browser, which Ctrl+V keeps as a code block
+
 ## [0.23.0] - 2026-11-04
 
 ### Highlights
