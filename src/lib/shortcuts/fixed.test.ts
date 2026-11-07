@@ -26,6 +26,15 @@ describe("matchFixedEditorShortcut", () => {
     );
   });
 
+  it("tells the two explicit paste combos apart", () => {
+    expect(matchFixedEditorShortcut(keydown({ ctrlKey: true, shiftKey: true, code: "KeyV", key: "V" }))).toBe(
+      "pastePlainText"
+    );
+    expect(matchFixedEditorShortcut(keydown({ ctrlKey: true, altKey: true, code: "KeyV", key: "v" }))).toBe(
+      "pasteMarkdown"
+    );
+  });
+
   it("treats Cmd like Ctrl", () => {
     expect(matchFixedEditorShortcut(keydown({ metaKey: true, altKey: true, code: "KeyC", key: "ç" }))).toBe(
       "copyMarkdown"
@@ -44,6 +53,12 @@ describe("findFixedConflict", () => {
     expect(
       findFixedConflict({ ctrl: true, alt: true, shift: false, code: "KeyC", key: "c", label: "C" })?.id
     ).toBe("copyMarkdown");
+  });
+
+  it("refuses a binding on the Markdown paste combo", () => {
+    expect(
+      findFixedConflict({ ctrl: true, alt: true, shift: false, code: "KeyV", key: "v", label: "V" })?.id
+    ).toBe("pasteMarkdown");
   });
 
   it("lets other bindings through", () => {

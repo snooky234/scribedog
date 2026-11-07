@@ -99,9 +99,17 @@ down.
 | Copy as plain text | `Ctrl+Shift+C` |
 | Paste (Markdown is rendered right away) | `Ctrl+V` |
 | Paste the raw text as it is | `Ctrl+Shift+V` |
+| Paste as Markdown, always | `Ctrl+Alt+V` |
 
 Pasted Markdown, with headings, lists, tables or bold text, is turned into
 formatted content at once. Use the raw paste when you want the syntax.
+
+`Ctrl+V` only converts plain text that clearly looks like Markdown. Text copied
+out of a web page or a chat answer usually brings its own formatting along, and
+that formatting wins: a Markdown sample selected inside a code block lands as a
+code block. `Ctrl+Alt+V` takes the plain text of the clipboard and always
+renders it as Markdown, whatever else was copied with it. It also works when
+the automatic conversion is switched off in the settings.
 
 ## Spell check
 

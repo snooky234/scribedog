@@ -70,6 +70,11 @@ const FIXED_SHORTCUTS: { id: string; keys: KeyToken[]; descriptionKey: string; r
     keys: [{ mod: "ctrl" }, { mod: "shift" }, { literal: "V" }],
     descriptionKey: "editorContextMenu.pastePlainText"
   },
+  {
+    id: "pasteMarkdown",
+    keys: [{ mod: "ctrl" }, { mod: "alt" }, { literal: "V" }],
+    descriptionKey: "editorContextMenu.pasteMarkdown"
+  },
   { id: "undo", keys: [{ mod: "ctrl" }, { literal: "Z" }], descriptionKey: "shortcutsDialog.items.undo" },
   { id: "redo", keys: [{ mod: "ctrl" }, { literal: "Y" }], descriptionKey: "shortcutsDialog.items.redo" },
   { id: "closeDialog", keys: [{ special: "esc" }], descriptionKey: "shortcutsDialog.items.closeDialog" }

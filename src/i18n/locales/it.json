@@ -261,7 +261,7 @@
     "reopenLastNote": "Riapri l’ultima nota all’avvio",
     "reopenLastNoteShort": "Ricorda per ogni cartella e per ogni dispositivo quale nota era aperta.",
     "pasteMarkdown": "Converti il Markdown quando incolli",
-    "pasteMarkdownShort": "Il testo incollato con segni Markdown come # o ** appare come titolo e grassetto. Ctrl+Maiusc+V incolla il testo grezzo.",
+    "pasteMarkdownShort": "Il testo incollato con segni Markdown come # o ** appare come titolo e grassetto. Ctrl+Maiusc+V incolla il testo grezzo. Ctrl+Alt+V converte sempre, anche il testo di un blocco di codice del browser.",
     "showAiFeatures": "Mostra le funzioni IA",
     "showAiFeaturesShort": "Scrittura con IA, chat, controllo grammaticale e impostazioni IA. Utile nasconderle se nessun modello IA è raggiungibile.",
     "showAiFeaturesHint": "Nascoste significa: nessun pulsante IA nella barra degli strumenti, nessuna chat, nessuna voce IA in menu e scorciatoie, e la base di conoscenza non viene più aggiornata in background. Le impostazioni IA restano salvate e sono invariate quando le riattivi. La dettatura non è interessata.",
@@ -1080,7 +1080,9 @@
     "copyMarkdown": "Copia testo come Markdown",
     "copyPlainText": "Copia solo il testo",
     "pastePlainText": "Incolla solo testo",
-    "copyFailed": "Impossibile copiare negli appunti."
+    "pasteMarkdown": "Incolla come Markdown",
+    "copyFailed": "Impossibile copiare negli appunti.",
+    "pasteFailed": "Impossibile leggere gli appunti."
   },
   "aiDiffWidget": {
     "resultLabel": "Risultato dell'IA",

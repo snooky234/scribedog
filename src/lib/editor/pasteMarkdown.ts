@@ -49,6 +49,19 @@ export function looksLikeMarkdown(text: string): boolean {
   return INLINE_MARKERS.some((pattern) => pattern.test(text));
 }
 
+// A blank line copied out of rendered HTML (a chat answer, a web page) often
+// carries a non-breaking space, and Markdown only treats a line of spaces and
+// tabs as blank. Left alone, such a line glues paragraphs together, adds empty
+// paragraphs and hangs a stray space onto list items. `\s` covers U+00A0 and
+// the other Unicode spaces, the newline is excluded so a match never spans two
+// lines; inside a fenced block an emptied line changes nothing that can be seen.
+const WHITESPACE_ONLY_LINE = /^[^\S\n]+$/gm;
+
+/** Turns every line that holds nothing but whitespace into an empty line. */
+export function normalizeBlankLines(text: string): string {
+  return text.replace(/\r\n?/g, "\n").replace(WHITESPACE_ONLY_LINE, "");
+}
+
 /**
  * Replaces the selection with the parsed form of `markdown`. Returns false
  * when the text could not be parsed, so the caller can leave the paste to
@@ -59,7 +72,7 @@ export function pasteMarkdown(
   markdown: string,
   transformSlice: (slice: Slice) => Slice = (slice) => slice
 ): boolean {
-  const fragment = parseMarkdownBlocks(editor, markdown);
+  const fragment = parseMarkdownBlocks(editor, normalizeBlankLines(markdown));
 
   if (!fragment) {
     return false;

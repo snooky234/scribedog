@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { looksLikeMarkdown } from "@/lib/editor/pasteMarkdown";
+import { looksLikeMarkdown, normalizeBlankLines } from "@/lib/editor/pasteMarkdown";
 
 describe("looksLikeMarkdown", () => {
   it("recognizes block markers at the start of a line", () => {
@@ -40,5 +40,20 @@ describe("looksLikeMarkdown", () => {
     expect(looksLikeMarkdown("    4 Leerzeichen")).toBe(false);
     expect(looksLikeMarkdown("2024 war ein gutes Jahr")).toBe(false);
     expect(looksLikeMarkdown("#hashtag")).toBe(false);
+  });
+});
+
+describe("normalizeBlankLines", () => {
+  it("empties lines that hold only spaces, tabs or non-breaking spaces", () => {
+    expect(normalizeBlankLines("# Titel\n \nAbsatz\n \n- A\n\t\n- B")).toBe("# Titel\n\nAbsatz\n\n- A\n\n- B");
+  });
+
+  it("keeps runs of empty lines and indented content as they are", () => {
+    expect(normalizeBlankLines("a\n\n\nb")).toBe("a\n\n\nb");
+    expect(normalizeBlankLines("- A\n  - B1\n    code")).toBe("- A\n  - B1\n    code");
+  });
+
+  it("unifies Windows line endings", () => {
+    expect(normalizeBlankLines("a\r\n \r\nb")).toBe("a\n\nb");
   });
 });

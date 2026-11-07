@@ -261,7 +261,7 @@
     "reopenLastNote": "Rouvrir la dernière note au démarrage",
     "reopenLastNoteShort": "Retient, pour chaque dossier et chaque appareil, la note qui était ouverte.",
     "pasteMarkdown": "Convertir le Markdown au collage",
-    "pasteMarkdownShort": "Le texte collé avec des marques Markdown comme # ou ** apparaît en titre et en gras. Ctrl+Maj+V colle le texte brut.",
+    "pasteMarkdownShort": "Le texte collé avec des marques Markdown comme # ou ** apparaît en titre et en gras. Ctrl+Maj+V colle le texte brut. Ctrl+Alt+V convertit toujours, même le texte d'un bloc de code du navigateur.",
     "showAiFeatures": "Afficher les fonctions d'IA",
     "showAiFeaturesShort": "Écriture avec l'IA, chat, vérification grammaticale et réglages de l'IA. Utile à masquer quand aucun modèle d'IA n'est joignable.",
     "showAiFeaturesHint": "Masquées signifie : pas de boutons d'IA dans la barre d'outils, pas de chat, pas d'entrées d'IA dans les menus et raccourcis, et la base de connaissances n'est plus mise à jour en arrière-plan. Vos réglages d'IA restent enregistrés et sont intacts quand vous les réactivez. La dictée n'est pas concernée.",
@@ -1080,7 +1080,9 @@
     "copyMarkdown": "Copier le texte en Markdown",
     "copyPlainText": "Copier le texte seul",
     "pastePlainText": "Coller le texte seul",
-    "copyFailed": "Impossible de copier dans le presse-papiers."
+    "pasteMarkdown": "Coller en Markdown",
+    "copyFailed": "Impossible de copier dans le presse-papiers.",
+    "pasteFailed": "Impossible de lire le presse-papiers."
   },
   "aiDiffWidget": {
     "resultLabel": "Résultat de l'IA",

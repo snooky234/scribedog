@@ -260,7 +260,7 @@
     "reopenLastNote": "启动时重新打开上次的笔记",
     "reopenLastNoteShort": "按文件夹和设备分别记住上次打开的是哪条笔记。",
     "pasteMarkdown": "粘贴时转换 Markdown",
-    "pasteMarkdownShort": "粘贴的文本若包含 # 或 ** 等 Markdown 标记，将显示为标题和粗体。Ctrl+Shift+V 可粘贴原始文本。",
+    "pasteMarkdownShort": "粘贴的文本若包含 # 或 ** 等 Markdown 标记，将显示为标题和粗体。Ctrl+Shift+V 可粘贴原始文本。Ctrl+Alt+V 始终会转换，即使是浏览器代码块中的文本。",
     "showAiFeatures": "显示 AI 功能",
     "showAiFeaturesShort": "AI 写作、聊天、语法检查以及 AI 设置。无法连接任何 AI 模型时可将其隐藏。",
     "showAiFeaturesHint": "隐藏后：工具栏中不再有 AI 按钮，没有聊天，菜单和快捷键中没有 AI 项，知识库也不再在后台更新。AI 设置会保留，重新开启后保持不变。听写功能不受影响。",
@@ -1079,7 +1079,9 @@
     "copyMarkdown": "以 Markdown 形式复制文本",
     "copyPlainText": "仅复制文本",
     "pastePlainText": "仅粘贴文本",
-    "copyFailed": "无法复制到剪贴板。"
+    "pasteMarkdown": "粘贴为 Markdown",
+    "copyFailed": "无法复制到剪贴板。",
+    "pasteFailed": "无法读取剪贴板。"
   },
   "aiDiffWidget": {
     "resultLabel": "AI 结果",

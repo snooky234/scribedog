@@ -261,7 +261,7 @@
     "reopenLastNote": "Volver a abrir la última nota al iniciar",
     "reopenLastNoteShort": "Recuerda, para cada carpeta y cada dispositivo, qué nota estaba abierta.",
     "pasteMarkdown": "Convertir Markdown al pegar",
-    "pasteMarkdownShort": "El texto pegado con marcas Markdown como # o ** aparece como título y negrita. Ctrl+Mayús+V pega el texto sin convertir.",
+    "pasteMarkdownShort": "El texto pegado con marcas Markdown como # o ** aparece como título y negrita. Ctrl+Mayús+V pega el texto sin convertir. Ctrl+Alt+V convierte siempre, incluso el texto de un bloque de código del navegador.",
     "showAiFeatures": "Mostrar funciones de IA",
     "showAiFeaturesShort": "Escritura con IA, chat, revisión gramatical y los ajustes de IA. Conviene ocultarlas si no hay ningún modelo de IA disponible.",
     "showAiFeaturesHint": "Ocultas significa: sin botones de IA en la barra de herramientas, sin chat, sin entradas de IA en menús y atajos, y la base de conocimiento deja de actualizarse en segundo plano. Tus ajustes de IA se conservan y siguen igual al volver a activarlas. El dictado no se ve afectado.",
@@ -1080,7 +1080,9 @@
     "copyMarkdown": "Copiar texto como Markdown",
     "copyPlainText": "Copiar solo el texto",
     "pastePlainText": "Pegar solo texto",
-    "copyFailed": "No se pudo copiar al portapapeles."
+    "pasteMarkdown": "Pegar como Markdown",
+    "copyFailed": "No se pudo copiar al portapapeles.",
+    "pasteFailed": "No se pudo leer el portapapeles."
   },
   "aiDiffWidget": {
     "resultLabel": "Resultado de la IA",

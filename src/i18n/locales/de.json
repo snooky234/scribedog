@@ -261,7 +261,7 @@
     "reopenLastNote": "Zuletzt geöffnete Notiz beim Start wieder öffnen",
     "reopenLastNoteShort": "Merkt sich pro Ordner und pro Gerät, welche Notiz offen war.",
     "pasteMarkdown": "Markdown beim Einfügen umwandeln",
-    "pasteMarkdownShort": "Eingefügter Text mit Markdown-Zeichen wie # oder ** erscheint als Überschrift und Fettdruck. Strg+Umschalt+V fügt den rohen Text ein.",
+    "pasteMarkdownShort": "Eingefügter Text mit Markdown-Zeichen wie # oder ** erscheint als Überschrift und Fettdruck. Strg+Umschalt+V fügt den rohen Text ein. Strg+Alt+V wandelt immer um, auch Text aus einem Codeblock im Browser.",
     "showAiFeatures": "KI-Funktionen anzeigen",
     "showAiFeaturesShort": "Schreib-KI, Chat, Grammatikprüfung und die KI-Einstellungen. Sinnvoll auszublenden, wenn kein KI-Modell erreichbar ist.",
     "showAiFeaturesHint": "Ausgeblendet heißt: keine KI-Buttons in der Werkzeugleiste, kein Chat, keine KI-Einträge in Menüs und Tastenkürzeln, und die Wissensdatenbank wird nicht mehr im Hintergrund aktualisiert. Deine KI-Einstellungen bleiben gespeichert und sind beim Wiedereinschalten unverändert da. Die Diktierfunktion ist davon nicht betroffen.",
@@ -1080,7 +1080,9 @@
     "copyMarkdown": "Text als Markdown kopieren",
     "copyPlainText": "Nur Text kopieren",
     "pastePlainText": "Nur Text einfügen",
-    "copyFailed": "Kopieren in die Zwischenablage nicht möglich."
+    "pasteMarkdown": "Als Markdown einfügen",
+    "copyFailed": "Kopieren in die Zwischenablage nicht möglich.",
+    "pasteFailed": "Einfügen aus der Zwischenablage nicht möglich."
   },
   "aiDiffWidget": {
     "resultLabel": "KI-Ergebnis",

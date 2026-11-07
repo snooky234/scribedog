@@ -412,6 +412,47 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     void copy(currentEditor).then(reportCopyResult);
   };
 
+  // Ctrl+Alt+V: the clipboard's plain text as Markdown, whatever the
+  // looksLikeMarkdown heuristic or an accompanying text/html would decide. A
+  // Markdown sample selected in a rendered code block arrives as <pre> HTML,
+  // which an ordinary paste keeps as a code block. No native paste event fires
+  // for this combo, so the text is read explicitly.
+  const pasteClipboardAsMarkdown = async () => {
+    let text: string;
+
+    try {
+      text = await navigator.clipboard.readText();
+    } catch {
+      ai.setAiStatus({ kind: "error", message: t("editorContextMenu.pasteFailed") });
+      return;
+    }
+
+    const currentEditor = editorRef.current;
+
+    // Re-checked after the await: a diff review or staged preview may have
+    // locked the document in the meantime.
+    if (!text || !currentEditor || !currentEditor.isEditable) {
+      return;
+    }
+
+    const { view } = currentEditor;
+    // readText hands over Windows line endings; ProseMirror's own paste
+    // normalizes them too, a "\r" would otherwise sit in the code block.
+    const insertRaw = () => view.dispatch(view.state.tr.insertText(text.replace(/\r\n?/g, "\n")).scrollIntoView());
+
+    // Inside a code block the text is code, as with an ordinary paste.
+    if (view.state.selection.$from.parent.type.spec.code === true) {
+      insertRaw();
+      return;
+    }
+
+    const { selectedFilePath, folderPath: vaultPath } = useAppStore.getState();
+
+    if (!pasteMarkdown(currentEditor, text, (slice) => adoptPastedImages(slice, selectedFilePath, vaultPath))) {
+      insertRaw();
+    }
+  };
+
   // Right-click on a selection offers the AI rewrite next to the three ways of
   // copying; without a selection there is nothing to copy, so the AI dialog
   // opens directly in insert mode as before.
@@ -1623,6 +1664,16 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           }, 500);
 
           return false;
+        }
+
+        if (fixedShortcut === "pasteMarkdown") {
+          event.preventDefault();
+
+          if (view.editable) {
+            void pasteClipboardAsMarkdown();
+          }
+
+          return true;
         }
 
         if (fixedShortcut) {
