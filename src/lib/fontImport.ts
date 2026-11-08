@@ -38,9 +38,33 @@ export type FontManifest = {
   iconRanges: FontCodepointRange[];
   /** Changes with every import; see CustomFontDefinition.revision. */
   revision: string;
+  /** How much larger (or smaller) the icons are drawn; see ICON_SCALE_MIN. 1 = as the font draws them. */
+  iconScale: number;
   /** Style -> file name inside the font's own folder. `normal` is always present. */
   files: Partial<Record<FontStyleName, string>>;
 };
+
+/**
+ * The range of the icon size the user may set. An icon font draws its glyphs
+ * with whatever margin its designer left inside the em box, so the same
+ * codepoint can look half as large as a letter (OpenMoji) or fill the line
+ * (a Nerd Font); the factor evens that out per font. Beyond these bounds the
+ * line height of a paragraph would visibly jump.
+ */
+export const ICON_SCALE_MIN = 0.5;
+export const ICON_SCALE_MAX = 2;
+export const ICON_SCALE_STEP = 0.05;
+
+/** A scale from a manifest or a slider, kept inside the bounds and on the step grid; anything else is 1. */
+export function clampIconScale(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 1;
+  }
+
+  const stepped = Math.round(value / ICON_SCALE_STEP) * ICON_SCALE_STEP;
+
+  return Math.round(Math.min(ICON_SCALE_MAX, Math.max(ICON_SCALE_MIN, stepped)) * 100) / 100;
+}
 
 const MAX_NAME_LENGTH = 80;
 const FILE_NAME_PATTERN = /^(normal|bold|italics|bolditalics)\.(ttf|woff)$/;
@@ -167,7 +191,7 @@ export function storedFileName(style: FontStyleName, file: InspectedFontFile): s
   return `${style}.${file.font.container === "woff" ? "woff" : "ttf"}`;
 }
 
-export function createManifest(family: FontFamilyImport, revision: string): FontManifest {
+export function createManifest(family: FontFamilyImport, revision: string, iconScale = 1): FontManifest {
   const files: Partial<Record<FontStyleName, string>> = {};
 
   for (const style of Object.keys(family.files) as FontStyleName[]) {
@@ -186,6 +210,7 @@ export function createManifest(family: FontFamilyImport, revision: string): Font
     hasIcons: family.hasIcons,
     iconRanges: family.iconRanges,
     revision,
+    iconScale: clampIconScale(iconScale),
     files
   };
 }
@@ -278,6 +303,8 @@ export function normalizeManifest(value: unknown): FontManifest | null {
     hasIcons: record.hasIcons === true,
     iconRanges: normalizeRanges(record.iconRanges),
     revision: typeof record.revision === "string" ? record.revision.slice(0, 40) : "0",
+    // Absent in manifests written before the setting existed.
+    iconScale: clampIconScale(record.iconScale),
     files
   };
 }

@@ -2,6 +2,7 @@ import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 
 import {
   DEFAULT_DOCUMENT_STYLE,
+  getCustomFontDefinition,
   getFontDefinition,
   getFontScale,
   getIconFonts,
@@ -26,7 +27,7 @@ import {
   type PagedDocument
 } from "./pagePlan";
 import { splitEmojiSegments } from "./emojiSegments";
-import { splitIconSegments, type PdfIconFont } from "./iconSegments";
+import { iconFontSize, splitIconSegments, type PdfIconFont } from "./iconSegments";
 import { PDF_DEFAULT_FONT, registerPdfFont } from "./pdfFonts";
 import { CELL_CHROME_PT, maxWordLength, maxWordLengthForColumn, splitOverlongWords } from "./pdfTableFit";
 import { computeColumnShares, rowsFitWhole } from "./tableColumns";
@@ -128,7 +129,14 @@ function checkboxSvg(checked: boolean): string {
 // The text area of a page, which caps every image (computePagedImageSize).
 type ImageBox = { width: number; height: number };
 
-function runsToPdfText(runs: InlineRun[], images: ExportImageMap, box: ImageBox, icons: PdfIconFont[]): Content[] {
+function runsToPdfText(
+  runs: InlineRun[],
+  images: ExportImageMap,
+  box: ImageBox,
+  icons: PdfIconFont[],
+  // Size in pt of the text these runs sit in; an icon run is scaled from it.
+  surroundingPt: number
+): Content[] {
   const parts: Content[] = [];
 
   for (const run of runs) {
@@ -179,7 +187,23 @@ function runsToPdfText(runs: InlineRun[], images: ExportImageMap, box: ImageBox,
       }
 
       for (const part of splitIconSegments(segment.text, icons)) {
-        parts.push({ text: part.text, font: part.font ?? bodyFont, ...baseStyle } as Content);
+        const fontSize = iconFontSize(surroundingPt, icons, part.font);
+
+        parts.push({
+          text: part.text,
+          font: part.font ?? bodyFont,
+          ...(fontSize
+            ? {
+                fontSize,
+                // A line is as tall as its tallest run. Without this, one
+                // enlarged icon would stretch its line (and push the bullet of
+                // a list item away from the text); the icon is drawn larger
+                // but takes only the line height of the text around it.
+                ...(fontSize > surroundingPt ? { lineHeight: (PDF_LINE_HEIGHT * surroundingPt) / fontSize } : {})
+              }
+            : {}),
+          ...baseStyle
+        } as Content);
       }
     }
   }
@@ -194,6 +218,7 @@ function runsToBlockContent(
   images: ExportImageMap,
   box: ImageBox,
   icons: PdfIconFont[],
+  surroundingPt: number,
   style?: string
 ): Content[] {
   const result: Content[] = [];
@@ -201,7 +226,7 @@ function runsToBlockContent(
 
   const flushText = () => {
     if (textBuffer.length > 0) {
-      result.push({ text: runsToPdfText(textBuffer, images, box, icons), style });
+      result.push({ text: runsToPdfText(textBuffer, images, box, icons, surroundingPt), style });
       textBuffer = [];
     }
   };
@@ -241,6 +266,9 @@ type PdfLayout = {
   imageBox: ImageBox;
   // Imported icon fonts that the PDF may have to set icon runs in.
   iconFonts: PdfIconFont[];
+  // Size in pt of each heading level (index 0 = h1), after the user's scale:
+  // an icon in a heading is scaled from the heading's size, not the body's.
+  headingSizes: number[];
   // False on the endless page of the flow layout: a page break would start a
   // second page there, and the keep-together flags lay parts out in
   // fragments whose recorded positions are off (a table's first row reports
@@ -278,7 +306,7 @@ function fitCellText(parts: Content[], maxLength: number, maxLengthWide: number)
 }
 
 function paragraphContent(block: Extract<ExportBlock, { kind: "paragraph" }>, images: ExportImageMap, layout: PdfLayout): Content[] {
-  return runsToBlockContent(block.runs, images, layout.imageBox, layout.iconFonts, "paragraph").map(
+  return runsToBlockContent(block.runs, images, layout.imageBox, layout.iconFonts, layout.fontSize, "paragraph").map(
     (chunk) => (block.align && typeof chunk === "object" ? { ...chunk, alignment: block.align } : chunk) as Content
   );
 }
@@ -331,7 +359,7 @@ function blocksToPdfContent(
       case "heading": {
         const level = Math.min(Math.max(block.level, 1), 6);
         content.push({
-          text: runsToPdfText(block.runs, images, layout.imageBox, layout.iconFonts),
+          text: runsToPdfText(block.runs, images, layout.imageBox, layout.iconFonts, layout.headingSizes[level - 1]),
           style: `h${level}`,
           alignment: block.align
         });
@@ -469,7 +497,7 @@ function blocksToPdfContent(
             // Header text is bold (set on the cell below), so it is measured
             // as the wider face.
             text: fitCellText(
-              runsToPdfText(cell.runs, images, layout.imageBox, layout.iconFonts).map((part) =>
+              runsToPdfText(cell.runs, images, layout.imageBox, layout.iconFonts, layout.fontSize).map((part) =>
                 cell.header ? ({ ...(part as object), bold: true } as Content) : part
               ),
               wordLimits[column].plain,
@@ -549,6 +577,7 @@ function documentSetup(style: DocumentStyle, bodyFont: string, iconFonts: PdfIco
     lineHeight,
     imageBox: { width: page.contentWidthPt, height: capacity - 2 * PDF_IMAGE_MARGIN },
     iconFonts,
+    headingSizes: PDF_HEADINGS.map((heading) => sized(heading.sizePt)),
     pageBreaks: true
   };
   const base: Omit<TDocumentDefinitions, "content"> = {
@@ -950,13 +979,22 @@ async function loadRegisteredPdfMake(style: DocumentStyle) {
   // first export of a session.
   const iconFonts: PdfIconFont[] = [];
 
+  // The document's own font, when it is an icon font with a size set: its
+  // icons are runs of the body font like any other, only larger. Left out at
+  // 1, where nothing has to be split off.
+  const ownFont = getCustomFontDefinition(style.fontId);
+
+  if (ownFont?.hasIcons && ownFont.iconScale !== 1 && bodyFont !== PDF_DEFAULT_FONT) {
+    iconFonts.push({ name: bodyFont, ranges: ownFont.iconRanges, scale: ownFont.iconScale });
+  }
+
   for (const font of getIconFonts(style.fontId)) {
     const name = await registerPdfFont(pdfMake as unknown as Parameters<typeof registerPdfFont>[0], font.id, {
       regularOnly: true
     });
 
     if (name !== PDF_DEFAULT_FONT) {
-      iconFonts.push({ name, ranges: font.iconRanges });
+      iconFonts.push({ name, ranges: font.iconRanges, scale: font.iconScale });
     }
   }
 

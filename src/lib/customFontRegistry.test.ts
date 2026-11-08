@@ -26,6 +26,7 @@ function customFont(styles: FontStyleName[], overrides: Partial<CustomFontDefini
     revision: "r1",
     hasIcons: false,
     iconRanges: [],
+    iconScale: 1,
     styles: Object.fromEntries(styles.map((style) => [style, true])),
     readStyle: async (style) => new TextEncoder().encode(`bytes of ${style}`),
     ...overrides

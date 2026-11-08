@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { splitIconSegments, type PdfIconFont } from "./iconSegments";
+import { iconFontSize, splitIconSegments, type PdfIconFont } from "./iconSegments";
 
 const nerd: PdfIconFont = { name: "nerd", ranges: [[0xf300, 0xf3ff], [0xf0000, 0xf00ff]] };
 const other: PdfIconFont = { name: "other", ranges: [[0xe000, 0xe0ff]] };
@@ -40,5 +40,21 @@ describe("splitIconSegments", () => {
 
   it("leaves a Private Use codepoint that no font covers in the body font", () => {
     expect(splitIconSegments(unclaimed, [nerd])).toEqual([{ text: unclaimed, font: null }]);
+  });
+});
+
+describe("iconFontSize", () => {
+  const scaled: PdfIconFont = { name: "scaled", ranges: [], scale: 1.5 };
+
+  it("scales from the size of the surrounding text", () => {
+    expect(iconFontSize(11, [scaled], "scaled")).toBe(16.5);
+    expect(iconFontSize(20, [scaled], "scaled")).toBe(30);
+  });
+
+  it("leaves the run alone at scale 1, without a scale, for body text and for an unknown font", () => {
+    expect(iconFontSize(11, [{ ...scaled, scale: 1 }], "scaled")).toBeNull();
+    expect(iconFontSize(11, [nerd], "nerd")).toBeNull();
+    expect(iconFontSize(11, [scaled], null)).toBeNull();
+    expect(iconFontSize(11, [scaled], "missing")).toBeNull();
   });
 });

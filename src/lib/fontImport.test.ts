@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { FontInspection } from "./fontFile";
 import {
+  clampIconScale,
   createManifest,
+  ICON_SCALE_MAX,
+  ICON_SCALE_MIN,
   fontIdForName,
   groupIntoFamilies,
   normalizeManifest,
@@ -131,5 +134,33 @@ describe("manifest", () => {
 
   it("cleans the name on the way in", () => {
     expect(normalizeManifest({ ...createManifest(family, "x"), name: 'A"B' })?.name).toBe("AB");
+  });
+
+  it("carries the icon size and clamps what a hand-edited manifest says", () => {
+    expect(createManifest(family, "x").iconScale).toBe(1);
+    expect(normalizeManifest(JSON.parse(JSON.stringify(createManifest(family, "x", 1.35))))?.iconScale).toBe(1.35);
+
+    const valid = createManifest(family, "x");
+
+    expect(normalizeManifest({ ...valid, iconScale: 9 })?.iconScale).toBe(ICON_SCALE_MAX);
+    expect(normalizeManifest({ ...valid, iconScale: 0.01 })?.iconScale).toBe(ICON_SCALE_MIN);
+    expect(normalizeManifest({ ...valid, iconScale: "big" })?.iconScale).toBe(1);
+    expect(normalizeManifest({ ...valid, iconScale: Number.NaN })?.iconScale).toBe(1);
+  });
+
+  it("reads a manifest from before the icon size existed as 1", () => {
+    const { iconScale: _omitted, ...legacy } = createManifest(family, "x");
+
+    expect(normalizeManifest(legacy)?.iconScale).toBe(1);
+  });
+});
+
+describe("clampIconScale", () => {
+  it("snaps to the slider step and stays inside the bounds", () => {
+    expect(clampIconScale(1.07)).toBe(1.05);
+    expect(clampIconScale(1.5)).toBe(1.5);
+    expect(clampIconScale(100)).toBe(ICON_SCALE_MAX);
+    expect(clampIconScale(-3)).toBe(ICON_SCALE_MIN);
+    expect(clampIconScale(undefined)).toBe(1);
   });
 });

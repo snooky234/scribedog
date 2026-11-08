@@ -4,6 +4,7 @@ import {
   importFontFiles,
   loadCustomFonts,
   removeCustomFont,
+  setCustomFontIconScale,
   type FontImportFile,
   type FontImportReport
 } from "@/lib/customFonts";
@@ -22,6 +23,7 @@ type CustomFontsState = {
   load: (folderPath: string | null) => Promise<void>;
   importFiles: (files: FontImportFile[]) => Promise<FontImportReport | null>;
   remove: (id: CustomFontId) => Promise<void>;
+  setIconScale: (id: CustomFontId, scale: number) => Promise<void>;
 };
 
 export const useCustomFontsStore = create<CustomFontsState>((set, get) => {
@@ -71,6 +73,20 @@ export const useCustomFontsStore = create<CustomFontsState>((set, get) => {
       }
 
       await removeCustomFont(folderPath, id);
+      const fonts = await loadCustomFonts(folderPath);
+
+      if (get().vaultPath === folderPath) {
+        publish(folderPath, fonts);
+      }
+    },
+    setIconScale: async (id, scale) => {
+      const folderPath = get().vaultPath;
+
+      if (!folderPath) {
+        return;
+      }
+
+      await setCustomFontIconScale(folderPath, id, scale);
       const fonts = await loadCustomFonts(folderPath);
 
       if (get().vaultPath === folderPath) {

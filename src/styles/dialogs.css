@@ -1179,6 +1179,16 @@
   opacity: 0;
 }
 
+/* The name and the Icons badge wrap before they run under the two controls. */
+.font-setting__custom .font-setting__name {
+  padding-right: 3.4rem;
+}
+
+/* Beside the delete control: the one to its left, hence the offset. */
+.font-setting__delete--settings {
+  right: 1.95rem;
+}
+
 .font-setting__custom:hover .font-setting__delete,
 .font-setting__delete:focus-visible {
   opacity: 1;
@@ -1194,6 +1204,52 @@
   .font-setting__delete {
     opacity: 1;
   }
+}
+
+.icon-size-dialog {
+  width: min(100%, 34rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.icon-size-dialog__intro,
+.icon-size-dialog__hint {
+  margin: 0;
+  font-size: var(--dialog-hint-size);
+  line-height: 1.45;
+  color: var(--dialog-hint);
+}
+
+.icon-size-dialog__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.icon-size-dialog__preview {
+  border: 1px solid rgba(var(--overlay-rgb),0.14);
+  border-radius: 0.7rem;
+  background: rgba(var(--surface-rgb),0.85);
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-document);
+  font-size: 1.6rem;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.icon-size-dialog__preview p {
+  margin: 0;
+}
+
+.icon-size-dialog__icon {
+  margin-left: 0.3rem;
+}
+
+.icon-size-dialog__error {
+  margin: 0;
+  font-size: var(--dialog-hint-size);
+  color: var(--error-fg);
 }
 
 .font-setting__badge {

@@ -13,6 +13,7 @@ import { exists, mkdir, readDir, readFile, readTextFile, remove, writeFile, writ
 import { VAULT_META_DIR_NAME } from "@/lib/fileSystem";
 import { inspectFont, readIconGlyphs, type FontRejection, type IconGlyph } from "@/lib/fontFile";
 import {
+  clampIconScale,
   createManifest,
   groupIntoFamilies,
   normalizeManifest,
@@ -66,10 +67,28 @@ function forgetFaces(id: CustomFontId): void {
   loadedFaces.delete(id);
 }
 
-async function loadFontFaces(definition: CustomFontDefinition): Promise<void> {
+/**
+ * The icon size as a face descriptor, `size-adjust`: the browser scales the
+ * glyphs of the face and their advance widths, which is how the setting
+ * reaches the editor, the file tree and the print at once, since they only
+ * name the family. Not in the lib.dom typings of every TypeScript version,
+ * hence the widened type.
+ */
+function sizeAdjustDescriptor(scale: number): Record<string, string> {
+  return { sizeAdjust: `${Math.round(scale * 100)}%` };
+}
+
+function unicodeRangeDescriptor(ranges: [number, number][]): string {
+  return ranges
+    .map(([start, end]) => (start === end ? `U+${start.toString(16)}` : `U+${start.toString(16)}-${end.toString(16)}`))
+    .join(", ");
+}
+
+async function addFontFaces(definition: CustomFontDefinition): Promise<void> {
   forgetFaces(definition.id);
 
   const faces: FontFace[] = [];
+  const scaled = definition.iconScale !== 1 && definition.iconRanges.length > 0;
 
   for (const style of FONT_STYLE_NAMES) {
     if (!definition.styles[style]) {
@@ -77,17 +96,64 @@ async function loadFontFaces(definition: CustomFontDefinition): Promise<void> {
     }
 
     const bytes = await definition.readStyle(style);
-    const face = new FontFace(definition.familyName, bytes, {
+    const descriptors = {
       weight: style === "bold" || style === "bolditalics" ? "700" : "400",
       style: style === "italics" || style === "bolditalics" ? "italic" : "normal"
-    });
+    };
+    const face = new FontFace(definition.familyName, bytes, descriptors);
 
     await face.load();
     document.fonts.add(face);
     faces.push(face);
+
+    // The size applies to the icons only. A second face over the same bytes
+    // covers just the Private Use codepoints the font maps and is added after
+    // the plain one, which wins where they overlap: a font that is also the
+    // document's own font keeps its letters at their size, and the PDF, which
+    // scales icon runs and nothing else, comes out the same.
+    if (scaled) {
+      const iconFace = new FontFace(definition.familyName, bytes, {
+        ...descriptors,
+        ...sizeAdjustDescriptor(definition.iconScale),
+        unicodeRange: unicodeRangeDescriptor(definition.iconRanges)
+      });
+
+      await iconFace.load();
+      document.fonts.add(iconFace);
+      faces.push(iconFace);
+    }
   }
 
   loadedFaces.set(definition.id, faces);
+}
+
+// The load of each font, by revision. Several parts of the app ask for the
+// same font at once (the cards, the editor, the icon fallback), and two loads
+// running side by side would each add a face of their own while only the last
+// one is remembered: the other would stay in the document for good and, at an
+// icon size that has since changed, answer for the family with the old size.
+// One load per revision, and a newer revision waits for the one before it.
+const loading = new Map<CustomFontId, { revision: string; promise: Promise<void> }>();
+
+function loadFontFaces(definition: CustomFontDefinition): Promise<void> {
+  const current = loading.get(definition.id);
+
+  if (current && current.revision === definition.revision) {
+    return current.promise;
+  }
+
+  const previous = current ? current.promise.catch(() => undefined) : Promise.resolve();
+  const promise = previous.then(() => addFontFaces(definition));
+
+  loading.set(definition.id, { revision: definition.revision, promise });
+  // A failed load is not kept, so the next request tries again.
+  promise.catch(() => {
+    if (loading.get(definition.id)?.promise === promise) {
+      loading.delete(definition.id);
+    }
+  });
+
+  return promise;
 }
 
 function createDefinition(dirPath: string, manifest: FontManifest, id: CustomFontId): CustomFontDefinition {
@@ -109,6 +175,7 @@ function createDefinition(dirPath: string, manifest: FontManifest, id: CustomFon
     revision: manifest.revision,
     hasIcons: manifest.hasIcons,
     iconRanges: manifest.iconRanges,
+    iconScale: manifest.iconScale,
     styles,
     readStyle: async (style) => {
       const fileName = manifest.files[style];
@@ -123,6 +190,66 @@ function createDefinition(dirPath: string, manifest: FontManifest, id: CustomFon
   };
 
   return definition;
+}
+
+async function readManifest(dirPath: string): Promise<FontManifest | null> {
+  try {
+    return normalizeManifest(JSON.parse(await readTextFile(await join(dirPath, MANIFEST_FILE_NAME))));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stores the icon size of a font. Only the manifest is rewritten, with a new
+ * revision: the faces in the webview and the bytes the PDF registered are
+ * keyed by it, so the new size is picked up without a second import.
+ */
+export async function setCustomFontIconScale(folderPath: string, id: CustomFontId, scale: number): Promise<void> {
+  const dirPath = await fontDirPath(folderPath, id);
+  const manifest = await readManifest(dirPath);
+
+  if (!manifest) {
+    throw new Error(`Font ${id} has no readable manifest`);
+  }
+
+  const next: FontManifest = {
+    ...manifest,
+    iconScale: clampIconScale(scale),
+    revision: Date.now().toString(36)
+  };
+
+  await writeTextFile(await join(dirPath, MANIFEST_FILE_NAME), JSON.stringify(next, null, 2));
+}
+
+const PREVIEW_FAMILY = "ScribeDog Icon Size Preview";
+let previewFace: FontFace | null = null;
+
+/**
+ * Loads the regular file of an icon font under a family name of its own, at
+ * the given size, for the preview next to the slider. The real faces stay as
+ * they are until the user saves; dragging the slider only swaps this one.
+ */
+export async function loadIconScalePreview(bytes: Uint8Array, scale: number): Promise<string> {
+  const face = new FontFace(PREVIEW_FAMILY, bytes, sizeAdjustDescriptor(clampIconScale(scale)));
+
+  await face.load();
+
+  if (previewFace) {
+    document.fonts.delete(previewFace);
+  }
+
+  document.fonts.add(face);
+  previewFace = face;
+
+  return PREVIEW_FAMILY;
+}
+
+export function disposeIconScalePreview(): void {
+  if (previewFace) {
+    document.fonts.delete(previewFace);
+    previewFace = null;
+  }
 }
 
 /** The fonts stored in the vault, ordered by name. A damaged entry is skipped, never fatal. */
@@ -185,7 +312,10 @@ export async function importFontFiles(folderPath: string, files: FontImportFile[
 
   for (const family of groupIntoFamilies(inspected)) {
     const dirPath = await join(fontsDir, slugOfFontId(family.id));
-    const manifest = createManifest(family, Date.now().toString(36));
+    // Importing the same family again (a newer version of the font) keeps the
+    // icon size the user chose for it.
+    const previous = await readManifest(dirPath);
+    const manifest = createManifest(family, Date.now().toString(36), previous?.iconScale);
 
     // An earlier import of this family may have had files this one lacks.
     if (await exists(dirPath)) {
@@ -231,6 +361,7 @@ export function loadIconGlyphs(font: CustomFontDefinition): Promise<IconGlyph[]>
 }
 
 export async function removeCustomFont(folderPath: string, id: CustomFontId): Promise<void> {
+  loading.delete(id);
   forgetFaces(id);
 
   const dirPath = await fontDirPath(folderPath, id);

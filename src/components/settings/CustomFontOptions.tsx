@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Trash2, Upload } from "lucide-react";
+import { Settings2, Trash2, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { ensureFontStylesLoaded, type CustomFontId } from "@/lib/fonts";
 import { fontIdForName } from "@/lib/fontImport";
 import { useCustomFontsStore } from "@/store/useCustomFontsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
+
+import { IconSizeDialog } from "./IconSizeDialog";
 
 /**
  * The grid of font cards and the import below it. The cards of the fonts the
@@ -25,6 +27,8 @@ export function CustomFontOptions({ label, children }: { label: string; children
   const removeFont = useCustomFontsStore((state) => state.remove);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmId, setConfirmId] = useState<CustomFontId | null>(null);
+  const [sizeId, setSizeId] = useState<CustomFontId | null>(null);
+  const sizeFont = fonts.find((font) => font.id === sizeId) ?? null;
   const [report, setReport] = useState<FontImportReport | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -128,6 +132,17 @@ export function CustomFontOptions({ label, children }: { label: string; children
                 {t("settingsDialog.fontPreviewText")}
               </span>
             </button>
+            {font.hasIcons ? (
+              <button
+                type="button"
+                className="font-setting__delete font-setting__delete--settings"
+                onClick={() => setSizeId(font.id)}
+                aria-label={t("settingsDialog.iconSizeOpenLabel", { name: label })}
+                title={t("settingsDialog.iconSizeOpenLabel", { name: label })}
+              >
+                <Settings2 className="size-3.5" aria-hidden="true" />
+              </button>
+            ) : null}
             <button
               type="button"
               className="font-setting__delete"
@@ -165,6 +180,8 @@ export function CustomFontOptions({ label, children }: { label: string; children
         accept=".ttf,.woff,font/ttf,font/woff"
         onChange={(event) => void importSelected(event.target.files)}
       />
+
+      {sizeFont ? <IconSizeDialog font={sizeFont} onClose={() => setSizeId(null)} /> : null}
 
       {report || failed ? (
         <div className="font-setting__status" role="status" data-tone={failed || report?.imported.length === 0 ? "error" : undefined}>

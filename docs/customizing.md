@@ -146,6 +146,24 @@ then shown in the tree and the breadcrumbs. If you remove the font again,
 those places show the empty placeholder box a missing character gets, as text
 does; pick another icon to replace it.
 
+#### Icon size
+
+Icon fonts differ in how large they draw their glyphs inside the line: some
+leave a wide margin around the picture, so the icons look small next to the
+letters (OpenMoji is one). The card of a font with icons has a gear button
+next to the bin. It opens a dialog with a slider from 50 to 200 percent and a
+preview that sets letters, digits and icons side by side, so you can drag
+until the icons fit the text. Nothing changes until you press **Save**.
+
+The size belongs to the font, not to a note, and it is kept when you import a
+newer version of the same font. It applies in the editor, the file tree, the
+breadcrumbs, print and the PDF export. Only the icons change, never the letters, also when the icon font is the font
+of the note itself. The PDF cannot scale a font, so it sets the icons in a
+larger font size instead and keeps the line as tall as before. With a large
+value the text next to an icon can therefore sit slightly lower than the
+rest of the line, and a very large icon can reach into the line above. Word, ODT and EPUB only name the font and keep its
+original size.
+
 Word, ODT, EPUB and HTML only name the font, so a reader needs it installed to
 see the icons there. In a Markdown file opened elsewhere, the icon is a
 character without a picture unless the font is installed. Hovering an icon in

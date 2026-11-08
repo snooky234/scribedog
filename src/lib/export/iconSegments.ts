@@ -10,7 +10,28 @@ export type PdfIconFont = {
   /** The name the font is registered under in pdfmake. */
   name: string;
   ranges: FontCodepointRange[];
+  /**
+   * The icon size the user set for the font (1 = as drawn). The webview scales
+   * the face itself (size-adjust); pdfmake cannot, so the runs set in this font
+   * get a proportionally larger font size instead (see iconFontSize).
+   */
+  scale?: number;
 };
+
+/**
+ * The size of an icon run: the size of the text it sits in, times the font's
+ * icon scale. pdfmake only knows absolute sizes, so the surrounding size has
+ * to be handed in; null means the run keeps whatever it inherits.
+ */
+export function iconFontSize(surroundingPt: number, icons: PdfIconFont[], fontName: string | null): number | null {
+  const scale = fontName ? icons.find((icon) => icon.name === fontName)?.scale : undefined;
+
+  if (!scale || scale === 1) {
+    return null;
+  }
+
+  return Math.round(surroundingPt * scale * 100) / 100;
+}
 
 export type IconSegment = {
   text: string;

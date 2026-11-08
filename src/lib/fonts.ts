@@ -321,6 +321,8 @@ export type CustomFontDefinition = AppFontDefinition & {
   hasIcons: boolean;
   /** The Private Use codepoints the font maps (see FontManifest.iconRanges). */
   iconRanges: FontCodepointRange[];
+  /** Icon size factor the user set for this font (1 = as drawn); see FontManifest.iconScale. */
+  iconScale: number;
   /** Which of the four styles the user provided; `normal` is always there. */
   styles: Partial<Record<FontStyleName, true>>;
   /** Reads the bytes of one provided style from the vault. */
