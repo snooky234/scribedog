@@ -3,6 +3,13 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.23.2] - 2026-11-08
+
+### Highlights
+- Set the icon size of an imported icon font (gear button on the font card in
+  Settings > Fonts), for fonts whose icons look small next to the text
+- Open the icon picker on the icon font used last
+
 ## [0.23.1] - 2026-11-07
 
 ### Highlights
