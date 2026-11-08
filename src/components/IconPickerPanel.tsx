@@ -8,7 +8,7 @@ import type { IconGlyph } from "@/lib/fontFile";
 import { ensureFontStylesLoaded, type CustomFontDefinition } from "@/lib/fonts";
 import { nextGridIndex } from "@/lib/iconGridNav";
 import { codepointLabel, filterGlyphs, glyphGroups, glyphLabel } from "@/lib/iconSearch";
-import { readRecentIcons, rememberIcon } from "@/lib/recentIcons";
+import { readLastIconFont, readRecentIcons, rememberIcon, rememberIconFont } from "@/lib/recentIcons";
 
 const COLUMNS = 9;
 const CELL_PX = 36;
@@ -171,7 +171,12 @@ type IconPickerPanelProps = {
  */
 export function IconPickerPanel({ fonts, onPick }: IconPickerPanelProps) {
   const { t } = useTranslation();
-  const [fontId, setFontId] = useState(fonts[0].id);
+  // Opens on the font chosen last; a font the vault no longer has falls back to the first.
+  const [fontId, setFontId] = useState(() => {
+    const last = readLastIconFont();
+
+    return fonts.find((candidate) => candidate.id === last)?.id ?? fonts[0].id;
+  });
   const font = fonts.find((candidate) => candidate.id === fontId) ?? fonts[0];
   const [glyphs, setGlyphs] = useState<IconGlyph[] | null>(null);
   const [query, setQuery] = useState("");
@@ -232,7 +237,10 @@ export function IconPickerPanel({ fonts, onPick }: IconPickerPanelProps) {
           style={{ order: 0 }}
           value={font.id}
           aria-label={t("emojiPicker.iconFont")}
-          onChange={(event) => setFontId(event.target.value as typeof fontId)}
+          onChange={(event) => {
+            setFontId(event.target.value as typeof fontId);
+            rememberIconFont(event.target.value);
+          }}
         >
           {fonts.map((candidate) => (
             <option key={candidate.id} value={candidate.id}>

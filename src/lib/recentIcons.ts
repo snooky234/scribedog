@@ -46,6 +46,25 @@ export function readRecentIcons(fontId: string): number[] {
   }
 }
 
+const FONT_KEY = "scribedog-icon-picker-font";
+
+/** The icon font chosen last in the picker, or null. */
+export function readLastIconFont(): string | null {
+  try {
+    return window.localStorage.getItem(FONT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function rememberIconFont(fontId: string): void {
+  try {
+    window.localStorage.setItem(FONT_KEY, fontId);
+  } catch {
+    // Blocked storage: the picker just opens on the first font again.
+  }
+}
+
 export function rememberIcon(fontId: string, codepoint: number): void {
   try {
     const all = parseRecentIcons(window.localStorage.getItem(STORAGE_KEY));
