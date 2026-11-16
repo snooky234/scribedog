@@ -448,6 +448,7 @@
     "viewPaperDarkOnly": "Die Papier-Oberfläche gibt es nur bei dunklen Themes.",
     "advanced": "Erweitert",
     "advancedHint": "Nicht angepasste Farben übernimmt das Theme vom Grundton. Das Symbol neben einer Farbe setzt sie wieder darauf zurück.",
+    "advancedDocument": "Dokument",
     "advancedStatus": "Statusfarben",
     "advancedHighlights": "Hervorhebungen",
     "advancedCode": "Codeblöcke",
@@ -455,6 +456,7 @@
     "advancedOpenActiveSeparate": "Liste „In Arbeit“ abweichend vom Dateibaum darstellen",
     "opacity": "Deckkraft",
     "advancedColors": {
+      "link": "Links",
       "error": "Fehler",
       "success": "Erfolg",
       "warning": "Warnung",

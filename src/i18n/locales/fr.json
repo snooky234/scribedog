@@ -448,6 +448,7 @@
     "viewPaperDarkOnly": "La surface papier n'existe que dans les thèmes sombres.",
     "advanced": "Avancé",
     "advancedHint": "Les couleurs que vous ne changez pas viennent de la tonalité. L'icône à côté d'une couleur la réinitialise.",
+    "advancedDocument": "Document",
     "advancedStatus": "Couleurs d'état",
     "advancedHighlights": "Mises en évidence",
     "advancedCode": "Blocs de code",
@@ -455,6 +456,7 @@
     "advancedOpenActiveSeparate": "Afficher la liste « En cours » différemment de l'arborescence",
     "opacity": "Opacité",
     "advancedColors": {
+      "link": "Liens",
       "error": "Erreur",
       "success": "Succès",
       "warning": "Avertissement",

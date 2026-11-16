@@ -536,6 +536,15 @@
   cursor: pointer;
 }
 
+/* The link colour of every Typography block (the editor, the AI previews):
+   the theme's link token instead of Typography's body-text gray. Set as
+   Typography's own variable, so a link around code or bold text follows
+   too; unlayered, so it beats prose-invert, which reassigns the variable in
+   the utilities layer. */
+.prose {
+  --tw-prose-links: rgb(var(--link-rgb));
+}
+
 /* A URL inside a code block (src/lib/editor/codeBlockLinks.ts): plain text
    under a decoration, so it keeps the code colour and only gains the
    underline and pointer that say "this opens". */

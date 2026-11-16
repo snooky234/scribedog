@@ -232,7 +232,7 @@
 }
 
 .theme-preview__link {
-  color: var(--tw-prose-links);
+  color: rgb(var(--link-rgb));
   text-decoration: underline;
   text-decoration-color: rgba(var(--accent-rgb), 0.7);
   text-underline-offset: 2px;

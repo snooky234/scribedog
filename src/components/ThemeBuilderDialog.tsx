@@ -66,6 +66,7 @@ function templateKey(id: string): Theme {
 type Notice = { tone: "error" | "info"; text: string };
 
 const ADVANCED_GROUPS: { titleKey: string; keys: AdvancedColorKey[] }[] = [
+  { titleKey: "themeBuilder.advancedDocument", keys: ["link"] },
   { titleKey: "themeBuilder.advancedStatus", keys: ["error", "success", "warning", "info"] },
   { titleKey: "themeBuilder.advancedHighlights", keys: ["marker", "findMatch", "findCurrent", "diffRemoved", "diffAdded"] },
   {

@@ -447,6 +447,7 @@
     "viewPaperDarkOnly": "纸张表面仅在深色主题中可用。",
     "advanced": "高级",
     "advancedHint": "未修改的颜色取自基调。颜色旁的图标可将其恢复。",
+    "advancedDocument": "文档",
     "advancedStatus": "状态颜色",
     "advancedHighlights": "高亮",
     "advancedCode": "代码块",
@@ -454,6 +455,7 @@
     "advancedOpenActiveSeparate": "使“进行中”列表与文件树显示不同",
     "opacity": "不透明度",
     "advancedColors": {
+      "link": "链接",
       "error": "错误",
       "success": "成功",
       "warning": "警告",

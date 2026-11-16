@@ -108,7 +108,12 @@ export function ThemePreview({ theme, view, withWorkingSet = false }: ThemePrevi
   }
 
   const editorStyle = onPaper && resolved.paper
-    ? asStyle({ ...resolved.paper.palette, ...resolved.paper.prose }, { colorScheme: "light" })
+    ? asStyle(
+        // The sheet's links take the dark step of the theme's accent, as the
+        // paper rule in tokens.css does in the app.
+        { ...resolved.paper.palette, ...resolved.paper.prose, "--link-rgb": "var(--accent-dark-rgb)" },
+        { colorScheme: "light" }
+      )
     : undefined;
 
   return (

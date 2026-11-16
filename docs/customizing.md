@@ -42,7 +42,13 @@ Hover, selection, borders and shadows follow on their own. A live preview
 shows every colour before you use the theme, including the paper sheet and
 Zen mode. Zen mode can get a background and text colour of its own.
 
-An **Advanced** section covers status, highlight, diff and code colours.
+An **Advanced** section covers link, status, highlight, diff and code colours.
+
+Links in your notes take the accent colour, in a shade that stays readable on
+the page: a little darker in a light theme, a little lighter in a dark one.
+Pick a link colour under **Advanced** to give them a colour of their own. On
+the paper sheet links keep the darker accent shade, since a colour chosen for a
+dark page would be hard to read on a white one.
 
 It also holds the mark of the open note: its name, its background and the
 bar at its left edge. Background and bar have an opacity of their own, so a

@@ -447,6 +447,7 @@
     "viewPaperDarkOnly": "用紙表示はダークテーマでのみ使えます。",
     "advanced": "詳細",
     "advancedHint": "変更していない色は基本トーンから取られます。色の横のアイコンで元に戻せます。",
+    "advancedDocument": "ドキュメント",
     "advancedStatus": "ステータス色",
     "advancedHighlights": "強調表示",
     "advancedCode": "コードブロック",
@@ -454,6 +455,7 @@
     "advancedOpenActiveSeparate": "「作業中」リストをファイルツリーと別に表示する",
     "opacity": "不透明度",
     "advancedColors": {
+      "link": "リンク",
       "error": "エラー",
       "success": "成功",
       "warning": "警告",

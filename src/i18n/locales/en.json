@@ -448,6 +448,7 @@
     "viewPaperDarkOnly": "The paper surface only exists in dark themes.",
     "advanced": "Advanced",
     "advancedHint": "Colours you leave alone come from the base tone. The icon next to a colour resets it to that.",
+    "advancedDocument": "Document",
     "advancedStatus": "Status colours",
     "advancedHighlights": "Highlights",
     "advancedCode": "Code blocks",
@@ -455,6 +456,7 @@
     "advancedOpenActiveSeparate": "Show the “In progress” list differently from the file tree",
     "opacity": "Opacity",
     "advancedColors": {
+      "link": "Links",
       "error": "Error",
       "success": "Success",
       "warning": "Warning",

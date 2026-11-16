@@ -452,6 +452,7 @@
     "viewPaperDarkOnly": "Бумажная поверхность есть только в тёмных темах.",
     "advanced": "Дополнительно",
     "advancedHint": "Цвета, которые вы не меняли, берутся из основного тона. Значок рядом с цветом возвращает его.",
+    "advancedDocument": "Документ",
     "advancedStatus": "Цвета статусов",
     "advancedHighlights": "Выделения",
     "advancedCode": "Блоки кода",
@@ -459,6 +460,7 @@
     "advancedOpenActiveSeparate": "Показывать список «В работе» иначе, чем дерево файлов",
     "opacity": "Непрозрачность",
     "advancedColors": {
+      "link": "Ссылки",
       "error": "Ошибка",
       "success": "Успех",
       "warning": "Предупреждение",

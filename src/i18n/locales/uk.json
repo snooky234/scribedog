@@ -452,6 +452,7 @@
     "viewPaperDarkOnly": "Паперова поверхня є лише в темних темах.",
     "advanced": "Додатково",
     "advancedHint": "Кольори, які ви не змінювали, беруться з основного тону. Значок поруч із кольором повертає його.",
+    "advancedDocument": "Документ",
     "advancedStatus": "Кольори статусів",
     "advancedHighlights": "Виділення",
     "advancedCode": "Блоки коду",
@@ -459,6 +460,7 @@
     "advancedOpenActiveSeparate": "Показувати список «У роботі» інакше, ніж дерево файлів",
     "opacity": "Непрозорість",
     "advancedColors": {
+      "link": "Посилання",
       "error": "Помилка",
       "success": "Успіх",
       "warning": "Попередження",

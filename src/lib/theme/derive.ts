@@ -13,7 +13,7 @@
  * from its base as in the built-in themes.
  */
 
-import { buildAccentPalette, rgbToHex, type Rgb } from "@/lib/color";
+import { buildAccentPalette, rgbToHex, type AccentPalette, type Rgb } from "@/lib/color";
 
 import { oklabToRgb, parseCssColor, rgbToOklab, type Oklab } from "./oklab";
 
@@ -62,6 +62,7 @@ export const DEFAULT_BASE_COLORS: Record<ThemeMode, ThemeBaseColors> = {
 /** The "Advanced" colours. Each one is optional in a theme: left out, the
  *  tokens it drives keep the built-in theme's values for the mode verbatim. */
 export const ADVANCED_COLOR_KEYS = [
+  "link",
   "error",
   "success",
   "warning",
@@ -101,11 +102,14 @@ export const OPEN_ACTIVE_FALLBACK: Partial<Record<AdvancedColorKey, AdvancedColo
   openActiveMarker: "activeMarker"
 };
 
-/** The custom property each highlight colour overwrites. The token is
- *  derived from the base colours when the key is unset, which is what the
- *  dialog has to show in that case: a theme with a copper accent has a
- *  copper bar, and a field showing the built-in violet would be lying. */
+/** The custom property each colour that follows the base colours
+ *  overwrites (the highlights and the link colour). The token is derived
+ *  from the base colours when the key is unset, which is what the dialog
+ *  has to show in that case: a theme with a copper accent has a copper bar
+ *  and copper links, and a field showing the built-in violet would be
+ *  lying. */
 export const HIGHLIGHT_TOKEN_OF: Partial<Record<AdvancedColorKey, string>> = {
+  link: "--link-rgb",
   activeText: "--tree-active-text",
   activeBg: "--tree-active-bg",
   activeMarker: "--tree-active-marker",
@@ -126,9 +130,13 @@ export const ALPHA_COLOR_KEYS: ReadonlySet<AdvancedColorKey> = new Set([
 ]);
 
 /** What each advanced colour stands for in the built-in themes: the
- *  Tailwind 500 step for the status roles, the literal colour elsewhere. */
+ *  Tailwind 500 step for the status roles, the literal colour elsewhere.
+ *  The link colour is the default accent's ramp step for the mode (dark on
+ *  a light page, light on a dark one), which is what an unset link derives
+ *  from any accent (see `linkShade`). */
 export const DEFAULT_ADVANCED_COLORS: Record<ThemeMode, Record<AdvancedColorKey, string>> = {
   light: {
+    link: "#9134ea",
     error: "#ef4444",
     success: "#22c55e",
     warning: "#eab308",
@@ -153,6 +161,7 @@ export const DEFAULT_ADVANCED_COLORS: Record<ThemeMode, Record<AdvancedColorKey,
     openActiveMarker: "#a855f7d9"
   },
   dark: {
+    link: "#c183fc",
     error: "#ef4444",
     success: "#22c55e",
     warning: "#eab308",
@@ -554,6 +563,13 @@ function highlightToken(key: AdvancedColorKey, name: string): Record<string, Adv
  *  values (the same ones MODE_DEFAULTS carries), so the steps between, say,
  *  the error colour and the error panel stay what they are today. */
 const ADVANCED_TOKENS: Record<AdvancedColorKey, Record<string, AdvancedToken>> = {
+  link: {
+    "--link-rgb": {
+      format: "triplet",
+      light: { from: "link", reference: DEFAULT_ADVANCED_COLORS.light.link },
+      dark: { from: "link", reference: DEFAULT_ADVANCED_COLORS.dark.link }
+    }
+  },
   error: statusTokens(
     "error",
     { soft: "--error-soft-rgb", base: "--error-rgb", strong: "--error-strong-rgb", fg: "--error-fg", bg: "--error-bg-rgb" },
@@ -672,6 +688,12 @@ const ACCENT_TOKENS: Record<string, string> = {
   darkest: "--accent-darkest-rgb"
 };
 
+/** The accent ramp step an unset link colour takes: the plain accent
+ *  misses AA contrast as text on a white page (the default violet sits just
+ *  under 4:1), one step toward the text colour reaches it in both modes.
+ *  tokens.css spells out the same choice for the built-in themes. */
+const LINK_SHADE: Record<ThemeMode, keyof AccentPalette> = { light: "dark", dark: "light" };
+
 /** The colour's position in Oklab; an alpha suffix, which only the
  *  highlight colours carry, is not part of that and is dropped here. It
  *  travels with the reference instead (see `applyRule`). */
@@ -788,6 +810,12 @@ export function deriveThemeVariables(
   for (const [shade, name] of Object.entries(ACCENT_TOKENS)) {
     variables[name] = accent[shade as keyof typeof accent];
   }
+  // Links follow the accent unless the theme picks a colour of its own, so
+  // a theme written before the link colour existed gets the same links the
+  // built-in themes have.
+  if (resolved.link === undefined) {
+    variables["--link-rgb"] = accent[LINK_SHADE[mode]];
+  }
 
   return variables;
 }
@@ -846,7 +874,6 @@ const PROSE_TOKENS: Record<string, DerivedToken> = {
   "--tw-prose-body": proseToken("text", GRAY[700], GRAY[300]),
   "--tw-prose-headings": proseToken("text", GRAY[900], WHITE),
   "--tw-prose-lead": proseToken("muted", GRAY[600], GRAY[400]),
-  "--tw-prose-links": proseToken("text", GRAY[900], WHITE),
   "--tw-prose-bold": proseToken("text", GRAY[900], WHITE),
   "--tw-prose-counters": proseToken("muted", GRAY[500], GRAY[400]),
   "--tw-prose-bullets": proseToken("surface", GRAY[300], GRAY[600]),
@@ -895,8 +922,11 @@ export function derivePaperProseVariables(paper: ThemePaperColors): Record<strin
 
 /** Tokens the paper surface does not redeclare (tokens.css keeps them on
  *  :root only): a popover on the page still wears the dark UI's shadow and
- *  the user's accent. */
-const NOT_ON_PAPER = new Set(["--shadow-rgb", ...Object.values(ACCENT_TOKENS)]);
+ *  the user's accent. The link colour is left to tokens.css as well, whose
+ *  paper rule takes the dark step of the accent inherited from <html>: a
+ *  link colour picked for the dark UI would be unreadable on the light
+ *  sheet, the same reason the sheet ignores the other advanced colours. */
+const NOT_ON_PAPER = new Set(["--shadow-rgb", "--link-rgb", ...Object.values(ACCENT_TOKENS)]);
 
 /** The light palette the paper surface paints onto the page, built from the
  *  sheet's own background and text colour. */

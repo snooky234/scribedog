@@ -54,6 +54,10 @@ describe("preset themes", () => {
         expect(contrast(resolved.root["--muted-rgb"], resolved.root["--surface-raised-rgb"])).toBeGreaterThanOrEqual(4.5);
       });
 
+      it("keeps the links at AA contrast on the surface", () => {
+        expect(contrast(resolved.root["--link-rgb"], surface)).toBeGreaterThanOrEqual(4.5);
+      });
+
       it("keeps the text on the accent buttons readable", () => {
         // The AI buttons: near-white text on the accent (large, bold UI text).
         expect(contrast(resolved.root["--on-accent-rgb"], resolved.root["--accent-rgb"])).toBeGreaterThanOrEqual(3);

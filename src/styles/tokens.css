@@ -113,6 +113,13 @@
   --find-current-rgb: 249, 115, 22;
   /* Text on the accent gradient (AI buttons, the user's chat bubbles). */
   --on-accent-rgb: 245, 240, 255;
+  /* Links in the document: a step of the accent ramp rather than a colour
+     of their own, so they follow the accent the user picked. The dark step
+     on a light page (the plain violet misses AA contrast on white), the
+     light step on a dark one. A reference, not a value: it resolves against
+     the ramp on <html>, which is what the paper surface needs too. A custom
+     theme overwrites it (derive.ts). */
+  --link-rgb: var(--accent-dark-rgb);
   /* Text-marker highlight (==text==): a translucent yellow so the text
      underneath keeps its own colour and stays readable. */
   --highlight-bg: rgba(253, 224, 71, 0.55);
@@ -204,6 +211,7 @@
   --warning-bg-rgb: 69, 49, 7;
   --info-bg-rgb: 15, 33, 62;
   --unsaved-rgb: 253, 230, 138;
+  --link-rgb: var(--accent-light-rgb);
   /* Darker, less saturated than the light value: full yellow behind light
      text on a near-black page glares and drops the contrast. */
   --highlight-bg: rgba(231, 189, 17, 0.18);

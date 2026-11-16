@@ -99,7 +99,12 @@ for (const mode of ["light", "dark"] as const) {
 
     it("reproduces the derived colours within one step per channel", () => {
       for (const [name, value] of Object.entries(derived)) {
-        if (SHADCN.has(name) || (name.startsWith("--accent-") && name.endsWith("-rgb")) || !name.match(/rgb$|^--body-bg/)) {
+        if (
+          SHADCN.has(name) ||
+          name === "--link-rgb" ||
+          (name.startsWith("--accent-") && name.endsWith("-rgb")) ||
+          !name.match(/rgb$|^--body-bg/)
+        ) {
           continue;
         }
         expect(maxChannelDelta(value, expected[name]), name).toBeLessThanOrEqual(1);
@@ -113,6 +118,15 @@ for (const mode of ["light", "dark"] as const) {
       for (const name of Object.keys(derived).filter((key) => key.startsWith("--accent-") && key.endsWith("-rgb"))) {
         expect(maxChannelDelta(derived[name], expected[name]), name).toBeLessThanOrEqual(6);
       }
+    });
+
+    // tokens.css spells the link colour as a step of the accent ramp, so
+    // that it follows an accent picked for a built-in theme; the derived
+    // value has to be that same step of the derived ramp.
+    it("takes the link colour from the accent ramp step tokens.css names", () => {
+      const step = /^var\((--accent-[\w-]+-rgb)\)$/.exec(expected["--link-rgb"]);
+      expect(step, expected["--link-rgb"]).not.toBeNull();
+      expect(derived["--link-rgb"]).toBe(derived[step![1]]);
     });
 
     it("keeps the shadcn tokens at the built-in lightness and alpha", () => {
@@ -237,6 +251,20 @@ describe("advanced colours", () => {
     expect(maxChannelDelta(vars["--tree-active-text"], "#e1ded8")).toBeLessThanOrEqual(1);
   });
 
+  // Links follow the accent like the open note's bar: a theme written
+  // before the link colour existed has no `link` key and still gets links
+  // in its own accent, a theme that sets one gets exactly that colour.
+  it("derives the links from the accent unless the theme picks a colour", () => {
+    const base = { ...DEFAULT_BASE_COLORS.light, accent: "#2f7d4a" };
+    const derived = parseCssColor(deriveThemeVariables("light", base)["--link-rgb"]);
+
+    expect(derived && derived.g > derived.r && derived.g > derived.b).toBe(true);
+    expect(deriveThemeVariables("light", base, { link: "#c2410c" })["--link-rgb"]).toBe("194, 65, 12");
+    expect(deriveThemeVariables("dark", DEFAULT_BASE_COLORS.dark, { link: "#7dd3fc" })["--link-rgb"]).toBe(
+      "125, 211, 252"
+    );
+  });
+
   it("carries a highlight colour's alpha into its token", () => {
     const vars = deriveThemeVariables("dark", DEFAULT_BASE_COLORS.dark, { activeBg: "#12345680" });
 
@@ -297,6 +325,7 @@ describe("derivePaperVariables", () => {
 
     expect("--shadow-rgb" in paper).toBe(false);
     expect("--accent-rgb" in paper).toBe(false);
+    expect("--link-rgb" in paper).toBe(false);
   });
 
   it("builds the sheet's hover rows from its own background", () => {

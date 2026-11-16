@@ -448,6 +448,7 @@
     "viewPaperDarkOnly": "La superficie de papel solo existe en temas oscuros.",
     "advanced": "Avanzado",
     "advancedHint": "Los colores que no cambies se toman del tono base. El icono junto a un color lo restablece.",
+    "advancedDocument": "Documento",
     "advancedStatus": "Colores de estado",
     "advancedHighlights": "Resaltados",
     "advancedCode": "Bloques de código",
@@ -455,6 +456,7 @@
     "advancedOpenActiveSeparate": "Mostrar la lista “En curso” distinta del árbol de archivos",
     "opacity": "Opacidad",
     "advancedColors": {
+      "link": "Enlaces",
       "error": "Error",
       "success": "Éxito",
       "warning": "Advertencia",

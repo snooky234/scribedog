@@ -448,6 +448,7 @@
     "viewPaperDarkOnly": "A superfície de papel só existe em temas escuros.",
     "advanced": "Avançado",
     "advancedHint": "As cores que você não altera vêm do tom base. O ícone ao lado de uma cor a restaura.",
+    "advancedDocument": "Documento",
     "advancedStatus": "Cores de status",
     "advancedHighlights": "Destaques",
     "advancedCode": "Blocos de código",
@@ -455,6 +456,7 @@
     "advancedOpenActiveSeparate": "Mostrar a lista “Em andamento” diferente da árvore de arquivos",
     "opacity": "Opacidade",
     "advancedColors": {
+      "link": "Links",
       "error": "Erro",
       "success": "Sucesso",
       "warning": "Aviso",
