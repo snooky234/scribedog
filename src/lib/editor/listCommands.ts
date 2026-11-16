@@ -283,30 +283,38 @@ export function moveLine(view: EditorView, direction: "up" | "down"): boolean {
   return moveSiblingsAtDepth(view, direction, 1);
 }
 
-// Toggles the checked state of the task item the cursor is currently in.
-// TipTap's task-item extension only flips this attribute via a click on the
-// rendered checkbox, so this walks up to the enclosing taskItem node and
-// flips its "checked" attribute directly for keyboard-driven use.
+// Toggles the checked state of every task item the selection touches (just
+// the one around the cursor when nothing is selected). TipTap's task-item
+// extension only flips this attribute via a click on the rendered checkbox,
+// so this sets the "checked" attribute directly for keyboard-driven use.
+// A mixed selection is checked as a whole, the way a "select all" checkbox
+// behaves: only when every item is already checked does it uncheck them all,
+// so pressing the shortcut twice always returns to a uniform state.
 export function toggleTaskItemChecked(view: EditorView): boolean {
   const { state } = view;
-  const { $from } = state.selection;
+  const taskItems: { pos: number; node: ProseMirrorNode }[] = [];
 
-  let taskItemDepth = -1;
-  for (let depth = $from.depth; depth > 0; depth--) {
-    if ($from.node(depth).type.name === "taskItem") {
-      taskItemDepth = depth;
-      break;
-    }
+  for (const range of state.selection.ranges) {
+    state.doc.nodesBetween(range.$from.pos, range.$to.pos, (node, pos) => {
+      if (node.type.name === "taskItem" && !taskItems.some((item) => item.pos === pos)) {
+        taskItems.push({ pos, node });
+      }
+      return true;
+    });
   }
 
-  if (taskItemDepth === -1) {
+  if (taskItems.length === 0) {
     return false;
   }
 
-  const pos = $from.before(taskItemDepth);
-  const node = $from.node(taskItemDepth);
-
-  const tr = state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, checked: !node.attrs.checked });
+  const checked = taskItems.some(({ node }) => !node.attrs.checked);
+  const tr = state.tr;
+  // setNodeMarkup keeps the node size, so the collected positions stay valid.
+  for (const { pos, node } of taskItems) {
+    if (Boolean(node.attrs.checked) !== checked) {
+      tr.setNodeMarkup(pos, undefined, { ...node.attrs, checked });
+    }
+  }
   view.dispatch(tr);
   return true;
 }

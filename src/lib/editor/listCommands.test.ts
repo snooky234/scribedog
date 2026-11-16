@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { buildPreviewExtensions } from "@/lib/editor/extensions";
 import { EditorImage } from "@/lib/editor/extensions/image";
-import { moveLine, moveListItem } from "@/lib/editor/listCommands";
+import { moveLine, moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
 
 let editor: Editor | null = null;
 
@@ -189,5 +189,69 @@ describe("moveLine", () => {
     const { selection } = e.state;
     expect(selection).toBeInstanceOf(NodeSelection);
     expect((selection as NodeSelection).node.type.name).toBe("image");
+  });
+});
+
+describe("toggleTaskItemChecked", () => {
+  function selectBetween(current: Editor, fromText: string, toText: string): void {
+    let from = -1;
+    let to = -1;
+    current.state.doc.descendants((node, nodePos) => {
+      if (node.isText && node.text) {
+        if (from === -1 && node.text.includes(fromText)) {
+          from = nodePos + node.text.indexOf(fromText);
+        }
+        if (node.text.includes(toText)) {
+          to = nodePos + node.text.indexOf(toText) + toText.length;
+        }
+      }
+      return true;
+    });
+    current.view.dispatch(current.state.tr.setSelection(TextSelection.create(current.state.doc, from, to)));
+  }
+
+  function checkedStates(current: Editor): boolean[] {
+    const states: boolean[] = [];
+    current.state.doc.descendants((node) => {
+      if (node.type.name === "taskItem") {
+        states.push(Boolean(node.attrs.checked));
+      }
+      return true;
+    });
+    return states;
+  }
+
+  it("toggles only the item around the cursor without a selection", () => {
+    const e = open("- [ ] one\n- [ ] two\n", "one");
+
+    expect(toggleTaskItemChecked(e.view)).toBe(true);
+
+    expect(checkedStates(e)).toEqual([true, false]);
+  });
+
+  it("checks every selected item", () => {
+    const e = open("- [ ] one\n- [ ] two\n- [ ] three\n- [ ] four\n", "one");
+    selectBetween(e, "two", "three");
+
+    expect(toggleTaskItemChecked(e.view)).toBe(true);
+
+    expect(checkedStates(e)).toEqual([false, true, true, false]);
+  });
+
+  it("checks a mixed selection as a whole and unchecks it on the second press", () => {
+    const e = open("- [x] one\n- [ ] two\n- [x] three\n", "one");
+    selectBetween(e, "one", "three");
+
+    toggleTaskItemChecked(e.view);
+    expect(checkedStates(e)).toEqual([true, true, true]);
+
+    toggleTaskItemChecked(e.view);
+    expect(checkedStates(e)).toEqual([false, false, false]);
+  });
+
+  it("returns false outside a task list", () => {
+    const e = open("plain\n\n- [ ] one\n", "plain");
+
+    expect(toggleTaskItemChecked(e.view)).toBe(false);
   });
 });
