@@ -1004,7 +1004,11 @@
     "insertLineBefore": "Inserir linha vazia acima",
     "insertLineAfter": "Inserir linha vazia abaixo",
     "editDrawing": "Editar desenho",
-    "editDrawingHint": "Clique duas vezes para editar o desenho"
+    "editDrawingHint": "Clique duas vezes para editar o desenho",
+    "scaleGroup": "Tamanho da imagem",
+    "scalePageWidth": "{{percent}} % da largura da página",
+    "scaleOriginal": "Tamanho original",
+    "scaleOriginalShort": "Original"
   },
   "drawing": {
     "title": "Novo desenho",

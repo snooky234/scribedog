@@ -1016,7 +1016,11 @@
     "insertLineBefore": "Вставити порожній рядок вище",
     "insertLineAfter": "Вставити порожній рядок нижче",
     "editDrawing": "Редагувати малюнок",
-    "editDrawingHint": "Подвійний клік, щоб редагувати малюнок"
+    "editDrawingHint": "Подвійний клік, щоб редагувати малюнок",
+    "scaleGroup": "Розмір зображення",
+    "scalePageWidth": "{{percent}} % ширини сторінки",
+    "scaleOriginal": "Початковий розмір",
+    "scaleOriginalShort": "Початковий"
   },
   "drawing": {
     "title": "Новий малюнок",

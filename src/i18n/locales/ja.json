@@ -1003,7 +1003,11 @@
     "insertLineBefore": "上に空行を挿入",
     "insertLineAfter": "下に空行を挿入",
     "editDrawing": "手描きを編集",
-    "editDrawingHint": "ダブルクリックで手描きを編集"
+    "editDrawingHint": "ダブルクリックで手描きを編集",
+    "scaleGroup": "画像サイズ",
+    "scalePageWidth": "ページ幅の {{percent}}%",
+    "scaleOriginal": "元のサイズ",
+    "scaleOriginalShort": "元のサイズ"
   },
   "drawing": {
     "title": "新しい手描き",

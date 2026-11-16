@@ -1016,7 +1016,11 @@
     "insertLineBefore": "Вставить пустую строку выше",
     "insertLineAfter": "Вставить пустую строку ниже",
     "editDrawing": "Редактировать рисунок",
-    "editDrawingHint": "Двойной щелчок, чтобы редактировать рисунок"
+    "editDrawingHint": "Двойной щелчок, чтобы редактировать рисунок",
+    "scaleGroup": "Размер изображения",
+    "scalePageWidth": "{{percent}} % ширины страницы",
+    "scaleOriginal": "Исходный размер",
+    "scaleOriginalShort": "Исходный"
   },
   "drawing": {
     "title": "Новый рисунок",

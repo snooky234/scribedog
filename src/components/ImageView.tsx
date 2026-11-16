@@ -8,12 +8,30 @@ import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { PencilLine, Plus } from "lucide-react";
 
 import { isScribeDogDrawingSvg } from "@/lib/drawing/drawingSvg";
+import { ImageContextMenu, imageScaleLabel, type ImageContextMenuState } from "@/components/editor/ImageContextMenu";
+import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
 import { EditorFileContext } from "@/lib/editorFileContext";
 import { startImageLongPress } from "@/lib/editor/imageLongPressDrag";
 import { subscribeImageFileChanged } from "@/lib/editor/imageRevisions";
+import {
+  IMAGE_SCALE_CHOICES,
+  activeImageScale,
+  canApplyImageScale,
+  widthForImageScale,
+  type ImageScaleChoice
+} from "@/lib/editor/imageScale";
 import { ABSOLUTE_URL_PATTERN, guessImageMimeType } from "@/lib/fileSystem";
 
 const MIN_IMAGE_WIDTH = 48;
+
+// Room the touch-only "line above" button takes in the middle of the image's
+// top edge (half its 2.25rem width plus a little air), which the preset size
+// bar above the right edge must stay clear of.
+const INSERT_BUTTON_HALF_WIDTH = 22;
+// Matches the 0.5rem gap of .editor-image-wrapper__scale--beside.
+const SCALE_BAR_GAP = 8;
+
+type ScaleBarPlacement = "above" | "beside" | "lifted";
 
 const RESIZE_HANDLES = ["nw", "ne", "sw", "se"] as const;
 type ResizeHandle = (typeof RESIZE_HANDLES)[number];
@@ -40,6 +58,12 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
   const imgRef = useRef<HTMLImageElement>(null);
   const dragWidthRef = useRef<number | null>(null);
   const cancelLongPressRef = useRef<(() => void) | null>(null);
+  // The page width the preset size bar's percentages refer to (see
+  // imageScale.ts), measured only while the bar is shown.
+  const [pageWidth, setPageWidth] = useState<number | null>(null);
+  // Where the bar fits without covering the "line above" button (see measure).
+  const [scaleBarPlacement, setScaleBarPlacement] = useState<ScaleBarPlacement>("above");
+  const scaleBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     absolutePathRef.current = null;
@@ -107,6 +131,116 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
 
   useEffect(() => () => cancelLongPressRef.current?.(), []);
 
+  const canScale = editor.isEditable && displaySrcFor(src, objectUrl) !== null;
+  // The bar is the touch way to the preset sizes; a mouse finds them in the
+  // image's right-click menu instead (see openImageMenu), so the bar is only
+  // rendered for a coarse pointer, like the line buttons.
+  const showScaleBar = selected && canScale && coarsePointer();
+
+  // The page width the percentages refer to: the box the wrapper sits in
+  // (Tiptap's node view container), which is also what the image's
+  // max-width: 100% resolves against, so inside a list item or a table cell
+  // it is that item's or cell's width.
+  const measurePageWidth = (): number | null => {
+    const column = imgRef.current?.parentElement?.parentElement ?? null;
+
+    if (!column) {
+      return null;
+    }
+
+    const style = window.getComputedStyle(column);
+    const columnWidth =
+      column.clientWidth - parseFloat(style.paddingLeft || "0") - parseFloat(style.paddingRight || "0");
+    return columnWidth > 0 ? columnWidth : null;
+  };
+
+  useEffect(() => {
+    const imgEl = imgRef.current;
+    const column = imgEl?.parentElement?.parentElement ?? null;
+
+    if (!showScaleBar || !imgEl || !column) {
+      return;
+    }
+
+    const measure = () => {
+      const measuredPageWidth = measurePageWidth();
+      setPageWidth(measuredPageWidth);
+
+      // Above the right edge the bar has to stay right of the "line above"
+      // button in the middle of the top edge. A narrow image gets the bar
+      // beside it; a wide one on a narrow screen, where neither fits, gets it
+      // lifted over that button.
+      const imageWidth = imgEl.getBoundingClientRect().width;
+      const barWidth = scaleBarRef.current?.offsetWidth ?? 0;
+
+      if (barWidth <= imageWidth / 2 - INSERT_BUTTON_HALF_WIDTH) {
+        setScaleBarPlacement("above");
+      } else if (imageWidth + SCALE_BAR_GAP + barWidth <= (measuredPageWidth ?? 0)) {
+        setScaleBarPlacement("beside");
+      } else {
+        setScaleBarPlacement("lifted");
+      }
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(column);
+    observer.observe(imgEl);
+    return () => observer.disconnect();
+    // measurePageWidth only reads refs; the observer covers what changes them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showScaleBar]);
+
+  const setScale = (choice: ImageScaleChoice, measuredPageWidth: number | null) => {
+    if (!canApplyImageScale(choice, measuredPageWidth)) {
+      return;
+    }
+
+    updateAttributes({ width: widthForImageScale(choice, measuredPageWidth ?? 0, MIN_IMAGE_WIDTH) });
+  };
+
+  const applyScale = (choice: ImageScaleChoice) => (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setScale(choice, pageWidth);
+  };
+
+  const activeScale = activeImageScale(width, pageWidth);
+
+  // Right-click on an image: the preset sizes instead of the browser's own
+  // menu (the editor's selection menu has nothing that applies to an image).
+  // The image gets selected first, so the outline shows which one the menu
+  // acts on. A touch long press stays with selectOnTouch (moving the image).
+  const {
+    contextMenu: imageMenu,
+    setContextMenu: setImageMenu,
+    menuRef: imageMenuRef
+  } = useContextMenuState<ImageContextMenuState>();
+
+  const openImageMenu = (event: React.MouseEvent<HTMLElement>) => {
+    if (!canScale || coarsePointer()) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const pos = getPos();
+
+    if (pos !== undefined) {
+      const { state } = editor;
+      editor.view.dispatch(state.tr.setSelection(NodeSelection.create(state.doc, pos)));
+    }
+
+    const measuredPageWidth = measurePageWidth();
+    setImageMenu({
+      x: event.clientX,
+      y: event.clientY,
+      pageWidth: measuredPageWidth,
+      active: activeImageScale(width, measuredPageWidth)
+    });
+  };
+
   const canEditDrawing = drawingPath !== null && onEditDrawing !== null && editor.isEditable;
 
   const editDrawing = () => {
@@ -115,7 +249,7 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
     }
   };
 
-  const displaySrc = ABSOLUTE_URL_PATTERN.test(src) ? src : objectUrl;
+  const displaySrc = displaySrcFor(src, objectUrl);
   const effectiveWidth = dragWidth ?? width;
 
   const startResize = (handle: ResizeHandle) => (event: React.PointerEvent<HTMLSpanElement>) => {
@@ -245,6 +379,7 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
       className="editor-image-wrapper"
       data-drag-handle
       onPointerDown={selectOnTouch}
+      onContextMenu={openImageMenu}
     >
       {displaySrc ? (
         <>
@@ -257,6 +392,31 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
             title={canEditDrawing ? t("imageView.editDrawingHint") : undefined}
             onDoubleClick={canEditDrawing ? editDrawing : undefined}
           />
+          {showScaleBar ? (
+            <div
+              ref={scaleBarRef}
+              className={`editor-image-wrapper__scale editor-image-wrapper__scale--${scaleBarPlacement}`}
+              role="group"
+              aria-label={t("imageView.scaleGroup")}
+              contentEditable={false}
+            >
+              {IMAGE_SCALE_CHOICES.map((choice) => (
+                <button
+                  key={choice}
+                  type="button"
+                  className="editor-image-wrapper__scale-step"
+                  aria-pressed={activeScale === choice}
+                  aria-label={imageScaleLabel(t, choice)}
+                  title={imageScaleLabel(t, choice)}
+                  disabled={!canApplyImageScale(choice, pageWidth)}
+                  onPointerDown={stopPointer}
+                  onClick={applyScale(choice)}
+                >
+                  {choice === "original" ? t("imageView.scaleOriginalShort") : `${choice} %`}
+                </button>
+              ))}
+            </div>
+          ) : null}
           {selected && canEditDrawing ? (
             <button
               type="button"
@@ -273,6 +433,14 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
             >
               <PencilLine aria-hidden="true" />
             </button>
+          ) : null}
+          {imageMenu ? (
+            <ImageContextMenu
+              {...imageMenu}
+              menuRef={imageMenuRef}
+              onSelect={(choice) => setScale(choice, imageMenu.pageWidth)}
+              onClose={() => setImageMenu(null)}
+            />
           ) : null}
           {selected &&
             RESIZE_HANDLES.map((handle) => (
@@ -306,4 +474,12 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
       )}
     </NodeViewWrapper>
   );
+}
+
+function displaySrcFor(src: string, objectUrl: string | null): string | null {
+  return ABSOLUTE_URL_PATTERN.test(src) ? src : objectUrl;
+}
+
+function coarsePointer(): boolean {
+  return window.matchMedia("(pointer: coarse)").matches;
 }

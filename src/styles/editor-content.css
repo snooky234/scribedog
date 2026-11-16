@@ -882,6 +882,75 @@
   }
 }
 
+/* Preset sizes on a selected image (see ImageView, imageScale.ts), outside
+   the picture above its right edge, the same small separate buttons as the
+   code block's language and copy badge, but in the page's own colours, since
+   they sit on the page and not on a dark code surface. Rendered only for a
+   coarse pointer: with a mouse the sizes are in the image's right-click menu. */
+.editor-image-wrapper__scale {
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* An image too narrow for the bar to stay clear of the "line above" button
+   in the middle of its top edge (see ImageView) gets it to its right, level
+   with its top edge. */
+.editor-image-wrapper__scale--beside {
+  bottom: auto;
+  top: 0;
+  right: auto;
+  left: calc(100% + 0.5rem);
+}
+
+/* No room beside it either (a phone): the bar goes above that button, which
+   reaches 1.125rem over the image's top edge, and starts at the image's left
+   edge, so a bar wider than the image runs into the column, not off-screen. */
+.editor-image-wrapper__scale--lifted {
+  bottom: calc(100% + 1.5rem);
+  right: auto;
+  left: 0;
+}
+
+.editor-image-wrapper__scale-step {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  min-width: 2.25rem;
+  padding: 0 0.5rem;
+  white-space: nowrap;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(var(--overlay-rgb), 0.14);
+  background: rgb(var(--surface-raised-rgb));
+  color: rgba(var(--text-rgb), 0.7);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.editor-image-wrapper__scale-step:hover {
+  border-color: rgba(var(--overlay-rgb), 0.3);
+  color: rgb(var(--text-rgb));
+}
+
+.editor-image-wrapper__scale-step[aria-pressed="true"] {
+  border-color: rgba(var(--overlay-rgb), 0.45);
+  background: rgba(var(--overlay-rgb), 0.14);
+  color: rgb(var(--text-rgb));
+}
+
 /* "Line above / below" buttons on a selected image (see ImageView). Only a
    coarse pointer gets them: with a mouse and keyboard, Enter and the gap
    cursor already cover it, and the buttons would sit on top of the image. */

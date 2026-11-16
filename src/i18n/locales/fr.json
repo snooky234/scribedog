@@ -1004,7 +1004,11 @@
     "insertLineBefore": "Insérer une ligne vide au-dessus",
     "insertLineAfter": "Insérer une ligne vide en dessous",
     "editDrawing": "Modifier le dessin",
-    "editDrawingHint": "Double-cliquez pour modifier le dessin"
+    "editDrawingHint": "Double-cliquez pour modifier le dessin",
+    "scaleGroup": "Taille de l'image",
+    "scalePageWidth": "{{percent}} % de la largeur de page",
+    "scaleOriginal": "Taille d'origine",
+    "scaleOriginalShort": "Original"
   },
   "drawing": {
     "title": "Nouveau dessin",

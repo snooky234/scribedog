@@ -1003,7 +1003,11 @@
     "insertLineBefore": "在上方插入空行",
     "insertLineAfter": "在下方插入空行",
     "editDrawing": "编辑手绘",
-    "editDrawingHint": "双击编辑手绘"
+    "editDrawingHint": "双击编辑手绘",
+    "scaleGroup": "图片大小",
+    "scalePageWidth": "页面宽度的 {{percent}}%",
+    "scaleOriginal": "原始大小",
+    "scaleOriginalShort": "原始"
   },
   "drawing": {
     "title": "新建手绘",

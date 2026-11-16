@@ -1004,7 +1004,11 @@
     "insertLineBefore": "Leere Zeile darüber einfügen",
     "insertLineAfter": "Leere Zeile darunter einfügen",
     "editDrawing": "Zeichnung bearbeiten",
-    "editDrawingHint": "Doppelklick, um die Zeichnung zu bearbeiten"
+    "editDrawingHint": "Doppelklick, um die Zeichnung zu bearbeiten",
+    "scaleGroup": "Bildgröße",
+    "scalePageWidth": "{{percent}} % der Seitenbreite",
+    "scaleOriginal": "Originalgröße",
+    "scaleOriginalShort": "Original"
   },
   "drawing": {
     "title": "Neue Zeichnung",

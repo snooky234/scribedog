@@ -1004,7 +1004,11 @@
     "insertLineBefore": "Insert empty line above",
     "insertLineAfter": "Insert empty line below",
     "editDrawing": "Edit drawing",
-    "editDrawingHint": "Double-click to edit the drawing"
+    "editDrawingHint": "Double-click to edit the drawing",
+    "scaleGroup": "Image size",
+    "scalePageWidth": "{{percent}} % of page width",
+    "scaleOriginal": "Original size",
+    "scaleOriginalShort": "Original"
   },
   "drawing": {
     "title": "New drawing",
