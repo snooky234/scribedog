@@ -37,7 +37,8 @@ vi.mock("@/lib/fileSystem", async (importOriginal) => ({
   writeMarkdownFile: vi.fn(async () => undefined),
   renameMarkdownFile: vi.fn(async () => undefined),
   renameMarkdownFolder: vi.fn(async () => undefined),
-  markdownFolderExists: vi.fn(async () => false)
+  markdownFolderExists: vi.fn(async () => false),
+  createMarkdownFolderAtPath: vi.fn(async () => undefined)
 }));
 
 vi.mock("@/lib/vaultMeta", async (importOriginal) => ({
@@ -46,7 +47,7 @@ vi.mock("@/lib/vaultMeta", async (importOriginal) => ({
   writeSortMode: vi.fn(async () => undefined)
 }));
 
-const { writeMarkdownFile, renameMarkdownFile } = await import("@/lib/fileSystem");
+const { writeMarkdownFile, renameMarkdownFile, markdownFolderExists, createMarkdownFolderAtPath } = await import("@/lib/fileSystem");
 const { useAppStore } = await import("@/store/useAppStore");
 
 const VAULT = "/vault";
@@ -224,5 +225,86 @@ describe("moveTreeEntry image path rewriting", () => {
     await moveNoteIntoSub();
 
     expect(writeMarkdownFile).not.toHaveBeenCalled();
+  });
+});
+
+describe("convertFileToFolderNote", () => {
+  const RECIPES = "/vault/Rezepte.md";
+  const RECIPES_FOLDER = "/vault/Rezepte";
+  const RECIPES_NOTE = "/vault/Rezepte/.scribedog-foldernote.md";
+
+  function primeVault(filePaths: string[], document: { content: string; baseContent: string } | null) {
+    useAppStore.setState({
+      folderPath: VAULT,
+      filePaths,
+      emptyFolderPaths: [],
+      fileDocuments: document ? { [RECIPES]: document } : {},
+      selectedFilePath: document ? RECIPES : null,
+      selectedFileContent: document?.content ?? null,
+      selectedFileBaseContent: document?.baseContent ?? null,
+      manualOrder: {},
+      vaultIcons: {},
+      workingSet: [],
+      isDirty: document ? document.content !== document.baseContent : false,
+      fileError: null
+    });
+  }
+
+  beforeEach(() => {
+    vi.mocked(renameMarkdownFile).mockClear();
+    vi.mocked(createMarkdownFolderAtPath).mockClear();
+    vi.mocked(markdownFolderExists).mockResolvedValue(false);
+  });
+
+  it("puts the note into a new folder of its name, in its place, with unsaved edits kept", async () => {
+    primeVault(["/vault/Apfel.md", RECIPES, "/vault/Zitrone.md"], {
+      content: "# Rezepte\n\nneu\n",
+      baseContent: "# Rezepte\n"
+    });
+
+    expect(await useAppStore.getState().convertFileToFolderNote(RECIPES)).toBe(RECIPES_NOTE);
+
+    const state = useAppStore.getState();
+    expect(createMarkdownFolderAtPath).toHaveBeenCalledWith(RECIPES_FOLDER);
+    expect(renameMarkdownFile).toHaveBeenNthCalledWith(1, RECIPES, "/vault/Rezepte/Rezepte.md");
+    expect(renameMarkdownFile).toHaveBeenNthCalledWith(2, "/vault/Rezepte/Rezepte.md", RECIPES_NOTE);
+    expect(state.filePaths).toContain(RECIPES_NOTE);
+    expect(state.filePaths).not.toContain(RECIPES);
+    expect(state.emptyFolderPaths).toEqual([]);
+    expect(state.selectedFilePath).toBe(RECIPES_NOTE);
+    expect(state.selectedFileContent).toBe("# Rezepte\n\nneu\n");
+    expect(state.isDirty).toBe(true);
+    expect(state.manualOrder[""]).toEqual(["Apfel.md", "Rezepte", "Zitrone.md"]);
+    expect(state.fileError).toBeNull();
+  });
+
+  it("moves the note into an existing folder of that name without its own note", async () => {
+    vi.mocked(markdownFolderExists).mockResolvedValue(true);
+    primeVault([RECIPES, "/vault/Rezepte/Kuchen.md"], null);
+
+    expect(await useAppStore.getState().convertFileToFolderNote(RECIPES)).toBe(RECIPES_NOTE);
+    expect(createMarkdownFolderAtPath).not.toHaveBeenCalled();
+    expect(useAppStore.getState().filePaths).toEqual(
+      expect.arrayContaining([RECIPES_NOTE, "/vault/Rezepte/Kuchen.md"])
+    );
+  });
+
+  it("refuses when the existing folder already has a folder note", async () => {
+    vi.mocked(markdownFolderExists).mockResolvedValue(true);
+    primeVault([RECIPES, RECIPES_NOTE], null);
+
+    expect(await useAppStore.getState().convertFileToFolderNote(RECIPES)).toBeNull();
+    expect(renameMarkdownFile).not.toHaveBeenCalled();
+    expect(useAppStore.getState().fileError).not.toBeNull();
+    expect(useAppStore.getState().filePaths).toContain(RECIPES);
+  });
+
+  it("carries the note's icon over to the folder", async () => {
+    primeVault([RECIPES], null);
+    useAppStore.setState({ vaultIcons: { "rezepte.md": "🍰" } });
+
+    await useAppStore.getState().convertFileToFolderNote(RECIPES);
+
+    expect(useAppStore.getState().vaultIcons).toEqual({ rezepte: "🍰" });
   });
 });

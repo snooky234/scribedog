@@ -193,6 +193,12 @@ export type TreeSlice = {
 
   reorderWithinFolder: (parentDirectory: string, orderedBasenames: string[]) => Promise<boolean>;
   moveTreeEntry: (input: MoveTreeEntryInput) => Promise<boolean>;
+  /**
+   * Turns an ordinary note into the folder note of a folder named like it
+   * (lib/folderNotes.ts): a new folder in the note's place, or an existing one
+   * of that name without a note of its own. Returns the note's new path.
+   */
+  convertFileToFolderNote: (filePath: string) => Promise<string | null>;
 };
 
 /** The "In progress" list: admission by pin, removal, and discard for any note. */

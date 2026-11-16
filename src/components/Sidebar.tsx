@@ -121,6 +121,7 @@ type SidebarProps = {
   onOpenFolderNote: (folderPath: string) => Promise<void>;
   onDeleteFileRequest: (filePath: string) => void;
   onDuplicateFileRequest: (filePath: string) => void;
+  onConvertToFolderNoteRequest: (filePath: string) => void;
   onDeleteFolderRequest: (folderPath: string) => void;
   onDeleteMultipleRequest: (entries: BatchEntry[]) => void;
   onDeleteToolbarRequest: () => void;
@@ -179,6 +180,7 @@ export function Sidebar({
   onOpenFolderNote,
   onDeleteFileRequest,
   onDuplicateFileRequest,
+  onConvertToFolderNoteRequest,
   onDeleteFolderRequest,
   onDeleteMultipleRequest,
   onDeleteToolbarRequest,
@@ -796,6 +798,7 @@ export function Sidebar({
             onCreateFolderRequest={onCreateFolderRequest}
             onDeleteFileRequest={onDeleteFileRequest}
             onDuplicateFileRequest={onDuplicateFileRequest}
+            onConvertToFolderNoteRequest={onConvertToFolderNoteRequest}
             onDeleteFolderRequest={onDeleteFolderRequest}
             onDeleteMultipleRequest={onDeleteMultipleRequest}
             onExportFileRequest={onExportFileRequest}

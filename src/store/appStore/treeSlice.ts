@@ -11,7 +11,8 @@ import {
   writeMarkdownFile
 } from "@/lib/fileSystem";
 import { isDescendantRelativePath } from "@/lib/fileTree";
-import { setVaultIcon } from "@/lib/vaultIcons";
+import { FOLDER_NOTE_FILE_NAME, getConversionFolderPath, getFolderNotePath } from "@/lib/folderNotes";
+import { getVaultIcon, setVaultIcon } from "@/lib/vaultIcons";
 import { writeManualOrder, writeSortMode, type SortMode } from "@/lib/vaultMeta";
 
 import { isDocumentDirty } from "./documents";
@@ -326,6 +327,105 @@ export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
       });
 
       return false;
+    }
+  },
+  // Composed from the tree's own actions instead of a direct rename, so the
+  // moved note keeps everything a move keeps (version history, draft, open
+  // document, corrected image paths, working set) and the tree updates the
+  // same way it does for a drag and drop.
+  convertFileToFolderNote: async (filePath: string) => {
+    const state = get();
+    const { folderPath } = state;
+    const targetFolderPath = getConversionFolderPath(filePath);
+
+    if (!folderPath || !targetFolderPath) {
+      return null;
+    }
+
+    try {
+      const notePath = getFolderNotePath(targetFolderPath);
+      const noteKey = normalizePathKey(notePath);
+      const folderExists = await markdownFolderExists(targetFolderPath);
+
+      // An existing folder of the same name ("Rezepte.md" next to "Rezepte/")
+      // takes the note in, unless it already has a text of its own: that one
+      // would be overwritten, and which of the two the user wants is theirs
+      // to decide.
+      if (
+        folderExists &&
+        (state.filePaths.some((path) => normalizePathKey(path) === noteKey) ||
+          Object.keys(state.fileDocuments).some((path) => normalizePathKey(path) === noteKey))
+      ) {
+        set({ fileError: i18n.t("store.folderNoteAlreadyExists") });
+        return null;
+      }
+
+      const parentDirectory = await dirname(filePath);
+      const parentRelativePath = getRelativeDisplayPath(folderPath, parentDirectory);
+      const fileBasename = getBasename(filePath);
+      const originalIndex = ensureManualOrderEntry(
+        state.manualOrder,
+        parentRelativePath,
+        currentChildBasenames(folderPath, state.filePaths, state.emptyFolderPaths, parentRelativePath)
+      )[parentRelativePath].indexOf(fileBasename);
+      const fileIcon = getVaultIcon(state.vaultIcons, getRelativeDisplayPath(folderPath, filePath));
+
+      if (!folderExists && !(await get().createFolderAtPath(targetFolderPath))) {
+        return null;
+      }
+
+      const didMove = await get().moveTreeEntry({
+        kind: "file",
+        sourcePath: filePath,
+        targetParentDirectory: targetFolderPath,
+        targetIndex: 0
+      });
+
+      if (!didMove) {
+        return null;
+      }
+
+      // The folder has content now; the move does not clear that marker itself.
+      set({
+        emptyFolderPaths: get().emptyFolderPaths.filter(
+          (path) => normalizePathKey(path) !== normalizePathKey(targetFolderPath)
+        )
+      });
+
+      const movedPath = await join(targetFolderPath, fileBasename);
+
+      if (!(await get().renameFilePath(movedPath, FOLDER_NOTE_FILE_NAME.replace(/\.md$/i, "")))) {
+        return null;
+      }
+
+      // A new folder takes the note's place among its siblings, so the
+      // conversion does not visibly move the entry.
+      if (!folderExists && originalIndex !== -1) {
+        const folderBasename = getBasename(targetFolderPath);
+        const siblings = (get().manualOrder[parentRelativePath] ?? []).filter((name) => name !== folderBasename);
+
+        siblings.splice(Math.min(originalIndex, siblings.length), 0, folderBasename);
+        await get().reorderWithinFolder(parentDirectory, siblings);
+      }
+
+      // The note's icon was the entry's icon; the folder row is where it shows now.
+      const finalNotePath = get().filePaths.find((path) => normalizePathKey(path) === noteKey) ?? notePath;
+
+      if (fileIcon !== null) {
+        get().setVaultIconFor(finalNotePath, null);
+
+        if (getVaultIcon(get().vaultIcons, getRelativeDisplayPath(folderPath, targetFolderPath)) === null) {
+          get().setVaultIconFor(targetFolderPath, fileIcon);
+        }
+      }
+
+      return finalNotePath;
+    } catch (error) {
+      set({
+        fileError: toErrorMessage(error, i18n.t("store.folderNoteConvertError"))
+      });
+
+      return null;
     }
   }
 });

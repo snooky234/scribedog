@@ -57,6 +57,22 @@ export function getFolderNotePath(folderPath: string): string {
 }
 
 /**
+ * The folder an ordinary note becomes when it is turned into a folder note:
+ * a sibling folder named like the note, so the tree still shows the same name
+ * in the same place ("/v/Rezepte.md" -> "/v/Rezepte"). Null for a path that
+ * is no markdown note or already a folder note.
+ */
+export function getConversionFolderPath(notePath: string): string | null {
+  if (isFolderNotePath(notePath) || !/\.md$/i.test(notePath)) {
+    return null;
+  }
+
+  const folderPath = notePath.replace(/\.md$/i, "");
+
+  return basenameOf(folderPath).trim() ? folderPath : null;
+}
+
+/**
  * What a note is called in the UI: the file name without ".md", or for a
  * folder note the folder's name — the technical file name is the same for
  * every folder and would tell the user nothing.

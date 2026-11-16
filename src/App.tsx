@@ -173,6 +173,7 @@ function App() {
   const restoreFileVersion = useAppStore((state) => state.restoreFileVersion);
   const createNewFile = useAppStore((state) => state.createNewFile);
   const duplicateFile = useAppStore((state) => state.duplicateFile);
+  const convertFileToFolderNote = useAppStore((state) => state.convertFileToFolderNote);
   const registerImportedFiles = useAppStore((state) => state.registerImportedFiles);
   const createNewFolder = useAppStore((state) => state.createNewFolder);
   const emptyFolderPaths = useAppStore((state) => state.emptyFolderPaths);
@@ -1085,6 +1086,7 @@ function App() {
       }}
       onDeleteFileRequest={requestDeleteFile}
       onDuplicateFileRequest={(filePath) => void duplicateFile(filePath)}
+      onConvertToFolderNoteRequest={(filePath) => void convertFileToFolderNote(filePath)}
       onDeleteFolderRequest={requestDeleteFolder}
       onDeleteMultipleRequest={requestDeleteMultiple}
       onDeleteToolbarRequest={requestDeleteFromToolbar}

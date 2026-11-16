@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Copy, Download, Eraser, ExternalLink, FileDown, FilePlus, FolderArchive, FolderInput, FolderPlus, Pencil, Pin, PinOff, Printer, Smile, Trash2, Undo2 } from "lucide-react";
+import { BookOpen, Copy, Download, Eraser, ExternalLink, FileDown, FilePlus, FolderArchive, FolderDot, FolderInput, FolderPlus, Pencil, Pin, PinOff, Printer, Smile, Trash2, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getVaultCapabilities, platform, vaultCapabilityHint } from "@/platform";
 import { dirname, join } from "@/platform/paths";
@@ -16,7 +16,7 @@ import {
 import { canDownloadFolderArchive, canDownloadMarkdown } from "@/lib/export/markdownDownload";
 import { getRelativeDisplayPath, type MarkdownFileRecord } from "@/lib/fileSystem";
 import { buildFileTree, type FileTreeFolderNode, type FileTreeNode } from "@/lib/fileTree";
-import { getFolderNoteFolderPath, getFolderNotePath, isFolderNotePath } from "@/lib/folderNotes";
+import { getConversionFolderPath, getFolderNoteFolderPath, getFolderNotePath, isFolderNotePath } from "@/lib/folderNotes";
 import { isCoarsePointer, singleClickOpens } from "@/lib/openGesture";
 import type { ManualOrderMap, SortMode } from "@/lib/vaultMeta";
 import {
@@ -86,6 +86,8 @@ type FileTreeProps = {
   onCreateFolderRequest: (targetDirectory: string) => void;
   onDeleteFileRequest: (filePath: string) => void;
   onDuplicateFileRequest: (filePath: string) => void;
+  /** Turns a note into the folder note of a folder named like it; offered only with folder notes on. */
+  onConvertToFolderNoteRequest: (filePath: string) => void;
   onDeleteFolderRequest: (folderPath: string) => void;
   onExportFileRequest: (filePath: string, mode: ExportMode) => void;
   onExportFolderRequest: (folderPath: string, mode: ExportMode) => void;
@@ -149,6 +151,7 @@ export function FileTree({
   onCreateFolderRequest,
   onDeleteFileRequest,
   onDuplicateFileRequest,
+  onConvertToFolderNoteRequest,
   onDeleteFolderRequest,
   onExportFileRequest,
   onExportFolderRequest,
@@ -1152,6 +1155,27 @@ export function FileTree({
                 >
                   <Copy aria-hidden="true" />
                   {t("fileTree.duplicate")}
+                </button>
+              ) : null}
+
+              {/* Only with folder notes on: with them off, the converted note
+                  would vanish from the tree, which reads as data loss. */}
+              {contextMenu.kind === "file" &&
+              folderNotesEnabled &&
+              getConversionFolderPath(contextMenu.filePath) !== null ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="file-tree-context-menu__item"
+                  disabled={!capabilities.create || !capabilities.move}
+                  title={capabilities.create && capabilities.move ? undefined : capabilityHint}
+                  onClick={() => {
+                    onConvertToFolderNoteRequest(contextMenu.filePath);
+                    setContextMenu(null);
+                  }}
+                >
+                  <FolderDot aria-hidden="true" />
+                  {t("fileTree.convertToFolderNote")}
                 </button>
               ) : null}
 

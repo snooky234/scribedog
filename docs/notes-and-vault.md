@@ -35,6 +35,12 @@ its note. The arrow expands the folder.
   AI chat treat it like any other note.
 - Switching the feature off only hides it. The files stay.
 
+To turn an existing note into a folder note, right-click it and choose
+**Convert to folder note**. The note moves into a new folder of the same name,
+in the same place in the tree, and keeps its icon, versions and unsaved
+changes. If a folder of that name already exists, the note becomes that
+folder's note, unless the folder already has one.
+
 ## Linked notes
 
 Connect notes to each other with plain links.

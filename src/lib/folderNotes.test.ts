@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   countFolderNotes,
   FOLDER_NOTE_FILE_NAME,
+  getConversionFolderPath,
   getFolderNoteFolderPath,
   getFolderNotePath,
   getNoteDisplayName,
@@ -66,5 +67,18 @@ describe("countFolderNotes", () => {
       countFolderNotes(["/v/a.md", "/v/A/.scribedog-foldernote.md", "/v/B/.scribedog-foldernote.md"])
     ).toBe(2);
     expect(countFolderNotes([])).toBe(0);
+  });
+});
+
+describe("getConversionFolderPath", () => {
+  it("names the new folder after the note, next to it", () => {
+    expect(getConversionFolderPath("/v/Rezepte.md")).toBe("/v/Rezepte");
+    expect(getConversionFolderPath("C:\vault\Küche\Rezepte.MD")).toBe("C:\vault\Küche\Rezepte");
+  });
+
+  it("refuses folder notes, non-markdown paths and names that are only an extension", () => {
+    expect(getConversionFolderPath(`/v/Rezepte/${FOLDER_NOTE_FILE_NAME}`)).toBeNull();
+    expect(getConversionFolderPath("/v/bild.png")).toBeNull();
+    expect(getConversionFolderPath("/v/.md")).toBeNull();
   });
 });
