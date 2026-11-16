@@ -3,6 +3,8 @@ import BaseTaskItem from "@tiptap/extension-task-item";
 import BaseTaskList from "@tiptap/extension-task-list";
 import type MarkdownIt from "markdown-it";
 
+import { LIST_ITEM_CONTENT } from "./listItem";
+
 // markdown-it/@types/markdown-it don't export the Token type from the package
 // root, so it's derived from a signature that uses it.
 type MarkdownItToken = Parameters<MarkdownIt["renderer"]["renderToken"]>[0][number];
@@ -28,6 +30,11 @@ export const TaskList = BaseTaskList.extend({
 // writes the attribute in a plain transaction. The caret stays where it was:
 // in the text if the user was typing, nowhere if they were only ticking.
 export const TaskItem = BaseTaskItem.extend({
+  // A checkbox may carry just an image, like a bullet (listItem.ts).
+  content() {
+    return this.options.nested ? LIST_ITEM_CONTENT : "paragraph+";
+  },
+
   addNodeView() {
     const parent = this.parent?.();
 
@@ -206,7 +213,24 @@ function splitMixedTaskLists(element: HTMLElement): void {
   }
 }
 
-// Both fixes hook into tiptap-markdown's parse pipeline. They live in their own
+// markdown-it-task-lists leaves the space after "[ ]" in the item: "- [ ] ![a](a.png)"
+// arrives as "<input> <img>". Once the checkbox is gone, that lone space is
+// the only inline content around the block image, and ProseMirror keeps it as
+// an empty paragraph above the image: the item came back with the empty line
+// that an image-only item no longer has (listItem.ts). Whitespace directly
+// next to an image in a list item's paragraph is dropped here; the image is a
+// block of its own anyway, so it carries no visible space.
+function dropSpaceAroundTaskItemImages(element: HTMLElement): void {
+  for (const image of element.querySelectorAll("li.task-list-item > p > img")) {
+    for (const sibling of [image.previousSibling, image.nextSibling]) {
+      if (sibling?.nodeType === 3 && !sibling.textContent?.trim()) {
+        sibling.remove();
+      }
+    }
+  }
+}
+
+// All three fixes hook into tiptap-markdown's parse pipeline. They live in their own
 // extension rather than on TaskList/TaskItem because those two get their
 // markdown spec (serializer, markdown-it-task-lists setup) from tiptap-markdown,
 // and overriding addStorage() there would replace it wholesale.
@@ -222,6 +246,7 @@ export const TaskListMarkdown = Extension.create({
           },
           updateDOM(element: HTMLElement) {
             splitMixedTaskLists(element);
+            dropSpaceAroundTaskItemImages(element);
           }
         }
       }

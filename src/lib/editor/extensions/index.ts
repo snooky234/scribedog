@@ -21,6 +21,7 @@ import { CodeBlock } from "./codeBlock";
 import { Highlight } from "./highlight";
 import { EditorImage } from "./image";
 import { ListBackspace } from "./listBackspace";
+import { ListItem } from "./listItem";
 import { PageBreak } from "./pageBreak";
 import { Heading, Paragraph, Reminders } from "./reminder";
 import { HardBreak, Table, TableCell, TableHeader, TableRow } from "./table";
@@ -45,6 +46,8 @@ function buildContentExtensions(): Extensions {
       hardBreak: false,
       heading: false,
       link: false,
+      // Replaced below: an item may start with an image (listItem.ts).
+      listItem: false,
       paragraph: false,
       text: false,
       underline: false
@@ -56,6 +59,7 @@ function buildContentExtensions(): Extensions {
     Paragraph,
     Heading,
     CodeBlock,
+    ListItem,
     ListBackspace,
     HardBreak,
     Callout,

@@ -5,6 +5,8 @@ import type MarkdownIt from "markdown-it";
 
 import { ImageView } from "@/components/ImageView";
 
+import { LIST_ITEM_LEAD_GROUP } from "./listItem";
+
 // Images are referenced in markdown relative to the file (e.g. "images/foto.png"
 // or "../images/foto.png"), but the browser can't load that path directly — the
 // NodeView resolves it at runtime via the filesystem into a blob URL, without
@@ -64,6 +66,9 @@ export function imageLineBreakMarkdownItPlugin(markdownit: MarkdownIt): void {
 }
 
 export const EditorImage = Image.extend({
+  // May open a list item on the marker's line (listItem.ts).
+  group: `block ${LIST_ITEM_LEAD_GROUP}`,
+
   addAttributes() {
     return {
       ...this.parent?.(),

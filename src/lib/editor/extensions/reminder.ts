@@ -13,6 +13,8 @@ import { formatReminderMarker, normalizeReminder, type Reminder } from "@/lib/re
 import { formatDueLabel, isReminderDue } from "@/lib/reminders/reminderTime";
 import { editOutcome, pickReminderTarget, type ReminderEditOutcome } from "@/lib/reminders/reminderTarget";
 
+import { LIST_ITEM_LEAD_GROUP } from "./listItem";
+
 // A reminder is an attribute of a text block (paragraph or heading; a list or
 // checklist item's text is a paragraph), not an inline node. As an inline
 // "bell" character it could be reached by the cursor, deleted by Backspace and
@@ -109,6 +111,8 @@ function setupReminderParser(markdownit: MarkdownIt): void {
 }
 
 export const Paragraph = BaseParagraph.extend({
+  group: `block ${LIST_ITEM_LEAD_GROUP}`,
+
   addAttributes() {
     return { ...this.parent?.(), ...reminderAttributes };
   },
