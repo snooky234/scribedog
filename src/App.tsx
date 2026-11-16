@@ -22,6 +22,7 @@ import { useAppVersion } from "@/hooks/useAppVersion";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { CHAT_MAX_WIDTH, CHAT_MIN_WIDTH, useChatWidth } from "@/hooks/useChatWidth";
 import { useDeleteTarget } from "@/hooks/useDeleteTarget";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useDraftFlush } from "@/hooks/useDraftFlush";
 import { useExportTarget } from "@/hooks/useExportTarget";
 import { useFolderWatcher } from "@/hooks/useFolderWatcher";
@@ -308,6 +309,7 @@ function App() {
     }
   });
   useWindowReveal();
+  useDocumentTitle();
   useEmojiPickerPreload();
   useViewportHeight();
 
