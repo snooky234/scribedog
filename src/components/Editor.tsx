@@ -84,6 +84,7 @@ import {
   type VaultFileOption
 } from "@/lib/editor/fileLinks";
 import { extractErrorMessage } from "@/lib/editor/errorMessages";
+import { imageInsertPosition } from "@/lib/editor/imageInsertPosition";
 import { hasAnchorableContent, resolveInsertAnchor } from "@/lib/editor/insertAnchor";
 import {
   getImageFilesFromClipboard,
@@ -795,7 +796,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       }
     }
 
-    await insertImagePayloads(payloads, currentEditor.state.selection.from);
+    await insertImagePayloads(payloads, imageInsertPosition(currentEditor.state.selection));
   };
 
   // Toolbar drawing button: the sketch is saved like any other image (an SVG
@@ -880,7 +881,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         currentEditor
           .chain()
           .focus()
-          .insertContentAt(currentEditor.state.selection.from, {
+          .insertContentAt(imageInsertPosition(currentEditor.state.selection), {
             type: "image",
             attrs: { src: markdownPath, alt: baseName }
           })
@@ -1499,7 +1500,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         if (files.length > 0) {
           event.preventDefault();
 
-          void insertImageFiles(files, view.state.selection.from);
+          void insertImageFiles(files, imageInsertPosition(view.state.selection));
           return true;
         }
 

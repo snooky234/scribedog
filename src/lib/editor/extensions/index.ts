@@ -18,6 +18,7 @@ import { VoiceInsertWidget } from "@/lib/voiceInsertWidget";
 
 import { Callout } from "./callout";
 import { CodeBlock } from "./codeBlock";
+import { EndGapCursor } from "./endGapCursor";
 import { Highlight } from "./highlight";
 import { EditorImage } from "./image";
 import { ListBackspace } from "./listBackspace";
@@ -101,6 +102,8 @@ export function buildEditorExtensions(): Extensions {
   return [
     ...buildContentExtensions(),
     EditorImage,
+    // A caret below an image that ends a list item (endGapCursor.ts).
+    EndGapCursor,
     AiStreamWidget,
     VoiceInsertWidget,
     AiDiffWidget,
