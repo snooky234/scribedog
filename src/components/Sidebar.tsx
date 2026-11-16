@@ -1,5 +1,4 @@
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
 import {
   ArrowDownAZ,
   ArrowUpDown,
@@ -9,6 +8,7 @@ import {
   ChevronRight,
   Clock,
   Download,
+  FilePlus,
   FileText,
   FolderArchive,
   FolderOpen,
@@ -49,6 +49,7 @@ import {
   SharedVaultNotices,
   SharedVaultSwitcher
 } from "@/components/shared/SharedVaultSwitcher";
+import { ContextMenuSurface } from "@/components/fileTree/ContextMenuSurface";
 import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStoredCollapsed, useWorkingSetHeight } from "@/hooks/useWorkingSetHeight";
@@ -304,13 +305,27 @@ export function Sidebar({
   const offersExport = platform.features.exportFiles || platform.features.downloads;
   const offersVaultArchive = canDownloadFolderArchive(folderPath);
 
+  // The vault root is not a row in the tree, so creating something on the top
+  // level needs a target of its own: the vault name and the empty space below
+  // the tree both open this menu. Without the create capability the entries
+  // stay visible but disabled, like in the tree's menu.
   const openRootContextMenu = (event: React.MouseEvent) => {
-    if (folderPath === null || !(offersExport || offersVaultArchive)) {
+    if (folderPath === null) {
       return;
     }
 
     event.preventDefault();
     setRootContextMenu({ x: event.clientX, y: event.clientY });
+  };
+
+  // A row opens its own menu and marks the event as handled without stopping
+  // it, so the space around the rows only answers what no row has claimed.
+  const openTreeBackgroundContextMenu = (event: React.MouseEvent) => {
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    openRootContextMenu(event);
   };
 
   // Files dragged in from outside the app land as imported notes. Drags that
@@ -546,8 +561,9 @@ export function Sidebar({
                     title={folderPath ?? t("sidebar.openFolder")}
                     aria-label={t("sidebar.openRecentFolder")}
                     // The vault root is the natural target for "export the whole
-                    // book", but it is not a row in the tree — so it carries its
-                    // own (unrelated) right-click menu alongside this one.
+                    // book" and for a new top-level entry, but it is not a row in
+                    // the tree, so it carries its own (unrelated) right-click
+                    // menu alongside this one.
                     onContextMenu={openRootContextMenu}
                   />
                 }
@@ -628,15 +644,44 @@ export function Sidebar({
         </div>
       </div>
 
-      {rootContextMenu && folderPath !== null && (offersExport || offersVaultArchive)
-        ? createPortal(
-            <div
-              ref={rootContextMenuRef}
-              className="file-tree-context-menu"
-              role="menu"
-              style={{ top: rootContextMenu.y, left: rootContextMenu.x }}
+      {rootContextMenu && folderPath !== null ? (
+            <ContextMenuSurface
+              x={rootContextMenu.x}
+              y={rootContextMenu.y}
+              menuRef={rootContextMenuRef}
+              title={folderLabel}
               onClick={(event) => event.stopPropagation()}
             >
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item"
+                disabled={!capabilities.create}
+                title={capabilities.create ? undefined : capabilityHint}
+                onClick={() => {
+                  onCreateFileRequest(folderPath);
+                  setRootContextMenu(null);
+                }}
+                data-testid="root-new-file"
+              >
+                <FilePlus aria-hidden="true" />
+                {t("sidebar.newFile")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="file-tree-context-menu__item"
+                disabled={!capabilities.create}
+                title={capabilities.create ? undefined : capabilityHint}
+                onClick={() => {
+                  onCreateFolderRequest(folderPath);
+                  setRootContextMenu(null);
+                }}
+                data-testid="root-new-folder"
+              >
+                <FolderPlus aria-hidden="true" />
+                {t("sidebar.newFolder")}
+              </button>
               {offersExport ? (
                 <>
                   <button
@@ -681,10 +726,8 @@ export function Sidebar({
                   {t("fileTree.downloadFolderArchive")}
                 </button>
               ) : null}
-            </div>,
-            document.body
-          )
-        : null}
+            </ContextMenuSurface>
+          ) : null}
 
       <SharedVaultNotices />
 
@@ -771,7 +814,11 @@ export function Sidebar({
               </button>
             </div>
           ) : null}
-      <ScrollArea className="sidebar-panel__scroll" hidden={hasWorkingSet && isTreeCollapsed}>
+      <ScrollArea
+        className="sidebar-panel__scroll"
+        hidden={hasWorkingSet && isTreeCollapsed}
+        onContextMenu={openTreeBackgroundContextMenu}
+      >
         {folderPath !== null && (filePaths.length > 0 || emptyFolderPaths.length > 0) ? (
           <FileTree
             key={folderPath}

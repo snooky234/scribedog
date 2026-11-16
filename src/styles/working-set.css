@@ -2,9 +2,13 @@
    WorkingSetPanel.tsx), the drag handle between the two sections, and the
    tree's own collapsible header that appears alongside it. */
 
-/* The two sections share the sidebar's last grid row as a column: the list
-   takes what its rows need (up to the dragged ceiling), the tree the rest. */
+/* The two sections share the rest of the sidebar as a column: the list
+   takes what its rows need (up to the dragged ceiling), the tree the rest.
+   The block fills the panel down to its bottom edge, so the space below the
+   last row belongs to the tree's scroll area: a right-click there opens the
+   vault root's menu (Sidebar.tsx). */
 .sidebar-panel__sections {
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   min-height: 0;

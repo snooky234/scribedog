@@ -1,14 +1,15 @@
 /* Sidebar panel: header, folder actions, messages and the scroll area. */
 
+/* A column, not a grid with fixed rows: the messages between the header and
+   the tree render only now and then, and with fixed rows the tree landed in
+   a content-sized row whenever they were absent, leaving the space below it
+   to an empty track (unreachable for the right-click menu of the vault root).
+   A column item keeps the panel's width whatever its content, so a long
+   vault path in the header cannot widen the panel and push the tree rows
+   under the rounded edge. */
 .sidebar-panel {
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  /* Explicit `minmax(0, 1fr)` instead of the implicit `auto` column: an auto
-     track never shrinks below the min-content contribution of its items, so a
-     long vault path in the header would widen the whole column past the panel
-     and push the tree rows (and their hover/selection background) under the
-     rounded edge. */
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
   min-height: 0;
   padding: 1rem;

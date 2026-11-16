@@ -9,6 +9,8 @@ database and no import step.
 ## The file tree
 
 - Create, rename and delete files and folders from the sidebar.
+- **Top level.** Right-click the vault name or the empty space below the tree
+  to create a note or folder directly in the vault, whatever is selected.
 - **Sorting.** Order by name or last modified, or switch to manual mode and
   drag files and folders into your own order.
 - **Live sync.** A native file watcher picks up changes made outside the app
