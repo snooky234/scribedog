@@ -488,8 +488,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
     event.preventDefault();
 
+    // Without a selection there is nothing for the menu to act on. Inserting
+    // AI content is reached through its shortcut and the toolbar button.
     if (currentEditor.state.selection.empty) {
-      ai.openAiDraftFromSelection();
       return;
     }
 
