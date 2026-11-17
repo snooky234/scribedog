@@ -71,6 +71,8 @@ GitHub too.
 Draw with the mouse, a finger or a pen, pick a line width and colour, and
 insert the sketch at the cursor. It is saved as an SVG image in your vault, so
 the note stays plain Markdown, and a double-click opens it again for editing.
+You can also draw on a screenshot or photo in your note: circle, underline,
+point things out, and change the marks again later.
 
 [Read more →](docs/writing.md#drawings)
 

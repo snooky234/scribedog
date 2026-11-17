@@ -65,7 +65,8 @@ import { buildStagedPreview } from "@/lib/editor/stagedPreview";
 import { replaceDocumentKeepingSelection } from "@/lib/editor/replaceDocument";
 import { normalizeImageSrc } from "@/lib/chat/imageAttachments";
 import { EditorFileContext } from "@/lib/editorFileContext";
-import { parseDrawingSvg, serializeDrawingSvg } from "@/lib/drawing/drawingSvg";
+import { canDrawOnMimeType, createDrawingBackground } from "@/lib/drawing/drawingBackground";
+import { parseDrawingSvg, serializeDrawingSvg, type DrawingBackground } from "@/lib/drawing/drawingSvg";
 import type { DrawingStroke } from "@/lib/drawing/strokes";
 import { notifyImageFileChanged } from "@/lib/editor/imageRevisions";
 import { buildEditorExtensions } from "@/lib/editor/extensions";
@@ -111,6 +112,7 @@ import {
   getLastOpenedFolderPath,
   getRelativeDisplayPath,
   getRelativeImageMarkdownPath,
+  guessImageMimeType,
   saveImageToFolder
 } from "@/lib/fileSystem";
 import { holdClipboardImages } from "@/lib/clipboardImages";
@@ -197,8 +199,18 @@ export type EditorHandle = {
 };
 
 type DrawingDialogState =
-  | { mode: "insert"; strokes: DrawingStroke[] }
-  | { mode: "edit"; strokes: DrawingStroke[]; absolutePath: string };
+  | { mode: "insert"; strokes: DrawingStroke[]; background: null }
+  | { mode: "edit"; strokes: DrawingStroke[]; background: DrawingBackground | null; absolutePath: string }
+  | {
+      mode: "image";
+      strokes: DrawingStroke[];
+      background: DrawingBackground;
+      /** Where the image node sat when the dialog opened, and its src then. */
+      imagePos: number;
+      imageSrc: string;
+      /** The original's name without extension, reused for the drawing's file. */
+      baseName: string;
+    };
 
 type LinkDialogState = {
   /** Href of the link the caret sits in, "" for a new link. */
@@ -816,7 +828,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       return;
     }
 
-    setDrawingDialog({ mode: "insert", strokes: [] });
+    setDrawingDialog({ mode: "insert", strokes: [], background: null });
   };
 
   // Double click (or the edit button) on a drawing in the note. The file is
@@ -835,14 +847,63 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     }
 
     try {
-      const strokes = parseDrawingSvg(new TextDecoder().decode(await readFile(absolutePath)));
+      const parsed = parseDrawingSvg(new TextDecoder().decode(await readFile(absolutePath)));
 
-      if (!strokes) {
+      if (!parsed) {
         ai.setAiStatus({ kind: "error", message: t("drawing.notEditable") });
         return;
       }
 
-      setDrawingDialog({ mode: "edit", strokes, absolutePath });
+      setDrawingDialog({ mode: "edit", strokes: parsed.strokes, background: parsed.background, absolutePath });
+    } catch (error) {
+      ai.setAiStatus({
+        kind: "error",
+        message: t("drawing.loadFailed", { error: extractErrorMessage(error, t) })
+      });
+    }
+  };
+
+  // "Draw on image" on a picture in the note. The image goes into the
+  // drawing as its background (see drawingSvg.ts); the note only learns about
+  // it once the drawing is applied, when the node's src moves to the new SVG.
+  const handleDrawOnImage = async (absolutePath: string, imagePos: number) => {
+    const currentEditor = editorRef.current;
+
+    if (!currentEditor?.isEditable || drawingDialog) {
+      return;
+    }
+
+    if (!folderPath || !filePath) {
+      ai.setAiStatus({ kind: "error", message: t("editor.imageRequiresFile") });
+      return;
+    }
+
+    if (!getVaultCapabilities().images) {
+      ai.setAiStatus({ kind: "error", message: vaultCapabilityHint() });
+      return;
+    }
+
+    const node = currentEditor.state.doc.nodeAt(imagePos);
+    const mimeType = guessImageMimeType(absolutePath);
+
+    if (node?.type.name !== "image" || !canDrawOnMimeType(mimeType)) {
+      ai.setAiStatus({ kind: "error", message: t("drawing.imageNotSupported") });
+      return;
+    }
+
+    try {
+      const background = await createDrawingBackground(await readFile(absolutePath), mimeType);
+      const fileName = absolutePath.split(/[\\/]/).pop() ?? "";
+      const stem = fileName.replace(/\.[^.]+$/, "");
+
+      setDrawingDialog({
+        mode: "image",
+        strokes: [],
+        background,
+        imagePos,
+        imageSrc: (node.attrs.src as string | null) ?? "",
+        baseName: stem || "drawing"
+      });
     } catch (error) {
       ai.setAiStatus({
         kind: "error",
@@ -853,7 +914,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
   const handleDrawingSubmit = async (strokes: DrawingStroke[]) => {
     const currentEditor = editorRef.current;
-    const svg = serializeDrawingSvg(strokes);
+    const svg = drawingDialog ? serializeDrawingSvg(strokes, drawingDialog.background) : null;
 
     if (!drawingDialog || !currentEditor || !svg) {
       return;
@@ -884,6 +945,62 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           .insertContentAt(imageInsertPosition(currentEditor.state.selection), {
             type: "image",
             attrs: { src: markdownPath, alt: baseName }
+          })
+          .run();
+        setDrawingDialog(null);
+        return;
+      }
+
+      if (drawingDialog.mode === "image") {
+        if (!folderPath || !filePath) {
+          return;
+        }
+
+        // The node is looked up again: its position is from when the dialog
+        // opened. The dialog is modal, but a reload from disk can still move it.
+        const { doc } = currentEditor.state;
+        let imagePos: number | null = null;
+        const atPos = doc.nodeAt(drawingDialog.imagePos);
+
+        if (atPos?.type.name === "image" && atPos.attrs.src === drawingDialog.imageSrc) {
+          imagePos = drawingDialog.imagePos;
+        } else {
+          doc.descendants((node, pos) => {
+            if (imagePos === null && node.type.name === "image" && node.attrs.src === drawingDialog.imageSrc) {
+              imagePos = pos;
+            }
+
+            return imagePos === null;
+          });
+        }
+
+        if (imagePos === null) {
+          throw new Error(t("drawing.imageGone"));
+        }
+
+        const rootRelativePath = await saveImageToFolder(
+          folderPath,
+          `${drawingDialog.baseName}.svg`,
+          "image/svg+xml",
+          data
+        );
+        const markdownPath = await getRelativeImageMarkdownPath(folderPath, filePath, rootRelativePath);
+        const target = imagePos;
+
+        // The same node keeps its alt text and width; only the file changes.
+        // Undo goes back to the original file, which the drawing leaves alone.
+        currentEditor
+          .chain()
+          .focus()
+          .command(({ tr }) => {
+            const node = tr.doc.nodeAt(target);
+
+            if (!node) {
+              return false;
+            }
+
+            tr.setNodeMarkup(target, undefined, { ...node.attrs, src: markdownPath });
+            return true;
           })
           .run();
         setDrawingDialog(null);
@@ -2272,6 +2389,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           filePath,
           onEditDrawing: (absolutePath) => {
             void handleEditDrawing(absolutePath);
+          },
+          onDrawOnImage: (absolutePath, imagePos) => {
+            void handleDrawOnImage(absolutePath, imagePos);
           }
         }}
       >
@@ -2439,6 +2559,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         <DrawingDialog
           mode={drawingDialog.mode}
           initialStrokes={drawingDialog.strokes}
+          background={drawingDialog.background}
           busy={isSavingDrawing}
           onSubmit={(strokes) => {
             void handleDrawingSubmit(strokes);

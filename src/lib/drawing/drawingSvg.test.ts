@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isScribeDogDrawingSvg, parseDrawingSvg, serializeDrawingSvg } from "./drawingSvg";
+import { isScribeDogDrawingSvg, parseDrawingSvg, serializeDrawingSvg, type DrawingBackground } from "./drawingSvg";
 import type { DrawingStroke } from "./strokes";
 
 const strokes: DrawingStroke[] = [
@@ -45,7 +45,7 @@ describe("serializeDrawingSvg", () => {
 
 describe("parseDrawingSvg", () => {
   it("round-trips the strokes, moved to the margin", () => {
-    const parsed = parseDrawingSvg(serializeDrawingSvg(strokes)!)!;
+    const parsed = parseDrawingSvg(serializeDrawingSvg(strokes)!)!.strokes;
 
     expect(parsed).toHaveLength(2);
     expect(parsed[0]).toEqual({
@@ -62,7 +62,7 @@ describe("parseDrawingSvg", () => {
 
   it("is stable when saved again", () => {
     const once = serializeDrawingSvg(strokes)!;
-    expect(serializeDrawingSvg(parseDrawingSvg(once)!)).toBe(once);
+    expect(serializeDrawingSvg(parseDrawingSvg(once)!.strokes)).toBe(once);
   });
 
   it("refuses an SVG without the marker", () => {
@@ -82,7 +82,7 @@ describe("parseDrawingSvg", () => {
   });
 
   it("reads an empty marked drawing as no strokes", () => {
-    expect(parseDrawingSvg('<svg data-scribedog-drawing="1"></svg>')).toEqual([]);
+    expect(parseDrawingSvg('<svg data-scribedog-drawing="1"></svg>')).toEqual({ strokes: [], background: null });
   });
 });
 
@@ -91,5 +91,54 @@ describe("isScribeDogDrawingSvg", () => {
     expect(isScribeDogDrawingSvg('<?xml version="1.0"?>\n<svg data-scribedog-drawing="1" width="1">')).toBe(true);
     expect(isScribeDogDrawingSvg('<svg><g data-scribedog-drawing="1"></g></svg>')).toBe(false);
     expect(isScribeDogDrawingSvg("not an svg")).toBe(false);
+  });
+});
+
+describe("drawings on an image", () => {
+  const background: DrawingBackground = { href: "data:image/png;base64,iVBORw0KGgo=", width: 640, height: 480 };
+
+  it("keeps the image's size and the strokes' positions instead of cropping", () => {
+    const svg = serializeDrawingSvg(strokes, background)!;
+
+    expect(svg).toContain('width="640" height="480" viewBox="0 0 640 480"');
+    expect(svg).toContain(
+      '<image data-scribedog-background="1" x="0" y="0" width="640" height="480" href="data:image/png;base64,iVBORw0KGgo="/>'
+    );
+    expect(svg.indexOf("<image")).toBeLessThan(svg.indexOf("<path"));
+    expect(svg).toContain('data-points="100,100 140,120 180,100"');
+  });
+
+  it("round-trips strokes and background, and is stable when saved again", () => {
+    const once = serializeDrawingSvg(strokes, background)!;
+    const parsed = parseDrawingSvg(once)!;
+
+    expect(parsed.background).toEqual(background);
+    expect(parsed.strokes[0].points[0]).toEqual({ x: 100, y: 100 });
+    expect(serializeDrawingSvg(parsed.strokes, parsed.background)).toBe(once);
+  });
+
+  it("saves the image alone when every stroke was erased", () => {
+    const svg = serializeDrawingSvg([], background)!;
+
+    expect(svg).toContain("<image");
+    expect(parseDrawingSvg(svg)).toEqual({ strokes: [], background });
+  });
+
+  it("refuses to write a background that is not a raster data URI", () => {
+    expect(serializeDrawingSvg(strokes, { ...background, href: "images/photo.png" })).toBeNull();
+    expect(serializeDrawingSvg(strokes, { ...background, href: "data:image/svg+xml;base64,PHN2Zz4=" })).toBeNull();
+    expect(serializeDrawingSvg(strokes, { ...background, href: 'data:image/png;base64,AA"/><script>' })).toBeNull();
+    expect(serializeDrawingSvg(strokes, { ...background, width: 0 })).toBeNull();
+    expect(serializeDrawingSvg(strokes, { ...background, width: 10.5 })).toBeNull();
+  });
+
+  it("refuses images it would not carry over unchanged", () => {
+    const valid = serializeDrawingSvg(strokes, background)!;
+
+    expect(parseDrawingSvg(valid.replace(' data-scribedog-background="1"', ""))).toBeNull();
+    expect(parseDrawingSvg(valid.replace('x="0" y="0"', 'x="5" y="0"'))).toBeNull();
+    expect(parseDrawingSvg(valid.replace('viewBox="0 0 640 480"', 'viewBox="0 0 320 240"'))).toBeNull();
+    expect(parseDrawingSvg(valid.replace("data:image/png", "https://example.com/x.png#"))).toBeNull();
+    expect(parseDrawingSvg(valid.replace("</svg>", '<image data-scribedog-background="1" href="x"/></svg>'))).toBeNull();
   });
 });

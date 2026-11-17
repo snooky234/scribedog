@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Eraser, Pencil, Redo2, Trash2, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import type { DrawingBackground } from "@/lib/drawing/drawingSvg";
 import {
   appendPoint,
   commitHistory,
@@ -21,9 +22,15 @@ import { cn } from "@/lib/utils";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 type DrawingDialogProps = {
-  /** "insert" puts a new image at the caret, "edit" overwrites an existing drawing. */
-  mode: "insert" | "edit";
+  /**
+   * "insert" puts a new image at the caret, "edit" overwrites an existing
+   * drawing, "image" draws on an image of the note (which then becomes a
+   * drawing that carries the image).
+   */
+  mode: "insert" | "edit" | "image";
   initialStrokes: DrawingStroke[];
+  /** The image the strokes are drawn on, null for a free sketch. */
+  background: DrawingBackground | null;
   /** While the file is written the dialog stays open but takes no input. */
   busy: boolean;
   onSubmit: (strokes: DrawingStroke[]) => void;
@@ -49,25 +56,39 @@ const PEN_COLORS = [
 const LIGHT_INK = PEN_COLORS[PEN_COLORS.length - 1];
 const DARK_INK = PEN_COLORS[0];
 const ERASER_RADIUS = 8;
+// Ink on a photo or screenshot: dark or light ink vanishes on half of them.
+const IMAGE_INK = "#dc2626";
 
 // The last pen settings outlive the dialog for the session, so a second
 // sketch does not start over with the defaults.
 let rememberedColor: string | null = null;
 let rememberedWidth: number = PEN_WIDTHS[1];
 
+// Widths and the eraser are chosen in screen pixels. On an image the surface
+// shows the drawing scaled to fit, so they are converted into drawing units
+// once per gesture (baseWidth, radius): a line looks as thick as its button.
 type Gesture =
-  | { kind: "pen"; pointerId: number; stroke: DrawingStroke; pressures: number[]; usesPressure: boolean }
-  | { kind: "eraser"; pointerId: number; strokes: DrawingStroke[]; last: DrawingPoint };
+  | {
+      kind: "pen";
+      pointerId: number;
+      stroke: DrawingStroke;
+      baseWidth: number;
+      pressures: number[];
+      usesPressure: boolean;
+    }
+  | { kind: "eraser"; pointerId: number; strokes: DrawingStroke[]; last: DrawingPoint; radius: number };
 
 /**
  * Freehand sketching on an SVG surface. Every stroke is a vector object, so
  * what is shown here is exactly what gets saved, and the eraser removes a
  * touched stroke as a whole. The surface takes the window's size; the saved
- * image is cropped to the strokes (drawingSvg.ts). Undo/redo cover the
+ * image is cropped to the strokes (drawingSvg.ts). With a background the
+ * surface shows that image scaled to fit instead, its viewBox in the image's
+ * own units, and the strokes are clipped to it. Undo/redo cover the
  * dialog only: once a drawing is applied, its file is replaced and the
  * editor's own undo has nothing to do with it.
  */
-export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }: DrawingDialogProps) {
+export function DrawingDialog({ mode, initialStrokes, background, busy, onSubmit, onCancel }: DrawingDialogProps) {
   const { t } = useTranslation();
   const paperSurface = useEditorSettingsStore((state) => state.paperSurface);
   const [history, setHistory] = useState(() => createHistory(initialStrokes));
@@ -75,6 +96,10 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
   const [color, setColor] = useState(() => {
     if (rememberedColor) {
       return rememberedColor;
+    }
+
+    if (background) {
+      return IMAGE_INK;
     }
 
     // Ink that is visible on the page the drawing will sit on: the dark UI
@@ -85,13 +110,17 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
   const [width, setWidth] = useState(rememberedWidth);
   const [liveStroke, setLiveStroke] = useState<DrawingStroke | null>(null);
   const [eraseDraft, setEraseDraft] = useState<DrawingStroke[] | null>(null);
-  const [eraserHover, setEraserHover] = useState<DrawingPoint | null>(null);
+  const [eraserHover, setEraserHover] = useState<(DrawingPoint & { radius: number }) | null>(null);
   const surfaceRef = useRef<SVGSVGElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const gestureRef = useRef<Gesture | null>(null);
+  const clipId = `drawing-clip-${useId().replace(/[^a-z0-9]/gi, "")}`;
 
   const isDirty = history.present !== initialStrokes;
-  const canSubmit = !busy && history.present.length > 0 && (mode === "insert" || isDirty);
+  // Erasing every stroke from a drawing on an image is a valid edit: what
+  // remains is the image itself.
+  const hasContent = history.present.length > 0 || (mode === "edit" && background !== null);
+  const canSubmit = !busy && hasContent && (mode !== "edit" || isDirty);
   const visibleStrokes = eraseDraft ?? history.present;
 
   useEffect(() => {
@@ -136,9 +165,26 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [busy, isDirty, onCancel]);
 
+  // Through the surface's own transform, so the viewBox of a drawing on an
+  // image (scaled and centred to fit) needs no arithmetic of its own.
   const toSurfacePoint = (event: { clientX: number; clientY: number }): DrawingPoint => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    return { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) };
+    const surface = surfaceRef.current;
+    const matrix = surface?.getScreenCTM();
+
+    if (!surface || !matrix) {
+      const rect = surface?.getBoundingClientRect();
+      return { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) };
+    }
+
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+    return { x: point.x, y: point.y };
+  };
+
+  // Drawing units per screen pixel: 1 for a free sketch, more for a large
+  // image shown smaller than it is.
+  const unitsPerPixel = (): number => {
+    const scale = surfaceRef.current?.getScreenCTM()?.a ?? 1;
+    return scale > 0 ? 1 / scale : 1;
   };
 
   const handlePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -151,33 +197,39 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = toSurfacePoint(event);
+    const scale = unitsPerPixel();
     // The eraser end of a stylus reports button 5.
     const erasing = tool === "eraser" || event.button === 5;
 
     if (erasing) {
-      const strokes = eraseStrokesAt(history.present, point, ERASER_RADIUS);
-      gestureRef.current = { kind: "eraser", pointerId: event.pointerId, strokes, last: point };
+      const radius = ERASER_RADIUS * scale;
+      const strokes = eraseStrokesAt(history.present, point, radius);
+      gestureRef.current = { kind: "eraser", pointerId: event.pointerId, strokes, last: point, radius };
       setEraseDraft(strokes);
       return;
     }
 
     const usesPressure = event.pointerType === "pen";
-    const stroke = createStroke(color, width, point);
+    // Never thinner than chosen: a small image is shown enlarged here but at
+    // its own size in the note, where a scaled-down line would look too thin.
+    const baseWidth = width * Math.max(1, scale);
+    const stroke = createStroke(color, baseWidth, point);
     gestureRef.current = {
       kind: "pen",
       pointerId: event.pointerId,
       stroke,
+      baseWidth,
       pressures: usesPressure ? [event.pressure] : [],
       usesPressure
     };
-    setLiveStroke(usesPressure ? { ...stroke, width: pressureWidth(width, [event.pressure]) } : stroke);
+    setLiveStroke(usesPressure ? { ...stroke, width: pressureWidth(baseWidth, [event.pressure]) } : stroke);
   };
 
   const handlePointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
     const gesture = gestureRef.current;
 
     if (tool === "eraser" && event.pointerType !== "touch") {
-      setEraserHover(toSurfacePoint(event));
+      setEraserHover({ ...toSurfacePoint(event), radius: ERASER_RADIUS * unitsPerPixel() });
     }
 
     if (!gesture || gesture.pointerId !== event.pointerId) {
@@ -200,7 +252,7 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
 
       setLiveStroke({
         ...gesture.stroke,
-        width: gesture.usesPressure ? pressureWidth(width, gesture.pressures) : gesture.stroke.width
+        width: gesture.usesPressure ? pressureWidth(gesture.baseWidth, gesture.pressures) : gesture.stroke.width
       });
       return;
     }
@@ -210,7 +262,7 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
     for (const sample of samples) {
       const point = toSurfacePoint(sample);
       const distance = Math.hypot(point.x - gesture.last.x, point.y - gesture.last.y);
-      const steps = Math.max(1, Math.ceil(distance / ERASER_RADIUS));
+      const steps = Math.max(1, Math.ceil(distance / gesture.radius));
 
       for (let step = 1; step <= steps; step += 1) {
         const ratio = step / steps;
@@ -220,7 +272,7 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
             x: gesture.last.x + (point.x - gesture.last.x) * ratio,
             y: gesture.last.y + (point.y - gesture.last.y) * ratio
           },
-          ERASER_RADIUS
+          gesture.radius
         );
       }
 
@@ -242,7 +294,7 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
     if (!cancelled) {
       if (gesture.kind === "pen") {
         const stroke = gesture.usesPressure
-          ? { ...gesture.stroke, width: pressureWidth(width, gesture.pressures) }
+          ? { ...gesture.stroke, width: pressureWidth(gesture.baseWidth, gesture.pressures) }
           : gesture.stroke;
         setHistory((current) => commitHistory(current, [...current.present, stroke]));
       } else {
@@ -261,7 +313,19 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
     }
   };
 
-  const title = t(mode === "edit" ? "drawing.titleEdit" : "drawing.title");
+  const title = t(mode === "edit" ? "drawing.titleEdit" : mode === "image" ? "drawing.titleImage" : "drawing.title");
+  const hint = t(mode === "edit" ? "drawing.hintEdit" : mode === "image" ? "drawing.hintImage" : "drawing.hint");
+  const strokeElements = [...visibleStrokes, ...(liveStroke ? [liveStroke] : [])].map((stroke, index) => (
+    <path
+      key={index}
+      d={strokePathData(stroke.points)}
+      fill="none"
+      stroke={stroke.color}
+      strokeWidth={stroke.width}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  ));
 
   return (
     <div className="drawing-dialog" role="presentation">
@@ -390,6 +454,8 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
             tool === "eraser" && "drawing-dialog__surface--eraser",
             paperSurface && "paper-palette"
           )}
+          viewBox={background ? `0 0 ${background.width} ${background.height}` : undefined}
+          preserveAspectRatio={background ? "xMidYMid meet" : undefined}
           role="img"
           aria-label={t("drawing.surfaceLabel")}
           onPointerDown={handlePointerDown}
@@ -398,37 +464,44 @@ export function DrawingDialog({ mode, initialStrokes, busy, onSubmit, onCancel }
           onPointerCancel={(event) => finishGesture(event, true)}
           onPointerLeave={() => setEraserHover(null)}
         >
-          {[...visibleStrokes, ...(liveStroke ? [liveStroke] : [])].map((stroke, index) => (
-            <path
-              key={index}
-              d={strokePathData(stroke.points)}
-              fill="none"
-              stroke={stroke.color}
-              strokeWidth={stroke.width}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          ))}
+          {background ? (
+            <>
+              <defs>
+                <clipPath id={clipId}>
+                  <rect x={0} y={0} width={background.width} height={background.height} />
+                </clipPath>
+              </defs>
+              <image
+                href={background.href}
+                x={0}
+                y={0}
+                width={background.width}
+                height={background.height}
+              />
+              <g clipPath={`url(#${clipId})`}>{strokeElements}</g>
+            </>
+          ) : (
+            strokeElements
+          )}
           {tool === "eraser" && eraserHover ? (
             <circle
               className="drawing-dialog__eraser-ring"
               cx={eraserHover.x}
               cy={eraserHover.y}
-              r={ERASER_RADIUS}
+              r={eraserHover.radius}
+              vectorEffect="non-scaling-stroke"
             />
           ) : null}
         </svg>
 
         <div className="drawing-dialog__footer">
-          <p className="drawing-dialog__hint">
-            {t(mode === "edit" ? "drawing.hintEdit" : "drawing.hint")}
-          </p>
+          <p className="drawing-dialog__hint">{hint}</p>
           <div className="drawing-dialog__actions">
             <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>
               {t("common.cancel")}
             </Button>
             <Button type="button" disabled={!canSubmit} onClick={() => onSubmit(history.present)}>
-              {t(mode === "edit" ? "drawing.apply" : "drawing.insert")}
+              {t(mode === "insert" ? "drawing.insert" : "drawing.apply")}
             </Button>
           </div>
         </div>

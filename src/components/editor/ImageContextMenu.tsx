@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { Check, PencilLine } from "lucide-react";
 
 import { ContextMenuSurface } from "@/components/fileTree/ContextMenuSurface";
 import { IMAGE_SCALE_CHOICES, canApplyImageScale, type ImageScaleChoice } from "@/lib/editor/imageScale";
@@ -13,11 +13,14 @@ export type ImageContextMenuState = {
   pageWidth: number | null;
   /** The choice the image's current width corresponds to, if any. */
   active: ImageScaleChoice | null;
+  /** The drawing entry: edit a drawing, draw on a raster image, or none. */
+  drawing: "edit" | "drawOn" | null;
 };
 
 type ImageContextMenuProps = ImageContextMenuState & {
   menuRef: RefObject<HTMLDivElement | null>;
   onSelect: (choice: ImageScaleChoice) => void;
+  onDrawing: () => void;
   onClose: () => void;
 };
 
@@ -27,10 +30,21 @@ export function imageScaleLabel(t: TFunction, choice: ImageScaleChoice): string 
 }
 
 /**
- * The right-click menu on an image: its preset sizes. The buttons swallow
+ * The right-click menu on an image: its preset sizes, and below them the
+ * drawing entry where the image offers one. The buttons swallow
  * mousedown so the editor keeps its focus and the image stays selected.
  */
-export function ImageContextMenu({ x, y, pageWidth, active, menuRef, onSelect, onClose }: ImageContextMenuProps) {
+export function ImageContextMenu({
+  x,
+  y,
+  pageWidth,
+  active,
+  drawing,
+  menuRef,
+  onSelect,
+  onDrawing,
+  onClose
+}: ImageContextMenuProps) {
   const { t } = useTranslation();
 
   return (
@@ -60,6 +74,27 @@ export function ImageContextMenu({ x, y, pageWidth, active, menuRef, onSelect, o
           </span>
         </button>
       ))}
+      {drawing ? (
+        <>
+          <div className="editor-toolbar__menu-separator" role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            className="file-tree-context-menu__item"
+            onClick={() => {
+              onClose();
+              onDrawing();
+            }}
+          >
+            <span className="file-tree-context-menu__label">
+              {t(drawing === "edit" ? "imageView.editDrawing" : "imageView.drawOnImage")}
+            </span>
+            <span className="file-tree-context-menu__keys" aria-hidden="true">
+              <PencilLine size={14} />
+            </span>
+          </button>
+        </>
+      ) : null}
     </ContextMenuSurface>
   );
 }

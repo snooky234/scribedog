@@ -20,7 +20,8 @@ The editor is built on [TipTap](https://tiptap.dev/) and ProseMirror.
 - **Images**, shown inline. Resize by dragging, and the width is saved back
   into the Markdown. Drag an image to move it; on a touch screen, hold it
   for a moment first.
-- **Drawings**, sketched by hand right in the note (see [Drawings](#drawings))
+- **Drawings**, sketched by hand right in the note or on top of an image (see
+  [Drawings](#drawings))
 - **Expandable sections** that fold content away under a title (see
   [Expandable sections](#expandable-sections))
 - **Code blocks**, with a one-click copy button and syntax colouring for
@@ -77,6 +78,33 @@ changes back into the same file.
 Only drawings made in ScribeDog can be edited this way. Other SVG files stay
 ordinary images, since the drawing surface would lose whatever it cannot
 represent.
+
+### Drawing on an image
+
+You can also draw on top of a picture in your note, for example to circle
+something on a screenshot or mark up a photo. Right-click the image and choose
+**Draw on image**. On a touch screen, tap the image and then the pencil in its
+corner. The surface opens with the image as its background and red ink, which
+shows up on most pictures.
+
+**Apply** saves a new SVG next to the original in `images/` and points the image
+in your note at it. The size, the alt text and the place in the note stay the
+same. Your lines stay separate objects, so a double-click opens them again
+later, exactly like a drawing of your own. Erasing every line and applying
+leaves just the picture.
+
+| | |
+| --- | --- |
+| Formats | PNG, JPEG, WebP, GIF and BMP. SVG files cannot be drawn on. |
+| The original | Is stored inside the drawing, so the drawing is one file that shows the same everywhere: in other Markdown viewers, on GitHub and in every export. |
+| Large photos | Keep their size in the note. Only the copy inside the drawing is scaled down to 2560 pixels on the longest side, which keeps the file small enough to open quickly. Smaller images are stored exactly as they are. |
+| Lines past the edge | Are cut off at the edge of the picture. |
+
+> [!TIP]
+> The editor's undo turns the drawing back into the original image, as long as
+> the note has not been saved since. After saving, the original file is cleaned
+> up like any image the note no longer uses. Its content is still inside the
+> drawing.
 
 ## Expandable sections
 

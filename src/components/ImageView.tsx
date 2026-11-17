@@ -7,6 +7,7 @@ import { NodeSelection } from "@tiptap/pm/state";
 import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { PencilLine, Plus } from "lucide-react";
 
+import { canDrawOnMimeType } from "@/lib/drawing/drawingBackground";
 import { isScribeDogDrawingSvg } from "@/lib/drawing/drawingSvg";
 import { ImageContextMenu, imageScaleLabel, type ImageContextMenuState } from "@/components/editor/ImageContextMenu";
 import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
@@ -41,7 +42,7 @@ type InsertSide = (typeof INSERT_SIDES)[number];
 
 export function ImageView({ node, editor, getPos, updateAttributes, selected }: ReactNodeViewProps) {
   const { t } = useTranslation();
-  const { filePath, onEditDrawing } = useContext(EditorFileContext);
+  const { filePath, onEditDrawing, onDrawOnImage } = useContext(EditorFileContext);
   const src = (node.attrs.src as string | null) ?? "";
   const alt = (node.attrs.alt as string | null) ?? "";
   const width = (node.attrs.width as number | null) ?? null;
@@ -51,6 +52,9 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
   // Absolute path of a drawing this app wrote (see drawingSvg.ts), null for
   // any other image: only those can be edited without losing anything.
   const [drawingPath, setDrawingPath] = useState<string | null>(null);
+  // Absolute path of a raster image of the vault, which can be drawn on
+  // (it then becomes a drawing that carries it, see drawingSvg.ts).
+  const [rasterPath, setRasterPath] = useState<string | null>(null);
   // Bumped when the file behind this image was rewritten in place (an
   // edited drawing), which the unchanged src alone would never reveal.
   const [revision, setRevision] = useState(0);
@@ -68,6 +72,7 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
   useEffect(() => {
     absolutePathRef.current = null;
     setDrawingPath(null);
+    setRasterPath(null);
 
     if (!src || ABSOLUTE_URL_PATTERN.test(src)) {
       setLoadError(false);
@@ -100,6 +105,7 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
               ? absolutePath
               : null
           );
+          setRasterPath(canDrawOnMimeType(mimeType) ? absolutePath : null);
         }
       } catch {
         if (isActive) {
@@ -234,6 +240,7 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
 
     const measuredPageWidth = measurePageWidth();
     setImageMenu({
+      drawing: canEditDrawing ? "edit" : canDrawOnImage ? "drawOn" : null,
       x: event.clientX,
       y: event.clientY,
       pageWidth: measuredPageWidth,
@@ -242,12 +249,25 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
   };
 
   const canEditDrawing = drawingPath !== null && onEditDrawing !== null && editor.isEditable;
+  const canDrawOnImage = rasterPath !== null && onDrawOnImage !== null && editor.isEditable;
 
   const editDrawing = () => {
     if (drawingPath !== null && onEditDrawing && editor.isEditable) {
       onEditDrawing(drawingPath);
     }
   };
+
+  const drawOnImage = () => {
+    const pos = getPos();
+
+    if (rasterPath !== null && onDrawOnImage && editor.isEditable && pos !== undefined) {
+      onDrawOnImage(rasterPath, pos);
+    }
+  };
+
+  // The pencil on a selected image: edit a drawing, or start one on a picture.
+  const drawingAction = canEditDrawing ? editDrawing : canDrawOnImage ? drawOnImage : null;
+  const drawingActionLabel = t(canEditDrawing ? "imageView.editDrawing" : "imageView.drawOnImage");
 
   const displaySrc = displaySrcFor(src, objectUrl);
   const effectiveWidth = dragWidth ?? width;
@@ -417,18 +437,18 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
               ))}
             </div>
           ) : null}
-          {selected && canEditDrawing ? (
+          {selected && drawingAction ? (
             <button
               type="button"
               className="editor-image-wrapper__edit-drawing"
-              aria-label={t("imageView.editDrawing")}
-              title={t("imageView.editDrawing")}
+              aria-label={drawingActionLabel}
+              title={drawingActionLabel}
               contentEditable={false}
               onPointerDown={stopPointer}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                editDrawing();
+                drawingAction();
               }}
             >
               <PencilLine aria-hidden="true" />
@@ -439,6 +459,7 @@ export function ImageView({ node, editor, getPos, updateAttributes, selected }: 
               {...imageMenu}
               menuRef={imageMenuRef}
               onSelect={(choice) => setScale(choice, imageMenu.pageWidth)}
+              onDrawing={() => (imageMenu.drawing === "edit" ? editDrawing() : drawOnImage())}
               onClose={() => setImageMenu(null)}
             />
           ) : null}
