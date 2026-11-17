@@ -3,6 +3,26 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.24.0] - 2026-11-17
+
+### Highlights
+- Draw on images and keep the marks editable
+- Expandable sections saved as HTML details
+- Scale images to preset sizes from a bar or menu
+- Name the open note in the browser tab title (web)
+- Create notes and folders at the top level from the menu
+- Colour links from the accent, custom link colour
+- Convert a note into a folder note from the context menu
+- Plain-http setup for one machine via a .env line (server)
+
+### Improvements
+- Drop AI insert from the right-click on an empty selection
+
+### Bug Fixes
+- Place images and the caret below an image in a list item
+- Put an image in an empty list item on its line
+- Toggle every selected task item with Ctrl+Shift+,
+
 ## [0.23.2] - 2026-11-08
 
 ### Highlights
