@@ -3,6 +3,21 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.25.0] - 2026-11-18
+
+### Highlights
+- Add a block numbers gutter to the editor
+- Open a note as a read-only reference beside the editor
+- Allow a folder's note as a reference
+- Turn folder notes on by default for new installations
+- Link the release notes next to the app version in the settings
+- Give every document its own address in the browser (server edition)
+
+### Bug Fixes
+- Brighten the text marker and its text in dark mode
+- Keep manuscript dialog actions visible while the body scrolls
+- Show icon font glyphs in the outline and the panel font
+
 ## [0.24.1] - 2026-11-17
 
 ### Bug Fixes
