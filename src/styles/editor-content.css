@@ -498,14 +498,21 @@
 }
 
 /* Text-marker highlight. The colour is a token so the paper surface inside
-   the dark UI (tokens.css) resolves to the light value like everything else. */
+   the dark UI (tokens.css) resolves to the light value like everything else.
+   The text takes the bold colour rather than the body's: the body is a
+   dimmed grey on purpose, and on the yellow tint it read flatter still. */
 .editor-view__surface mark {
   background: var(--highlight-bg);
-  color: inherit;
+  color: var(--tw-prose-bold);
   border-radius: 2px;
   padding: 0.05em 0;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+}
+
+/* A marked passage inside a link stays recognisable as a link. */
+.editor-view__surface a mark {
+  color: inherit;
 }
 
 /* While the marker tool is on (highlight.ts) the pointer becomes a marker so

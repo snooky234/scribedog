@@ -214,7 +214,7 @@
   --link-rgb: var(--accent-light-rgb);
   /* Darker, less saturated than the light value: full yellow behind light
      text on a near-black page glares and drops the contrast. */
-  --highlight-bg: rgba(231, 189, 17, 0.18);
+  --highlight-bg: rgba(231, 189, 17, 0.24);
 
   --diff-removed-bg: rgba(248, 113, 113, 0.26);
   --diff-removed-accent: rgba(252, 165, 165, 0.7);
