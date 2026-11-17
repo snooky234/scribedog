@@ -1037,11 +1037,37 @@
 }
 
 /* Manuscript export: the compile options make the dialog considerably taller
-   than the plain export, so it gets its own width and scrolls internally. */
+   than the plain export, so it gets its own width and scrolls internally.
+   Like the settings panel, only the body scrolls: the actions stay on screen
+   instead of sitting below the fold until the user scrolls down to them. */
 .export-dialog__panel--wide {
   width: min(100%, 40rem);
   max-height: min(85vh, 46rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Only the body may give way; flex items shrink by default otherwise. */
+.export-dialog__panel--wide > :not(.export-dialog__scroll) {
+  flex: 0 0 auto;
+}
+
+/* Without the wide panel the wrapper is a plain block and changes nothing. */
+.export-dialog__panel--wide > .export-dialog__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  /* Room for focus rings and the scrollbar, see .ai-dialog__scroll. */
+  padding-left: 0.3rem;
+  margin-left: -0.3rem;
+  padding-right: 0.6rem;
+  margin-right: -0.6rem;
+}
+
+.export-dialog__panel--wide > .unsaved-dialog__actions {
+  border-top: 1px solid rgba(var(--overlay-rgb),0.1);
+  padding-top: 0.95rem;
 }
 
 .export-dialog__form--grid {

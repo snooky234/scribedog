@@ -490,124 +490,126 @@ export function ExportDialog({
           </>
         ) : (
           <>
-            <p className="unsaved-dialog__description">{t(descriptionKey)}</p>
+            <div className="export-dialog__scroll">
+              <p className="unsaved-dialog__description">{t(descriptionKey)}</p>
 
-            <div className="export-dialog__form">
-              <label className="export-dialog__field">
-                <span>{t("exportDialog.formatLabel")}</span>
-                <select
-                  value={format}
-                  disabled={isExporting}
-                  onChange={(event) => setFormat(event.target.value as ExportFormat)}
-                >
-                  {availableFormats.map((formatOption) => (
-                    <option key={formatOption} value={formatOption}>
-                      {FORMAT_LABELS[formatOption]}
-                    </option>
-                  ))}
-                </select>
-                {/* Shown, not chosen here: the page setup is one app-wide
-                    setting, so the PDF, the print and DOCX/ODT agree. */}
-                {PAGED_FORMATS.has(format) ? (
-                  <span className="export-dialog__hint">
-                    {t("exportDialog.pageSetupInfo", {
-                      size: t(PAGE_SIZE_LABEL_KEYS[pageSize]),
-                      margins: t(PAGE_MARGIN_LABEL_KEYS[pageMargins])
-                    })}
-                  </span>
-                ) : null}
-              </label>
-
-              <label className="export-dialog__field">
-                <span>
-                  {t(
-                    producesOneFile || !hasMultipleFiles
-                      ? "exportDialog.fileNameLabel"
-                      : folderMode
-                        ? "exportDialog.folderNameLabel"
-                        : "exportDialog.archiveNameLabel"
-                  )}
-                </span>
-                <input
-                  ref={nameInputRef}
-                  type="text"
-                  value={name}
-                  disabled={isExporting}
-                  spellCheck={false}
-                  onChange={(event) => setName(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && canExport && !isExporting) {
-                      event.preventDefault();
-                      void startExport();
-                    }
-                  }}
-                />
-              </label>
-
-              {folderMode ? (
-                <div className="export-dialog__field">
-                  <span>{t("exportDialog.destinationLabel")}</span>
-                  <div className="export-dialog__destination">
-                    <span
-                      className="export-dialog__destination-path"
-                      title={targetDirectory ?? undefined}
-                    >
-                      {targetDirectory ?? t("exportDialog.noDestination")}
+              <div className="export-dialog__form">
+                <label className="export-dialog__field">
+                  <span>{t("exportDialog.formatLabel")}</span>
+                  <select
+                    value={format}
+                    disabled={isExporting}
+                    onChange={(event) => setFormat(event.target.value as ExportFormat)}
+                  >
+                    {availableFormats.map((formatOption) => (
+                      <option key={formatOption} value={formatOption}>
+                        {FORMAT_LABELS[formatOption]}
+                      </option>
+                    ))}
+                  </select>
+                  {/* Shown, not chosen here: the page setup is one app-wide
+                      setting, so the PDF, the print and DOCX/ODT agree. */}
+                  {PAGED_FORMATS.has(format) ? (
+                    <span className="export-dialog__hint">
+                      {t("exportDialog.pageSetupInfo", {
+                        size: t(PAGE_SIZE_LABEL_KEYS[pageSize]),
+                        margins: t(PAGE_MARGIN_LABEL_KEYS[pageMargins])
+                      })}
                     </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isExporting}
-                      onClick={() => void chooseTargetDirectory()}
-                    >
-                      <FolderOpen aria-hidden="true" />
-                      {t("exportDialog.chooseFolder")}
-                    </Button>
+                  ) : null}
+                </label>
+
+                <label className="export-dialog__field">
+                  <span>
+                    {t(
+                      producesOneFile || !hasMultipleFiles
+                        ? "exportDialog.fileNameLabel"
+                        : folderMode
+                          ? "exportDialog.folderNameLabel"
+                          : "exportDialog.archiveNameLabel"
+                    )}
+                  </span>
+                  <input
+                    ref={nameInputRef}
+                    type="text"
+                    value={name}
+                    disabled={isExporting}
+                    spellCheck={false}
+                    onChange={(event) => setName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && canExport && !isExporting) {
+                        event.preventDefault();
+                        void startExport();
+                      }
+                    }}
+                  />
+                </label>
+
+                {folderMode ? (
+                  <div className="export-dialog__field">
+                    <span>{t("exportDialog.destinationLabel")}</span>
+                    <div className="export-dialog__destination">
+                      <span
+                        className="export-dialog__destination-path"
+                        title={targetDirectory ?? undefined}
+                      >
+                        {targetDirectory ?? t("exportDialog.noDestination")}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isExporting}
+                        onClick={() => void chooseTargetDirectory()}
+                      >
+                        <FolderOpen aria-hidden="true" />
+                        {t("exportDialog.chooseFolder")}
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                ) : null}
+
+                {hasMultipleFiles && !isManuscript ? (
+                  <label className="export-dialog__switch export-dialog__field--full">
+                    <input
+                      type="checkbox"
+                      checked={mergeIntoOneFile}
+                      disabled={isExporting}
+                      onChange={(event) => setMergeIntoOneFile(event.target.checked)}
+                    />
+                    <span>
+                      {t("exportDialog.mergeIntoOneFile")}
+                      <span className="export-dialog__hint">{t("exportDialog.mergeHint")}</span>
+                    </span>
+                  </label>
+                ) : null}
+              </div>
+
+              {isManuscript ? (
+                <ManuscriptFields
+                  options={manuscriptOptions}
+                  disabled={isExporting}
+                  onChange={updateManuscript}
+                />
               ) : null}
 
-              {hasMultipleFiles && !isManuscript ? (
-                <label className="export-dialog__switch export-dialog__field--full">
-                  <input
-                    type="checkbox"
-                    checked={mergeIntoOneFile}
-                    disabled={isExporting}
-                    onChange={(event) => setMergeIntoOneFile(event.target.checked)}
-                  />
-                  <span>
-                    {t("exportDialog.mergeIntoOneFile")}
-                    <span className="export-dialog__hint">{t("exportDialog.mergeHint")}</span>
-                  </span>
-                </label>
+              {phase === "error" && errorMessage ? (
+                <p className="export-dialog__error" role="alert">
+                  {t("exportDialog.errorMessage", { message: errorMessage })}
+                </p>
+              ) : null}
+
+              {isExporting ? (
+                <p className="export-dialog__progress" role="status">
+                  {progress && progress.total > 0
+                    ? t("exportDialog.progress", {
+                        completed: Math.min(progress.completed + 1, progress.total),
+                        total: progress.total,
+                        fileName: progress.currentFileName
+                      })
+                    : t("exportDialog.exporting")}
+                </p>
               ) : null}
             </div>
-
-            {isManuscript ? (
-              <ManuscriptFields
-                options={manuscriptOptions}
-                disabled={isExporting}
-                onChange={updateManuscript}
-              />
-            ) : null}
-
-            {phase === "error" && errorMessage ? (
-              <p className="export-dialog__error" role="alert">
-                {t("exportDialog.errorMessage", { message: errorMessage })}
-              </p>
-            ) : null}
-
-            {isExporting ? (
-              <p className="export-dialog__progress" role="status">
-                {progress && progress.total > 0
-                  ? t("exportDialog.progress", {
-                      completed: Math.min(progress.completed + 1, progress.total),
-                      total: progress.total,
-                      fileName: progress.currentFileName
-                    })
-                  : t("exportDialog.exporting")}
-              </p>
-            ) : null}
 
             <div className="unsaved-dialog__actions">
               <Button type="button" variant="outline" onClick={handleClose} disabled={isExporting}>
