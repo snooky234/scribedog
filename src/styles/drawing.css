@@ -7,6 +7,11 @@
   inset: 0;
   z-index: 50;
   display: grid;
+  /* One row exactly as tall as the window. Left to its content, a tall image
+     (its viewBox sets the surface's height) grows the row past the window and
+     the centred panel is pushed down with it. */
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 1rem;
   background: rgba(var(--backdrop-rgb), 0.7);
