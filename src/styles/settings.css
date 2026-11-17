@@ -257,6 +257,19 @@
   margin: 0.2rem 0;
 }
 
+/* Settings that only apply while the switch above them is on: indented under
+   it, with a rule that ties them to it. */
+.setting-subgroup {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+  margin-top: -0.3rem;
+  padding-left: 1.1rem;
+  margin-left: 0.45rem;
+  border-left: 2px solid rgba(var(--overlay-rgb), 0.1);
+}
+
 /* The (i) behind a label. Quiet until hovered — it is an offer, not a
    warning — and shown as a real control for keyboard and touch. */
 .info-popover__trigger {

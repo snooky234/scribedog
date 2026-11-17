@@ -1618,3 +1618,167 @@ body.is-resizing-page {
   backdrop-filter: blur(6px);
   pointer-events: none;
 }
+
+/* Block gutter (issue #52, lib/editor/blockGutter.ts): a narrow strip at
+   the left edge of the page with one bar per numbered block. The block the
+   cursor is in is drawn in the accent colour with its number, and the badge
+   can widen to the right to show the cursor's character. The layer is a
+   sibling of the editable surface inside the EditorContent wrapper,
+   positioned from measured block boxes; the surface only makes room for it. */
+.editor-view__content {
+  position: relative;
+}
+
+.editor-view__surface.editor-view__surface--block-gutter {
+  --block-gutter-width: 1.75rem;
+  padding-left: calc(var(--block-gutter-width) + 1.1rem);
+}
+
+.block-gutter {
+  --block-gutter-width: 1.75rem;
+  position: absolute;
+  width: var(--block-gutter-width);
+  z-index: 1;
+  pointer-events: none;
+  /* Follows the surface's own rounding at the left edge. */
+  border-radius: 1rem 0 0 1rem;
+  background: rgba(var(--overlay-rgb), 0.035);
+  transition: background-color 160ms ease;
+}
+
+.block-gutter__bar {
+  position: absolute;
+  left: calc(50% - 1px);
+  width: 2px;
+  /* A horizontal rule is a pixel or two tall; its bar still has to be seen. */
+  min-height: 8px;
+  border-radius: 2px;
+  background: rgba(var(--muted-rgb), 0.28);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background-color 160ms ease, width 160ms ease, left 160ms ease;
+}
+
+/* A wider hit area than the thin stroke, so the bar is easy to hover. */
+.block-gutter__bar::before {
+  content: "";
+  position: absolute;
+  inset: 0 -6px;
+}
+
+.block-gutter__bar:hover {
+  background: rgba(var(--muted-rgb), 0.55);
+}
+
+.block-gutter__bar--active,
+.block-gutter__bar--active:hover {
+  left: calc(50% - 1.5px);
+  width: 3px;
+  background: rgb(var(--accent-rgb));
+}
+
+/* The number: on the active block, on any other while hovered, and on all
+   of them with "numbers on all blocks". */
+.block-gutter__bar::after,
+.block-gutter__position {
+  position: absolute;
+  top: 0;
+  min-width: 1.35rem;
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.66rem;
+  font-weight: 600;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.block-gutter__bar::after {
+  content: attr(data-block-number);
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgb(var(--surface-rgb));
+  background: rgba(var(--muted-rgb), 0.9);
+  opacity: 0;
+  transition: opacity 160ms ease, background-color 160ms ease;
+}
+
+.block-gutter__bar:hover::after {
+  opacity: 1;
+}
+
+.block-gutter--all-numbers .block-gutter__bar::after {
+  opacity: 1;
+  color: rgba(var(--muted-rgb), 0.95);
+  background: rgb(var(--surface-rgb));
+  box-shadow: 0 0 0 1px rgba(var(--muted-rgb), 0.25);
+}
+
+.block-gutter__bar--active::after,
+.block-gutter--all-numbers .block-gutter__bar--active::after {
+  opacity: 1;
+  color: rgb(var(--on-accent-rgb));
+  background: rgb(var(--accent-rgb));
+  box-shadow: none;
+}
+
+/* The widened badge: the number again, a thin divider, then the cursor's
+   character or the selection's range. Starts where the bar's badge starts
+   (centred on a 1.35rem minimum) and grows to the right over the margin. */
+.block-gutter__position {
+  left: calc(50% - 0.675rem);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding-right: 0.4rem;
+  color: rgb(var(--on-accent-rgb));
+  background: rgb(var(--accent-rgb));
+  box-shadow: 0 1px 4px rgba(var(--overlay-rgb), 0.18);
+  opacity: 0;
+  transform: scaleX(0.6);
+  transform-origin: left center;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.block-gutter__position > span:first-child {
+  min-width: 0.85rem;
+  padding-right: 0.3rem;
+  border-right: 2px solid rgba(var(--on-accent-rgb), 0.85);
+  font-weight: 700;
+}
+
+.block-gutter__position > span:last-child {
+  font-weight: 700;
+}
+
+.block-gutter__position--visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* "Highlight active block": a tint behind text, a frame around code, tables
+   and images, whose own background would fight with a tint. */
+.editor-view__surface .block-gutter-active {
+  border-radius: 0.3rem;
+  background-color: rgba(var(--accent-rgb), 0.07);
+  box-shadow: 0 0 0 0.3rem rgba(var(--accent-rgb), 0.07);
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.editor-view__surface .block-gutter-active.block-gutter-active--frame {
+  background-color: transparent;
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block-gutter,
+  .block-gutter__bar,
+  .block-gutter__bar::after,
+  .block-gutter__position,
+  .editor-view__surface .block-gutter-active {
+    transition: none;
+  }
+}

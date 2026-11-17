@@ -6,6 +6,7 @@ import { Markdown } from "tiptap-markdown";
 import { AiDiffWidget } from "@/lib/aiDiffWidget";
 import { AiStreamWidget } from "@/lib/aiStreamWidget";
 import { AiSuggestionWidget } from "@/lib/aiSuggestionWidget";
+import { BlockGutter } from "@/lib/editor/blockGutter";
 import { CodeBlockLinks } from "@/lib/editor/codeBlockLinks";
 import { IconGlyphs } from "@/lib/editor/iconGlyphs";
 import { HeadingNumbering } from "@/lib/editor/headingNumbering";
@@ -119,6 +120,7 @@ export function buildEditorExtensions(): Extensions {
     TableGrips,
     InactiveSelection,
     PageLines,
+    BlockGutter,
     Reminders
   ];
 }

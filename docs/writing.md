@@ -234,6 +234,35 @@ Two markers follow the Pandoc convention:
 The marker is shown only in the heading you are editing, or always, as you
 prefer.
 
+## Block numbers
+
+Handy when you talk about a note with someone else: "look at block 12" finds
+the spot no matter how wide their window is.
+
+Switch it on under **Settings, Appearance, Show block/line numbers**. A
+narrow strip appears at the left edge of the page with one bar per block. The
+block with the cursor is drawn in the accent colour with its number. Hover
+any bar to see its number, click it to jump there.
+
+ScribeDog counts **blocks**, not screen lines. A block is a paragraph, a
+heading, a list item, a code block, an image, a rule or a whole table. Lines
+on screen change with the window width, blocks do not.
+
+| Option | What it does |
+|---|---|
+| Numbers on all blocks | Every bar shows its number, not only the active one |
+| Highlight active block | Tints the block with the cursor. Code blocks, tables and images get a frame instead |
+| Cursor position at the number | Off, for 2 seconds after moving, or always |
+
+The cursor position widens the number badge: `7 | 27` is character 27 of
+block 7. A selection shows its range, `7 | 41–65`, or where it ends in
+another block, `7 | 27 → 8:4`. An image inside the text counts as one
+character.
+
+> [!NOTE]
+> The gutter is off by default and hidden in Zen mode. The numbers are never
+> written into the file.
+
 ## Zen mode
 
 Press `Ctrl+Shift+Y`, or use the toolbar button, to strip away the sidebar,

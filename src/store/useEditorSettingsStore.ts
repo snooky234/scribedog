@@ -27,6 +27,10 @@ import {
 import { clampPageWidthEm, parseStoredPageWidth } from "@/lib/editor/pageWidth";
 import { clampZenFontSizePt } from "@/lib/zenFontZoom";
 import {
+  normalizeBlockGutterOptions,
+  type BlockGutterOptions
+} from "@/lib/editor/blockGutterOptions";
+import {
   DEFAULT_HEADING_NUMBERING,
   normalizeHeadingNumberingSettings,
   type HeadingNumberingSettings
@@ -41,6 +45,8 @@ import { setAutoAdmitWorkingSetProvider, setRestoreWorkingSetProvider } from "@/
 
 export const SPELLCHECK_STORAGE_KEY = "scribedog-spellcheck-enabled";
 export const PAGE_LINES_STORAGE_KEY = "scribedog-page-lines-enabled";
+export const BLOCK_GUTTER_STORAGE_KEY = "scribedog-block-gutter-enabled";
+export const BLOCK_GUTTER_OPTIONS_STORAGE_KEY = "scribedog-block-gutter-options";
 export const REOPEN_LAST_NOTE_STORAGE_KEY = "scribedog-reopen-last-note";
 export const DETAILS_PANEL_STORAGE_KEY = "scribedog-details-panel-visible";
 export const OUTLINE_DEPTH_STORAGE_KEY = "scribedog-outline-max-depth";
@@ -187,6 +193,42 @@ function getStoredPageLinesEnabled(): boolean {
 function persistPageLinesEnabled(enabled: boolean): void {
   try {
     window.localStorage.setItem(PAGE_LINES_STORAGE_KEY, String(enabled));
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
+// Off by default: the gutter takes room at the left edge of the page, and a
+// number next to every paragraph is clutter for anyone who is not pointing
+// others to a spot in the text.
+function getStoredBlockGutterEnabled(): boolean {
+  try {
+    return window.localStorage.getItem(BLOCK_GUTTER_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function persistBlockGutterEnabled(enabled: boolean): void {
+  try {
+    window.localStorage.setItem(BLOCK_GUTTER_STORAGE_KEY, String(enabled));
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
+function getStoredBlockGutterOptions(): BlockGutterOptions {
+  try {
+    const raw = window.localStorage.getItem(BLOCK_GUTTER_OPTIONS_STORAGE_KEY);
+    return normalizeBlockGutterOptions(raw === null ? null : JSON.parse(raw));
+  } catch {
+    return normalizeBlockGutterOptions(null);
+  }
+}
+
+function persistBlockGutterOptions(options: BlockGutterOptions): void {
+  try {
+    window.localStorage.setItem(BLOCK_GUTTER_OPTIONS_STORAGE_KEY, JSON.stringify(options));
   } catch {
     // localStorage may be unavailable in some environments.
   }
@@ -515,6 +557,15 @@ type EditorSettingsState = {
   pageLinesEnabled: boolean;
   setPageLinesEnabled: (enabled: boolean) => void;
   /**
+   * Numbered bars next to every block in the page's left margin
+   * (lib/editor/blockGutter.ts).
+   */
+  blockGutterEnabled: boolean;
+  setBlockGutterEnabled: (enabled: boolean) => void;
+  /** How the gutter looks and what its badge shows; kept while it is off. */
+  blockGutterOptions: BlockGutterOptions;
+  setBlockGutterOptions: (patch: Partial<BlockGutterOptions>) => void;
+  /**
    * Save the open note on its own once typing has paused (see
    * hooks/useAutoSave.ts). App-wide, not per vault: it is a way of working,
    * not a property of a folder.
@@ -728,6 +779,17 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
   setPageLinesEnabled: (enabled: boolean) => {
     persistPageLinesEnabled(enabled);
     set({ pageLinesEnabled: enabled });
+  },
+  blockGutterEnabled: getStoredBlockGutterEnabled(),
+  setBlockGutterEnabled: (enabled: boolean) => {
+    persistBlockGutterEnabled(enabled);
+    set({ blockGutterEnabled: enabled });
+  },
+  blockGutterOptions: getStoredBlockGutterOptions(),
+  setBlockGutterOptions: (patch: Partial<BlockGutterOptions>) => {
+    const next = normalizeBlockGutterOptions({ ...get().blockGutterOptions, ...patch });
+    persistBlockGutterOptions(next);
+    set({ blockGutterOptions: next });
   },
   autoSaveEnabled: getStoredAutoSaveEnabled(),
   setAutoSaveEnabled: (enabled: boolean) => {

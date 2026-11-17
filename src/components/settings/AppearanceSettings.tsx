@@ -6,6 +6,7 @@ import { SettingRow } from "@/components/settings/SettingRow";
 import { Button } from "@/components/ui/button";
 import { isValidHexColor } from "@/lib/color";
 import { findPresetTheme, PRESET_THEMES } from "@/lib/theme/presets";
+import type { BlockGutterCursorPosition } from "@/lib/editor/blockGutterOptions";
 import { OUTLINE_DEPTH_MAX, OUTLINE_DEPTH_MIN } from "@/lib/editor/documentOutline";
 import {
   PAGE_MARGIN_IDS,
@@ -32,8 +33,8 @@ type AppearanceSettingsProps = {
 };
 
 /**
- * Theme, paper surface, accent colour, table width, page setup and outline
- * depth. All of them apply
+ * Theme, paper surface, accent colour, table width, block gutter, page setup
+ * and outline depth. All of them apply
  * through their own stores the moment they change. A custom theme brings its
  * own accent colour; while one is active, the accent field edits that
  * theme's accent instead of the app-wide setting. A shipped template is
@@ -60,6 +61,10 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
   const setTableWidth = useEditorSettingsStore((state) => state.setTableWidth);
   const plainTableHeader = useEditorSettingsStore((state) => state.plainTableHeader);
   const setPlainTableHeader = useEditorSettingsStore((state) => state.setPlainTableHeader);
+  const blockGutterEnabled = useEditorSettingsStore((state) => state.blockGutterEnabled);
+  const setBlockGutterEnabled = useEditorSettingsStore((state) => state.setBlockGutterEnabled);
+  const blockGutterOptions = useEditorSettingsStore((state) => state.blockGutterOptions);
+  const setBlockGutterOptions = useEditorSettingsStore((state) => state.setBlockGutterOptions);
   const pageSize = useEditorSettingsStore((state) => state.pageSize);
   const setPageSize = useEditorSettingsStore((state) => state.setPageSize);
   const pageMargins = useEditorSettingsStore((state) => state.pageMargins);
@@ -221,6 +226,63 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
           onChange={(event) => setPlainTableHeader(event.target.checked)}
         />
       </SettingRow>
+
+      <SettingRow
+        layout="switch"
+        label={t("settingsDialog.blockGutter")}
+        hint={t("settingsDialog.blockGutterShort")}
+        info={t("settingsDialog.blockGutterHint")}
+      >
+        <input
+          type="checkbox"
+          checked={blockGutterEnabled}
+          onChange={(event) => setBlockGutterEnabled(event.target.checked)}
+        />
+      </SettingRow>
+
+      {blockGutterEnabled ? (
+        <div className="setting-subgroup">
+          <SettingRow
+            layout="switch"
+            label={t("settingsDialog.blockGutterNumbersOnAll")}
+            hint={t("settingsDialog.blockGutterNumbersOnAllShort")}
+          >
+            <input
+              type="checkbox"
+              checked={blockGutterOptions.numbersOnAll}
+              onChange={(event) => setBlockGutterOptions({ numbersOnAll: event.target.checked })}
+            />
+          </SettingRow>
+
+          <SettingRow
+            layout="switch"
+            label={t("settingsDialog.blockGutterHighlightActive")}
+            hint={t("settingsDialog.blockGutterHighlightActiveShort")}
+          >
+            <input
+              type="checkbox"
+              checked={blockGutterOptions.highlightActive}
+              onChange={(event) => setBlockGutterOptions({ highlightActive: event.target.checked })}
+            />
+          </SettingRow>
+
+          <SettingRow
+            label={t("settingsDialog.blockGutterCursorPosition")}
+            hint={t("settingsDialog.blockGutterCursorPositionShort")}
+          >
+            <select
+              value={blockGutterOptions.cursorPosition}
+              onChange={(event) =>
+                setBlockGutterOptions({ cursorPosition: event.target.value as BlockGutterCursorPosition })
+              }
+            >
+              <option value="off">{t("settingsDialog.blockGutterCursorPositionOff")}</option>
+              <option value="brief">{t("settingsDialog.blockGutterCursorPositionBrief")}</option>
+              <option value="always">{t("settingsDialog.blockGutterCursorPositionAlways")}</option>
+            </select>
+          </SettingRow>
+        </div>
+      ) : null}
 
       <SettingRow
         label={t("settingsDialog.pageSize")}

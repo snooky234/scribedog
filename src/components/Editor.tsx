@@ -94,6 +94,7 @@ import {
 } from "@/lib/editor/imageTransfer";
 import { moveLine, moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
 import { dispatchTableStep, tableLineStep } from "@/lib/editor/tableMove";
+import { setBlockGutterEnabled } from "@/lib/editor/blockGutter";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { looksLikeMarkdown, pasteMarkdown } from "@/lib/editor/pasteMarkdown";
 import { normalizePastedSlice } from "@/lib/editor/pasteNormalize";
@@ -393,6 +394,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     menuRef: selectionMenuRef
   } = useContextMenuState<SelectionContextMenuState>();
   const pageLinesEnabled = useEditorSettingsStore((state) => state.pageLinesEnabled);
+  const blockGutterEnabled = useEditorSettingsStore((state) => state.blockGutterEnabled);
   const pageWidthEm = useEditorSettingsStore((state) => state.pageWidthEm);
   // Ctrl+wheel over the note; Zen mode has its own (ZenMode.tsx).
   const viewZoomReadoutPt = useFontZoom("view", !isZenMode);
@@ -2007,6 +2009,16 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     filePath,
     enabled: pageLinesEnabled && !isZenMode && stagedPreviewStats === null
   });
+
+  // Same conditions as the page lines: Zen mode is for reading and writing
+  // without furniture, and a staged review numbers a proposal, not the note.
+  const blockGutterActive = blockGutterEnabled && !isZenMode && stagedPreviewStats === null;
+
+  useEffect(() => {
+    if (editor) {
+      setBlockGutterEnabled(editor, blockGutterActive);
+    }
+  }, [editor, blockGutterActive]);
 
   // editorProps.attributes is only read once, at editor creation, so a
   // later toggle of the setting has to be applied to the live DOM node
