@@ -74,6 +74,9 @@ the note stays plain Markdown, and a double-click opens it again for editing.
 You can also draw on a screenshot or photo in your note: circle, underline,
 point things out, and change the marks again later.
 
+<img src="docs/images/scribe-dog-draw-on-image.jpg" alt="A screenshot in a ScribeDog note with red marks drawn on top of it" width="700">
+
+
 [Read more →](docs/writing.md#drawings)
 
 ### Your vault: files, folders and linked notes
