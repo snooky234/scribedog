@@ -23,7 +23,9 @@ folder, in a small hidden `.scribedog` directory inside the vault.
 
 ## Folder notes
 
-Off by default. Switch them on per folder under **Settings, Open folder**.
+On by default in new installations. You can switch them off per vault under
+**Settings, Open folder**. If you used ScribeDog before folder notes became
+the default, they stay off in your vaults until you switch them on.
 
 With folder notes, every folder gets a text of its own, the way a node in
 Trilium or Notion is both a folder and a page. Click the folder name to open

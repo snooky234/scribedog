@@ -214,13 +214,17 @@ export async function writeHeadingNumbering(
  * belongs next to them — a vault that is synced or carried to another machine
  * brings its way of working along, and one vault's outliner habit never leaks
  * into a documentation vault where a click on a folder should just unfold it.
+ *
+ * null means the switch was never touched in this vault, and the caller
+ * applies the installation's default (lib/folderNotesDefault.ts). A file that
+ * cannot be read counts as "off", never as untouched, so it is not overwritten.
  */
-export async function readFolderNotesEnabled(folderPath: string): Promise<boolean> {
+export async function readFolderNotesEnabled(folderPath: string): Promise<boolean | null> {
   try {
     const filePath = await join(await vaultMetaDirPath(folderPath), FOLDER_NOTES_FILE_NAME);
 
     if (!(await exists(filePath))) {
-      return false;
+      return null;
     }
 
     const parsed: unknown = JSON.parse(await readTextFile(filePath));

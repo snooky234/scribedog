@@ -35,6 +35,7 @@ import {
   normalizeHeadingNumberingSettings,
   type HeadingNumberingSettings
 } from "@/lib/editor/headingNumbers";
+import { resolveFolderNotesDefault } from "@/lib/folderNotesDefault";
 import {
   readFolderNotesEnabled,
   readHeadingNumbering,
@@ -671,7 +672,8 @@ type EditorSettingsState = {
    * folder's own note. Controls only what the tree offers — the note files
    * themselves stay on disk, in the search and in the history whether this
    * is on or off, so switching it off never loses anything. Per vault like
-   * headingNumbering (.scribedog/folder-notes.json), loaded by the same call.
+   * headingNumbering (.scribedog/folder-notes.json), loaded by the same call;
+   * a vault without that file follows lib/folderNotesDefault.ts.
    */
   folderNotesEnabled: boolean;
   setFolderNotesEnabled: (enabled: boolean) => void;
@@ -761,6 +763,17 @@ function applyDocumentFontScale(sizePt: number): void {
 }
 
 const initialFontId = getStoredFontId();
+// Decided before any vault opens: the first opened vault writes the very keys
+// that tell a fresh installation from an existing one.
+const folderNotesDefault = resolveFolderNotesDefault(
+  (() => {
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  })()
+);
 const initialFontSizePt = getStoredFontSizePt();
 
 // The stored family has to be in the document before the editor paints, or the
@@ -917,8 +930,18 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
       readFolderNotesEnabled(folderPath)
     ]);
 
-    if (get().headingNumberingVaultPath === folderPath) {
-      set({ headingNumbering: settings, folderNotesEnabled });
+    if (get().headingNumberingVaultPath !== folderPath) {
+      return;
+    }
+
+    set({ headingNumbering: settings, folderNotesEnabled: folderNotesEnabled ?? folderNotesDefault });
+
+    // An installation that predates the default pins "off" into the vaults it
+    // opens, so a synced vault keeps its behaviour on a freshly installed
+    // machine too. "On" is never written on its own: a new user's vault gets
+    // no file until they touch the switch.
+    if (folderNotesEnabled === null && !folderNotesDefault) {
+      writeFolderNotesEnabled(folderPath, false).catch(() => undefined);
     }
   },
   setHeadingNumbering: (patch: Partial<HeadingNumberingSettings>) => {
