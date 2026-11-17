@@ -1,0 +1,32 @@
+# ScribeDog Server Edition for this one machine only: plain http, no Caddy.
+#
+# Turned on by one line in .env, nothing else to edit:
+#
+#   COMPOSE_FILE=docker-compose.local.yml
+#
+# Then `docker compose up -d --remove-orphans` (the flag stops a Caddy left
+# over from the HTTPS setup) and open http://localhost:8080/ .
+#
+# The server takes everything from docker-compose.yml (image, build, data
+# folder, PUID/PGID, init password) and only changes how it is reached. The
+# port is published on 127.0.0.1 alone, so no other device can connect: the
+# password and the access keys travel unencrypted here, which is harmless
+# inside one machine and nowhere else. To open the app from a phone or another
+# computer, use the HTTPS setup instead (remove the line from .env again).
+#
+# Browsers treat http://localhost as a secure context, so the app works
+# exactly as over HTTPS; the desktop app accepts http://localhost as a server
+# address as well.
+
+services:
+  scribedog:
+    extends:
+      file: docker-compose.yml
+      service: scribedog
+    environment:
+      # The session cookie has to work over plain http.
+      SCRIBEDOG_COOKIE_SECURE: "false"
+      # No reverse proxy in front: the server is reached directly.
+      SCRIBEDOG_TRUST_PROXY: "false"
+    ports:
+      - "127.0.0.1:${SCRIBEDOG_LOCAL_PORT:-8080}:3000"

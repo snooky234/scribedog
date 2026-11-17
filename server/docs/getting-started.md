@@ -85,6 +85,35 @@ Pi.
 Either way, this creates `./scribedog-data` if it is not there and starts two
 containers: the ScribeDog server and Caddy, which provides HTTPS.
 
+## Only on this machine, without HTTPS
+
+If you will only ever open ScribeDog on the computer that runs Docker, you
+can skip Caddy and the certificate entirely. Get one more file next to
+`docker-compose.yml` (option 2 already has it):
+
+```bash
+curl -fsSL -o docker-compose.local.yml https://raw.githubusercontent.com/snooky234/scribedog/main/server/docker-compose.local.yml
+```
+
+Then remove the `#` in front of this line in `.env`:
+
+```env
+COMPOSE_FILE=docker-compose.local.yml
+```
+
+and start it with `docker compose up -d --remove-orphans` (the flag stops a
+Caddy container from an earlier HTTPS start). The app is at
+<http://localhost:8080/>; `SCRIBEDOG_LOCAL_PORT` in `.env` changes the port.
+`SCRIBEDOG_INIT_PASSWORD`, `PUID`/`PGID` and `SCRIBEDOG_IMAGE` work as above,
+the Caddy settings (site address, TLS, ports 80 and 443) no longer matter.
+
+> **Only this machine.** The port is opened on `127.0.0.1` alone, so phones
+> and other computers cannot connect at all. That is deliberate: without
+> HTTPS the password would cross the network in clear text. To use the app
+> from other devices later, put the `#` back and run
+> `docker compose up -d --remove-orphans` again; your notes stay where they
+> are.
+
 ## Troubleshooting
 
 If `docker compose up` fails with `port is already allocated`, something else

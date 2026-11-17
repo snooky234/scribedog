@@ -14,6 +14,8 @@ again.
 | `SCRIBEDOG_DEFAULT_SNI` | the site address | Only matters with several site addresses: which one's certificate answers a browser that names none, which is what browsers do when they open the app by IP address. Set it to that IP. |
 | `SCRIBEDOG_TLS` | `internal` | `internal` uses Caddy's local CA. For a public domain set your e-mail address and Caddy obtains a Let's Encrypt certificate. |
 | `SCRIBEDOG_HTTP_PORT` / `SCRIBEDOG_HTTPS_PORT` | `80` / `443` | Host ports Caddy listens on. |
+| `COMPOSE_FILE` | *(unset)* | `docker-compose.local.yml` runs ScribeDog for this one machine only: plain http on `127.0.0.1`, no Caddy, no certificate. See [Only on this machine, without HTTPS](getting-started.md#only-on-this-machine-without-https). |
+| `SCRIBEDOG_LOCAL_PORT` | `8080` | Port of that local setup, at `http://localhost:<port>/`. |
 | `SCRIBEDOG_IMAGE` | *(empty, build locally)* | A published image to run instead of building, e.g. `ghcr.io/snooky234/scribedog-server:0.23.2`. |
 | `PUID` / `PGID` | `1000` / `1000` | User and group the server runs as. The container starts as root, hands `./scribedog-data` to these ids and drops to them, so match them to your own user (`id -u`, `id -g`) and the notes stay yours on the host. |
 
@@ -54,7 +56,9 @@ The compose file ships with Caddy for that:
   the internet for Let's Encrypt.
 
 Do not expose the server without TLS beyond `localhost`: the password and
-the access keys would travel in clear text.
+the access keys would travel in clear text. For use on the Docker host alone
+there is a ready setup without TLS that keeps to that rule, see
+[Only on this machine, without HTTPS](getting-started.md#only-on-this-machine-without-https).
 
 **Your own proxy** (nginx, Traefik, an existing Caddy) works as well: point
 it at the `scribedog` container's port 3000, forward the `Host` header and

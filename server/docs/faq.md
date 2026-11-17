@@ -8,6 +8,11 @@ and Caddy signs the certificate with its own CA; import that CA once per
 device (see [Getting started](getting-started.md)). A domain only matters if
 you want Let's Encrypt or reach the server from the internet.
 
+**I only use it on one computer. Do I need HTTPS at all?**
+No. One line in `.env` (`COMPOSE_FILE=docker-compose.local.yml`) runs it
+without Caddy at <http://localhost:8080/>, reachable from that computer only.
+See [Getting started](getting-started.md#only-on-this-machine-without-https).
+
 **The browser says the connection is not private.**
 That is Caddy's local CA, which the browser does not know yet. Accept the
 warning, or import `scribedog-ca.crt` so it stops; the file is behind
