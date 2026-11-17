@@ -14,6 +14,10 @@ ScribeDog ships with light and dark themes and four more:
 | Fireside | A warm dark theme |
 | Midnight | True black for OLED screens |
 
+The accent colour under **Settings, Appearance** works with every one of them.
+With Sepia, Fjord, Fireside or Midnight active it changes only that theme, and
+**Reset** brings back the theme's own accent.
+
 There is also an optional **paper-white page inside the dark UI**. It helps
 you judge long or layout-heavy documents.
 

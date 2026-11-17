@@ -199,7 +199,7 @@
     "themeBuilderHint": "Ouvre le créateur de thèmes ; les réglages se ferment pendant ce temps. Les thèmes personnels valent pour toute l'application et sont stockés dans ce profil de navigateur ou cette installation, pas dans le dossier. Pour en transférer un sur un autre appareil, exportez-le en fichier ou via le presse-papiers et importez-le là-bas.",
     "themeBuilderOpen": "Ouvrir le créateur de thèmes",
     "accentColorThemeShort": "Appartient au thème actif « {{name}} » et y est enregistrée.",
-    "accentColorPresetShort": "Appartient au modèle « {{name}} ». Pour la modifier, dupliquez le modèle dans le créateur de thèmes.",
+    "accentColorPresetShort": "S’applique uniquement au modèle « {{name}} ». « Réinitialiser » rétablit sa couleur d’origine.",
     "paperSurface": "Page claire dans le thème sombre",
     "paperSurfaceShort": "Le document reste une page blanche, le reste de la fenêtre passe en sombre.",
     "paperSurfaceHint": "La barre latérale, les barres d'outils et le chat restent sombres, seule la page reste blanc papier, pour que les notes longues ou riches en mise en page se lisent comme une page imprimée. Fonctionne aussi avec le thème système : il décide entre clair et sombre, cette option décide seulement de l'aspect de la page en mode sombre. Sans effet dans le thème clair.",

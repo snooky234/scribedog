@@ -199,7 +199,7 @@
     "themeBuilderHint": "Opens the theme builder; settings close while it is open. Custom themes apply to the whole app and live in this browser profile or this installation, not in the folder. To move one to another device, export it as a file or through the clipboard and import it there.",
     "themeBuilderOpen": "Open theme builder",
     "accentColorThemeShort": "Belongs to the active theme “{{name}}” and is saved there.",
-    "accentColorPresetShort": "Belongs to the template “{{name}}”. To change it, duplicate the template in the theme builder.",
+    "accentColorPresetShort": "Applies only to the template “{{name}}”. Reset restores its own color.",
     "paperSurface": "Light page in the dark theme",
     "paperSurfaceShort": "The document stays a white page while the rest of the window goes dark.",
     "paperSurfaceHint": "Sidebar, toolbars and chat stay dark, only the page stays paper-white, so long or layout-heavy notes read like a printed page. Also with the system theme: it decides light or dark, this decides what the page looks like when it is dark. No effect in the light theme.",

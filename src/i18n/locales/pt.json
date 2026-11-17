@@ -199,7 +199,7 @@
     "themeBuilderHint": "Abre o criador de temas; as configurações fecham enquanto isso. Os temas próprios valem para todo o app e ficam neste perfil do navegador ou nesta instalação, não na pasta. Para levar um para outro dispositivo, exporte-o como arquivo ou pela área de transferência e importe-o lá.",
     "themeBuilderOpen": "Abrir o criador de temas",
     "accentColorThemeShort": "Pertence ao tema ativo “{{name}}” e é salva nele.",
-    "accentColorPresetShort": "Pertence ao modelo “{{name}}”. Para alterá-la, duplique o modelo no criador de temas.",
+    "accentColorPresetShort": "Aplica-se apenas ao modelo “{{name}}”. “Redefinir” restaura a cor original dele.",
     "paperSurface": "Página clara no tema escuro",
     "paperSurfaceShort": "O documento continua uma página branca, o resto da janela fica escuro.",
     "paperSurfaceHint": "A barra lateral, as barras de ferramentas e o chat continuam escuros, só a página fica branca como papel, para que notas longas ou com muito layout se leiam como uma página impressa. Também com o tema do sistema: ele decide entre claro e escuro, esta opção só decide o aspeto da página quando é escuro. Sem efeito no tema claro.",

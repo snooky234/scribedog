@@ -199,7 +199,7 @@
     "themeBuilderHint": "Öffnet den Theme Builder; die Einstellungen schließen sich so lange. Eigene Themes gelten für die ganze Anwendung und liegen in diesem Browserprofil bzw. in dieser Installation, nicht im Ordner. Zum Übertragen auf ein anderes Gerät exportierst du ein Theme als Datei oder über die Zwischenablage und importierst es dort.",
     "themeBuilderOpen": "Theme Builder öffnen",
     "accentColorThemeShort": "Gehört zum aktiven Theme „{{name}}“ und wird dort gespeichert.",
-    "accentColorPresetShort": "Gehört zur Vorlage „{{name}}“. Zum Ändern die Vorlage im Theme Builder duplizieren.",
+    "accentColorPresetShort": "Gilt nur für die Vorlage „{{name}}“. „Zurücksetzen“ stellt ihre eigene Farbe wieder her.",
     "paperSurface": "Helle Seite im dunklen Design",
     "paperSurfaceShort": "Das Dokument bleibt eine weiße Seite, der Rest der Oberfläche wird dunkel.",
     "paperSurfaceHint": "Seitenleiste, Werkzeugleisten und Chat bleiben dunkel, nur die Seite bleibt papierweiß, damit lange oder layoutlastige Notizen wie eine gedruckte Seite wirken. Auch mit dem System-Design: Es entscheidet über hell oder dunkel, diese Option nur darüber, wie die Seite bei dunkel aussieht. Im hellen Design ohne Wirkung.",

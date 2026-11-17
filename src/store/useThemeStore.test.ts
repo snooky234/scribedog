@@ -124,6 +124,43 @@ describe("useThemeStore with custom themes", () => {
     expect(store.getState().theme).toBe("system");
   });
 
+  it("swaps the accent of the active template and keeps it after a restart", async () => {
+    let store = await loadStore();
+    store.getState().setTheme("preset:sepia");
+    store.getState().setPresetAccent("sepia", "#7823C7");
+
+    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe("120, 35, 199");
+    expect(store.getState().presetAccents).toEqual({ sepia: "#7823c7" });
+
+    store = await loadStore();
+    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe("120, 35, 199");
+    // The template itself is untouched.
+    expect(findPresetTheme("sepia")?.base.accent).not.toBe("#7823c7");
+  });
+
+  it("restores the template's own accent on reset and drops the stored override", async () => {
+    const store = await loadStore();
+    store.getState().setTheme("preset:sepia");
+    store.getState().setPresetAccent("sepia", "#7823c7");
+    store.getState().setPresetAccent("sepia", null);
+
+    const preset = findPresetTheme("sepia") as CustomTheme;
+    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe(
+      resolveTheme(preset).root["--accent-rgb"]
+    );
+    expect(window.localStorage.getItem("scribedog-preset-accents")).toBeNull();
+  });
+
+  it("ignores stored accents for unknown templates or invalid colours", async () => {
+    window.localStorage.setItem(
+      "scribedog-preset-accents",
+      JSON.stringify({ gone: "#123456", sepia: "red", dark: 5 })
+    );
+    const store = await loadStore();
+
+    expect(store.getState().presetAccents).toEqual({});
+  });
+
   it("previews without selecting, and goes back on null", async () => {
     const store = await loadStore();
     store.getState().setTheme("light");

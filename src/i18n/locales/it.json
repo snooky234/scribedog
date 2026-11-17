@@ -199,7 +199,7 @@
     "themeBuilderHint": "Apre il creatore di temi; nel frattempo le impostazioni si chiudono. I temi personali valgono per tutta l'app e sono salvati in questo profilo del browser o in questa installazione, non nella cartella. Per portarne uno su un altro dispositivo, esportalo come file o tramite gli appunti e importalo lì.",
     "themeBuilderOpen": "Apri il creatore di temi",
     "accentColorThemeShort": "Appartiene al tema attivo «{{name}}» e viene salvato lì.",
-    "accentColorPresetShort": "Appartiene al modello «{{name}}». Per cambiarlo, duplica il modello nel creatore di temi.",
+    "accentColorPresetShort": "Vale solo per il modello «{{name}}». «Ripristina» riporta il suo colore originale.",
     "paperSurface": "Pagina chiara nel tema scuro",
     "paperSurfaceShort": "Il documento resta una pagina bianca, il resto della finestra diventa scuro.",
     "paperSurfaceHint": "Barra laterale, barre degli strumenti e chat restano scure, solo la pagina resta bianca come la carta, così le note lunghe o ricche di layout si leggono come una pagina stampata. Vale anche con il tema di sistema: quello decide tra chiaro e scuro, questa opzione solo l'aspetto della pagina quando è scuro. Nessun effetto nel tema chiaro.",

@@ -37,7 +37,8 @@ type AppearanceSettingsProps = {
  * through their own stores the moment they change. A custom theme brings its
  * own accent colour; while one is active, the accent field edits that
  * theme's accent instead of the app-wide setting. A shipped template is
- * read-only, so with one active the field shows its accent and is locked.
+ * read-only except for its accent: the field stores an override for that
+ * template, and reset brings back the template's own colour.
  */
 export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettingsProps) {
   const { t } = useTranslation();
@@ -49,6 +50,8 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
   const activeCustomTheme = customThemes.find((entry) => entry.id === activeCustomId) ?? null;
   const activePresetId = presetThemeIdOf(theme);
   const activePreset = activePresetId ? findPresetTheme(activePresetId) : null;
+  const presetAccents = useThemeStore((state) => state.presetAccents);
+  const setPresetAccent = useThemeStore((state) => state.setPresetAccent);
   const presetName = (id: string) =>
     t(`themeBuilder.presets.${id}`, { defaultValue: findPresetTheme(id)?.name ?? id });
   const paperSurface = useEditorSettingsStore((state) => state.paperSurface);
@@ -68,23 +71,32 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
   const resetSettingAccentColor = useAccentColorStore((state) => state.resetAccentColor);
 
   const accentColor = activePreset
-    ? activePreset.base.accent
+    ? (presetAccents[activePreset.id] ?? activePreset.base.accent)
     : activeCustomTheme
       ? activeCustomTheme.base.accent
       : settingAccentColor;
-  const accentLocked = activePreset !== null;
+  const defaultAccentColor = activePreset ? activePreset.base.accent : DEFAULT_ACCENT_COLOR;
   const setAccentColor = (color: string) => {
     if (!isValidHexColor(color)) {
       return;
     }
-    if (activeCustomTheme) {
+    if (activePreset) {
+      setPresetAccent(activePreset.id, color);
+    } else if (activeCustomTheme) {
       saveCustomTheme({ ...activeCustomTheme, base: { ...activeCustomTheme.base, accent: color.toLowerCase() } });
     } else {
       setSettingAccentColor(color);
     }
   };
-  const resetAccentColor = () =>
-    activeCustomTheme ? setAccentColor(DEFAULT_ACCENT_COLOR) : resetSettingAccentColor();
+  const resetAccentColor = () => {
+    if (activePreset) {
+      setPresetAccent(activePreset.id, null);
+    } else if (activeCustomTheme) {
+      setAccentColor(DEFAULT_ACCENT_COLOR);
+    } else {
+      resetSettingAccentColor();
+    }
+  };
   const [accentColorInput, setAccentColorInput] = useState(accentColor);
 
   useEffect(() => {
@@ -144,7 +156,6 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
               type="color"
               className="accent-color-setting__swatch"
               value={accentColor}
-              disabled={accentLocked}
               onChange={(event) => setAccentColor(event.target.value)}
               aria-describedby={describedBy}
             />
@@ -152,7 +163,6 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
               type="text"
               className="accent-color-setting__hex"
               value={accentColorInput}
-              disabled={accentLocked}
               onChange={(event) => {
                 const nextValue = event.target.value;
                 setAccentColorInput(nextValue);
@@ -169,7 +179,7 @@ export function AppearanceSettings({ onThemeBuilderRequest }: AppearanceSettings
               type="button"
               className="ai-dialog__model-refresh"
               onClick={resetAccentColor}
-              disabled={accentLocked || accentColor.toLowerCase() === DEFAULT_ACCENT_COLOR}
+              disabled={accentColor.toLowerCase() === defaultAccentColor.toLowerCase()}
               aria-label={t("settingsDialog.accentColorReset")}
               title={t("settingsDialog.accentColorReset")}
             >

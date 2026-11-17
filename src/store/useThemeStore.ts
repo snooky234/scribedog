@@ -8,6 +8,7 @@ import {
   themeStylesheet,
   type CustomTheme
 } from "@/lib/theme/themeFormat";
+import { isValidHexColor } from "@/lib/color";
 import { findPresetTheme } from "@/lib/theme/presets";
 import { applyAccentColor, useAccentColorStore } from "@/store/useAccentColorStore";
 
@@ -18,6 +19,10 @@ export const CUSTOM_THEMES_STORAGE_KEY = "scribedog-custom-themes";
 /** Mode and root background of the active custom theme, for
  *  public/theme-boot.js, which runs before the bundle and cannot derive. */
 export const THEME_BOOT_STORAGE_KEY = "scribedog-theme-boot";
+/** The accent colour the user picked for a shipped template, by preset id.
+ *  The template itself stays read-only; only its accent can be swapped, so
+ *  this is stored next to it instead of copying the template. */
+export const PRESET_ACCENTS_STORAGE_KEY = "scribedog-preset-accents";
 
 export const BUILT_IN_THEMES = ["light", "dark", "system"] as const;
 export type BuiltInTheme = (typeof BUILT_IN_THEMES)[number];
@@ -66,12 +71,39 @@ function writeStorage(key: string, value: string | null): void {
   }
 }
 
+export type PresetAccents = Record<string, string>;
+
+/** Known preset ids with a valid `#rrggbb` colour; anything else is dropped. */
+function parsePresetAccents(raw: string | null): PresetAccents {
+  if (!raw) {
+    return {};
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    const result: PresetAccents = {};
+    for (const [id, color] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof color === "string" && isValidHexColor(color) && findPresetTheme(id)) {
+        result[id] = color.toLowerCase();
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 /** The theme object behind a `custom:` or `preset:` key; null for the
- *  built-in light/dark/system and for a key whose theme is gone. */
-function findCustomTheme(themes: CustomTheme[], theme: Theme): CustomTheme | null {
+ *  built-in light/dark/system and for a key whose theme is gone. A preset
+ *  comes back with the user's accent for it, if there is one. */
+function findCustomTheme(themes: CustomTheme[], theme: Theme, presetAccents: PresetAccents = {}): CustomTheme | null {
   const presetId = presetThemeIdOf(theme);
   if (presetId !== null) {
-    return findPresetTheme(presetId);
+    const preset = findPresetTheme(presetId);
+    const accent = presetAccents[presetId];
+    return preset && accent ? { ...preset, base: { ...preset.base, accent } } : preset;
   }
   const id = customThemeIdOf(theme);
   return id === null ? null : (themes.find((entry) => entry.id === id) ?? null);
@@ -171,18 +203,22 @@ type ThemeState = {
   theme: Theme;
   resolvedTheme: ResolvedTheme;
   customThemes: CustomTheme[];
+  /** The user's accent per shipped template (see PRESET_ACCENTS_STORAGE_KEY). */
+  presetAccents: PresetAccents;
   setTheme: (theme: Theme) => void;
   /** Adds the theme, or replaces the one with the same id. */
   saveCustomTheme: (theme: CustomTheme) => void;
   /** Removes the theme; if it was active, its mode's built-in theme takes over. */
   deleteCustomTheme: (id: string) => void;
+  /** Swaps the accent of a shipped template; null restores its own. */
+  setPresetAccent: (presetId: string, color: string | null) => void;
   /** Shows a theme without selecting it (the builder's "view in the app");
    *  null goes back to the selected one. Nothing is persisted. */
   previewAppearance: (target: AppearanceTarget | null) => void;
 };
 
-function applyState(theme: Theme, customThemes: CustomTheme[]): ResolvedTheme {
-  const custom = findCustomTheme(customThemes, theme);
+function applyState(theme: Theme, customThemes: CustomTheme[], presetAccents: PresetAccents): ResolvedTheme {
+  const custom = findCustomTheme(customThemes, theme, presetAccents);
   const resolvedTheme = resolveMode(theme, customThemes);
   applyAppearance(custom ?? resolvedTheme);
   persistBootInfo(custom);
@@ -190,16 +226,18 @@ function applyState(theme: Theme, customThemes: CustomTheme[]): ResolvedTheme {
 }
 
 const initialCustomThemes = parseStoredThemes(readStorage(CUSTOM_THEMES_STORAGE_KEY));
+const initialPresetAccents = parsePresetAccents(readStorage(PRESET_ACCENTS_STORAGE_KEY));
 const initialTheme = sanitizeTheme(readStorage(THEME_STORAGE_KEY), initialCustomThemes);
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
   theme: initialTheme,
   resolvedTheme: resolveMode(initialTheme, initialCustomThemes),
   customThemes: initialCustomThemes,
+  presetAccents: initialPresetAccents,
   setTheme: (theme: Theme) => {
     const next = sanitizeTheme(theme, get().customThemes);
     writeStorage(THEME_STORAGE_KEY, next);
-    const resolvedTheme = applyState(next, get().customThemes);
+    const resolvedTheme = applyState(next, get().customThemes, get().presetAccents);
     set({ theme: next, resolvedTheme });
   },
   saveCustomTheme: (theme: CustomTheme) => {
@@ -210,7 +248,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       : [...current, theme];
     writeStorage(CUSTOM_THEMES_STORAGE_KEY, serializeStoredThemes(customThemes));
 
-    const resolvedTheme = get().theme === customThemeKey(theme.id) ? applyState(get().theme, customThemes) : get().resolvedTheme;
+    const resolvedTheme = get().theme === customThemeKey(theme.id) ? applyState(get().theme, customThemes, get().presetAccents) : get().resolvedTheme;
     set({ customThemes, resolvedTheme });
   },
   deleteCustomTheme: (id: string) => {
@@ -223,16 +261,41 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       get().setTheme(deleted.mode);
     }
   },
+  setPresetAccent: (presetId: string, color: string | null) => {
+    const preset = findPresetTheme(presetId);
+    if (!preset || (color !== null && !isValidHexColor(color))) {
+      return;
+    }
+    const presetAccents = { ...get().presetAccents };
+    // The template's own colour is not an override, so it is not stored.
+    if (color === null || color.toLowerCase() === preset.base.accent.toLowerCase()) {
+      delete presetAccents[presetId];
+    } else {
+      presetAccents[presetId] = color.toLowerCase();
+    }
+    writeStorage(
+      PRESET_ACCENTS_STORAGE_KEY,
+      Object.keys(presetAccents).length > 0 ? JSON.stringify(presetAccents) : null
+    );
+    set({ presetAccents });
+    if (get().theme === presetThemeKey(presetId)) {
+      applyState(get().theme, get().customThemes, presetAccents);
+    }
+  },
   previewAppearance: (target: AppearanceTarget | null) => {
     if (target === null) {
-      applyState(get().theme, get().customThemes);
+      applyState(get().theme, get().customThemes, get().presetAccents);
     } else {
       applyAppearance(target);
     }
   }
 }));
 
-applyState(useThemeStore.getState().theme, useThemeStore.getState().customThemes);
+applyState(
+  useThemeStore.getState().theme,
+  useThemeStore.getState().customThemes,
+  useThemeStore.getState().presetAccents
+);
 
 if (typeof window !== "undefined" && window.matchMedia) {
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
