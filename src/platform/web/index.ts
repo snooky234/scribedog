@@ -5,6 +5,7 @@ import { SessionError } from "@/platform/errors";
 import { containsSecretRef, secretRef } from "@/platform/secretRef";
 import type { CredentialsStatus, Platform } from "@/platform/types";
 
+import { browserDocLinks } from "./docLinks";
 import { browserDownloads } from "./downloads";
 import { subscribeToVaultChanges, watchRoot } from "./liveUpdates";
 import { getStartupVault, rememberOpenedVault } from "./lastVault";
@@ -147,7 +148,8 @@ export const platform: Platform = {
     remoteVaults: false,
     sharedVaults: true,
     cameraCapture: true,
-    systemNotifications: typeof window !== "undefined" && "Notification" in window
+    systemNotifications: typeof window !== "undefined" && "Notification" in window,
+    docLinks: true
   },
 
   vaultStorage: remoteVaultStorage,
@@ -168,9 +170,13 @@ export const platform: Platform = {
     // There are no local folders in the browser, so nothing ever goes missing.
     folderExists: async () => true,
     readReminderNotes: null,
-    // The shared vault the tab was in last, while the person is still in it;
-    // otherwise the instance's own vault.
-    getStartupFolderPath: () => getStartupVault(() => webSharedVaults.overview(REMOTE_VAULT_ROOT)),
+    // The vault the address links into, else the shared vault the tab was in
+    // last, while the person is still in it; otherwise the instance's own vault.
+    getStartupFolderPath: () =>
+      getStartupVault(
+        () => webSharedVaults.overview(REMOTE_VAULT_ROOT),
+        browserDocLinks.current()?.folderPath ?? null
+      ),
     onFolderFilesChanged: async (handler) => subscribeToVaultChanges(handler),
     // A shared vault's own name is added by formatFolderLabel; this is the
     // instance the browser is talking to.
@@ -329,5 +335,6 @@ export const platform: Platform = {
   localModels: browserLocalModels,
   remoteVaults: null,
   sharedVaults: webSharedVaults,
-  notifications: browserNotifications
+  notifications: browserNotifications,
+  docLinks: browserDocLinks
 };

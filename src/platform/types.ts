@@ -617,6 +617,31 @@ export type PlatformFeatures = {
   cameraCapture: boolean;
   /** Notifications outside the app window when a reminder comes due (see NotificationsApi). */
   systemNotifications: boolean;
+  /** An address per open document (see DocLinksApi). */
+  docLinks: boolean;
+};
+
+/** A document as an address names it: the vault it lives in and its path there. */
+export type DocLinkTarget = { folderPath: string; filePath: string };
+
+/**
+ * The open document mirrored into an address the person can bookmark, send
+ * and step through with back and forward: the browser's URL in the server
+ * edition. Null on the desktop, which has no address bar.
+ */
+export type DocLinksApi = {
+  /** The document the current address names, or null. */
+  current(): DocLinkTarget | null;
+  /**
+   * Puts the open document (null: none) into the address; a no-op when it is
+   * already there. `replace` overwrites the current history entry instead of
+   * adding one, for an address that has to be put back.
+   */
+  show(target: DocLinkTarget | null, options?: { replace?: boolean }): void;
+  /** The full, shareable address of a document, or null for a vault the address cannot name. */
+  urlFor(target: DocLinkTarget): string | null;
+  /** Called when the person changes the address (back, forward, an edited or clicked link). */
+  subscribe(handler: (target: DocLinkTarget | null) => void): () => void;
 };
 
 /**
@@ -671,4 +696,5 @@ export type Platform = {
   remoteVaults: RemoteVaultsApi | null;
   sharedVaults: SharedVaultsApi | null;
   notifications: NotificationsApi | null;
+  docLinks: DocLinksApi | null;
 };

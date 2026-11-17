@@ -6,6 +6,7 @@ import {
   FileCode,
   Focus,
   History,
+  Link,
   Printer,
   Search,
   Type,
@@ -16,6 +17,7 @@ import { useTranslation } from "react-i18next";
 
 import type { EditorHandle } from "@/components/Editor";
 import type { SelectionRange } from "@/lib/editor/selectionClipboard";
+import { copyDocLink } from "@/components/CopyDocLinkMenuItem";
 import { PageLinesMenuItem } from "@/components/PageLinesMenuItem";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +30,8 @@ import {
   MenuPositioner,
   MenuTrigger
 } from "@/components/ui/menu";
+import { platform } from "@/platform";
+import { useAppStore } from "@/store/useAppStore";
 import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
 
@@ -77,6 +81,10 @@ export function DocumentMenu({
   const autoSaveEnabled = useEditorSettingsStore((state) => state.autoSaveEnabled);
   const setAutoSaveEnabled = useEditorSettingsStore((state) => state.setAutoSaveEnabled);
   const zoomLevel = useEditorSettingsStore((state) => state.zoomLevel);
+  const selectedFilePath = useAppStore((state) => state.selectedFilePath);
+  const isSelectedListed = useAppStore(
+    (state) => state.selectedFilePath !== null && state.filePaths.includes(state.selectedFilePath)
+  );
   const setZoomLevel = useEditorSettingsStore((state) => state.setZoomLevel);
 
   return (
@@ -127,6 +135,12 @@ export function DocumentMenu({
               <MenuItem className="document-menu__item--phone" onClick={onVersionsRequest}>
                 <History className="size-4" />
                 {t("versions.buttonLabel")}
+              </MenuItem>
+            ) : null}
+            {platform.docLinks && selectedFilePath && isSelectedListed ? (
+              <MenuItem onClick={() => void copyDocLink(selectedFilePath)}>
+                <Link className="size-4" />
+                {t("app.copyDocLink")}
               </MenuItem>
             ) : null}
             <div className="editor-toolbar__menu-separator document-menu__item--phone" role="separator" />

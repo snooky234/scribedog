@@ -47,8 +47,16 @@ export function pickStartupVault(remembered: string | null, overview: SharedOver
   return REMOTE_VAULT_ROOT;
 }
 
-export async function getStartupVault(loadOverview: () => Promise<SharedOverview | null>): Promise<string> {
-  const remembered = readRememberedVault();
+/**
+ * An address that names a document (docLinks.ts) decides over the remembered
+ * vault: a link into the own vault opens the own vault, a link into a shared
+ * one that shared vault, as long as the person is in it.
+ */
+export async function getStartupVault(
+  loadOverview: () => Promise<SharedOverview | null>,
+  linkedVault: string | null = null
+): Promise<string> {
+  const remembered = linkedVault ?? readRememberedVault();
 
   if (!remembered) {
     return REMOTE_VAULT_ROOT;

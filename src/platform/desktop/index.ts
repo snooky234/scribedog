@@ -65,7 +65,8 @@ export const platform: Platform = {
     // none, which setActiveRemoteServer reports as "no shared vaults".
     sharedVaults: true,
     cameraCapture: false,
-    systemNotifications: true
+    systemNotifications: true,
+    docLinks: false
   },
 
   vaultStorage: localVaultStorage,
@@ -275,5 +276,6 @@ export const platform: Platform = {
         sendNotification({ title, body });
       }
     }
-  }
+  },
+  docLinks: null
 };

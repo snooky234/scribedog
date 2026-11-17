@@ -131,12 +131,12 @@ export function VersioningSettings() {
         <SettingRow
           layout="switch"
           label={t("versioningSettings.enable")}
-          hint={`${t("versioningSettings.enableShort")} ${
+          hint={t("versioningSettings.enableShort")}
+          info={`${
             saveBinding
               ? t("versioningSettings.enableShortAutoSave", { keys: formatBinding(t, saveBinding) })
               : t("versioningSettings.enableShortAutoSaveUnbound")
-          }`}
-          info={t("versioningSettings.enableHint")}
+          } ${t("versioningSettings.enableHint")}`}
         >
           <input
             type="checkbox"

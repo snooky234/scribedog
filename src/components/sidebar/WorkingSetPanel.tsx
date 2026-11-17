@@ -9,6 +9,7 @@ import type {
 } from "react";
 
 import { CompareMenuItem } from "@/components/compare/CompareMenuItem";
+import { CopyDocLinkMenuItem } from "@/components/CopyDocLinkMenuItem";
 import { ContextMenuSurface } from "@/components/fileTree/ContextMenuSurface";
 import { PinToggle } from "@/components/fileTree/PinToggle";
 import type { DropPosition } from "@/components/fileTree/types";
@@ -502,6 +503,7 @@ export function WorkingSetPanel({
             {t("workingSet.revealInTree")}
           </button>
           <CompareMenuItem filePath={contextEntry.filePath} onDone={() => setContextMenu(null)} />
+          <CopyDocLinkMenuItem filePath={contextEntry.filePath} onDone={() => setContextMenu(null)} />
           {!showPins ? null : contextEntry.pinned ? (
             <button
               type="button"

@@ -179,6 +179,37 @@ all: the desktop app can open the server's vault directly, with AI and
 dictation running on your computer. See
 [The desktop app as a client](desktop-app.md).
 
+## Links to a document
+
+Every document has its own address, for example
+
+```
+https://notes.example.com/#/doc/Projects/Roadmap.md
+```
+
+To get it, right-click the document in the file tree or in "In progress"
+and choose **Copy link** (on a phone or tablet: the document's **⋮** menu).
+You can bookmark the link, send it to someone who has access, or put it into
+another tool. Opening it (after signing in, if needed) opens that document
+instead of the one you had open last. A document in a shared vault gets an
+address with the vault's id, `#/v/1a2b/doc/...`, which stays the same when
+the vault is renamed.
+
+By default the address bar is left alone while you move between documents,
+because browsers record every address change in their history and it would
+fill up quickly. Switch on **Settings, Show documents in the address bar and
+browser history** if you want the address bar to follow the open document:
+then reloading keeps it, and the browser's back and forward buttons step
+through the documents you opened. ScribeDog's own back and forward arrows
+next to the document's path work either way.
+
+The address follows the path of the file. When a document is renamed,
+moved or deleted, links to its old place stop working: opening one shows a
+short notice and leaves the open document as it is.
+
+The part after `#` never reaches the server, so document names do not show
+up in the server's or a proxy's access log.
+
 ## What next
 
 - [Configuration](configuration.md) if the box is reached under a name or

@@ -53,4 +53,15 @@ describe("startup vault in the browser", () => {
 
     await expect(getStartupVault(async () => Promise.reject(new Error("offline")))).resolves.toBe("/vault");
   });
+
+  it("follows a linked vault over the remembered one", async () => {
+    const loadOverview = vi.fn(async () => overviewWith("7f3a"));
+    rememberOpenedVault("/shared/7f3a");
+
+    await expect(getStartupVault(loadOverview, "/vault")).resolves.toBe("/vault");
+
+    rememberOpenedVault("/vault");
+    await expect(getStartupVault(loadOverview, "/shared/7f3a")).resolves.toBe("/shared/7f3a");
+    await expect(getStartupVault(loadOverview, "/shared/b00c")).resolves.toBe("/vault");
+  });
 });

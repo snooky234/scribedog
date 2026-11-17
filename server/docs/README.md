@@ -37,7 +37,7 @@ You run one container (plus Caddy for HTTPS) with a folder of Markdown files
 mounted into it. The web app is the desktop app's own frontend, so it looks
 and works the same on a desktop browser, a phone or a tablet: the file tree,
 notes and folders, images, sort order, version history, live updates when a
-file changes on disk, export as a download (PDF, DOCX, ODT, HTML, EPUB, or
+file changes on disk, a link to every document for bookmarks, export as a download (PDF, DOCX, ODT, HTML, EPUB, or
 the notes themselves as Markdown), and the AI features including the chat
 agent. The desktop app can open the same folder over the network as a
 "server vault", keeping its AI and dictation on your computer. Three things

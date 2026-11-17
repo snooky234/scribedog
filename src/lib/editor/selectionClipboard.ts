@@ -33,7 +33,8 @@ function copyViaCommand(fill: (data: DataTransfer) => void): boolean {
   }
 }
 
-async function writeClipboardText(text: string): Promise<boolean> {
+/** Plain text onto the clipboard, with the copy-event route where the Clipboard API is missing (plain http). */
+export async function writeClipboardText(text: string): Promise<boolean> {
   if (typeof navigator.clipboard?.writeText === "function") {
     try {
       await navigator.clipboard.writeText(text);

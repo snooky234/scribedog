@@ -49,6 +49,7 @@ export const PAGE_LINES_STORAGE_KEY = "scribedog-page-lines-enabled";
 export const BLOCK_GUTTER_STORAGE_KEY = "scribedog-block-gutter-enabled";
 export const BLOCK_GUTTER_OPTIONS_STORAGE_KEY = "scribedog-block-gutter-options";
 export const REOPEN_LAST_NOTE_STORAGE_KEY = "scribedog-reopen-last-note";
+export const DOC_LINKS_IN_ADDRESS_STORAGE_KEY = "scribedog-doc-links-in-address";
 export const DETAILS_PANEL_STORAGE_KEY = "scribedog-details-panel-visible";
 export const OUTLINE_DEPTH_STORAGE_KEY = "scribedog-outline-max-depth";
 export const DETAILS_COLLAPSED_STORAGE_KEY = "scribedog-details-collapsed-sections";
@@ -374,6 +375,26 @@ function persistReopenLastNote(enabled: boolean): void {
   }
 }
 
+// Off by default: every address change lands in the browser's history page
+// (Chrome records a replaced address there too), so moving between many notes
+// would fill it. Incoming links and "Copy link" work either way, and the app
+// has its own back and forward next to the breadcrumb.
+function getStoredDocLinksInAddress(): boolean {
+  try {
+    return window.localStorage.getItem(DOC_LINKS_IN_ADDRESS_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function persistDocLinksInAddress(enabled: boolean): void {
+  try {
+    window.localStorage.setItem(DOC_LINKS_IN_ADDRESS_STORAGE_KEY, String(enabled));
+  } catch {
+    // localStorage may be unavailable in some environments.
+  }
+}
+
 function getStoredDetailsPanelVisible(): boolean {
   try {
     return window.localStorage.getItem(DETAILS_PANEL_STORAGE_KEY) === "true";
@@ -612,6 +633,13 @@ type EditorSettingsState = {
   reopenLastNote: boolean;
   setReopenLastNote: (enabled: boolean) => void;
   /**
+   * Server edition: whether the address bar follows the open document, with a
+   * history entry per document (back and forward step through them). Off, the
+   * address is left alone and nothing lands in the browser's history.
+   */
+  docLinksInAddress: boolean;
+  setDocLinksInAddress: (enabled: boolean) => void;
+  /**
    * Document font, shared by the editor and every export format. Selecting it
    * pulls in the family's faces on demand (see src/lib/fonts.ts).
    */
@@ -838,6 +866,11 @@ export const useEditorSettingsStore = create<EditorSettingsState>((set, get) => 
   setReopenLastNote: (enabled: boolean) => {
     persistReopenLastNote(enabled);
     set({ reopenLastNote: enabled });
+  },
+  docLinksInAddress: getStoredDocLinksInAddress(),
+  setDocLinksInAddress: (enabled: boolean) => {
+    persistDocLinksInAddress(enabled);
+    set({ docLinksInAddress: enabled });
   },
   fontId: initialFontId,
   setFontId: (fontId: AppFontId) => {

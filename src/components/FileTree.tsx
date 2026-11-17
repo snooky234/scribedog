@@ -37,6 +37,7 @@ import { useSearchStore } from "@/store/useSearchStore";
 import { useStagedChangesStore } from "@/store/useStagedChangesStore";
 
 import { CompareMenuItem } from "@/components/compare/CompareMenuItem";
+import { CopyDocLinkMenuItem } from "@/components/CopyDocLinkMenuItem";
 
 import { ContextMenuSurface } from "./fileTree/ContextMenuSurface";
 import { TreeNodeRow } from "./fileTree/TreeNodeRow";
@@ -1179,9 +1180,17 @@ export function FileTree({
                 <CompareMenuItem filePath={contextMenu.filePath} onDone={() => setContextMenu(null)} />
               ) : null}
 
+              {contextMenu.kind === "file" ? (
+                <CopyDocLinkMenuItem filePath={contextMenu.filePath} onDone={() => setContextMenu(null)} />
+              ) : null}
+
               {/* A folder can be a reference through its own note, when it has one. */}
               {contextMenu.kind === "folder" && folderNotesEnabled && contextFolderNotePath ? (
                 <CompareMenuItem filePath={contextFolderNotePath} onDone={() => setContextMenu(null)} />
+              ) : null}
+
+              {contextMenu.kind === "folder" && folderNotesEnabled && contextFolderNotePath ? (
+                <CopyDocLinkMenuItem filePath={contextFolderNotePath} onDone={() => setContextMenu(null)} />
               ) : null}
 
               {/* Only with folder notes on: with them off, the converted note

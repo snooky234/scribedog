@@ -66,3 +66,17 @@ describe("view text size", () => {
     expect(store.getState().zenFontSizePt).toBe(20);
   });
 });
+
+describe("document links in the address bar", () => {
+  it("is off until it is switched on", async () => {
+    expect((await loadStore()).getState().docLinksInAddress).toBe(false);
+  });
+
+  it("is kept across a restart, also when switched off again", async () => {
+    (await loadStore()).getState().setDocLinksInAddress(true);
+    expect((await loadStore()).getState().docLinksInAddress).toBe(true);
+
+    (await loadStore()).getState().setDocLinksInAddress(false);
+    expect((await loadStore()).getState().docLinksInAddress).toBe(false);
+  });
+});

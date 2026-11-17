@@ -431,6 +431,8 @@ export function SettingsDialog({
   const aiFeaturesVisible = useEditorSettingsStore((state) => state.aiFeaturesVisible);
   const setAiFeaturesVisible = useEditorSettingsStore((state) => state.setAiFeaturesVisible);
   const setReopenLastNote = useEditorSettingsStore((state) => state.setReopenLastNote);
+  const docLinksInAddress = useEditorSettingsStore((state) => state.docLinksInAddress);
+  const setDocLinksInAddress = useEditorSettingsStore((state) => state.setDocLinksInAddress);
   const restoreWorkingSet = useEditorSettingsStore((state) => state.restoreWorkingSet);
   const setRestoreWorkingSet = useEditorSettingsStore((state) => state.setRestoreWorkingSet);
   const autoAdmitWorkingSet = useEditorSettingsStore((state) => state.autoAdmitWorkingSet);
@@ -661,6 +663,21 @@ export function SettingsDialog({
                     />
                   </SettingRow>
 
+                  {platform.features.docLinks ? (
+                    <SettingRow
+                      layout="switch"
+                      label={t("settingsDialog.docLinksInAddress")}
+                      hint={t("settingsDialog.docLinksInAddressShort")}
+                      info={t("settingsDialog.docLinksInAddressHint")}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={docLinksInAddress}
+                        onChange={(event) => setDocLinksInAddress(event.target.checked)}
+                      />
+                    </SettingRow>
+                  ) : null}
+
                   <SettingRow
                     layout="switch"
                     label={t("settingsDialog.openOnDoubleClick")}
@@ -704,6 +721,7 @@ export function SettingsDialog({
                     layout="switch"
                     label={t("settingsDialog.pasteMarkdown")}
                     hint={t("settingsDialog.pasteMarkdownShort")}
+                    info={t("settingsDialog.pasteMarkdownHint")}
                   >
                     <input
                       type="checkbox"

@@ -22,6 +22,7 @@ import { useAppVersion } from "@/hooks/useAppVersion";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { CHAT_MAX_WIDTH, CHAT_MIN_WIDTH, useChatWidth } from "@/hooks/useChatWidth";
 import { useDeleteTarget } from "@/hooks/useDeleteTarget";
+import { useDocLinks } from "@/hooks/useDocLinks";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useDraftFlush } from "@/hooks/useDraftFlush";
 import { useExportTarget } from "@/hooks/useExportTarget";
@@ -88,6 +89,7 @@ import { useRemindersStore } from "@/store/useRemindersStore";
 import { useCustomFontsStore } from "@/store/useCustomFontsStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useNavigationHistoryStore } from "@/store/useNavigationHistoryStore";
+import { useNoticeStore } from "@/store/useNoticeStore";
 import { useSessionStore } from "@/store/useSessionStore";
 import { useSharedVaultsStore } from "@/store/useSharedVaultsStore";
 import { SharedVaultDialogs } from "@/components/shared/SharedVaultDialogs";
@@ -101,10 +103,7 @@ function App() {
   // position instead of recording the target as a new entry. Cleared once it is
   // consumed — or when the step is refused because an AI proposal is open.
   const navigationIntentRef = useRef<{ filePath: string; index: number } | null>(null);
-  // A one-line, self-dismissing hint at the bottom of the window; the place
-  // for "not now, because ..." answers that do not deserve a dialog.
-  const [notice, setNotice] = useState<string | null>(null);
-  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notice = useNoticeStore((state) => state.message);
   const [isAiSettingsOpen, setIsAiSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>("application");
   const [versionDiffTarget, setVersionDiffTarget] = useState<VersionDiffTarget | null>(null);
@@ -429,14 +428,7 @@ function App() {
           : deleteTarget.path
       : null;
 
-  const showNotice = (message: string) => {
-    if (noticeTimerRef.current) {
-      clearTimeout(noticeTimerRef.current);
-    }
-
-    setNotice(message);
-    noticeTimerRef.current = setTimeout(() => setNotice(null), 4000);
-  };
+  const showNotice = useNoticeStore.getState().show;
 
   // Every way of leaving the open note runs through here. Unsaved edits are
   // no reason to ask any more: they stay in the document map for the session
@@ -968,7 +960,9 @@ function App() {
 
     restoredFolderRef.current = folderPath;
 
-    if (!reopenLastNote || selectedFilePath !== null) {
+    // An address that names a document of this vault opens that one instead
+    // (useDocLinks below).
+    if (!reopenLastNote || selectedFilePath !== null || platform.docLinks?.current()?.folderPath === folderPath) {
       return;
     }
 
@@ -993,6 +987,17 @@ function App() {
       setLastOpenedRelativePath(folderPath, null);
     }
   }, [folderPath, isLoading, filePaths, reopenLastNote, selectedFilePath, selectFilePath]);
+
+  useDocLinks({
+    folderPath,
+    isLoading,
+    filePaths,
+    selectedFilePath,
+    openDocument: selectFilePathSafely,
+    openVault: openRecentFolderSafely,
+    onMissing: () => showNotice(t("app.docLinkNotFound")),
+    onOpened: () => setIsSidebarSheetOpen(false)
+  });
 
   // The bell lists the reminders of every vault in the vault menu. One in
   // another vault opens that vault first, and its note instead of the one

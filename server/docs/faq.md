@@ -117,6 +117,23 @@ In `./scribedog-data` next to the compose file, as plain `.md` files.
 Everything the app knows is in that folder. See
 [Your data and backups](data-and-backups.md).
 
+**Can I bookmark a document or send a link to it?**
+Yes. Right-click it in the file tree and choose **Copy link**; the link
+opens exactly that document. See
+[Links to a document](getting-started.md#links-to-a-document).
+
+**Why does the browser's back button leave ScribeDog instead of going to the previous document?**
+By default the address bar does not follow the open document, so the
+browser's history does not fill up with every note you open. Switch on
+**Settings, Show documents in the address bar and browser history** to step
+through documents with the browser's buttons, or use the arrows next to the
+document's path.
+
+**A link to a document stopped working. Why?**
+The link contains the document's path, so it breaks when the document is
+renamed, moved to another folder or deleted. Opening it shows a notice and
+nothing else changes. Open the document again and copy the new address.
+
 **Can I use my own fonts in the browser?**
 Yes. **Settings, Fonts, Import font** takes `.ttf` and `.woff` files from
 your computer and stores them in the vault, in `.scribedog/fonts/`, so every
