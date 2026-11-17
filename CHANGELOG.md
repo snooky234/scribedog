@@ -3,6 +3,12 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.24.1] - 2026-11-17
+
+### Bug Fixes
+- Allow accent colour on shipped themes
+- Keep the draw-on-image dialog centred for tall images
+
 ## [0.24.0] - 2026-11-17
 
 ### Highlights
