@@ -1795,6 +1795,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
               chain()?.setPageBreak().run();
             }
             break;
+          case "insertDetails":
+            if (view.editable) {
+              chain()?.setDetails().run();
+            }
+            break;
           case "insertLink":
             handleLinkRequest();
             break;

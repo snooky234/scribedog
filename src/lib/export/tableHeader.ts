@@ -20,6 +20,7 @@ function stripHeader(block: ExportBlock): ExportBlock {
       return block.rows.some((row) => row.some((cell) => cell.header))
         ? { ...block, rows: block.rows.map((row) => row.map((cell) => ({ ...cell, header: false }))) }
         : block;
+    case "details":
     case "blockquote":
       return { ...block, children: block.children.map(stripHeader) };
     case "list":

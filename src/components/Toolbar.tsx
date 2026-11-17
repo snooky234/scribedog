@@ -28,6 +28,7 @@ import {
   Italic,
   Link2,
   List,
+  ListChevronsDownUp,
   ListOrdered,
   Megaphone,
   MessagesSquare,
@@ -649,6 +650,61 @@ function CalloutMenu({ editor }: { editor: Editor }) {
   );
 }
 
+// Dropdown for expandable sections (<details>): insert one, choose whether a
+// reader sees it expanded at first, remove it again.
+function DetailsMenu({ editor }: { editor: Editor }) {
+  const { t } = useTranslation();
+  const shortcut = useShortcutLabel("insertDetails");
+  const inDetails = editor.isActive("details");
+  const openByDefault = inDetails && Boolean(editor.getAttributes("details").open);
+  const title = shortcut ? `${t("toolbar.detailsMenu")} (${shortcut})` : t("toolbar.detailsMenu");
+
+  return (
+    <Menu>
+      <MenuTrigger
+        render={
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="outline"
+            aria-label={t("toolbar.detailsMenu")}
+            title={title}
+            data-active={inDetails ? "true" : undefined}
+            onMouseDown={(event) => {
+              event.preventDefault();
+            }}
+          />
+        }
+      >
+        <ListChevronsDownUp />
+      </MenuTrigger>
+      <MenuPortal>
+        <MenuPositioner align="end">
+          <MenuPopup>
+            <MenuItem onClick={() => editor.chain().focus().setDetails().run()}>
+              <ListChevronsDownUp className="size-4" />
+              {t("toolbar.detailsInsert")}
+              {shortcut ? <MenuShortcut>{shortcut}</MenuShortcut> : null}
+            </MenuItem>
+            <MenuItem
+              disabled={!inDetails}
+              onClick={() => editor.chain().focus().setDetailsOpenByDefault(!openByDefault).run()}
+            >
+              <Check className={`size-4${openByDefault ? "" : " invisible"}`} />
+              {t("toolbar.detailsOpenByDefault")}
+            </MenuItem>
+            <div className="editor-toolbar__menu-separator" role="separator" />
+            <MenuItem disabled={!inDetails} onClick={() => editor.chain().focus().unsetDetails().run()}>
+              <X className="size-4" />
+              {t("toolbar.detailsRemove")}
+            </MenuItem>
+          </MenuPopup>
+        </MenuPositioner>
+      </MenuPortal>
+    </Menu>
+  );
+}
+
 export function Toolbar({
   editor,
   onLinkRequest,
@@ -1015,6 +1071,7 @@ export function Toolbar({
           <PencilLine />
         </Button>
         <CalloutMenu editor={editor} />
+        <DetailsMenu editor={editor} />
         <Button
           type="button"
           size="icon-sm"

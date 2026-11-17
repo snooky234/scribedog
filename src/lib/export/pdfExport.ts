@@ -11,7 +11,7 @@ import {
 } from "@/lib/fonts";
 import { getPageLayout } from "@/lib/pageSetup";
 
-import type { ExportBlock, InlineRun } from "./markdownModel";
+import { expandDetails, type ExportBlock, type InlineRun } from "./markdownModel";
 import type { ExportImageMap } from "./imageAssets";
 import { computePagedImageSize } from "./imageSize";
 import { captionAfter, isShortBlock } from "./keepTogether";
@@ -398,6 +398,9 @@ function blocksToPdfContent(
           },
           margin: [0, PDF_BLOCK_MARGIN.top, 0, PDF_BLOCK_MARGIN.bottom]
         });
+        break;
+      case "details":
+        content.push(...blocksToPdfContent(expandDetails(block), images, layout));
         break;
       case "blockquote":
         content.push({

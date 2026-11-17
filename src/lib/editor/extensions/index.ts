@@ -18,6 +18,7 @@ import { VoiceInsertWidget } from "@/lib/voiceInsertWidget";
 
 import { Callout } from "./callout";
 import { CodeBlock } from "./codeBlock";
+import { DetailsExtensions } from "./details";
 import { EndGapCursor } from "./endGapCursor";
 import { Highlight } from "./highlight";
 import { EditorImage } from "./image";
@@ -64,6 +65,8 @@ function buildContentExtensions(): Extensions {
     ListBackspace,
     HardBreak,
     Callout,
+    // Expandable sections, <details>/<summary> on disk (details.ts).
+    DetailsExtensions,
     PageBreak,
     TaskList,
     TaskItem.configure({ nested: true }),

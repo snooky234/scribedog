@@ -21,6 +21,8 @@ The editor is built on [TipTap](https://tiptap.dev/) and ProseMirror.
   into the Markdown. Drag an image to move it; on a touch screen, hold it
   for a moment first.
 - **Drawings**, sketched by hand right in the note (see [Drawings](#drawings))
+- **Expandable sections** that fold content away under a title (see
+  [Expandable sections](#expandable-sections))
 - **Code blocks**, with a one-click copy button and syntax colouring for
   about 30 languages (PowerShell, Bash, INI/TOML, Dockerfile, Nginx, C, C++,
   Kotlin and more). The badge on the block's edge switches the language. A
@@ -75,6 +77,66 @@ changes back into the same file.
 Only drawings made in ScribeDog can be edited this way. Other SVG files stay
 ordinary images, since the drawing surface would lose whatever it cannot
 represent.
+
+## Expandable sections
+
+An expandable section hides its content under a one-line title until you open
+it. Good for FAQs, long log output, solutions or anything a reader should only
+see on request.
+
+Insert one with the **Expandable section** button in the toolbar or with
+`Ctrl+Shift+Enter` (you can change the combination in the shortcut settings). With text
+selected, the selected blocks move into the new section. Type the title, press
+`Enter` to continue in the content. The arrow to the left of the title opens
+and closes the section.
+
+Sections work in lists too. Select some list items and they move into a
+section at their place in the list; a numbered list keeps counting after it.
+Without a selection, the cursor in a list item adds an empty section below
+that item, indented with it.
+
+| Action | How |
+| --- | --- |
+| Insert a section | `Ctrl+Shift+Enter`, or toolbar button > Insert expandable section |
+| Open or close it | Click the arrow next to the title |
+| Leave the section | `Enter` on an empty last line |
+| Remove the section, keep the content | Toolbar button > Remove expandable section, or `Backspace` in an empty title |
+| Show it open to readers | Toolbar button > Expanded when opened |
+
+Opening and closing a section in the editor does not change the note. What a
+reader sees first is a separate setting, **Expanded when opened**, and only
+that one is saved. Search, the outline and the arrow keys open a closed
+section by themselves when they lead into it.
+
+### How it is saved
+
+The section is plain HTML that Markdown allows anywhere:
+
+```markdown
+<details>
+<summary>How do I install it?</summary>
+
+Download the **installer** and run it.
+
+</details>
+```
+
+GitHub, GitLab, VS Code, Obsidian and every browser show this as a section
+that opens and closes. The blank lines after the title and before
+`</details>` make sure the content is read as Markdown there too. The title is
+plain text, since tools disagree on formatting inside it.
+
+> [!NOTE]
+> Editors that do not show HTML display the two tags as text. The content
+> stays complete and readable.
+
+Sections written by other tools open in ScribeDog as well, also without the
+blank lines or with the title on the `<details>` line. A section ScribeDog
+cannot read safely, for example one with other attributes or with formatting
+in the title, stays visible as text, like any other HTML in a note.
+
+When you export, the HTML file keeps the sections collapsible. PDF, DOCX, ODT,
+EPUB and the print show them open, with the title in bold.
 
 ## Highlighting
 

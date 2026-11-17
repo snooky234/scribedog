@@ -145,6 +145,7 @@ export function collectImageSrcs(blocks: import("./markdownModel").ExportBlock[]
         case "paragraph":
           visitRuns(block.runs);
           break;
+        case "details":
         case "blockquote":
           visitBlocks(block.children);
           break;

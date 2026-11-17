@@ -6,7 +6,7 @@ import {
   type TableWidth
 } from "@/lib/fonts";
 
-import type { BlockAlign, ExportBlock, InlineRun } from "./markdownModel";
+import { expandDetails, type BlockAlign, type ExportBlock, type InlineRun } from "./markdownModel";
 import type { ExportImageMap } from "./imageAssets";
 import { computePagedImageSize } from "./imageSize";
 import { captionAfter, isImageOnlyParagraph, isShortBlock } from "./keepTogether";
@@ -85,6 +85,9 @@ const documentCss = (fontStack: string, baseSizePx: number, tableWidth: TableWid
     border-left: 0.25em solid #d1d9e0;
     color: #59636e;
   }
+  details { margin: 0.75em 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  details > :not(summary) { margin-left: 1.25em; }
   /* Mirrors the editor's table width setting; the columns size to their
      content either way, this only decides the table's own width. */
   table { border-collapse: collapse; margin: 1em 0; width: ${tableWidth === "content" ? "auto" : "100%"}; }
@@ -222,6 +225,16 @@ function renderBlocks(blocks: ExportBlock[], images: ExportImageMap, paged?: Pag
         break;
       case "blockquote":
         html += `<blockquote>\n${renderBlocks(block.children, images, paged)}</blockquote>\n`;
+        break;
+      case "details":
+        // Collapsible in the HTML file, expanded on paper like every paged
+        // format.
+        if (paged) {
+          html += renderBlocks(expandDetails(block), images, paged);
+        } else {
+          const summary = block.summary ? `<summary>${escapeHtml(block.summary)}</summary>\n` : "";
+          html += `<details${block.open ? " open" : ""}>\n${summary}${renderBlocks(block.children, images, paged)}</details>\n`;
+        }
         break;
       case "list": {
         const isTaskList = block.items.some((item) => item.checked !== null);

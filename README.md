@@ -58,7 +58,9 @@ content. The file on disk stays clean Markdown. Highlight passages, move lines
 with the keyboard, paste Markdown and see it rendered at once, and copy as
 formatted text, Markdown or plain text. If you do not want the header look on
 the first row of a table, [one setting](docs/customizing.md#tables) turns it
-off.
+off. [Expandable sections](docs/writing.md#expandable-sections) fold away
+details and are saved as standard HTML `<details>`, so they open and close on
+GitHub too.
 
 <img src="docs/images/scribe-dog-light-theme.png" alt="ScribeDog main window with file tree, editor and chat" width="700">
 

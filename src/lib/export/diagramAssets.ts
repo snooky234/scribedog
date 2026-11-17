@@ -134,6 +134,7 @@ export async function embedDiagrams(
           });
           break;
         }
+        case "details":
         case "blockquote":
           result.push({ ...block, children: await convert(block.children) });
           break;
@@ -163,6 +164,7 @@ function hasDiagram(blocks: ExportBlock[]): boolean {
     switch (block.kind) {
       case "codeBlock":
         return isMermaidLanguage(block.language);
+      case "details":
       case "blockquote":
         return hasDiagram(block.children);
       case "list":

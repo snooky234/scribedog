@@ -28,11 +28,12 @@ import {
 } from "@/lib/fonts";
 import { getPageLayout, ptToPx, ptToTwips } from "@/lib/pageSetup";
 
-import type {
-  BlockAlign,
-  ExportBlock,
-  InlineRun,
-  TableCell as ModelTableCell
+import {
+  expandDetails,
+  type BlockAlign,
+  type ExportBlock,
+  type InlineRun,
+  type TableCell as ModelTableCell
 } from "./markdownModel";
 import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 
@@ -214,6 +215,9 @@ function blocksToDocxElements(
       }
       case "blockquote":
         elements.push(...blocksToDocxElements(block.children, images, listContext, true, layout));
+        break;
+      case "details":
+        elements.push(...blocksToDocxElements(expandDetails(block), images, listContext, inQuote, layout));
         break;
       case "list": {
         for (const item of block.items) {

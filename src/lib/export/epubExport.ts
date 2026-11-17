@@ -8,7 +8,7 @@ import {
   type DocumentStyle
 } from "@/lib/fonts";
 
-import type { BlockAlign, ExportBlock, InlineRun } from "./markdownModel";
+import { expandDetails, type BlockAlign, type ExportBlock, type InlineRun } from "./markdownModel";
 import type { CompiledManuscript } from "./manuscript";
 
 // Hand-written EPUB 3 writer. An .epub is a zip whose first entry must be an
@@ -123,6 +123,11 @@ function renderBlocks(blocks: ExportBlock[], imageHrefs: Map<string, string>): s
         break;
       case "blockquote":
         xhtml += `<blockquote>\n${renderBlocks(block.children, imageHrefs)}</blockquote>\n`;
+        break;
+      // Reading systems differ in whether <details> opens at all; expanded,
+      // the content is there in every one of them.
+      case "details":
+        xhtml += renderBlocks(expandDetails(block), imageHrefs);
         break;
       case "list": {
         const isTaskList = block.items.some((item) => item.checked !== null);

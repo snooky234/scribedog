@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { renderHtmlBody } from "./htmlExport";
 import {
+  expandDetails,
   normalizePageBreaks,
   pageBreakKeepMask,
   parseMarkdownToBlocks,
@@ -197,5 +198,51 @@ describe("parseMarkdownToBlocksWithLines", () => {
 
     expect(lines).toHaveLength(blocks.length);
     expect(lines).toEqual([0, 2, 5, 8, 10, 14, 18, 20, 22]);
+  });
+});
+
+describe("expandable sections", () => {
+  const DETAILS = "<details open>\n<summary>Q&amp;A</summary>\n\n# Inside\n\ntext\n\n</details>\n\nafter\n";
+
+  it("parses a section into one block with its summary, start state and content", () => {
+    const [details, after] = parseMarkdownToBlocks(DETAILS);
+
+    expect(details).toMatchObject({ kind: "details", summary: "Q&A", open: true });
+    expect(details.kind === "details" && details.children.map((block) => block.kind)).toEqual(["heading", "paragraph"]);
+    expect(after.kind).toBe("paragraph");
+  });
+
+  it("counts a section as one top-level block for the page lines", () => {
+    const { blocks, lines } = parseMarkdownToBlocksWithLines(DETAILS);
+
+    expect(blocks).toHaveLength(2);
+    expect(lines).toEqual([0, 9]);
+  });
+
+  it("expands into a bold title and the content for the paged formats", () => {
+    const [details] = parseMarkdownToBlocks(DETAILS);
+
+    if (details.kind !== "details") {
+      throw new Error("expected a details block");
+    }
+
+    const expanded = expandDetails(details);
+
+    expect(expanded.map((block) => block.kind)).toEqual(["paragraph", "heading", "paragraph"]);
+    expect(expanded[0]).toMatchObject({ runs: [{ kind: "text", text: "Q&A", bold: true }] });
+    expect(expandDetails({ ...details, summary: "" })).toBe(details.children);
+  });
+
+  it("stays collapsible in the HTML export", () => {
+    const html = renderHtmlBody(parseMarkdownToBlocks(DETAILS), new Map());
+
+    expect(html).toContain("<details open>\n<summary>Q&amp;A</summary>\n<h1>Inside</h1>");
+    expect(html).toContain("</details>");
+  });
+
+  it("leaves a section without a closing tag as text", () => {
+    const blocks = parseMarkdownToBlocks("<details>\n<summary>Title</summary>\n\ntext\n");
+
+    expect(blocks.some((block) => block.kind === "details")).toBe(false);
   });
 });

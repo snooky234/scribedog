@@ -75,6 +75,7 @@ function collectHeadingBlocks(blocks: ExportBlock[], into: HeadingBlock[]): void
       case "heading":
         into.push(block);
         break;
+      case "details":
       case "blockquote":
         collectHeadingBlocks(block.children, into);
         break;
@@ -94,6 +95,7 @@ function rewriteBlocks(blocks: ExportBlock[], replacements: Map<HeadingBlock, He
     switch (block.kind) {
       case "heading":
         return replacements.get(block) ?? block;
+      case "details":
       case "blockquote":
         return { ...block, children: rewriteBlocks(block.children, replacements) };
       case "list":

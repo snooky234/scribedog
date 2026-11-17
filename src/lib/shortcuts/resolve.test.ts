@@ -45,6 +45,12 @@ describe("insertPageBreak", () => {
     );
   });
 
+  it("leaves Ctrl+Shift+Enter to the expandable section", () => {
+    expect(matchShortcut({}, keydown({ ctrlKey: true, shiftKey: true, code: "Enter", key: "Enter" }), "editor")).toBe(
+      "insertDetails"
+    );
+  });
+
   it("leaves Shift+Enter, the hard line break, alone", () => {
     expect(matchShortcut({}, keydown({ shiftKey: true, code: "Enter", key: "Enter" }), "editor")).toBeNull();
   });

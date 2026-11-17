@@ -11,7 +11,7 @@ import {
 } from "@/lib/fonts";
 import { formatCm, getPageLayout, ptToPx, type PageLayout } from "@/lib/pageSetup";
 
-import type { ExportBlock, InlineRun } from "./markdownModel";
+import { expandDetails, type ExportBlock, type InlineRun } from "./markdownModel";
 import { computeExportImageSize, type ExportImageMap } from "./imageAssets";
 
 // Hand-written OpenDocument Text writer: an .odt is a zip whose first entry
@@ -143,6 +143,7 @@ function collectTextStyles(blocks: ExportBlock[]): string[] {
         case "paragraph":
           visitRuns(block.runs);
           break;
+        case "details":
         case "blockquote":
           visit(block.children);
           break;
@@ -255,6 +256,9 @@ function blocksToOdtXml(blocks: ExportBlock[], state: OdtWriterState, paragraphS
         break;
       case "blockquote":
         xml += blocksToOdtXml(block.children, state, "P_quote");
+        break;
+      case "details":
+        xml += blocksToOdtXml(expandDetails(block), state, paragraphStyle);
         break;
       case "list": {
         // Task lists get indented checkbox paragraphs instead of a bulleted

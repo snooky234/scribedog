@@ -1185,6 +1185,82 @@
   content: "⛔";
 }
 
+/* Expandable section (extensions/details.ts): a chevron in the gutter, the
+   summary as a bold line, the content indented below it. Collapsed hides
+   everything but the summary; the class comes from a decoration, so
+   expanding and collapsing never changes the document. */
+.editor-view__surface .details-block {
+  position: relative;
+  margin: 1em 0;
+  padding-left: 1.6rem;
+}
+
+.editor-view__surface .details-block__toggle {
+  position: absolute;
+  top: 0.22em;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: rgba(var(--muted-rgb), 0.9);
+  cursor: pointer;
+  user-select: none;
+}
+
+.editor-view__surface .details-block__toggle:hover {
+  background: rgba(var(--muted-rgb), 0.14);
+  color: var(--foreground);
+}
+
+.editor-view__surface .details-block__toggle svg {
+  transform: rotate(90deg);
+  transition: transform 120ms ease;
+}
+
+.editor-view__surface .details-block--collapsed > .details-block__toggle svg {
+  transform: rotate(0deg);
+}
+
+.editor-view__surface .details-block__body > * {
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+.editor-view__surface .details-block__body > :first-child {
+  margin-top: 0;
+}
+
+.editor-view__surface .details-block__body > :last-child {
+  margin-bottom: 0;
+}
+
+.editor-view__surface .details-block__summary {
+  font-weight: 600;
+}
+
+.editor-view__surface .details-block__summary + * {
+  margin-top: 0.5em;
+}
+
+.editor-view__surface .details-block--collapsed > .details-block__body > :not(.details-block__summary) {
+  display: none;
+}
+
+.editor-view__surface .details-block__summary--empty::before {
+  content: attr(data-placeholder);
+  color: rgba(var(--muted-rgb), 0.7);
+  font-weight: 600;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
 /* Manual page break (extensions/pageBreak.ts): a dashed rule with its label
    in the middle, drawn by the node view. An atom, so it is selected, moved
    and deleted as a whole. */

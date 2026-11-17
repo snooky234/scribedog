@@ -4,6 +4,7 @@ import insPlugin from "markdown-it-ins";
 import markPlugin from "markdown-it-mark";
 
 import { calloutMarkdownItPlugin } from "@/lib/editor/extensions/callout";
+import { detailsMarkdownItPlugin } from "@/lib/editor/extensions/details";
 import { pageBreakMarkdownItPlugin } from "@/lib/editor/extensions/pageBreak";
 import { tableLineBreakMarkdownItPlugin } from "@/lib/editor/extensions/table";
 import { reminderStripMarkdownItPlugin } from "@/lib/reminders/reminderMarkdownIt";
@@ -54,6 +55,10 @@ export type ExportBlock =
   // indented block. Only diagrams read it (diagramAssets.ts).
   | { kind: "codeBlock"; text: string; language?: string }
   | { kind: "blockquote"; children: ExportBlock[] }
+  // An expandable section (<details>, extensions/details.ts). Only the HTML
+  // export keeps it collapsible; every other format shows it expanded, as
+  // its title followed by the content (expandDetails).
+  | { kind: "details"; summary: string; open: boolean; children: ExportBlock[] }
   | { kind: "list"; ordered: boolean; start: number; items: ExportListItem[] }
   | {
       kind: "table";
@@ -82,6 +87,8 @@ export function createExportMarkdownIt(): MarkdownIt {
   markdownIt.use(calloutMarkdownItPlugin);
   // The editor writes line breaks inside a table cell as "<br>" (table.ts).
   markdownIt.use(tableLineBreakMarkdownItPlugin);
+  // Expandable sections; without the rule the tags export as visible text.
+  markdownIt.use(detailsMarkdownItPlugin);
   // The manual page break line; without the rule it exports as visible text.
   markdownIt.use(pageBreakMarkdownItPlugin);
   // A reminder is a comment at the end of a block; an export never shows it.
@@ -263,6 +270,22 @@ function parseBlocks(state: ParserState, closeTokenType: string | null): ExportB
       case "blockquote_open":
         blocks.push({ kind: "blockquote", children: parseBlocks(state, "blockquote_close") });
         break;
+      case "details_open": {
+        let summary = "";
+
+        if (state.tokens[state.index]?.type === "details_summary") {
+          summary = state.tokens[state.index].content;
+          state.index += 1;
+        }
+
+        blocks.push({
+          kind: "details",
+          summary,
+          open: Boolean(token.meta?.open),
+          children: parseBlocks(state, "details_close")
+        });
+        break;
+      }
       case "bullet_list_open":
       case "ordered_list_open": {
         const ordered = token.type === "ordered_list_open";
@@ -346,6 +369,7 @@ const BLOCK_START_TOKENS = new Set([
   "fence",
   "code_block",
   "blockquote_open",
+  "details_open",
   "bullet_list_open",
   "ordered_list_open",
   "table_open",
@@ -366,6 +390,23 @@ export function parseMarkdownToBlocksWithLines(markdown: string): { blocks: Expo
     .map((token) => token.map?.[0] ?? -1);
 
   return { blocks: parseBlocks({ tokens, index: 0 }, null), lines };
+}
+
+/**
+ * A section as the formats without a collapsible element show it: the title
+ * as a bold paragraph, then the content. An empty title adds nothing.
+ */
+export function expandDetails(block: Extract<ExportBlock, { kind: "details" }>): ExportBlock[] {
+  if (!block.summary) {
+    return block.children;
+  }
+
+  const title: ExportBlock = {
+    kind: "paragraph",
+    runs: [{ kind: "text", text: block.summary, ...emptyStyle(), bold: true }]
+  };
+
+  return [title, ...block.children];
 }
 
 /**
