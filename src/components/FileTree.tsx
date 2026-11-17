@@ -345,6 +345,21 @@ export function FileTree({
     [treeNodes, expandedFolderPaths]
   );
 
+  // The folder's own note, when it exists: the row's context menu is on a
+  // visible row, so the folder is in flatNodes.
+  const contextFolderNotePath = useMemo(() => {
+    if (contextMenu?.kind !== "folder") {
+      return null;
+    }
+
+    const folder = flatNodes.find(
+      (node): node is FileTreeNode & { kind: "folder" } =>
+        node.kind === "folder" && node.relativePath === contextMenu.relativePath
+    );
+
+    return folder?.folderNotePath ?? null;
+  }, [contextMenu, flatNodes]);
+
   const {
     activeKey,
     setActiveKey,
@@ -1162,6 +1177,11 @@ export function FileTree({
 
               {contextMenu.kind === "file" ? (
                 <CompareMenuItem filePath={contextMenu.filePath} onDone={() => setContextMenu(null)} />
+              ) : null}
+
+              {/* A folder can be a reference through its own note, when it has one. */}
+              {contextMenu.kind === "folder" && folderNotesEnabled && contextFolderNotePath ? (
+                <CompareMenuItem filePath={contextFolderNotePath} onDone={() => setContextMenu(null)} />
               ) : null}
 
               {/* Only with folder notes on: with them off, the converted note

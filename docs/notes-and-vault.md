@@ -105,7 +105,8 @@ Grading against a model answer, checking a copy against its template, or just
 writing with a reference in view: right-click a note in the file tree or in
 the "In progress" list and choose **Open as reference**. It opens read-only
 to the left of the note you are working on, so it cannot be changed by
-accident.
+accident. A folder with a folder note works the same way: its context menu
+offers the folder note as the reference.
 
 | In the reference pane | What it does |
 | --- | --- |
