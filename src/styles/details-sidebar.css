@@ -31,6 +31,12 @@
   border-radius: 1rem;
   background: rgba(var(--surface-rgb),0.56);
   padding: 0.6rem;
+  /* Headings and note names can carry glyphs of an imported icon font, which
+     the UI font does not have. The icon fonts sit right after it, so only
+     those glyphs fall back to them; without any icon font the variable is
+     unset, the declaration is invalid and the panel inherits the UI font. */
+  font-family: "Geist Variable", var(--icon-fonts), system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .details-sidebar__header {
@@ -237,6 +243,10 @@ button.details-sidebar__outline-item:hover {
   min-width: 0;
   border-radius: 0.4rem;
   padding: 0.25rem var(--outline-label-pad);
+}
+
+.details-sidebar__outline-glyph {
+  margin-right: 0.3em;
 }
 
 .details-sidebar__outline-item:hover .details-sidebar__item-label {

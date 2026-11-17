@@ -16,6 +16,30 @@ type DetailsOutlineSectionProps = {
   onRequestEditorFocus: () => void;
 };
 
+// Private Use codepoints, i.e. glyphs of an imported icon font (see isGlyphIcon).
+const ICON_GLYPH_RUN = /([-\u{F0000}-\u{10FFFD}]+)/u;
+
+/**
+ * An icon font glyph is drawn wider than its font reserves for it (a Nerd Font
+ * icon runs up to the full em on a 0.6em advance) and would cover the space
+ * after it, so each run of them gets its own span that adds the room back.
+ */
+function renderOutlineTitle(title: string) {
+  if (!ICON_GLYPH_RUN.test(title)) {
+    return title;
+  }
+
+  return title.split(ICON_GLYPH_RUN).map((part, index) =>
+    index % 2 === 1 ? (
+      <span key={index} className="details-sidebar__outline-glyph">
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  );
+}
+
 /**
  * The document's headings as a clickable outline. Deliberately knows nothing
  * about the editor — it gets a list and a jump callback — so the same list can
@@ -173,7 +197,7 @@ export function DetailsOutlineSection({
                   {heading.number && (
                     <span className="details-sidebar__outline-number">{heading.number}</span>
                   )}
-                  {heading.title || t("detailsPanel.untitledHeading")}
+                  {heading.title ? renderOutlineTitle(heading.title) : t("detailsPanel.untitledHeading")}
                 </span>
               </button>
             </li>
