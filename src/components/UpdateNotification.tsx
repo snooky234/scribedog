@@ -7,8 +7,7 @@ import type { AppUpdate } from "@/platform/types";
 
 import { Button } from "@/components/ui/button";
 import { getPortableStatus } from "@/lib/portable";
-
-const RELEASES_URL = "https://github.com/snooky234/scribedog/releases/latest";
+import { LATEST_RELEASE_URL } from "@/lib/releaseLinks";
 
 type UpdateNotificationProps = {
   update: AppUpdate;
@@ -76,7 +75,7 @@ export function UpdateNotification({ update, onDismiss }: UpdateNotificationProp
 
       <div className="update-notification__actions">
         {isPortable ? (
-          <Button type="button" size="sm" onClick={() => void platform.shell.openUrl(RELEASES_URL)}>
+          <Button type="button" size="sm" onClick={() => void platform.shell.openUrl(LATEST_RELEASE_URL)}>
             {t("updateNotification.openDownload")}
           </Button>
         ) : (

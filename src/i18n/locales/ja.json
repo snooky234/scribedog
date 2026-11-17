@@ -281,6 +281,7 @@
     "checkForUpdatesShort": "起動時に一度だけ GitHub に新しいバージョンがあるか確認します。",
     "checkForUpdatesHint": "比較するのはバージョン番号だけで、利用データは送信されません。新しいバージョンがあれば通知が表示されます。ポータブルモードではインストールの代わりにリリースページを開きます。",
     "version": "アプリケーションのバージョン v{{version}}",
+    "changelog": "更新履歴",
     "openSourceLicenses": "オープンソースライセンス",
     "licensesLoading": "ライセンスを読み込んでいます …",
     "portableMode": "ポータブルモード有効 — 設定は {{path}} に保存されます",

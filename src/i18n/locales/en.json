@@ -282,6 +282,7 @@
     "checkForUpdatesShort": "Asks GitHub once at startup whether a newer version exists.",
     "checkForUpdatesHint": "Only the version number is compared, no usage data is sent. If there is a new version, a notice appears; in portable mode it leads to the release page instead of installing.",
     "version": "App version v{{version}}",
+    "changelog": "Changelog",
     "openSourceLicenses": "Open source licenses",
     "licensesLoading": "Loading licenses …",
     "portableMode": "Portable mode active — settings are stored in {{path}}",

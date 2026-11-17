@@ -57,6 +57,7 @@ import { useUpdateSettingsStore } from "@/store/useUpdateSettingsStore";
 import { apiKeyHint, describeAiError, localOriginInstruction } from "@/lib/localEndpointHint";
 import { isPrivateNetworkHttpUrl, serverAllowlistLine } from "@/lib/networkAddress";
 import { isWindowsPlatform } from "@/lib/platform";
+import { releaseNotesUrl } from "@/lib/releaseLinks";
 import { platform } from "@/platform";
 import { isSecretRef } from "@/platform/secretRef";
 import type { CredentialsStatus } from "@/platform/types";
@@ -764,6 +765,14 @@ export function SettingsDialog({
                   {appVersion ? (
                     <>
                       {t("settingsDialog.version", { version: appVersion })}
+                      {" · "}
+                      <button
+                        type="button"
+                        className="ai-dialog__link"
+                        onClick={() => void platform.shell.openUrl(releaseNotesUrl(appVersion))}
+                      >
+                        {t("settingsDialog.changelog")}
+                      </button>
                       {" · "}
                     </>
                   ) : null}

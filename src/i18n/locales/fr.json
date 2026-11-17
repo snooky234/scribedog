@@ -282,6 +282,7 @@
     "checkForUpdatesShort": "Demande une fois à GitHub, au démarrage, s'il existe une version plus récente.",
     "checkForUpdatesHint": "Seul le numéro de version est comparé, aucune donnée d'utilisation n'est envoyée. S'il existe une nouvelle version, un avis apparaît ; en mode portable, il mène à la page de la version au lieu d'installer.",
     "version": "Version de l'application v{{version}}",
+    "changelog": "Notes de version",
     "openSourceLicenses": "Licences open source",
     "licensesLoading": "Chargement des licences …",
     "portableMode": "Mode portable actif — les réglages sont enregistrés dans {{path}}",

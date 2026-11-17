@@ -281,6 +281,7 @@
     "checkForUpdatesShort": "启动时向 GitHub 查询一次是否有更新的版本。",
     "checkForUpdatesHint": "只比较版本号，不发送任何使用数据。如果有新版本，会显示提示；便携模式下提示会打开发布页面，而不是安装。",
     "version": "应用程序版本 v{{version}}",
+    "changelog": "更新日志",
     "openSourceLicenses": "开源许可证",
     "licensesLoading": "正在加载许可证 …",
     "portableMode": "便携模式已启用 — 设置保存在 {{path}}",
