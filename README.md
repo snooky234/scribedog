@@ -89,6 +89,14 @@ survive a restart.
 
 [Read more →](docs/notes-and-vault.md)
 
+### A reference note beside the one you edit
+
+Right-click a note and choose **Open as reference**: it opens read-only to the
+left of the one you are editing, handy for grading against a template. One
+click marks what differs, and the marks follow as you type.
+
+[Read more →](docs/notes-and-vault.md#open-a-note-as-reference)
+
 ### Version history
 
 Every save can snapshot the previous version. Browse them, compare line by line

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
@@ -170,6 +170,8 @@ type EditorProps = {
   /** Where the toolbar renders instead of inside the editor (the document
    *  panel's slot above the title row on desktop); null keeps it inline. */
   toolbarContainer?: HTMLElement | null;
+  /** Rendered left of the document (the reference note, "Open as reference"). */
+  sidePane?: ReactNode;
 };
 
 export type EditorHandle = {
@@ -280,7 +282,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onAiSettingsRequest,
     onZenModeRequest,
     isZenMode = false,
-    toolbarContainer = null
+    toolbarContainer = null,
+    sidePane = null
   },
   ref
 ) {
@@ -2416,6 +2419,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
             onRequestFileOpen={onRequestFileOpen}
           />
           <div className="editor-view__panes">
+            {sidePane}
+
             <ScrollArea className="editor-view__scroll">
               <EditorContent
                 editor={editor}

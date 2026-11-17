@@ -1578,5 +1578,32 @@
     "notification": {
       "title": "Recordatorio de ScribeDog"
     }
+  },
+  "compare": {
+    "menuItem": "Abrir como referencia",
+    "menuDisabledHint": "Abre primero una nota; la referencia se muestra junto a ella.",
+    "eyebrow": "Referencia",
+    "paneLabel": "Nota de referencia: {{name}}",
+    "highlight": "Resaltar diferencias",
+    "attachToChat": "Adjuntar al chat",
+    "attachedToChat": "Adjuntada al chat",
+    "attachFailed": "No se pudo adjuntar la nota",
+    "close": "Cerrar referencia",
+    "previous": "Diferencia anterior",
+    "next": "Diferencia siguiente",
+    "differences_one": "{{count}} diferencia",
+    "differences_other": "{{count}} diferencias",
+    "noDifferences": "Sin diferencias",
+    "loadFailed": "No se pudo leer esta nota.",
+    "resizeLabel": "Cambiar el ancho de la referencia",
+    "listBadge": "Se muestra como referencia",
+    "onlyInOpenNote_one": "+ {{count}} párrafo adicional en la nota abierta",
+    "onlyInOpenNote_other": "+ {{count}} párrafos adicionales en la nota abierta",
+    "legendChanged": "cambiado",
+    "legendMissing": "falta",
+    "legendExtra": "adicional",
+    "changedHint": "Está en la nota abierta, pero de otra forma",
+    "missingHint": "No está en la nota abierta",
+    "extraHint": "La nota abierta tiene aquí párrafos que la referencia no tiene"
   }
 }

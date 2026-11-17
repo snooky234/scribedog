@@ -1578,5 +1578,32 @@
     "notification": {
       "title": "Rappel ScribeDog"
     }
+  },
+  "compare": {
+    "menuItem": "Ouvrir comme référence",
+    "menuDisabledHint": "Ouvrez d'abord une note ; la référence s'affiche à côté.",
+    "eyebrow": "Référence",
+    "paneLabel": "Note de référence : {{name}}",
+    "highlight": "Surligner les différences",
+    "attachToChat": "Joindre au chat",
+    "attachedToChat": "Jointe au chat",
+    "attachFailed": "Impossible de joindre la note",
+    "close": "Fermer la référence",
+    "previous": "Différence précédente",
+    "next": "Différence suivante",
+    "differences_one": "{{count}} différence",
+    "differences_other": "{{count}} différences",
+    "noDifferences": "Aucune différence",
+    "loadFailed": "Impossible de lire cette note.",
+    "resizeLabel": "Redimensionner la référence",
+    "listBadge": "Affichée comme référence",
+    "onlyInOpenNote_one": "+ {{count}} paragraphe en plus dans la note ouverte",
+    "onlyInOpenNote_other": "+ {{count}} paragraphes en plus dans la note ouverte",
+    "legendChanged": "modifié",
+    "legendMissing": "manquant",
+    "legendExtra": "en plus",
+    "changedHint": "Présent dans la note ouverte, mais sous une autre forme",
+    "missingHint": "Absent de la note ouverte",
+    "extraHint": "La note ouverte a ici des paragraphes que la référence n'a pas"
   }
 }

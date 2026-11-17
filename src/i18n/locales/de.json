@@ -1578,5 +1578,32 @@
     "notification": {
       "title": "ScribeDog-Erinnerung"
     }
+  },
+  "compare": {
+    "menuItem": "Als Referenz öffnen",
+    "menuDisabledHint": "Öffne zuerst eine Notiz; die Referenz wird neben ihr angezeigt.",
+    "eyebrow": "Referenz",
+    "paneLabel": "Referenznotiz: {{name}}",
+    "highlight": "Unterschiede markieren",
+    "attachToChat": "An den Chat anhängen",
+    "attachedToChat": "An den Chat angehängt",
+    "attachFailed": "Die Notiz konnte nicht angehängt werden",
+    "close": "Referenz schließen",
+    "previous": "Vorheriger Unterschied",
+    "next": "Nächster Unterschied",
+    "differences_one": "{{count}} Unterschied",
+    "differences_other": "{{count}} Unterschiede",
+    "noDifferences": "Keine Unterschiede",
+    "loadFailed": "Diese Notiz konnte nicht gelesen werden.",
+    "resizeLabel": "Breite der Referenz ändern",
+    "listBadge": "Wird als Referenz angezeigt",
+    "onlyInOpenNote_one": "+ {{count}} zusätzlicher Absatz in der offenen Notiz",
+    "onlyInOpenNote_other": "+ {{count}} zusätzliche Absätze in der offenen Notiz",
+    "legendChanged": "geändert",
+    "legendMissing": "fehlt",
+    "legendExtra": "zusätzlich",
+    "changedHint": "Steht in der offenen Notiz, aber anders",
+    "missingHint": "Fehlt in der offenen Notiz",
+    "extraHint": "Die offene Notiz hat hier Absätze, die die Referenz nicht hat"
   }
 }

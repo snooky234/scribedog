@@ -1,0 +1,194 @@
+/* "Open as reference": a second note, read-only, beside the editor
+   (components/compare/ComparePane.tsx), left of the document. Same card as
+   the details sidebar, so the side panes read as one family; the page uses the
+   editor's own surface and prose styles, so the note looks exactly as it
+   does when opened. */
+
+.compare-pane {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgba(var(--overlay-rgb), 0.12);
+  border-radius: 1rem;
+  background: rgba(var(--surface-rgb), 0.3);
+  overflow: hidden;
+}
+
+.compare-pane__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.4rem 0.85rem;
+  border-bottom: 1px solid rgba(var(--overlay-rgb), 0.08);
+}
+
+.compare-pane__title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.compare-pane__eyebrow {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(var(--muted-rgb), 0.95);
+}
+
+.compare-pane__name,
+.compare-pane__folder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compare-pane__name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(var(--text-rgb), 0.94);
+}
+
+.compare-pane__folder {
+  font-size: 0.72rem;
+  color: rgba(var(--muted-rgb), 0.9);
+}
+
+.compare-pane__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.compare-pane__diffbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.85rem;
+  border-bottom: 1px solid rgba(var(--overlay-rgb), 0.08);
+  font-size: 0.78rem;
+  color: rgba(var(--muted-rgb), 0.95);
+}
+
+.compare-pane__count {
+  flex: 1;
+  min-width: 0;
+}
+
+.compare-pane__legend {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.8rem;
+  padding-bottom: 0.15rem;
+  font-size: 0.72rem;
+}
+
+.compare-pane__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: help;
+}
+
+.compare-pane__swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 0.15rem;
+}
+
+.compare-pane__swatch--changed {
+  background: var(--compare-changed-bg);
+  box-shadow: inset 3px 0 0 var(--compare-changed-accent);
+}
+
+.compare-pane__swatch--missing {
+  background: var(--diff-removed-bg);
+  box-shadow: inset 3px 0 0 var(--diff-removed-accent);
+}
+
+.compare-pane__swatch--extra {
+  background: var(--diff-added-bg);
+  box-shadow: inset 3px 0 0 var(--diff-added-accent);
+}
+
+.compare-pane__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.compare-pane__content {
+  min-height: 100%;
+}
+
+/* The page fills the pane: no surface tint of its own on top of the card's. */
+.compare-pane__surface {
+  min-height: 100%;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+}
+
+.compare-pane__message {
+  padding: 1rem;
+  font-size: 0.85rem;
+  color: rgba(var(--muted-rgb), 0.95);
+}
+
+/* The marks. Yellow for "there, but in another form" is built from the
+   warning palette (no diff token of its own exists for it); red and green
+   are the diff tokens every other review in the app uses. A bar at the
+   left edge plus the tint, so a mark survives inside a table cell or a
+   coloured callout. */
+.compare-pane {
+  --compare-changed-bg: rgba(var(--warning-rgb), 0.2);
+  --compare-changed-accent: rgba(var(--warning-strong-rgb), 0.75);
+}
+
+.compare-diff {
+  border-radius: 0.25rem;
+}
+
+.compare-diff--changed {
+  background: var(--compare-changed-bg);
+  box-shadow: inset 3px 0 0 var(--compare-changed-accent);
+}
+
+.compare-diff--missing {
+  background: var(--diff-removed-bg);
+  box-shadow: inset 3px 0 0 var(--diff-removed-accent);
+}
+
+.compare-pane__surface :is(p, h1, h2, h3, h4, h5, h6).compare-diff {
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+}
+
+/* Where the open note has blocks this one lacks. */
+.compare-diff-insert {
+  margin: 0.35rem 0 0.35rem -0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--diff-added-bg);
+  box-shadow: inset 3px 0 0 var(--diff-added-accent);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: rgba(var(--text-rgb), 0.85);
+  user-select: none;
+}
+
+/* The badge in the "In progress" list (working-set.css has the row). */
+.working-set__compare {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-left: 0.35rem;
+  vertical-align: -0.1rem;
+  color: rgba(var(--accent-rgb), 0.9);
+}

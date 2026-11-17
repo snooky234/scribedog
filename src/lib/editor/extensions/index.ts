@@ -8,6 +8,7 @@ import { AiStreamWidget } from "@/lib/aiStreamWidget";
 import { AiSuggestionWidget } from "@/lib/aiSuggestionWidget";
 import { BlockGutter } from "@/lib/editor/blockGutter";
 import { CodeBlockLinks } from "@/lib/editor/codeBlockLinks";
+import { CompareHighlight } from "@/lib/editor/compareHighlight";
 import { IconGlyphs } from "@/lib/editor/iconGlyphs";
 import { HeadingNumbering } from "@/lib/editor/headingNumbering";
 import { InactiveSelection } from "@/lib/inactiveSelection";
@@ -130,4 +131,11 @@ export function buildEditorExtensions(): Extensions {
 // literal pipe text no matter how well-formed its Markdown is.
 export function buildPreviewExtensions(): Extensions {
   return buildContentExtensions();
+}
+
+// Extension set of the read-only note beside the editor ("Open as reference"). A
+// real note of the vault, so its images resolve like the editor's (the pane
+// provides the EditorFileContext); everything that edits stays out.
+export function buildCompareExtensions(): Extensions {
+  return [...buildContentExtensions(), EditorImage, CodeBlockLinks, IconGlyphs, CompareHighlight];
 }

@@ -1578,5 +1578,32 @@
     "notification": {
       "title": "ScribeDog reminder"
     }
+  },
+  "compare": {
+    "menuItem": "Open as reference",
+    "menuDisabledHint": "Open a note first; the reference is shown next to it.",
+    "eyebrow": "Reference",
+    "paneLabel": "Reference note: {{name}}",
+    "highlight": "Highlight differences",
+    "attachToChat": "Attach to chat",
+    "attachedToChat": "Attached to the chat",
+    "attachFailed": "The note could not be attached",
+    "close": "Close reference",
+    "previous": "Previous difference",
+    "next": "Next difference",
+    "differences_one": "{{count}} difference",
+    "differences_other": "{{count}} differences",
+    "noDifferences": "No differences",
+    "loadFailed": "This note could not be read.",
+    "resizeLabel": "Resize reference",
+    "listBadge": "Shown as reference",
+    "onlyInOpenNote_one": "+ {{count}} extra paragraph in the open note",
+    "onlyInOpenNote_other": "+ {{count}} extra paragraphs in the open note",
+    "legendChanged": "changed",
+    "legendMissing": "missing",
+    "legendExtra": "extra",
+    "changedHint": "In the open note, but in another form",
+    "missingHint": "Not in the open note",
+    "extraHint": "The open note has paragraphs here that the reference lacks"
   }
 }

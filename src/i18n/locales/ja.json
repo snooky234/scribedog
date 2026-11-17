@@ -1574,5 +1574,32 @@
     "notification": {
       "title": "ScribeDog リマインダー"
     }
+  },
+  "compare": {
+    "menuItem": "参照として開く",
+    "menuDisabledHint": "先にノートを開いてください。参照はその横に表示されます。",
+    "eyebrow": "参照",
+    "paneLabel": "参照ノート: {{name}}",
+    "highlight": "違いを強調表示",
+    "attachToChat": "チャットに添付",
+    "attachedToChat": "チャットに添付しました",
+    "attachFailed": "ノートを添付できませんでした",
+    "close": "参照を閉じる",
+    "previous": "前の違い",
+    "next": "次の違い",
+    "differences_one": "{{count}} 件の違い",
+    "differences_other": "{{count}} 件の違い",
+    "noDifferences": "違いはありません",
+    "loadFailed": "このノートを読み込めませんでした。",
+    "resizeLabel": "参照の幅を変更",
+    "listBadge": "参照として表示中",
+    "onlyInOpenNote_one": "+ 開いているノートに追加の段落 {{count}} 個",
+    "onlyInOpenNote_other": "+ 開いているノートに追加の段落 {{count}} 個",
+    "legendChanged": "変更",
+    "legendMissing": "欠落",
+    "legendExtra": "追加",
+    "changedHint": "開いているノートにありますが、内容が異なります",
+    "missingHint": "開いているノートにありません",
+    "extraHint": "開いているノートには、参照にない段落がここにあります"
   }
 }

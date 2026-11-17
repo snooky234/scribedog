@@ -36,6 +36,8 @@ import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { useSearchStore } from "@/store/useSearchStore";
 import { useStagedChangesStore } from "@/store/useStagedChangesStore";
 
+import { CompareMenuItem } from "@/components/compare/CompareMenuItem";
+
 import { ContextMenuSurface } from "./fileTree/ContextMenuSurface";
 import { TreeNodeRow } from "./fileTree/TreeNodeRow";
 import { useExpandedFolders } from "./fileTree/useExpandedFolders";
@@ -1156,6 +1158,10 @@ export function FileTree({
                   <Copy aria-hidden="true" />
                   {t("fileTree.duplicate")}
                 </button>
+              ) : null}
+
+              {contextMenu.kind === "file" ? (
+                <CompareMenuItem filePath={contextMenu.filePath} onDone={() => setContextMenu(null)} />
               ) : null}
 
               {/* Only with folder notes on: with them off, the converted note

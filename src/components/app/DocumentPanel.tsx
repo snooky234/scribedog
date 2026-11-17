@@ -19,6 +19,8 @@ import { Editor, type EditorHandle } from "@/components/Editor";
 import { FindReplacePanel } from "@/components/FindReplacePanel";
 import { VersionsPopover } from "@/components/VersionsPopover";
 import { DocumentMenu } from "@/components/app/DocumentMenu";
+import { ComparePane } from "@/components/compare/ComparePane";
+import { useCompareStore } from "@/store/useCompareStore";
 import { join } from "@/platform/paths";
 import { EmojiPickerPopover } from "@/components/EmojiPicker";
 import { useBreadcrumbScroll } from "@/hooks/useBreadcrumbScroll";
@@ -209,6 +211,7 @@ export function DocumentPanel({
   const capabilityHint = vaultCapabilityHint();
   const versioningEnabled = useVersioningSettingsStore((state) => state.versioningEnabled);
   const closeFindPanel = useSearchStore((state) => state.closePanel);
+  const compareFilePath = useCompareStore((state) => state.filePath);
   const autoSaveEnabled = useEditorSettingsStore((state) => state.autoSaveEnabled);
   // Folder notes turn every folder into something that can be opened, so the
   // crumbs in front of the note become links; with the feature off the same
@@ -598,6 +601,16 @@ export function DocumentPanel({
                 onZenModeRequest={onZenModeRequest}
                 isZenMode={isZenMode}
                 toolbarContainer={layout === "desktop" ? toolbarSlot : null}
+                sidePane={
+                  compareFilePath && layout === "desktop" && !isZenMode ? (
+                    <ComparePane
+                      folderPath={folderPath}
+                      filePath={compareFilePath}
+                      mainMarkdown={selectedFileContent}
+                      onRequestFileOpen={onRequestFileOpen}
+                    />
+                  ) : null
+                }
               />
             )}
           </div>

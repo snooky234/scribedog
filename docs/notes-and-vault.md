@@ -97,6 +97,50 @@ the way until you pin a note.
 Unsaved notes are marked in the tree: a yellow dot on the note, and a ring on
 a collapsed folder that has one inside.
 
+## Open a note as reference
+
+Grading against a model answer, checking a copy against its template, or just
+writing with a reference in view: right-click a note in the file tree or in
+the "In progress" list and choose **Open as reference**. It opens read-only
+to the left of the note you are working on, so it cannot be changed by
+accident.
+
+| In the reference pane | What it does |
+| --- | --- |
+| **Highlight differences** | Marks what differs between the two notes. Off by default. |
+| Arrows | Jump to the previous or next difference. |
+| **Attach to chat** | Hands the reference to the AI chat as context, like dragging it onto the chat. |
+| Close | Closes the reference. |
+
+With highlighting on, the reference shows three kinds of marks. A small
+legend under the switch repeats them, and hovering a mark says what it means.
+
+| Mark | Meaning |
+| --- | --- |
+| **Yellow**, changed | The paragraph is in the open note too, but worded differently. |
+| **Red**, missing | The open note does not have this paragraph, list item, heading or image. |
+| **Green bar**, extra | The open note has paragraphs at this spot that the reference lacks. The bar says how many. |
+
+The comparison looks at the text you see, not at the Markdown behind it. A
+`*` bullet against a `-`, extra spaces or different capitalization do not
+count as a difference. It updates while you type in the open note.
+
+> [!TIP]
+> A template and a filled-in copy usually differ almost everywhere. That is
+> why highlighting starts off: side by side is often all you need, and the
+> marks are one click away when you want to know which part is missing.
+
+A few more details:
+
+- The reference carries a small two-column icon in the "In progress" list.
+- Links in the reference open their target in the editor.
+- If the file changes on disk, the pane follows. Unsaved edits you made to
+  it earlier are shown as well.
+- Opening the reference in the editor swaps the two sides. Renaming, moving
+  or deleting it closes the reference.
+- The pane is resizable and remembers its width and the highlight setting.
+  It is available on the desktop layout, not on phones or narrow windows.
+
 ## Saving
 
 ### Auto-save

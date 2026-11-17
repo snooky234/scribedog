@@ -1598,5 +1598,36 @@
     "notification": {
       "title": "Нагадування ScribeDog"
     }
+  },
+  "compare": {
+    "menuItem": "Відкрити як зразок",
+    "menuDisabledHint": "Спершу відкрийте нотатку; зразок з'явиться поруч із нею.",
+    "eyebrow": "Зразок",
+    "paneLabel": "Зразок: {{name}}",
+    "highlight": "Виділяти відмінності",
+    "attachToChat": "Додати до чату",
+    "attachedToChat": "Додано до чату",
+    "attachFailed": "Не вдалося додати нотатку",
+    "close": "Закрити зразок",
+    "previous": "Попередня відмінність",
+    "next": "Наступна відмінність",
+    "differences_one": "{{count}} відмінність",
+    "differences_few": "{{count}} відмінності",
+    "differences_many": "{{count}} відмінностей",
+    "differences_other": "{{count}} відмінності",
+    "noDifferences": "Відмінностей немає",
+    "loadFailed": "Не вдалося прочитати цю нотатку.",
+    "resizeLabel": "Змінити ширину зразка",
+    "listBadge": "Показано як зразок",
+    "onlyInOpenNote_one": "+ {{count}} додатковий абзац у відкритій нотатці",
+    "onlyInOpenNote_few": "+ {{count}} додаткові абзаци у відкритій нотатці",
+    "onlyInOpenNote_many": "+ {{count}} додаткових абзаців у відкритій нотатці",
+    "onlyInOpenNote_other": "+ {{count}} додаткового абзацу у відкритій нотатці",
+    "legendChanged": "змінено",
+    "legendMissing": "бракує",
+    "legendExtra": "додатково",
+    "changedHint": "Є у відкритій нотатці, але в іншому вигляді",
+    "missingHint": "Немає у відкритій нотатці",
+    "extraHint": "У відкритій нотатці тут є абзаци, яких немає у зразку"
   }
 }

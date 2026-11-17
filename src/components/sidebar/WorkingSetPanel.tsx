@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Ellipsis, Folder, ListX, Locate, Pin, PinOff, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Columns2, Ellipsis, Folder, ListX, Locate, Pin, PinOff, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
@@ -8,6 +8,7 @@ import type {
   RefObject
 } from "react";
 
+import { CompareMenuItem } from "@/components/compare/CompareMenuItem";
 import { ContextMenuSurface } from "@/components/fileTree/ContextMenuSurface";
 import { PinToggle } from "@/components/fileTree/PinToggle";
 import type { DropPosition } from "@/components/fileTree/types";
@@ -17,7 +18,9 @@ import { getRelativeDisplayPath } from "@/lib/fileSystem";
 import { getFolderNoteFolderPath, getNoteDisplayName, isFolderNotePath } from "@/lib/folderNotes";
 import { isCoarsePointer, singleClickOpens } from "@/lib/openGesture";
 import { cn } from "@/lib/utils";
+import { samePath } from "@/lib/compareTarget";
 import { pinToggleAction, type PinToggleAction } from "@/store/appStore/workingSet";
+import { useCompareStore } from "@/store/useCompareStore";
 import type { WorkingSetEntry } from "@/store/useAppStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
@@ -93,6 +96,7 @@ export function WorkingSetPanel({
   // tells someone who double-clicked by accident how the entry got here.
   const showPins = useEditorSettingsStore((state) => state.autoAdmitWorkingSet);
   const openOnDoubleClick = useEditorSettingsStore((state) => state.openOnDoubleClick);
+  const compareFilePath = useCompareStore((state) => state.filePath);
   const clickOpens = () => singleClickOpens(openOnDoubleClick, isCoarsePointer());
   const dirtySet = new Set(dirtyFilePaths);
   const hasDirty = entries.some((entry) => dirtySet.has(entry.filePath));
@@ -363,6 +367,16 @@ export function WorkingSetPanel({
                         </Folder>
                       ) : null}
                       {name}
+                      {/* The note shown read-only beside the editor. */}
+                      {samePath(compareFilePath, entry.filePath) ? (
+                        <Columns2
+                          className="working-set__compare"
+                          aria-label={t("compare.listBadge")}
+                          data-testid="working-set-compare-badge"
+                        >
+                          <title>{t("compare.listBadge")}</title>
+                        </Columns2>
+                      ) : null}
                     </span>
                     {folder ? <span className="working-set__folder">{folder}</span> : null}
                   </span>
@@ -487,6 +501,7 @@ export function WorkingSetPanel({
             <Locate aria-hidden="true" />
             {t("workingSet.revealInTree")}
           </button>
+          <CompareMenuItem filePath={contextEntry.filePath} onDone={() => setContextMenu(null)} />
           {!showPins ? null : contextEntry.pinned ? (
             <button
               type="button"

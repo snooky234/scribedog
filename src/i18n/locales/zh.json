@@ -1574,5 +1574,32 @@
     "notification": {
       "title": "ScribeDog 提醒"
     }
+  },
+  "compare": {
+    "menuItem": "作为参考打开",
+    "menuDisabledHint": "请先打开一篇笔记；参考会显示在它旁边。",
+    "eyebrow": "参考",
+    "paneLabel": "参考笔记：{{name}}",
+    "highlight": "高亮差异",
+    "attachToChat": "附加到聊天",
+    "attachedToChat": "已附加到聊天",
+    "attachFailed": "无法附加该笔记",
+    "close": "关闭参考",
+    "previous": "上一处差异",
+    "next": "下一处差异",
+    "differences_one": "{{count}} 处差异",
+    "differences_other": "{{count}} 处差异",
+    "noDifferences": "没有差异",
+    "loadFailed": "无法读取此笔记。",
+    "resizeLabel": "调整参考宽度",
+    "listBadge": "正在作为参考显示",
+    "onlyInOpenNote_one": "+ 打开的笔记中有 {{count}} 个额外段落",
+    "onlyInOpenNote_other": "+ 打开的笔记中有 {{count}} 个额外段落",
+    "legendChanged": "已更改",
+    "legendMissing": "缺少",
+    "legendExtra": "额外",
+    "changedHint": "在打开的笔记中，但内容不同",
+    "missingHint": "打开的笔记中没有",
+    "extraHint": "打开的笔记在此处有参考中没有的段落"
   }
 }

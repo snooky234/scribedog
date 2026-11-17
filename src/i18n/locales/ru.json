@@ -1598,5 +1598,36 @@
     "notification": {
       "title": "Напоминание ScribeDog"
     }
+  },
+  "compare": {
+    "menuItem": "Открыть как образец",
+    "menuDisabledHint": "Сначала откройте заметку; образец появится рядом с ней.",
+    "eyebrow": "Образец",
+    "paneLabel": "Образец: {{name}}",
+    "highlight": "Выделять различия",
+    "attachToChat": "Прикрепить к чату",
+    "attachedToChat": "Прикреплено к чату",
+    "attachFailed": "Не удалось прикрепить заметку",
+    "close": "Закрыть образец",
+    "previous": "Предыдущее различие",
+    "next": "Следующее различие",
+    "differences_one": "{{count}} различие",
+    "differences_few": "{{count}} различия",
+    "differences_many": "{{count}} различий",
+    "differences_other": "{{count}} различия",
+    "noDifferences": "Различий нет",
+    "loadFailed": "Не удалось прочитать эту заметку.",
+    "resizeLabel": "Изменить ширину образца",
+    "listBadge": "Показана как образец",
+    "onlyInOpenNote_one": "+ {{count}} лишний абзац в открытой заметке",
+    "onlyInOpenNote_few": "+ {{count}} лишних абзаца в открытой заметке",
+    "onlyInOpenNote_many": "+ {{count}} лишних абзацев в открытой заметке",
+    "onlyInOpenNote_other": "+ {{count}} лишних абзаца в открытой заметке",
+    "legendChanged": "изменено",
+    "legendMissing": "отсутствует",
+    "legendExtra": "добавлено",
+    "changedHint": "Есть в открытой заметке, но в другом виде",
+    "missingHint": "Нет в открытой заметке",
+    "extraHint": "В открытой заметке здесь есть абзацы, которых нет в образце"
   }
 }
