@@ -229,6 +229,12 @@ type LinkDialogState = {
   isLinkActive: boolean;
 };
 
+// The code block's node view root (CodeBlockView), see the ProseMirror
+// handleDOMEvents below for why it needs its own route.
+function isInCodeBlockView(event: Event): boolean {
+  return event.target instanceof Element && event.target.closest(".code-block-wrapper") !== null;
+}
+
 // The selected passage as markdown — the form the chat agent's get_selection
 // tool and the composer's selection chip both work with. Plain text would drop
 // exactly the markers the agent has to carry over when it rewrites or extends
@@ -299,6 +305,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   // The pointer type of the last press inside the editor, for the context
   // menu guard below: the event itself does not always say where it came from.
   const lastPointerTypeRef = useRef<string | null>(null);
+  // The context menu handler for the ProseMirror props below, which are set
+  // up once and would otherwise keep the first render's closure.
+  const editorContextMenuRef = useRef<(event: MouseEvent) => void>(() => {});
   // Set by Ctrl+Shift+V and consumed by the paste event it triggers: the
   // clipboard event itself carries no modifier state.
   const plainPasteRequestedRef = useRef(false);
@@ -481,7 +490,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   // Right-click on a selection offers the AI rewrite next to the three ways of
   // copying; without a selection there is nothing to copy, so the AI dialog
   // opens directly in insert mode as before.
-  const handleEditorContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleEditorContextMenu = (event: MouseEvent) => {
     const currentEditor = editorRef.current;
 
     if (!currentEditor) {
@@ -498,7 +507,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     // and reports it as a mouse. The last pointer that actually went down in
     // the editor is what decides; only a menu opened without any pointer
     // (keyboard) falls back to the device's primary pointer.
-    const nativeEvent = event.nativeEvent as PointerEvent | MouseEvent;
+    const nativeEvent = event as PointerEvent | MouseEvent;
     const eventPointerType = "pointerType" in nativeEvent ? nativeEvent.pointerType : "";
     const pointerType = lastPointerTypeRef.current ?? eventPointerType;
     const isTouchPointer = (type: string) => type === "touch" || type === "pen";
@@ -521,6 +530,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
     setSelectionMenu({ x: event.clientX, y: event.clientY });
   };
+  editorContextMenuRef.current = handleEditorContextMenu;
 
   // Panel visibility (and the whole search state) lives in useSearchStore
   // so it survives the per-file remount of this component during
@@ -1664,6 +1674,27 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         return true;
       },
       handleDOMEvents: {
+        // A code block is a React node view, and TipTap renders node views
+        // beside the editor's element in the React tree, not inside it: the
+        // onContextMenu and onPointerDownCapture on that element never see
+        // what happens in a code block, and the webview's own menu opened
+        // there. These two take the same events natively. Images are node
+        // views too, but they open their own menu.
+        pointerdown: (_view, event) => {
+          if (isInCodeBlockView(event)) {
+            lastPointerTypeRef.current = event.pointerType;
+          }
+
+          return false;
+        },
+        contextmenu: (_view, event) => {
+          if (!isInCodeBlockView(event)) {
+            return false;
+          }
+
+          editorContextMenuRef.current(event);
+          return true;
+        },
         // Ctrl+C/Ctrl+X, the system menu and "copy with formatting" all end
         // in the native event; ProseMirror still writes the clipboard itself.
         // With nothing selected nothing is copied, and the clipboard (with
@@ -2489,7 +2520,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
                 onPointerDownCapture={(event) => {
                   lastPointerTypeRef.current = event.pointerType;
                 }}
-                onContextMenu={handleEditorContextMenu}
+                onContextMenu={(event) => handleEditorContextMenu(event.nativeEvent)}
                 // The wrapper fills the scroll area around and below the page.
                 // A click there is outside the contenteditable, and left to
                 // itself the browser parks the DOM selection on the nearest

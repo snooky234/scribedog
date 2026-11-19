@@ -1131,6 +1131,7 @@
     "detailsSummaryPlaceholder": "タイトル",
     "pageLine": "{{page}} ページ",
     "pageLineApprox": "約 {{pages}} ページ",
+    "codeLinkHint": "クリックでリンクを開く、右クリックでカーソルを置く",
     "pageLineHint": "PDF エクスポートと印刷でページが終わる位置です。印刷ダイアログで拡大縮小した場合のみずれます。",
     "gutterBarSetPlacemark": "右クリック: ブックマークを設定",
     "gutterBarRemovePlacemark": "右クリック: ブックマークを削除"

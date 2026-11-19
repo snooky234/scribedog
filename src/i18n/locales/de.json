@@ -1132,6 +1132,7 @@
     "detailsSummaryPlaceholder": "Titel",
     "pageLine": "Seite {{page}}",
     "pageLineApprox": "ca. Seite {{pages}}",
+    "codeLinkHint": "Klick öffnet den Link, Rechtsklick setzt den Cursor",
     "pageLineHint": "Hier enden die Seiten im PDF-Export und beim Drucken. Nur eine Skalierung im Druckdialog verschiebt sie.",
     "gutterBarSetPlacemark": "Rechtsklick: Lesezeichen setzen",
     "gutterBarRemovePlacemark": "Rechtsklick: Lesezeichen entfernen"

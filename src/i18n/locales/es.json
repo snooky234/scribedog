@@ -1132,6 +1132,7 @@
     "detailsSummaryPlaceholder": "Título",
     "pageLine": "Página {{page}}",
     "pageLineApprox": "aprox. página {{pages}}",
+    "codeLinkHint": "Clic para abrir el enlace, clic derecho para colocar el cursor",
     "pageLineHint": "Aquí terminan las páginas en la exportación a PDF y al imprimir. Solo un escalado en el diálogo de impresión las desplaza.",
     "gutterBarSetPlacemark": "Clic derecho: poner marcador",
     "gutterBarRemovePlacemark": "Clic derecho: quitar marcador"

@@ -1132,6 +1132,7 @@
     "detailsSummaryPlaceholder": "Titre",
     "pageLine": "Page {{page}}",
     "pageLineApprox": "env. page {{pages}}",
+    "codeLinkHint": "Clic pour ouvrir le lien, clic droit pour placer le curseur",
     "pageLineHint": "C'est ici que les pages se terminent dans l'export PDF et à l'impression. Seule une mise à l'échelle dans la boîte de dialogue d'impression les déplace.",
     "gutterBarSetPlacemark": "Clic droit : poser un signet",
     "gutterBarRemovePlacemark": "Clic droit : retirer le signet"

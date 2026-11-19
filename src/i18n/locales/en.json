@@ -1132,6 +1132,7 @@
     "detailsSummaryPlaceholder": "Title",
     "pageLine": "Page {{page}}",
     "pageLineApprox": "approx. page {{pages}}",
+    "codeLinkHint": "Click to open the link, right-click to place the cursor",
     "pageLineHint": "This is where the pages end in the PDF export and when printing. Only scaling in the print dialog moves them.",
     "gutterBarSetPlacemark": "Right-click: set placemark",
     "gutterBarRemovePlacemark": "Right-click: remove placemark"

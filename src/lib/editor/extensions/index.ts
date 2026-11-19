@@ -139,5 +139,5 @@ export function buildPreviewExtensions(): Extensions {
 // real note of the vault, so its images resolve like the editor's (the pane
 // provides the EditorFileContext); everything that edits stays out.
 export function buildCompareExtensions(): Extensions {
-  return [...buildContentExtensions(), EditorImage, CodeBlockLinks, IconGlyphs, CompareHighlight];
+  return [...buildContentExtensions(), EditorImage, CodeBlockLinks.configure({ editHint: false }), IconGlyphs, CompareHighlight];
 }

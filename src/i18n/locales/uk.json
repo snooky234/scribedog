@@ -1144,6 +1144,7 @@
     "detailsSummaryPlaceholder": "Заголовок",
     "pageLine": "Сторінка {{page}}",
     "pageLineApprox": "прибл. сторінка {{pages}}",
+    "codeLinkHint": "Клік відкриває посилання, правий клік ставить курсор",
     "pageLineHint": "Тут закінчуються сторінки під час експорту в PDF і друку. Зсунути їх може лише масштабування в діалозі друку.",
     "gutterBarSetPlacemark": "Правий клік: поставити закладку",
     "gutterBarRemovePlacemark": "Правий клік: зняти закладку"
