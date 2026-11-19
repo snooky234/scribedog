@@ -3,6 +3,15 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.26.0] - 2026-11-19
+
+### Highlights
+- Placemarks to find your way back in a note
+- Run the server on one Windows PC without Docker (server edition)
+
+### Bug Fixes
+- Place the cursor with a right-click in code blocks, also inside links, instead of opening the browser's menu
+
 ## [0.25.0] - 2026-11-18
 
 ### Highlights
