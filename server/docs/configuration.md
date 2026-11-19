@@ -28,7 +28,7 @@ ones that matter; you only need them if you run the server without it.
 | --- | --- | --- |
 | `SCRIBEDOG_VAULT_PATH` | `/data` | Folder with the notes. |
 | `SCRIBEDOG_HOST` / `SCRIBEDOG_PORT` | `0.0.0.0` / `3000` | Where the server listens. |
-| `SCRIBEDOG_COOKIE_SECURE` | `true` | Session cookie carries the `Secure` flag. Set to `false` only for plain-http development on localhost. |
+| `SCRIBEDOG_COOKIE_SECURE` | `true` | Session cookie carries the `Secure` flag. Set to `false` only for plain HTTP on this computer: development, or a [local setup without Docker](windows-without-docker.md) with `SCRIBEDOG_HOST=127.0.0.1`. The server logs a warning when it is `false` on any other host. |
 | `SCRIBEDOG_TRUST_PROXY` | `1` | How many reverse proxies stand in front. The bundled Caddy is one. `false` for none (the server is reached directly); a number, or a list of proxy addresses, otherwise. It decides which address a request counts as, which is what the login lock is applied to. |
 | `SCRIBEDOG_SESSION_MAX_AGE_DAYS` | `60` | How long a browser session stays valid without activity (sliding, capped at 60). Access keys of the desktop app do not expire; see [Security](security.md). |
 | `SCRIBEDOG_LOGIN_MAX_ATTEMPTS` | `5` | Failed password attempts from one address before it is locked out. |

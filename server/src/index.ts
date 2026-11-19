@@ -2,7 +2,7 @@
 import { buildApp } from "./app.js";
 import { AuthSetupError, openAuthStore } from "./auth/authStore.js";
 import { openTokenStore, TokenStoreError } from "./auth/tokenStore.js";
-import { ConfigError, loadConfig } from "./config.js";
+import { ConfigError, isLoopbackHost, loadConfig } from "./config.js";
 import { openSecretStore } from "./secrets/secretStore.js";
 import { openSharedVaults, type SharedVaults } from "./shared/service.js";
 import { DataVersionError, ensureDataVersion } from "./vault/dataVersion.js";
@@ -79,7 +79,15 @@ async function main(): Promise<void> {
   );
 
   if (!config.cookieSecure) {
-    app.log.warn("SCRIBEDOG_COOKIE_SECURE=false: the session cookie is sent over plain HTTP. Development only.");
+    if (isLoopbackHost(config.host)) {
+      app.log.info(
+        `SCRIBEDOG_COOKIE_SECURE=false: the session cookie is sent over plain HTTP. Fine for local use, since the server only listens on this computer (${config.host}).`
+      );
+    } else {
+      app.log.warn(
+        `SCRIBEDOG_COOKIE_SECURE=false while listening on ${config.host}: the session cookie travels over plain HTTP and can be read on the network. Development only; for use on this computer alone set SCRIBEDOG_HOST=127.0.0.1.`
+      );
+    }
   }
 }
 

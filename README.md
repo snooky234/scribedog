@@ -324,6 +324,11 @@ repository by GitHub Actions.
 
    <img src="docs/images/smartscreen02.png" alt="SmartScreen warning, click Run anyway" width="400">
 
+If **Run anyway** is missing because a company policy blocks the program,
+ScribeDog can still run on that PC as a local web app in the browser, without
+an installer, Docker or administrator rights:
+[On one Windows PC, without Docker](server/docs/windows-without-docker.md).
+
 </details>
 
 [Full installation guide →](docs/getting-started.md)

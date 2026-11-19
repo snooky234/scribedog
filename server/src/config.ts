@@ -29,7 +29,8 @@ export type ServerConfig = {
   /**
    * Whether the session cookie carries the Secure flag. Defaults to true
    * because the documented deployment always sits behind TLS; switched off
-   * only for plain-http development on localhost.
+   * only for plain HTTP on this computer (development, or the local setup
+   * without Docker on a loopback host).
    */
   cookieSecure: boolean;
   /**
@@ -322,6 +323,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     llmAllowedHosts: parseLlmAllowedHosts(env.SCRIBEDOG_LLM_ALLOWED_HOSTS),
     ...parseSharing(env)
   };
+}
+
+/**
+ * Whether the server listens on this computer only. Decides how loudly a
+ * plain-http cookie is reported at startup: on a loopback address the cookie
+ * never leaves the machine, so running without TLS is a legitimate way to use
+ * the server as a single-user local app, not a development shortcut.
+ */
+export function isLoopbackHost(host: string): boolean {
+  const normalized = host.trim().toLowerCase().replace(/^\[(.*)\]$/, "$1");
+  return normalized === "localhost" || normalized === "::1" || /^127(\.\d{1,3}){3}$/.test(normalized);
 }
 
 function parseSharing(env: NodeJS.ProcessEnv): { user: string | null; sharedPath: string | null } {

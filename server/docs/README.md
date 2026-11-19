@@ -14,22 +14,25 @@ for when you need it.
    sign-in, the certificate warning, opening the app on a phone.
 2. [Multiple users on one host](multiuser.md): fresh setup, moving a single
    instance to multi-user, adding or removing a person later.
-3. [Configuration](configuration.md): every setting, running under a path
+3. [On one Windows PC, without Docker](windows-without-docker.md): a local
+   web app on a computer where the desktop app is blocked and Docker or WSL
+   are not available.
+4. [Configuration](configuration.md): every setting, running under a path
    prefix, TLS and reverse proxies.
-4. [The desktop app as a client](desktop-app.md): open the server vault in
+5. [The desktop app as a client](desktop-app.md): open the server vault in
    ScribeDog on your computer, with AI and dictation running locally.
-5. [Phones and tablets](phones-and-tablets.md): how the app lays itself out
+6. [Phones and tablets](phones-and-tablets.md): how the app lays itself out
    on a small screen, and how to dictate.
-6. [AI](ai.md): cloud providers through the server, a model on your own
+7. [AI](ai.md): cloud providers through the server, a model on your own
    device, the chat agent, what stays desktop only.
-7. [Security](security.md): the password, sessions, access keys for the
+8. [Security](security.md): the password, sessions, access keys for the
    desktop app, what is and is not protected.
-8. [Your data and backups](data-and-backups.md): what is in the data folder,
+9. [Your data and backups](data-and-backups.md): what is in the data folder,
    editing from more than one place, how to back it up.
-9. [Updating](updating.md): versions, moving forward and back.
-10. [API](api.md): every route, for scripts and your own tools.
-11. [Development](development.md): running from source, tests.
-12. [FAQ](faq.md): short answers to the questions that come up.
+10. [Updating](updating.md): versions, moving forward and back.
+11. [API](api.md): every route, for scripts and your own tools.
+12. [Development](development.md): running from source, tests.
+13. [FAQ](faq.md): short answers to the questions that come up.
 
 ## In one paragraph
 
