@@ -1789,3 +1789,38 @@ body.is-resizing-page {
     transition: none;
   }
 }
+
+/* Placemarks (lib/editor/placemarkPlugin.ts). With the block gutter on, a
+   marked block's bar is wider and amber, so it stays apart from the accent
+   of the active block; on the active block both show, the accent bar with an
+   amber ring. With the gutter off a layer of the same kind draws an amber
+   stroke per marked block in the surface's left padding. */
+.block-gutter__bar.block-gutter__bar--placemark {
+  left: calc(50% - 2px);
+  width: 4px;
+  background: rgb(var(--warning-rgb));
+}
+
+.block-gutter__bar.block-gutter__bar--placemark:hover {
+  background: rgb(var(--warning-strong-rgb));
+}
+
+.block-gutter__bar.block-gutter__bar--placemark.block-gutter__bar--active {
+  background: rgb(var(--accent-rgb));
+  box-shadow: 0 0 0 2px rgba(var(--warning-rgb), 0.9);
+}
+
+.placemark-margin {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.placemark-margin__stroke {
+  position: absolute;
+  width: 3px;
+  min-height: 8px;
+  border-radius: 2px;
+  background: rgb(var(--warning-rgb));
+}

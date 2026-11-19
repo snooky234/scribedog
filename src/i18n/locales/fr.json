@@ -748,7 +748,10 @@
       "moveTableColumnRight": "Déplacer la colonne du tableau vers la droite",
       "toggleDetailsPanel": "Afficher/masquer le panneau de détails (plan, liens, rétroliens et infos du fichier)",
       "closeWorkingSetEntry": "Fermer la note dans « En cours »",
-      "reminder": "Ajouter ou modifier un rappel"
+      "reminder": "Ajouter ou modifier un rappel",
+      "togglePlacemark": "Poser ou retirer un signet",
+      "nextPlacemark": "Signet suivant",
+      "previousPlacemark": "Signet précédent"
     },
     "recording": "Appuyez sur une touche …",
     "recordHint": "Appuyez sur la nouvelle combinaison (elle doit contenir Ctrl ou Alt) — Échap annule.",
@@ -973,7 +976,15 @@
     "untitledHeading": "(sans titre)",
     "outlineAriaLabel": "Plan du document",
     "expandSection": "Déplier la section",
-    "collapseSection": "Replier la section"
+    "collapseSection": "Replier la section",
+    "placemarks": "Signets ({{count}})",
+    "noPlacemarks": "Aucun signet pour l'instant. Faites un clic droit sur la barre d'un bloc au bord gauche ou appuyez sur {{keys}}.",
+    "placemarksAriaLabel": "Signets de ce document",
+    "placemarkNoText": "(sans texte)",
+    "placemarkEditComment": "Modifier le commentaire",
+    "placemarkRemove": "Supprimer le signet",
+    "placemarkCommentLabel": "Commentaire de ce signet",
+    "placemarkCommentPlaceholder": "Que vouliez-vous reprendre ici ?"
   },
   "fileLinkSuggest": {
     "hint": "Lier un fichier",
@@ -1121,7 +1132,9 @@
     "detailsSummaryPlaceholder": "Titre",
     "pageLine": "Page {{page}}",
     "pageLineApprox": "env. page {{pages}}",
-    "pageLineHint": "C'est ici que les pages se terminent dans l'export PDF et à l'impression. Seule une mise à l'échelle dans la boîte de dialogue d'impression les déplace."
+    "pageLineHint": "C'est ici que les pages se terminent dans l'export PDF et à l'impression. Seule une mise à l'échelle dans la boîte de dialogue d'impression les déplace.",
+    "gutterBarSetPlacemark": "Clic droit : poser un signet",
+    "gutterBarRemovePlacemark": "Clic droit : retirer le signet"
   },
   "editorContextMenu": {
     "aiEdit": "Réécrire avec l’IA",

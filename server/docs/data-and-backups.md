@@ -26,7 +26,7 @@
 In a multi-instance setup with [shared vaults](multiuser.md#shared-vaults)
 there is one more folder, `./shared`, mounted into every instance: one
 subfolder per shared vault (the same layout as above, except that chat
-history and pending agent proposals sit in `.scribedog/users/<name>/`, one
+history, pending agent proposals and placemarks sit in `.scribedog/users/<name>/`, one
 folder per person), the registry of who is in which vault in
 `shared/.scribedog/`, and deleted vaults in `shared/.trash/` for 30 days.
 

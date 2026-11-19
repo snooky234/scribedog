@@ -31,6 +31,8 @@ import {
 import { deleteFolderDraftsFor, flushDrafts, moveFolderDraftsFor } from "./drafts";
 import { toErrorMessage } from "./errors";
 import { buildFileMtimeMap, createLoadedFolderState } from "./folderState";
+import { usePlacemarksStore } from "@/store/usePlacemarksStore";
+
 import { dropVaultIcons, moveVaultIcons } from "./icons";
 import { initialAppData } from "./initialState";
 import {
@@ -439,6 +441,7 @@ export const createFolderSlice: AppSlice<FolderSlice> = (set, get) => ({
           folderPath,
           newFolderPath
         );
+        usePlacemarksStore.getState().movePath(vaultRootPath, folderPath, newFolderPath);
       }
 
       set({
@@ -522,6 +525,7 @@ ${fileDocuments[path].content}`
 
         persistManualOrderIfChanged(vaultRootPath, currentState.manualOrder, nextManualOrder);
         nextVaultIcons = dropVaultIcons(vaultRootPath, currentState.vaultIcons, folderPath);
+        usePlacemarksStore.getState().removePath(vaultRootPath, folderPath);
       }
 
       const nextWorkingSet = pruneWorkingSet(

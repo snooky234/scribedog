@@ -18,6 +18,8 @@ import { writeManualOrder, writeSortMode, type SortMode } from "@/lib/vaultMeta"
 import { isDocumentDirty } from "./documents";
 import { moveDraftFor, moveFolderDraftsFor, scheduleDraft } from "./drafts";
 import { toErrorMessage } from "./errors";
+import { usePlacemarksStore } from "@/store/usePlacemarksStore";
+
 import { moveVaultIcons, persistVaultIconsIfChanged } from "./icons";
 import { currentChildBasenames, ensureManualOrderEntry } from "./manualOrder";
 import {
@@ -289,6 +291,11 @@ export const createTreeSlice: AppSlice<TreeSlice> = (set, get) => ({
       const nextVaultIcons = isSameParent
         ? state.vaultIcons
         : moveVaultIcons(folderPath, state.vaultIcons, sourcePath, newPath);
+
+      // Placemarks are keyed by path too (usePlacemarksStore).
+      if (!isSameParent) {
+        usePlacemarksStore.getState().movePath(folderPath, sourcePath, newPath);
+      }
 
       // The editor renders selectedFileContent, not fileDocuments. Without
       // mirroring the moved document into these fields, an open file keeps

@@ -748,7 +748,10 @@
       "moveTableColumnRight": "Mover coluna da tabela para a direita",
       "toggleDetailsPanel": "Mostrar/ocultar o painel de detalhes (estrutura, links, backlinks e informações do arquivo)",
       "closeWorkingSetEntry": "Fechar a nota em \"Em andamento\"",
-      "reminder": "Definir ou editar um lembrete"
+      "reminder": "Definir ou editar um lembrete",
+      "togglePlacemark": "Definir ou remover marcador",
+      "nextPlacemark": "Próximo marcador",
+      "previousPlacemark": "Marcador anterior"
     },
     "recording": "Prima uma tecla …",
     "recordHint": "Prima a nova combinação (tem de incluir Ctrl ou Alt) — Esc cancela.",
@@ -973,7 +976,15 @@
     "untitledHeading": "(sem título)",
     "outlineAriaLabel": "Estrutura do documento",
     "expandSection": "Expandir seção",
-    "collapseSection": "Recolher seção"
+    "collapseSection": "Recolher seção",
+    "placemarks": "Marcadores ({{count}})",
+    "noPlacemarks": "Ainda não há marcadores. Clique com o botão direito na barra de um bloco na margem esquerda ou pressione {{keys}}.",
+    "placemarksAriaLabel": "Marcadores neste documento",
+    "placemarkNoText": "(sem texto)",
+    "placemarkEditComment": "Editar comentário",
+    "placemarkRemove": "Remover marcador",
+    "placemarkCommentLabel": "Comentário deste marcador",
+    "placemarkCommentPlaceholder": "O que você queria retomar aqui?"
   },
   "fileLinkSuggest": {
     "hint": "Vincular um arquivo",
@@ -1121,7 +1132,9 @@
     "detailsSummaryPlaceholder": "Título",
     "pageLine": "Página {{page}}",
     "pageLineApprox": "aprox. página {{pages}}",
-    "pageLineHint": "Aqui terminam as páginas na exportação em PDF e na impressão. Só um redimensionamento na janela de impressão as desloca."
+    "pageLineHint": "Aqui terminam as páginas na exportação em PDF e na impressão. Só um redimensionamento na janela de impressão as desloca.",
+    "gutterBarSetPlacemark": "Clique direito: definir marcador",
+    "gutterBarRemovePlacemark": "Clique direito: remover marcador"
   },
   "editorContextMenu": {
     "aiEdit": "Reescrever com IA",

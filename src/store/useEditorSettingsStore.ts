@@ -55,7 +55,7 @@ export const OUTLINE_DEPTH_STORAGE_KEY = "scribedog-outline-max-depth";
 export const DETAILS_COLLAPSED_STORAGE_KEY = "scribedog-details-collapsed-sections";
 
 /** The details panel's sections, each of which can be folded away. */
-export type DetailsSectionId = "outline" | "fileInfo" | "outgoingLinks" | "backlinks";
+export type DetailsSectionId = "outline" | "placemarks" | "fileInfo" | "outgoingLinks" | "backlinks";
 export const ZOOM_STORAGE_KEY = "scribedog-zoom-level";
 export const ZEN_WIDTH_STORAGE_KEY = "scribedog-zen-width";
 export const PAGE_WIDTH_STORAGE_KEY = "scribedog-page-width";

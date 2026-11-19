@@ -221,7 +221,7 @@ history), not a folder inside somebody's vault. Two people saving the same
 note do not overwrite each other: changes at different places are merged,
 and overlapping ones are asked about (see
 [Editing from more than one place](data-and-backups.md#editing-from-more-than-one-place)).
-Chat history and the agent's pending proposals stay personal: each person
+Chat history, the agent's pending proposals and placemarks stay personal: each person
 has their own in `.scribedog/users/<name>/` inside the shared vault.
 
 ### Using them

@@ -74,6 +74,8 @@ Open it from the toolbar or with `Ctrl+Shift+D`. It is resizable and shows:
 
 - a live **outline** of the headings. Click one, or use the arrow keys, to
   jump to that section.
+- your **placemarks** in this note, each with its block number, the start of
+  its text and your comment. See [Placemarks](writing.md#placemarks).
 - what this note **links to**, and which notes **link back** to it. Targets
   that no longer exist are marked.
 - **File info**: word count, estimated reading time, and when the note was

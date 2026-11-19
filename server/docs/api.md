@@ -120,7 +120,7 @@ one that does not exist, so the API does not tell anyone which vaults the
 others have. A deleted one answers 410 with `vault_deleted`.
 
 Inside a shared vault `.scribedog/users/<name>/` holds each person's own
-files (chat history, pending agent proposals); the other people's folders
+files (chat history, pending agent proposals, placemarks); the other people's folders
 there are refused like `.scribedog/server/`.
 
 The `/events` socket of a shared vault closes with code `4003` when the

@@ -7,6 +7,7 @@ import {
   type HeadingNumberingSettings
 } from "@/lib/editor/headingNumbers";
 import { VAULT_META_DIR_NAME } from "@/lib/fileSystem";
+import { normalizeStoredPlacemarks, type StoredPlacemarks } from "@/lib/placemarks";
 import { userMetaDirPath } from "@/lib/userMeta";
 import { normalizeVaultIcons, type VaultIconMap } from "@/lib/vaultIcons";
 import { normalizeStoredWorkingSet, type StoredWorkingSet } from "@/store/appStore/workingSet";
@@ -23,6 +24,7 @@ const HEADING_NUMBERING_FILE_NAME = "heading-numbering.json";
 const FOLDER_NOTES_FILE_NAME = "folder-notes.json";
 const ICONS_FILE_NAME = "icons.json";
 const WORKING_SET_FILE_NAME = "open-files.json";
+const PLACEMARKS_FILE_NAME = "placemarks.json";
 const SORT_MODES: SortMode[] = ["name", "modified", "manual"];
 
 /**
@@ -132,6 +134,32 @@ export async function writeWorkingSet(folderPath: string, workingSet: StoredWork
   const dirPath = await userMetaDirPath(folderPath);
   await mkdir(dirPath, { recursive: true });
   await writeTextFile(await join(dirPath, WORKING_SET_FILE_NAME), JSON.stringify(workingSet, null, 2));
+}
+
+/**
+ * Placemarks (lib/placemarks.ts), one person's like the "In progress" list:
+ * where *I* wanted to come back to is nobody else's business in a shared
+ * vault, so they sit in userMetaDirPath. In a vault of one that is plain
+ * `.scribedog/`, which is what lets them travel with the folder.
+ */
+export async function readPlacemarks(folderPath: string): Promise<StoredPlacemarks> {
+  try {
+    const filePath = await join(await userMetaDirPath(folderPath), PLACEMARKS_FILE_NAME);
+
+    if (!(await exists(filePath))) {
+      return { version: 1, files: {} };
+    }
+
+    return normalizeStoredPlacemarks(JSON.parse(await readTextFile(filePath)));
+  } catch {
+    return { version: 1, files: {} };
+  }
+}
+
+export async function writePlacemarks(folderPath: string, placemarks: StoredPlacemarks): Promise<void> {
+  const dirPath = await userMetaDirPath(folderPath);
+  await mkdir(dirPath, { recursive: true });
+  await writeTextFile(await join(dirPath, PLACEMARKS_FILE_NAME), JSON.stringify(placemarks, null, 2));
 }
 
 /**

@@ -83,7 +83,8 @@ point things out, and change the marks again later.
 
 Open any folder and every `.md` file appears in a tree. Link notes by dragging
 them in, by typing `[[`, or through the link dialog. A details panel shows the
-outline, links and backlinks. Folders can have a note of their own, like a node
+outline, links and backlinks, and the [placemarks](docs/writing.md#placemarks)
+you left in a note to find your way back. Folders can have a note of their own, like a node
 in Trilium or Notion. Pin the notes you are working on, and unsaved edits
 survive a restart.
 

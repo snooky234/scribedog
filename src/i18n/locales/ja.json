@@ -747,7 +747,10 @@
       "moveTableColumnRight": "表の列を右へ移動",
       "toggleDetailsPanel": "詳細パネル（アウトライン・リンク・バックリンク・ファイル情報）の表示を切り替え",
       "closeWorkingSetEntry": "「作業中」のノートを閉じる",
-      "reminder": "リマインダーを設定または編集"
+      "reminder": "リマインダーを設定または編集",
+      "togglePlacemark": "ブックマークを設定/解除",
+      "nextPlacemark": "次のブックマーク",
+      "previousPlacemark": "前のブックマーク"
     },
     "recording": "キーを押してください …",
     "recordHint": "新しいキーの組み合わせを押してください（Ctrl または Alt を含める必要があります）。Esc で中止します。",
@@ -972,7 +975,15 @@
     "untitledHeading": "(無題)",
     "outlineAriaLabel": "文書のアウトライン",
     "expandSection": "セクションを展開",
-    "collapseSection": "セクションを折りたたむ"
+    "collapseSection": "セクションを折りたたむ",
+    "placemarks": "ブックマーク ({{count}})",
+    "noPlacemarks": "ブックマークはまだありません。左端のブロックのバーを右クリックするか、{{keys}} を押してください。",
+    "placemarksAriaLabel": "このドキュメントのブックマーク",
+    "placemarkNoText": "(テキストなし)",
+    "placemarkEditComment": "コメントを編集",
+    "placemarkRemove": "ブックマークを削除",
+    "placemarkCommentLabel": "このブックマークへのコメント",
+    "placemarkCommentPlaceholder": "ここで何を再開するつもりでしたか?"
   },
   "fileLinkSuggest": {
     "hint": "ファイルをリンク",
@@ -1120,7 +1131,9 @@
     "detailsSummaryPlaceholder": "タイトル",
     "pageLine": "{{page}} ページ",
     "pageLineApprox": "約 {{pages}} ページ",
-    "pageLineHint": "PDF エクスポートと印刷でページが終わる位置です。印刷ダイアログで拡大縮小した場合のみずれます。"
+    "pageLineHint": "PDF エクスポートと印刷でページが終わる位置です。印刷ダイアログで拡大縮小した場合のみずれます。",
+    "gutterBarSetPlacemark": "右クリック: ブックマークを設定",
+    "gutterBarRemovePlacemark": "右クリック: ブックマークを削除"
   },
   "editorContextMenu": {
     "aiEdit": "AIで書き直す",

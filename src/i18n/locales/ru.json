@@ -760,7 +760,10 @@
       "moveTableColumnRight": "Переместить столбец таблицы вправо",
       "toggleDetailsPanel": "Показать/скрыть панель сведений (структура, ссылки, обратные ссылки и сведения о файле)",
       "closeWorkingSetEntry": "Закрыть заметку в «В работе»",
-      "reminder": "Добавить или изменить напоминание"
+      "reminder": "Добавить или изменить напоминание",
+      "togglePlacemark": "Поставить или снять закладку",
+      "nextPlacemark": "Следующая закладка",
+      "previousPlacemark": "Предыдущая закладка"
     },
     "recording": "Нажмите клавишу …",
     "recordHint": "Нажмите новую комбинацию (должна содержать Ctrl или Alt) — Esc отменяет.",
@@ -985,7 +988,15 @@
     "untitledHeading": "(без названия)",
     "outlineAriaLabel": "Структура документа",
     "expandSection": "Развернуть раздел",
-    "collapseSection": "Свернуть раздел"
+    "collapseSection": "Свернуть раздел",
+    "placemarks": "Закладки ({{count}})",
+    "noPlacemarks": "Закладок пока нет. Щёлкните правой кнопкой по отметке блока у левого края или нажмите {{keys}}.",
+    "placemarksAriaLabel": "Закладки в этом документе",
+    "placemarkNoText": "(без текста)",
+    "placemarkEditComment": "Изменить комментарий",
+    "placemarkRemove": "Удалить закладку",
+    "placemarkCommentLabel": "Комментарий к закладке",
+    "placemarkCommentPlaceholder": "К чему вы хотели здесь вернуться?"
   },
   "fileLinkSuggest": {
     "hint": "Ссылка на файл",
@@ -1133,7 +1144,9 @@
     "detailsSummaryPlaceholder": "Заголовок",
     "pageLine": "Страница {{page}}",
     "pageLineApprox": "прибл. страница {{pages}}",
-    "pageLineHint": "Здесь заканчиваются страницы при экспорте в PDF и при печати. Сдвинуть их может только масштабирование в диалоге печати."
+    "pageLineHint": "Здесь заканчиваются страницы при экспорте в PDF и при печати. Сдвинуть их может только масштабирование в диалоге печати.",
+    "gutterBarSetPlacemark": "Правый щелчок: поставить закладку",
+    "gutterBarRemovePlacemark": "Правый щелчок: снять закладку"
   },
   "editorContextMenu": {
     "aiEdit": "Переработать с помощью ИИ",

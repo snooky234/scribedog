@@ -263,6 +263,44 @@ character.
 > The gutter is off by default and hidden in Zen mode. The numbers are never
 > written into the file.
 
+## Placemarks
+
+A placemark is a bookmark on one block of a note: the spot where you stopped,
+a paragraph you still want to rework, a list you need to check again. Add a
+comment, and next week you still know why you put it there.
+
+| Action | How |
+|---|---|
+| Set or remove a placemark | `Ctrl+Shift+B` in the block, or right-click its bar in the [block gutter](#block-numbers) |
+| Jump to the next one | `Alt+Page Down` |
+| Jump to the previous one | `Alt+Page Up` |
+| See all of them, add a comment | The **Placemarks** section of the [details panel](notes-and-vault.md#details-panel) |
+
+Jumping wraps around at the end of the note. You can change all three
+shortcuts under **Settings, Keyboard shortcuts**.
+
+With the block gutter on, a marked block's bar turns amber. Without it, a
+short amber stroke appears in the left margin next to the block.
+
+In the details panel, click a placemark to jump there. The speech bubble opens
+its comment: `Enter` saves, `Shift+Enter` starts a new line, `Escape`
+discards the change. The `×` removes the placemark.
+
+### Where they are stored
+
+Placemarks are not written into your note. They live in
+`.scribedog/placemarks.json` inside your vault, so the Markdown stays clean
+and they travel with the folder to another computer. Rename or move a note
+and its placemarks go along. Delete it and they are gone.
+
+A placemark remembers its block by the first words of its text. If you edit
+the note in another program and a few paragraphs move, the placemark still
+finds its block. If the text is gone, it stays at about the same position.
+
+> [!NOTE]
+> Placemarks are personal. In a vault that several people share on a
+> ScribeDog server, everyone has their own, and nobody else sees yours.
+
 ## Zen mode
 
 Press `Ctrl+Shift+Y`, or use the toolbar button, to strip away the sidebar,

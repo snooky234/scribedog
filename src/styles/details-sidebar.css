@@ -358,3 +358,80 @@ button.details-sidebar__outline-item:hover {
 /* Below the desktop width the panel is a sheet (Editor.tsx renders it through
    MobileSheet, styled in responsive.css); nothing is docked here anymore, so
    there is nothing to hide. */
+
+/* Placemarks: the jump button takes the row, the comment and remove actions
+   sit after it. The comment is a button too, so a click opens it for
+   editing; it wraps instead of being cut off, since it is the reader's own
+   note and only useful in full. */
+.details-sidebar__placemark-row {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.details-sidebar__placemark-row > .details-sidebar__item {
+  flex: 1;
+  min-width: 0;
+}
+
+.details-sidebar__placemark-row > .details-sidebar__item svg {
+  color: rgb(var(--warning-strong-rgb));
+}
+
+.details-sidebar__placemark-number {
+  flex-shrink: 0;
+  color: rgba(var(--muted-rgb), 0.95);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.details-sidebar__placemark-action {
+  flex-shrink: 0;
+  opacity: 0.55;
+}
+
+.details-sidebar__placemark:hover .details-sidebar__placemark-action,
+.details-sidebar__placemark-action:focus-visible {
+  opacity: 1;
+}
+
+.details-sidebar__placemark-comment {
+  display: block;
+  width: calc(100% - 1.6rem);
+  margin: 0 0 0.2rem 1.6rem;
+  border: 0;
+  border-left: 2px solid rgba(var(--warning-rgb), 0.7);
+  border-radius: 0;
+  background: transparent;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: rgba(var(--text-rgb), 0.85);
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.details-sidebar__placemark-comment:hover {
+  background: rgba(var(--overlay-rgb), 0.05);
+}
+
+.details-sidebar__placemark-input {
+  display: block;
+  width: calc(100% - 1.6rem);
+  margin: 0.1rem 0 0.3rem 1.6rem;
+  border: 1px solid rgba(var(--overlay-rgb), 0.2);
+  border-radius: 0.45rem;
+  background: rgb(var(--surface-rgb));
+  padding: 0.3rem 0.45rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: rgb(var(--text-rgb));
+  resize: vertical;
+}
+
+.details-sidebar__placemark-input:focus {
+  outline: 2px solid rgba(var(--accent-rgb), 0.6);
+  outline-offset: 0;
+}

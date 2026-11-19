@@ -95,6 +95,13 @@ import {
 import { moveLine, moveListItem, toggleTaskItemChecked } from "@/lib/editor/listCommands";
 import { dispatchTableStep, tableLineStep } from "@/lib/editor/tableMove";
 import { setBlockGutterEnabled } from "@/lib/editor/blockGutter";
+import {
+  clearPlacemarks,
+  jumpToPlacemark,
+  loadPlacemarks,
+  togglePlacemarkAt
+} from "@/lib/editor/placemarkPlugin";
+import { usePlacemarksStore } from "@/store/usePlacemarksStore";
 import { normalizeEscapedCheckboxes } from "@/lib/editor/markdownNormalize";
 import { looksLikeMarkdown, pasteMarkdown } from "@/lib/editor/pasteMarkdown";
 import { normalizePastedSlice } from "@/lib/editor/pasteNormalize";
@@ -1874,6 +1881,22 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
             event.preventDefault();
             toggleTaskItemChecked(view);
             return true;
+          case "togglePlacemark":
+            event.preventDefault();
+            togglePlacemarkAt(view, view.state.selection.from);
+            return true;
+          case "nextPlacemark":
+          case "previousPlacemark": {
+            const currentEditor = editorRef.current;
+
+            if (!currentEditor) {
+              return false;
+            }
+
+            event.preventDefault();
+            jumpToPlacemark(currentEditor, action === "nextPlacemark" ? 1 : -1);
+            return true;
+          }
           default:
             break;
         }
@@ -2113,6 +2136,44 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
   const stagedRelativePath =
     folderPath && filePath ? normalizeVaultPath(getRelativeDisplayPath(folderPath, filePath)) : "";
+
+  // Placemarks belong to one note (lib/editor/placemarkPlugin.ts). The
+  // cleanup detaches them before the next note's content arrives: React runs
+  // every cleanup of a commit before any effect body, so this happens ahead
+  // of the content sync below, which may keep the document's positions
+  // across the switch. They are loaded again once the content is in place
+  // (the store's promise settles after this commit's effects). A staged
+  // review shows a proposal, not the note, so no marks are set there.
+  const hasStagedChange = stagedChange !== undefined;
+
+  useEffect(() => {
+    const currentEditor = editor;
+
+    if (!currentEditor || currentEditor.isDestroyed || !folderPath || !filePath || hasStagedChange) {
+      return;
+    }
+
+    let cancelled = false;
+    const relativePath = getRelativeDisplayPath(folderPath, filePath);
+    const store = usePlacemarksStore.getState();
+
+    void store.ensureLoaded(folderPath).then(() => {
+      if (cancelled || currentEditor.isDestroyed) {
+        return;
+      }
+
+      loadPlacemarks(
+        currentEditor,
+        { vaultPath: folderPath, relativePath },
+        usePlacemarksStore.getState().getFileAnchors(folderPath, relativePath)
+      );
+    });
+
+    return () => {
+      cancelled = true;
+      clearPlacemarks(currentEditor);
+    };
+  }, [editor, folderPath, filePath, hasStagedChange]);
 
 
   useEffect(() => {

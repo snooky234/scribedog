@@ -14,7 +14,7 @@ it front to back. Pick the page for the thing you want to do.
 ## Writing and organizing notes
 
 - [Writing](writing.md): the WYSIWYG editor, drawings, highlighting, heading numbering,
-  block numbers, Zen mode, copy and paste.
+  block numbers, placemarks, Zen mode, copy and paste.
 - [Notes and your vault](notes-and-vault.md): the file tree, folder notes,
   linked notes, the details panel, pinned notes, reference notes,
   auto-save, version history, reminders.

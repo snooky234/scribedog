@@ -14,6 +14,7 @@ import { HeadingNumbering } from "@/lib/editor/headingNumbering";
 import { InactiveSelection } from "@/lib/inactiveSelection";
 import { OutlineHighlight } from "@/lib/editor/outlineHighlight";
 import { PageLines } from "@/lib/editor/pageLines";
+import { Placemarks } from "@/lib/editor/placemarkPlugin";
 import { TableGrips } from "@/lib/editor/tableGrips";
 import { SearchHighlight } from "@/lib/searchHighlight";
 import { VoiceInsertWidget } from "@/lib/voiceInsertWidget";
@@ -122,6 +123,7 @@ export function buildEditorExtensions(): Extensions {
     InactiveSelection,
     PageLines,
     BlockGutter,
+    Placemarks,
     Reminders
   ];
 }

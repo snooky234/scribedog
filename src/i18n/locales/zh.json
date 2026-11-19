@@ -747,7 +747,10 @@
       "moveTableColumnRight": "右移表格列",
       "toggleDetailsPanel": "显示/隐藏详情面板（大纲、链接、反向链接与文件信息）",
       "closeWorkingSetEntry": "关闭“进行中”里的笔记",
-      "reminder": "设置或编辑提醒"
+      "reminder": "设置或编辑提醒",
+      "togglePlacemark": "设置或删除书签",
+      "nextPlacemark": "下一个书签",
+      "previousPlacemark": "上一个书签"
     },
     "recording": "请按键 …",
     "recordHint": "按下新的快捷键组合（必须包含 Ctrl 或 Alt），按 Esc 取消。",
@@ -972,7 +975,15 @@
     "untitledHeading": "(无标题)",
     "outlineAriaLabel": "文档大纲",
     "expandSection": "展开区块",
-    "collapseSection": "折叠区块"
+    "collapseSection": "折叠区块",
+    "placemarks": "书签 ({{count}})",
+    "noPlacemarks": "还没有书签。右键单击左侧边缘某个块的竖线，或按 {{keys}}。",
+    "placemarksAriaLabel": "本文档中的书签",
+    "placemarkNoText": "(无文本)",
+    "placemarkEditComment": "编辑备注",
+    "placemarkRemove": "删除书签",
+    "placemarkCommentLabel": "此书签的备注",
+    "placemarkCommentPlaceholder": "你想在这里接着做什么？"
   },
   "fileLinkSuggest": {
     "hint": "链接文件",
@@ -1120,7 +1131,9 @@
     "detailsSummaryPlaceholder": "标题",
     "pageLine": "第 {{page}} 页",
     "pageLineApprox": "约第 {{pages}} 页",
-    "pageLineHint": "这里是 PDF 导出和打印时每页的结束位置。只有在打印对话框中缩放才会改变它们。"
+    "pageLineHint": "这里是 PDF 导出和打印时每页的结束位置。只有在打印对话框中缩放才会改变它们。",
+    "gutterBarSetPlacemark": "右键单击：设置书签",
+    "gutterBarRemovePlacemark": "右键单击：删除书签"
   },
   "editorContextMenu": {
     "aiEdit": "用 AI 改写",

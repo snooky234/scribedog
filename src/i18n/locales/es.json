@@ -748,7 +748,10 @@
       "moveTableColumnRight": "Mover columna de la tabla a la derecha",
       "toggleDetailsPanel": "Mostrar/ocultar el panel de detalles (esquema, enlaces, retroenlaces e información del archivo)",
       "closeWorkingSetEntry": "Cerrar la nota de «En curso»",
-      "reminder": "Crear o editar un recordatorio"
+      "reminder": "Crear o editar un recordatorio",
+      "togglePlacemark": "Poner o quitar marcador",
+      "nextPlacemark": "Marcador siguiente",
+      "previousPlacemark": "Marcador anterior"
     },
     "recording": "Pulsa una tecla …",
     "recordHint": "Pulsa la nueva combinación (debe incluir Ctrl o Alt); Esc cancela.",
@@ -973,7 +976,15 @@
     "untitledHeading": "(sin título)",
     "outlineAriaLabel": "Esquema del documento",
     "expandSection": "Expandir sección",
-    "collapseSection": "Contraer sección"
+    "collapseSection": "Contraer sección",
+    "placemarks": "Marcadores ({{count}})",
+    "noPlacemarks": "Aún no hay marcadores. Haz clic derecho en la barra de un bloque en el borde izquierdo o pulsa {{keys}}.",
+    "placemarksAriaLabel": "Marcadores de este documento",
+    "placemarkNoText": "(sin texto)",
+    "placemarkEditComment": "Editar comentario",
+    "placemarkRemove": "Quitar marcador",
+    "placemarkCommentLabel": "Comentario de este marcador",
+    "placemarkCommentPlaceholder": "¿Qué querías retomar aquí?"
   },
   "fileLinkSuggest": {
     "hint": "Enlazar un archivo",
@@ -1121,7 +1132,9 @@
     "detailsSummaryPlaceholder": "Título",
     "pageLine": "Página {{page}}",
     "pageLineApprox": "aprox. página {{pages}}",
-    "pageLineHint": "Aquí terminan las páginas en la exportación a PDF y al imprimir. Solo un escalado en el diálogo de impresión las desplaza."
+    "pageLineHint": "Aquí terminan las páginas en la exportación a PDF y al imprimir. Solo un escalado en el diálogo de impresión las desplaza.",
+    "gutterBarSetPlacemark": "Clic derecho: poner marcador",
+    "gutterBarRemovePlacemark": "Clic derecho: quitar marcador"
   },
   "editorContextMenu": {
     "aiEdit": "Reescribir con IA",

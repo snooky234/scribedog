@@ -59,7 +59,10 @@ export type ShortcutActionId =
   | "moveListItemUp"
   | "moveListItemDown"
   | "moveTableColumnLeft"
-  | "moveTableColumnRight";
+  | "moveTableColumnRight"
+  | "togglePlacemark"
+  | "nextPlacemark"
+  | "previousPlacemark";
 
 export type ShortcutDefinition = {
   id: ShortcutActionId;
@@ -456,6 +459,29 @@ export const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     category: "format",
     descriptionKey: "shortcutsDialog.items.moveTableColumnRight",
     defaultBinding: combo({ alt: true, shift: true }, "ArrowRight", "", "→")
+  },
+  // Placemarks (lib/editor/placemarkPlugin.ts). Not Ctrl+Alt: on German and
+  // other European layouts that is AltGr and types a character.
+  {
+    id: "togglePlacemark",
+    scope: "editor",
+    category: "app",
+    descriptionKey: "shortcutsDialog.items.togglePlacemark",
+    defaultBinding: letter(CTRL_SHIFT, "B")
+  },
+  {
+    id: "nextPlacemark",
+    scope: "editor",
+    category: "app",
+    descriptionKey: "shortcutsDialog.items.nextPlacemark",
+    defaultBinding: combo({ alt: true }, "PageDown", "", "PgDn")
+  },
+  {
+    id: "previousPlacemark",
+    scope: "editor",
+    category: "app",
+    descriptionKey: "shortcutsDialog.items.previousPlacemark",
+    defaultBinding: combo({ alt: true }, "PageUp", "", "PgUp")
   }
 ];
 

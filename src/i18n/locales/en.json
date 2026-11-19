@@ -748,7 +748,10 @@
       "moveTableColumnRight": "Move table column right",
       "toggleDetailsPanel": "Toggle the details panel (outline, links, backlinks & file info)",
       "closeWorkingSetEntry": "Close note in \"In progress\"",
-      "reminder": "Set or edit a reminder"
+      "reminder": "Set or edit a reminder",
+      "togglePlacemark": "Set or remove placemark",
+      "nextPlacemark": "Next placemark",
+      "previousPlacemark": "Previous placemark"
     },
     "recording": "Press a key …",
     "recordHint": "Press the new key combination (must include Ctrl or Alt) — Esc cancels.",
@@ -973,7 +976,15 @@
     "untitledHeading": "(untitled)",
     "outlineAriaLabel": "Document outline",
     "expandSection": "Expand section",
-    "collapseSection": "Collapse section"
+    "collapseSection": "Collapse section",
+    "placemarks": "Placemarks ({{count}})",
+    "noPlacemarks": "No placemarks yet. Right-click a block's bar at the left edge or press {{keys}}.",
+    "placemarksAriaLabel": "Placemarks in this document",
+    "placemarkNoText": "(no text)",
+    "placemarkEditComment": "Edit comment",
+    "placemarkRemove": "Remove placemark",
+    "placemarkCommentLabel": "Comment on this placemark",
+    "placemarkCommentPlaceholder": "What did you want to come back to?"
   },
   "fileLinkSuggest": {
     "hint": "Link a file",
@@ -1121,7 +1132,9 @@
     "detailsSummaryPlaceholder": "Title",
     "pageLine": "Page {{page}}",
     "pageLineApprox": "approx. page {{pages}}",
-    "pageLineHint": "This is where the pages end in the PDF export and when printing. Only scaling in the print dialog moves them."
+    "pageLineHint": "This is where the pages end in the PDF export and when printing. Only scaling in the print dialog moves them.",
+    "gutterBarSetPlacemark": "Right-click: set placemark",
+    "gutterBarRemovePlacemark": "Right-click: remove placemark"
   },
   "editorContextMenu": {
     "aiEdit": "Rewrite with AI",

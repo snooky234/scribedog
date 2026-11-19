@@ -4,6 +4,8 @@ import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 
 import { BLOCK_GUTTER_BRIEF_POSITION_MS, type BlockGutterOptions } from "@/lib/editor/blockGutterOptions";
 import { blockIndexAt, blockPositionOf, collectNumberedBlocks, formatBadgePosition } from "@/lib/editor/blockPosition";
+import { placemarkCommentsByBlock, placemarksAvailable, placemarksChanged, togglePlacemarkAt } from "@/lib/editor/placemarkPlugin";
+import i18n from "@/i18n";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
 // The block gutter (issue #52): a narrow strip at the left edge of the page
@@ -30,6 +32,7 @@ export const BLOCK_GUTTER_SURFACE_CLASS = "editor-view__surface--block-gutter";
 const LAYER_CLASS = "block-gutter";
 const BAR_CLASS = "block-gutter__bar";
 const ACTIVE_CLASS = "block-gutter__bar--active";
+const PLACEMARK_CLASS = "block-gutter__bar--placemark";
 const POSITION_CLASS = "block-gutter__position";
 const ACTIVE_BLOCK_CLASS = "block-gutter-active";
 const ACTIVE_FRAME_CLASS = "block-gutter-active--frame";
@@ -50,6 +53,23 @@ export function setBlockGutterEnabled(editor: Editor, enabled: boolean): void {
 
 function options(): BlockGutterOptions {
   return useEditorSettingsStore.getState().blockGutterOptions;
+}
+
+/**
+ * The bars' tooltips: the right click that sets a placemark is invisible
+ * otherwise, and a marked bar shows its comment without a trip to the
+ * details panel. Without a note to keep marks for (a staged review), the
+ * bars have no tooltip.
+ */
+function barTitles(placemarksEnabled: boolean): { unmarked: string; marked: string } {
+  if (!placemarksEnabled) {
+    return { unmarked: "", marked: "" };
+  }
+
+  return {
+    unmarked: i18n.t("editor.gutterBarSetPlacemark"),
+    marked: i18n.t("editor.gutterBarRemovePlacemark")
+  };
 }
 
 function activeRange(state: EditorState): [number, number] {
@@ -124,7 +144,12 @@ class BlockGutterView {
     this.view = view;
     const enabled = this.sync();
 
-    if (enabled && (view.state.doc !== previous.doc || view.state.selection !== previous.selection)) {
+    if (
+      enabled &&
+      (view.state.doc !== previous.doc ||
+        view.state.selection !== previous.selection ||
+        placemarksChanged(view.state, previous))
+    ) {
       this.revealPosition = this.revealPosition || view.state.selection !== previous.selection;
       this.schedule();
     }
@@ -159,6 +184,7 @@ class BlockGutterView {
     layer.className = LAYER_CLASS;
     layer.setAttribute("aria-hidden", "true");
     layer.addEventListener("mousedown", this.handleMouseDown);
+    layer.addEventListener("contextmenu", this.handleContextMenu);
 
     const position = document.createElement("div");
     position.className = POSITION_CLASS;
@@ -190,6 +216,7 @@ class BlockGutterView {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.layer?.removeEventListener("mousedown", this.handleMouseDown);
+    this.layer?.removeEventListener("contextmenu", this.handleContextMenu);
     this.layer?.remove();
     this.layer = null;
     this.position = null;
@@ -220,6 +247,8 @@ class BlockGutterView {
     const settings = options();
     const blocks = collectNumberedBlocks(state.doc);
     const [firstActive, lastActive] = activeRange(state);
+    const marked = placemarkCommentsByBlock(state);
+    const titles = barTitles(placemarksAvailable(state));
     const surface = this.view.dom.getBoundingClientRect();
 
     // Over the paper surface the strip belongs to the page's light palette,
@@ -279,6 +308,15 @@ class BlockGutterView {
       }
 
       bar.classList.toggle(ACTIVE_CLASS, index >= firstActive && index <= lastActive);
+      bar.classList.toggle(PLACEMARK_CLASS, marked.has(index));
+
+      const comment = marked.get(index);
+      const title =
+        comment === undefined ? titles.unmarked : comment ? `${comment}\n\n${titles.marked}` : titles.marked;
+
+      if (bar.title !== title) {
+        bar.title = title;
+      }
     });
 
     this.renderPosition(settings, boxes[firstActive] ?? null, firstActive);
@@ -334,7 +372,9 @@ class BlockGutterView {
   private handleMouseDown = (event: MouseEvent): void => {
     const target = event.target;
 
-    if (!(target instanceof HTMLElement) || !target.classList.contains(BAR_CLASS)) {
+    // The right button belongs to the placemark toggle (handleContextMenu)
+    // and leaves the cursor where it is.
+    if (event.button !== 0 || !(target instanceof HTMLElement) || !target.classList.contains(BAR_CLASS)) {
       return;
     }
 
@@ -350,6 +390,24 @@ class BlockGutterView {
     const selection = TextSelection.near(state.doc.resolve(Math.min(block.pos + 1, state.doc.content.size)));
     this.view.dispatch(state.tr.setSelection(selection).scrollIntoView());
     this.view.focus();
+  };
+
+  // A right click on a bar sets or removes the block's placemark, the way a
+  // click into an IDE's gutter sets a breakpoint (lib/editor/placemarkPlugin.ts).
+  private handleContextMenu = (event: MouseEvent): void => {
+    const target = event.target;
+
+    if (!(target instanceof HTMLElement) || !target.classList.contains(BAR_CLASS)) {
+      return;
+    }
+
+    const index = Number.parseInt(target.dataset.blockNumber ?? "", 10) - 1;
+    const block = collectNumberedBlocks(this.view.state.doc)[index];
+
+    if (block) {
+      event.preventDefault();
+      togglePlacemarkAt(this.view, block.pos);
+    }
   };
 }
 

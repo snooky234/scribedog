@@ -20,6 +20,8 @@ import { saveWithMerge } from "./conditionalSave";
 import { collectUnsavedDocuments, isDocumentDirty } from "./documents";
 import { discardDraft, flushDrafts, moveDraftFor, scheduleDraft } from "./drafts";
 import { toErrorMessage } from "./errors";
+import { usePlacemarksStore } from "@/store/usePlacemarksStore";
+
 import { dropVaultIcons, moveVaultIcons } from "./icons";
 import {
   currentChildBasenames,
@@ -928,6 +930,7 @@ export const createFileSlice: AppSlice<FileSlice> = (set, get) => ({
           filePath,
           newFilePath
         );
+        usePlacemarksStore.getState().movePath(currentState.folderPath, filePath, newFilePath);
       }
 
       const nextWorkingSet = remapWorkingSetPaths(currentState.workingSet, (path) =>
@@ -1015,6 +1018,7 @@ ${openDocument.content}`
         nextManualOrder = removeManualOrderEntry(nextManualOrder, parentRelativePath, getBasename(filePath));
         persistManualOrderIfChanged(folderPath, currentState.manualOrder, nextManualOrder);
         nextVaultIcons = dropVaultIcons(folderPath, currentState.vaultIcons, filePath);
+        usePlacemarksStore.getState().removePath(folderPath, filePath);
 
         // Deleting a folder's note clears the folder's text, it does not
         // delete the folder — but the note may have been the only file that

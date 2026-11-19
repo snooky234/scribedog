@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DetailsFileInfoSection } from "@/components/editor/DetailsFileInfoSection";
 import { DetailsLinksSection } from "@/components/editor/DetailsLinksSection";
 import { DetailsOutlineSection } from "@/components/editor/DetailsOutlineSection";
+import { DetailsPlacemarksSection } from "@/components/editor/DetailsPlacemarksSection";
 import { useDocumentOutline } from "@/components/editor/useDocumentOutline";
 import type { OutlineHeading } from "@/lib/editor/documentOutline";
 
@@ -89,6 +90,7 @@ export function DetailsPanel({
           onJump={onJumpToHeading}
           onRequestEditorFocus={onRequestEditorFocus}
         />
+        <DetailsPlacemarksSection editor={editor} />
         <DetailsFileInfoSection filePath={filePath} markdown={markdown} refreshId={refreshId} />
         <DetailsLinksSection
           folderPath={folderPath}

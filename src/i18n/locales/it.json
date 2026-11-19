@@ -748,7 +748,10 @@
       "moveTableColumnRight": "Sposta la colonna della tabella a destra",
       "toggleDetailsPanel": "Mostra/nascondi il pannello dei dettagli (struttura, collegamenti, backlink e info file)",
       "closeWorkingSetEntry": "Chiudi la nota in «In lavorazione»",
-      "reminder": "Imposta o modifica un promemoria"
+      "reminder": "Imposta o modifica un promemoria",
+      "togglePlacemark": "Imposta o rimuovi segnalibro",
+      "nextPlacemark": "Segnalibro successivo",
+      "previousPlacemark": "Segnalibro precedente"
     },
     "recording": "Premi un tasto …",
     "recordHint": "Premi la nuova combinazione (deve includere Ctrl o Alt) — Esc annulla.",
@@ -973,7 +976,15 @@
     "untitledHeading": "(senza titolo)",
     "outlineAriaLabel": "Struttura del documento",
     "expandSection": "Espandi sezione",
-    "collapseSection": "Comprimi sezione"
+    "collapseSection": "Comprimi sezione",
+    "placemarks": "Segnalibri ({{count}})",
+    "noPlacemarks": "Nessun segnalibro. Fai clic destro sulla barra di un blocco sul bordo sinistro o premi {{keys}}.",
+    "placemarksAriaLabel": "Segnalibri in questo documento",
+    "placemarkNoText": "(senza testo)",
+    "placemarkEditComment": "Modifica commento",
+    "placemarkRemove": "Rimuovi segnalibro",
+    "placemarkCommentLabel": "Commento a questo segnalibro",
+    "placemarkCommentPlaceholder": "Da dove volevi riprendere?"
   },
   "fileLinkSuggest": {
     "hint": "Collega un file",
@@ -1121,7 +1132,9 @@
     "detailsSummaryPlaceholder": "Titolo",
     "pageLine": "Pagina {{page}}",
     "pageLineApprox": "ca. pagina {{pages}}",
-    "pageLineHint": "Qui finiscono le pagine nell'esportazione PDF e in stampa. Solo un ridimensionamento nella finestra di stampa le sposta."
+    "pageLineHint": "Qui finiscono le pagine nell'esportazione PDF e in stampa. Solo un ridimensionamento nella finestra di stampa le sposta.",
+    "gutterBarSetPlacemark": "Clic destro: imposta segnalibro",
+    "gutterBarRemovePlacemark": "Clic destro: rimuovi segnalibro"
   },
   "editorContextMenu": {
     "aiEdit": "Riscrivi con l’IA",

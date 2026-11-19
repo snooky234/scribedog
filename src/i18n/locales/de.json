@@ -748,7 +748,10 @@
       "moveTableColumnRight": "Tabellenspalte nach rechts verschieben",
       "toggleDetailsPanel": "Details-Panel (Gliederung, Links, Backlinks & Datei-Info) ein-/ausblenden",
       "closeWorkingSetEntry": "Notiz aus „In Arbeit“ schließen",
-      "reminder": "Erinnerung setzen oder bearbeiten"
+      "reminder": "Erinnerung setzen oder bearbeiten",
+      "togglePlacemark": "Lesezeichen setzen oder entfernen",
+      "nextPlacemark": "Nächstes Lesezeichen",
+      "previousPlacemark": "Vorheriges Lesezeichen"
     },
     "recording": "Taste drücken …",
     "recordHint": "Neue Tastenkombination drücken (muss Strg oder Alt enthalten) — Esc bricht ab.",
@@ -973,7 +976,15 @@
     "untitledHeading": "(ohne Titel)",
     "outlineAriaLabel": "Gliederung des Dokuments",
     "expandSection": "Abschnitt aufklappen",
-    "collapseSection": "Abschnitt einklappen"
+    "collapseSection": "Abschnitt einklappen",
+    "placemarks": "Lesezeichen ({{count}})",
+    "noPlacemarks": "Noch keine Lesezeichen. Rechtsklick auf den Balken eines Blocks am linken Rand oder {{keys}} drücken.",
+    "placemarksAriaLabel": "Lesezeichen in diesem Dokument",
+    "placemarkNoText": "(ohne Text)",
+    "placemarkEditComment": "Kommentar bearbeiten",
+    "placemarkRemove": "Lesezeichen entfernen",
+    "placemarkCommentLabel": "Kommentar zu diesem Lesezeichen",
+    "placemarkCommentPlaceholder": "Woran wolltest du hier weitermachen?"
   },
   "fileLinkSuggest": {
     "hint": "Datei verlinken",
@@ -1121,7 +1132,9 @@
     "detailsSummaryPlaceholder": "Titel",
     "pageLine": "Seite {{page}}",
     "pageLineApprox": "ca. Seite {{pages}}",
-    "pageLineHint": "Hier enden die Seiten im PDF-Export und beim Drucken. Nur eine Skalierung im Druckdialog verschiebt sie."
+    "pageLineHint": "Hier enden die Seiten im PDF-Export und beim Drucken. Nur eine Skalierung im Druckdialog verschiebt sie.",
+    "gutterBarSetPlacemark": "Rechtsklick: Lesezeichen setzen",
+    "gutterBarRemovePlacemark": "Rechtsklick: Lesezeichen entfernen"
   },
   "editorContextMenu": {
     "aiEdit": "Mit KI überarbeiten",

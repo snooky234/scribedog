@@ -760,7 +760,10 @@
       "moveTableColumnRight": "Перемістити стовпець таблиці праворуч",
       "toggleDetailsPanel": "Показати/сховати панель відомостей (структура, посилання, зворотні посилання та про файл)",
       "closeWorkingSetEntry": "Закрити нотатку в «У роботі»",
-      "reminder": "Додати або змінити нагадування"
+      "reminder": "Додати або змінити нагадування",
+      "togglePlacemark": "Поставити або зняти закладку",
+      "nextPlacemark": "Наступна закладка",
+      "previousPlacemark": "Попередня закладка"
     },
     "recording": "Натисніть клавішу …",
     "recordHint": "Натисніть нову комбінацію (має містити Ctrl або Alt) — Esc скасовує.",
@@ -985,7 +988,15 @@
     "untitledHeading": "(без назви)",
     "outlineAriaLabel": "Структура документа",
     "expandSection": "Розгорнути розділ",
-    "collapseSection": "Згорнути розділ"
+    "collapseSection": "Згорнути розділ",
+    "placemarks": "Закладки ({{count}})",
+    "noPlacemarks": "Закладок ще немає. Клацніть правою кнопкою на позначці блоку біля лівого краю або натисніть {{keys}}.",
+    "placemarksAriaLabel": "Закладки в цьому документі",
+    "placemarkNoText": "(без тексту)",
+    "placemarkEditComment": "Редагувати коментар",
+    "placemarkRemove": "Видалити закладку",
+    "placemarkCommentLabel": "Коментар до закладки",
+    "placemarkCommentPlaceholder": "До чого ви хотіли тут повернутися?"
   },
   "fileLinkSuggest": {
     "hint": "Посилання на файл",
@@ -1133,7 +1144,9 @@
     "detailsSummaryPlaceholder": "Заголовок",
     "pageLine": "Сторінка {{page}}",
     "pageLineApprox": "прибл. сторінка {{pages}}",
-    "pageLineHint": "Тут закінчуються сторінки під час експорту в PDF і друку. Зсунути їх може лише масштабування в діалозі друку."
+    "pageLineHint": "Тут закінчуються сторінки під час експорту в PDF і друку. Зсунути їх може лише масштабування в діалозі друку.",
+    "gutterBarSetPlacemark": "Правий клік: поставити закладку",
+    "gutterBarRemovePlacemark": "Правий клік: зняти закладку"
   },
   "editorContextMenu": {
     "aiEdit": "Переробити за допомогою ШІ",
