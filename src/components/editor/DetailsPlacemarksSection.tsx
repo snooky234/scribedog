@@ -17,9 +17,20 @@ import { formatBinding } from "@/lib/shortcuts/binding";
 import { resolveBinding } from "@/lib/shortcuts/resolve";
 import { useShortcutsStore } from "@/store/useShortcutsStore";
 
+/** A mark the gutter asked for (a right click on a marked bar). */
+export type PlacemarkFocusRequest = {
+  pos: number;
+  id: number;
+};
+
 type DetailsPlacemarksSectionProps = {
   editor: TipTapEditor | null;
+  focusRequest: PlacemarkFocusRequest | null;
+  onFocusRequestHandled: () => void;
+  onRequestEditorFocus: () => void;
 };
+
+const FLASH_MS = 1600;
 
 function samePlacemarks(a: PlacemarkInfo[], b: PlacemarkInfo[]): boolean {
   return (
@@ -73,15 +84,26 @@ function usePlacemarkList(editor: TipTapEditor | null): PlacemarkInfo[] {
 /**
  * Placemarks (issue #91): the blocks marked in the open note, each with its
  * number, the start of its text and its comment. A click jumps there without
- * taking the focus out of the panel, the way the outline does.
+ * taking the focus out of the panel, the way the outline does. A right click
+ * on a marked bar in the gutter lands here: the entry is scrolled into view,
+ * flashes and opens its comment, and finishing the comment hands the focus
+ * back to the note it came from.
  */
-export function DetailsPlacemarksSection({ editor }: DetailsPlacemarksSectionProps) {
+export function DetailsPlacemarksSection({
+  editor,
+  focusRequest,
+  onFocusRequestHandled,
+  onRequestEditorFocus
+}: DetailsPlacemarksSectionProps) {
   const { t } = useTranslation();
   const placemarks = usePlacemarkList(editor);
   const overrides = useShortcutsStore((state) => state.overrides);
   const [editingPos, setEditingPos] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const cancelledRef = useRef(false);
+  const returnFocusRef = useRef(false);
+  const [flashPos, setFlashPos] = useState<number | null>(null);
+  const itemRefs = useRef(new Map<number, HTMLLIElement>());
 
   // A mark that moved or vanished while its comment was open ends the edit.
   useEffect(() => {
@@ -90,13 +112,54 @@ export function DetailsPlacemarksSection({ editor }: DetailsPlacemarksSectionPro
     }
   }, [placemarks, editingPos]);
 
-  const startEditing = (mark: PlacemarkInfo) => {
+  const startEditing = (mark: PlacemarkInfo, returnFocus = false) => {
     cancelledRef.current = false;
+    returnFocusRef.current = returnFocus;
     setEditingPos(mark.pos);
     setDraft(mark.comment);
   };
 
-  const commit = () => {
+  // Handled once the list holds the mark: the panel may only just be
+  // opening, and its list fills from the editor after the first render.
+  useEffect(() => {
+    if (!focusRequest) {
+      return;
+    }
+
+    const mark = placemarks.find((entry) => entry.pos === focusRequest.pos);
+
+    if (!mark) {
+      return;
+    }
+
+    onFocusRequestHandled();
+    startEditing(mark, true);
+    setFlashPos(mark.pos);
+    itemRefs.current.get(mark.pos)?.scrollIntoView({ block: "nearest" });
+  }, [focusRequest, placemarks, onFocusRequestHandled]);
+
+  useEffect(() => {
+    if (flashPos === null) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setFlashPos(null), FLASH_MS);
+    return () => window.clearTimeout(timer);
+  }, [flashPos]);
+
+  // Enter and Escape go back to the note when the gutter opened the edit;
+  // a blur means the reader already went somewhere else.
+  const endEditing = (byKey: boolean) => {
+    setEditingPos(null);
+
+    if (returnFocusRef.current && byKey) {
+      onRequestEditorFocus();
+    }
+
+    returnFocusRef.current = false;
+  };
+
+  const commit = (byKey = false) => {
     // Escape already ended the edit; the blur that follows the textarea's
     // removal must not save what Escape discarded.
     if (cancelledRef.current) {
@@ -108,18 +171,18 @@ export function DetailsPlacemarksSection({ editor }: DetailsPlacemarksSectionPro
       setPlacemarkComment(editor, editingPos, draft);
     }
 
-    setEditingPos(null);
+    endEditing(byKey);
   };
 
   const handleCommentKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      commit();
+      commit(true);
     } else if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
       cancelledRef.current = true;
-      setEditingPos(null);
+      endEditing(true);
     }
   };
 
@@ -132,7 +195,21 @@ export function DetailsPlacemarksSection({ editor }: DetailsPlacemarksSectionPro
       ) : (
         <ul className="details-sidebar__list" aria-label={t("detailsPanel.placemarksAriaLabel")}>
           {placemarks.map((mark) => (
-            <li key={mark.pos} className="details-sidebar__placemark">
+            <li
+              key={mark.pos}
+              ref={(element) => {
+                if (element) {
+                  itemRefs.current.set(mark.pos, element);
+                } else {
+                  itemRefs.current.delete(mark.pos);
+                }
+              }}
+              className={
+                flashPos === mark.pos
+                  ? "details-sidebar__placemark details-sidebar__placemark--flash"
+                  : "details-sidebar__placemark"
+              }
+            >
               <div className="details-sidebar__placemark-row">
                 <button
                   type="button"
@@ -187,7 +264,7 @@ export function DetailsPlacemarksSection({ editor }: DetailsPlacemarksSectionPro
                   placeholder={t("detailsPanel.placemarkCommentPlaceholder")}
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={handleCommentKeyDown}
-                  onBlur={commit}
+                  onBlur={() => commit()}
                 />
               ) : mark.comment ? (
                 <button

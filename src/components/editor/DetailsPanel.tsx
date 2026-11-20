@@ -8,7 +8,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DetailsFileInfoSection } from "@/components/editor/DetailsFileInfoSection";
 import { DetailsLinksSection } from "@/components/editor/DetailsLinksSection";
 import { DetailsOutlineSection } from "@/components/editor/DetailsOutlineSection";
-import { DetailsPlacemarksSection } from "@/components/editor/DetailsPlacemarksSection";
+import {
+  DetailsPlacemarksSection,
+  type PlacemarkFocusRequest
+} from "@/components/editor/DetailsPlacemarksSection";
 import { useDocumentOutline } from "@/components/editor/useDocumentOutline";
 import type { OutlineHeading } from "@/lib/editor/documentOutline";
 
@@ -21,6 +24,8 @@ type DetailsPanelProps = {
   vaultFilePaths: string[];
   /** Bumped when the editor hands keyboard focus to the outline (Tab). */
   outlineFocusRequestId: number;
+  placemarkFocusRequest: PlacemarkFocusRequest | null;
+  onPlacemarkFocusRequestHandled: () => void;
   onJumpToHeading: (heading: OutlineHeading) => void;
   onRequestEditorFocus: () => void;
   onRequestFileOpen?: (filePath: string) => void;
@@ -42,6 +47,8 @@ export function DetailsPanel({
   markdown,
   vaultFilePaths,
   outlineFocusRequestId,
+  placemarkFocusRequest,
+  onPlacemarkFocusRequestHandled,
   onJumpToHeading,
   onRequestEditorFocus,
   onRequestFileOpen,
@@ -90,7 +97,12 @@ export function DetailsPanel({
           onJump={onJumpToHeading}
           onRequestEditorFocus={onRequestEditorFocus}
         />
-        <DetailsPlacemarksSection editor={editor} />
+        <DetailsPlacemarksSection
+          editor={editor}
+          focusRequest={placemarkFocusRequest}
+          onFocusRequestHandled={onPlacemarkFocusRequestHandled}
+          onRequestEditorFocus={onRequestEditorFocus}
+        />
         <DetailsFileInfoSection filePath={filePath} markdown={markdown} refreshId={refreshId} />
         <DetailsLinksSection
           folderPath={folderPath}

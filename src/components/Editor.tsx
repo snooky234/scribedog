@@ -42,6 +42,7 @@ import {
 import { useAiEditorActions } from "@/components/editor/useAiEditorActions";
 import { useEditorDictation } from "@/components/editor/useEditorDictation";
 import { useEditorReminders } from "@/components/editor/useEditorReminders";
+import { usePlacemarkRequests } from "@/components/editor/usePlacemarkRequests";
 import { useFileLinkSuggestion } from "@/components/editor/useFileLinkSuggestion";
 import { useContextMenuState } from "@/components/fileTree/useContextMenuState";
 import {
@@ -2042,6 +2043,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   }
 
   const reminders = useEditorReminders(editor, filePath);
+  const placemarkRequests = usePlacemarkRequests(editor);
   // The keyboard handler is created once with the editor; it reaches the
   // current callback through this ref.
   const openReminderDialogRef = useRef(reminders.openReminderDialog);
@@ -2570,6 +2572,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
                   markdown={markdown}
                   vaultFilePaths={vaultFilePaths}
                   outlineFocusRequestId={outlineFocusRequestId}
+                  placemarkFocusRequest={placemarkRequests.placemarkFocusRequest}
+                  onPlacemarkFocusRequestHandled={placemarkRequests.onPlacemarkFocusRequestHandled}
                   onJumpToHeading={jumpToHeading}
                   onRequestEditorFocus={focusEditor}
                   onRequestFileOpen={onRequestFileOpen}
@@ -2605,6 +2609,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
                   markdown={markdown}
                   vaultFilePaths={vaultFilePaths}
                   outlineFocusRequestId={outlineFocusRequestId}
+                  placemarkFocusRequest={placemarkRequests.placemarkFocusRequest}
+                  onPlacemarkFocusRequestHandled={placemarkRequests.onPlacemarkFocusRequestHandled}
                   onJumpToHeading={jumpToHeading}
                   onRequestEditorFocus={focusEditor}
                   onRequestFileOpen={onRequestFileOpen}
@@ -2661,6 +2667,15 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           actionLabel={t("reminders.undo")}
           onAction={reminders.undoReminderDrop}
           onDismiss={reminders.dismissReminderDrop}
+        />
+      ) : null}
+
+      {placemarkRequests.placemarkUndoVisible ? (
+        <ReminderToast
+          message={t("detailsPanel.placemarkRemoved")}
+          actionLabel={t("detailsPanel.placemarkRestore")}
+          onAction={placemarkRequests.undoPlacemarkRemoval}
+          onDismiss={placemarkRequests.dismissPlacemarkUndo}
         />
       ) : null}
 

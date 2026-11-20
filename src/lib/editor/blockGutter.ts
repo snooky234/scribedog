@@ -4,7 +4,12 @@ import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 
 import { BLOCK_GUTTER_BRIEF_POSITION_MS, type BlockGutterOptions } from "@/lib/editor/blockGutterOptions";
 import { blockIndexAt, blockPositionOf, collectNumberedBlocks, formatBadgePosition } from "@/lib/editor/blockPosition";
-import { placemarkCommentsByBlock, placemarksAvailable, placemarksChanged, togglePlacemarkAt } from "@/lib/editor/placemarkPlugin";
+import {
+  placemarkCommentsByBlock,
+  placemarksAvailable,
+  placemarksChanged,
+  setOrRevealPlacemarkAt
+} from "@/lib/editor/placemarkPlugin";
 import i18n from "@/i18n";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 
@@ -68,7 +73,7 @@ function barTitles(placemarksEnabled: boolean): { unmarked: string; marked: stri
 
   return {
     unmarked: i18n.t("editor.gutterBarSetPlacemark"),
-    marked: i18n.t("editor.gutterBarRemovePlacemark")
+    marked: i18n.t("editor.gutterBarShowPlacemark")
   };
 }
 
@@ -392,8 +397,9 @@ class BlockGutterView {
     this.view.focus();
   };
 
-  // A right click on a bar sets or removes the block's placemark, the way a
-  // click into an IDE's gutter sets a breakpoint (lib/editor/placemarkPlugin.ts).
+  // A right click on a bar sets the block's placemark, the way a click into an
+  // IDE's gutter sets a breakpoint. On a marked bar it shows the mark in the
+  // details panel rather than removing it (lib/editor/placemarkPlugin.ts).
   private handleContextMenu = (event: MouseEvent): void => {
     const target = event.target;
 
@@ -406,7 +412,7 @@ class BlockGutterView {
 
     if (block) {
       event.preventDefault();
-      togglePlacemarkAt(this.view, block.pos);
+      setOrRevealPlacemarkAt(this.view, block.pos);
     }
   };
 }

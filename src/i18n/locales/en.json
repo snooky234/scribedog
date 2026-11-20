@@ -984,7 +984,9 @@
     "placemarkEditComment": "Edit comment",
     "placemarkRemove": "Remove placemark",
     "placemarkCommentLabel": "Comment on this placemark",
-    "placemarkCommentPlaceholder": "What did you want to come back to?"
+    "placemarkCommentPlaceholder": "What did you want to come back to?",
+    "placemarkRemoved": "Placemark with comment removed",
+    "placemarkRestore": "Undo"
   },
   "fileLinkSuggest": {
     "hint": "Link a file",
@@ -1135,7 +1137,7 @@
     "codeLinkHint": "Click to open the link, right-click to place the cursor",
     "pageLineHint": "This is where the pages end in the PDF export and when printing. Only scaling in the print dialog moves them.",
     "gutterBarSetPlacemark": "Right-click: set placemark",
-    "gutterBarRemovePlacemark": "Right-click: remove placemark"
+    "gutterBarShowPlacemark": "Right-click: show placemark"
   },
   "editorContextMenu": {
     "aiEdit": "Rewrite with AI",

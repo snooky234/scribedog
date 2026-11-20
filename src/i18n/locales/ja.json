@@ -983,7 +983,9 @@
     "placemarkEditComment": "コメントを編集",
     "placemarkRemove": "ブックマークを削除",
     "placemarkCommentLabel": "このブックマークへのコメント",
-    "placemarkCommentPlaceholder": "ここで何を再開するつもりでしたか?"
+    "placemarkCommentPlaceholder": "ここで何を再開するつもりでしたか?",
+    "placemarkRemoved": "コメント付きのブックマークを削除しました",
+    "placemarkRestore": "元に戻す"
   },
   "fileLinkSuggest": {
     "hint": "ファイルをリンク",
@@ -1134,7 +1136,7 @@
     "codeLinkHint": "クリックでリンクを開く、右クリックでカーソルを置く",
     "pageLineHint": "PDF エクスポートと印刷でページが終わる位置です。印刷ダイアログで拡大縮小した場合のみずれます。",
     "gutterBarSetPlacemark": "右クリック: ブックマークを設定",
-    "gutterBarRemovePlacemark": "右クリック: ブックマークを削除"
+    "gutterBarShowPlacemark": "右クリック: ブックマークを表示"
   },
   "editorContextMenu": {
     "aiEdit": "AIで書き直す",

@@ -983,7 +983,9 @@
     "placemarkEditComment": "编辑备注",
     "placemarkRemove": "删除书签",
     "placemarkCommentLabel": "此书签的备注",
-    "placemarkCommentPlaceholder": "你想在这里接着做什么？"
+    "placemarkCommentPlaceholder": "你想在这里接着做什么？",
+    "placemarkRemoved": "已删除带注释的书签",
+    "placemarkRestore": "撤销"
   },
   "fileLinkSuggest": {
     "hint": "链接文件",
@@ -1134,7 +1136,7 @@
     "codeLinkHint": "单击打开链接，右键单击放置光标",
     "pageLineHint": "这里是 PDF 导出和打印时每页的结束位置。只有在打印对话框中缩放才会改变它们。",
     "gutterBarSetPlacemark": "右键单击：设置书签",
-    "gutterBarRemovePlacemark": "右键单击：删除书签"
+    "gutterBarShowPlacemark": "右键单击：显示书签"
   },
   "editorContextMenu": {
     "aiEdit": "用 AI 改写",

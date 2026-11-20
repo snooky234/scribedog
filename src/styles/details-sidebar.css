@@ -363,6 +363,34 @@ button.details-sidebar__outline-item:hover {
    sit after it. The comment is a button too, so a click opens it for
    editing; it wraps instead of being cut off, since it is the reader's own
    note and only useful in full. */
+/* The entry a right click on a marked gutter bar asked for flashes once in
+   the placemarks' amber, so the eye finds it in a long list. */
+.details-sidebar__placemark {
+  border-radius: 0.5rem;
+}
+
+.details-sidebar__placemark--flash {
+  animation: details-placemark-flash 1.6s ease-out;
+}
+
+@keyframes details-placemark-flash {
+  0%,
+  35% {
+    background: rgba(var(--warning-rgb), 0.28);
+  }
+
+  100% {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .details-sidebar__placemark--flash {
+    animation: none;
+    background: rgba(var(--warning-rgb), 0.18);
+  }
+}
+
 .details-sidebar__placemark-row {
   display: flex;
   align-items: center;

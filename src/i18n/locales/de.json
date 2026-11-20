@@ -984,7 +984,9 @@
     "placemarkEditComment": "Kommentar bearbeiten",
     "placemarkRemove": "Lesezeichen entfernen",
     "placemarkCommentLabel": "Kommentar zu diesem Lesezeichen",
-    "placemarkCommentPlaceholder": "Woran wolltest du hier weitermachen?"
+    "placemarkCommentPlaceholder": "Woran wolltest du hier weitermachen?",
+    "placemarkRemoved": "Lesezeichen mit Kommentar entfernt",
+    "placemarkRestore": "Rückgängig"
   },
   "fileLinkSuggest": {
     "hint": "Datei verlinken",
@@ -1135,7 +1137,7 @@
     "codeLinkHint": "Klick öffnet den Link, Rechtsklick setzt den Cursor",
     "pageLineHint": "Hier enden die Seiten im PDF-Export und beim Drucken. Nur eine Skalierung im Druckdialog verschiebt sie.",
     "gutterBarSetPlacemark": "Rechtsklick: Lesezeichen setzen",
-    "gutterBarRemovePlacemark": "Rechtsklick: Lesezeichen entfernen"
+    "gutterBarShowPlacemark": "Rechtsklick: Lesezeichen anzeigen"
   },
   "editorContextMenu": {
     "aiEdit": "Mit KI überarbeiten",

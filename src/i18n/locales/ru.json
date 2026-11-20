@@ -996,7 +996,9 @@
     "placemarkEditComment": "Изменить комментарий",
     "placemarkRemove": "Удалить закладку",
     "placemarkCommentLabel": "Комментарий к закладке",
-    "placemarkCommentPlaceholder": "К чему вы хотели здесь вернуться?"
+    "placemarkCommentPlaceholder": "К чему вы хотели здесь вернуться?",
+    "placemarkRemoved": "Закладка с комментарием удалена",
+    "placemarkRestore": "Отменить"
   },
   "fileLinkSuggest": {
     "hint": "Ссылка на файл",
@@ -1147,7 +1149,7 @@
     "codeLinkHint": "Щелчок открывает ссылку, правый щелчок ставит курсор",
     "pageLineHint": "Здесь заканчиваются страницы при экспорте в PDF и при печати. Сдвинуть их может только масштабирование в диалоге печати.",
     "gutterBarSetPlacemark": "Правый щелчок: поставить закладку",
-    "gutterBarRemovePlacemark": "Правый щелчок: снять закладку"
+    "gutterBarShowPlacemark": "Правый щелчок: показать закладку"
   },
   "editorContextMenu": {
     "aiEdit": "Переработать с помощью ИИ",

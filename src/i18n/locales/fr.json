@@ -984,7 +984,9 @@
     "placemarkEditComment": "Modifier le commentaire",
     "placemarkRemove": "Supprimer le signet",
     "placemarkCommentLabel": "Commentaire de ce signet",
-    "placemarkCommentPlaceholder": "Que vouliez-vous reprendre ici ?"
+    "placemarkCommentPlaceholder": "Que vouliez-vous reprendre ici ?",
+    "placemarkRemoved": "Signet avec commentaire supprimé",
+    "placemarkRestore": "Annuler"
   },
   "fileLinkSuggest": {
     "hint": "Lier un fichier",
@@ -1135,7 +1137,7 @@
     "codeLinkHint": "Clic pour ouvrir le lien, clic droit pour placer le curseur",
     "pageLineHint": "C'est ici que les pages se terminent dans l'export PDF et à l'impression. Seule une mise à l'échelle dans la boîte de dialogue d'impression les déplace.",
     "gutterBarSetPlacemark": "Clic droit : poser un signet",
-    "gutterBarRemovePlacemark": "Clic droit : retirer le signet"
+    "gutterBarShowPlacemark": "Clic droit : afficher le signet"
   },
   "editorContextMenu": {
     "aiEdit": "Réécrire avec l’IA",

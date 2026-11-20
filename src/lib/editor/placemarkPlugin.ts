@@ -41,9 +41,17 @@ type PlacemarkEntry = {
   comment: string;
 };
 
+/**
+ * The last mark removed with a comment, kept (and mapped like the others)
+ * so it can be put back: a comment is the reader's own writing, and the
+ * removal is not part of the document's undo history.
+ */
+type RemovedPlacemark = PlacemarkEntry & { id: number };
+
 type PlacemarkPluginState = {
   file: PlacemarkFile | null;
   marks: PlacemarkEntry[];
+  removed: RemovedPlacemark | null;
 };
 
 type PlacemarkMeta =
@@ -51,7 +59,9 @@ type PlacemarkMeta =
   | { type: "clear" }
   | { type: "toggle"; pos: number }
   | { type: "comment"; pos: number; comment: string }
-  | { type: "remove"; pos: number };
+  | { type: "remove"; pos: number }
+  | { type: "restore" }
+  | { type: "reveal"; pos: number };
 
 export type PlacemarkInfo = {
   /** Document position right before the marked block. */
@@ -67,7 +77,9 @@ const placemarkKey = new PluginKey<PlacemarkPluginState>("placemarks");
 const MARGIN_LAYER_CLASS = "placemark-margin";
 const MARGIN_STROKE_CLASS = "placemark-margin__stroke";
 
-const EMPTY_STATE: PlacemarkPluginState = { file: null, marks: [] };
+const EMPTY_STATE: PlacemarkPluginState = { file: null, marks: [], removed: null };
+
+let nextRemovedId = 1;
 
 function blockText(doc: ProseMirrorNode, pos: number): string {
   return placemarkQuote(doc.nodeAt(pos)?.textContent ?? "");
@@ -122,6 +134,26 @@ function mapMarks(marks: PlacemarkEntry[], tr: Transaction): PlacemarkEntry[] {
   return normalizeMarks(mapped);
 }
 
+/** Takes the mark at `pos` out; one with a comment is kept as `removed`. */
+function withoutMark(state: PlacemarkPluginState, pos: number): PlacemarkPluginState {
+  const mark = state.marks.find((entry) => entry.pos === pos);
+
+  if (!mark) {
+    return state;
+  }
+
+  return {
+    ...state,
+    marks: state.marks.filter((entry) => entry !== mark),
+    removed: mark.comment ? { ...mark, id: nextRemovedId++ } : state.removed
+  };
+}
+
+function mapRemoved(removed: RemovedPlacemark, tr: Transaction): RemovedPlacemark | null {
+  const [mapped] = mapMarks([removed], tr);
+  return mapped ? { ...mapped, id: removed.id } : null;
+}
+
 function applyMeta(state: PlacemarkPluginState, meta: PlacemarkMeta, doc: ProseMirrorNode): PlacemarkPluginState {
   switch (meta.type) {
     case "load": {
@@ -132,7 +164,7 @@ function applyMeta(state: PlacemarkPluginState, meta: PlacemarkMeta, doc: ProseM
         comment: mark.comment
       }));
 
-      return { file: meta.file, marks };
+      return { file: meta.file, marks, removed: null };
     }
     case "clear":
       return EMPTY_STATE;
@@ -143,14 +175,9 @@ function applyMeta(state: PlacemarkPluginState, meta: PlacemarkMeta, doc: ProseM
         return state;
       }
 
-      const exists = state.marks.some((mark) => mark.pos === pos);
-
-      return {
-        ...state,
-        marks: exists
-          ? state.marks.filter((mark) => mark.pos !== pos)
-          : normalizeMarks([...state.marks, { pos, comment: "" }])
-      };
+      return state.marks.some((mark) => mark.pos === pos)
+        ? withoutMark(state, pos)
+        : { ...state, marks: normalizeMarks([...state.marks, { pos, comment: "" }]) };
     }
     case "comment":
       return {
@@ -160,7 +187,18 @@ function applyMeta(state: PlacemarkPluginState, meta: PlacemarkMeta, doc: ProseM
         )
       };
     case "remove":
-      return { ...state, marks: state.marks.filter((mark) => mark.pos !== meta.pos) };
+      return withoutMark(state, meta.pos);
+    case "restore":
+      return state.removed
+        ? {
+            ...state,
+            marks: normalizeMarks([...state.marks, { pos: state.removed.pos, comment: state.removed.comment }]),
+            removed: null
+          }
+        : state;
+    case "reveal":
+      // Only a signal for the details panel (placemarkRevealRequest).
+      return state;
     default:
       return state;
   }
@@ -212,6 +250,30 @@ export function placemarksAvailable(state: EditorState): boolean {
   return getPluginState(state).file !== null;
 }
 
+/**
+ * The gutter's right click: sets a mark on an unmarked block, and on a marked
+ * one asks for it in the details panel instead of removing it. A toggle there
+ * cost readers their comments, since a second right click comes easily; the
+ * panel is where a comment is edited and where a mark is removed on purpose.
+ */
+export function setOrRevealPlacemarkAt(view: EditorView, pos: number): boolean {
+  if (!placemarksAvailable(view.state)) {
+    return false;
+  }
+
+  const start = blockStartAt(view.state.doc, pos);
+  const marked = start !== null && getPluginState(view.state).marks.some((mark) => mark.pos === start);
+  const meta: PlacemarkMeta = marked ? { type: "reveal", pos: start } : { type: "toggle", pos };
+  view.dispatch(view.state.tr.setMeta(placemarkKey, meta).setMeta("addToHistory", false));
+  return true;
+}
+
+/** The mark a transaction asks the details panel to show, from setOrRevealPlacemarkAt. */
+export function placemarkRevealRequest(tr: Transaction): number | null {
+  const meta = tr.getMeta(placemarkKey) as PlacemarkMeta | undefined;
+  return meta?.type === "reveal" ? meta.pos : null;
+}
+
 /** Sets or removes the mark on the block containing `pos`. */
 export function togglePlacemarkAt(view: EditorView, pos: number): boolean {
   if (!placemarksAvailable(view.state)) {
@@ -233,6 +295,16 @@ export function setPlacemarkComment(editor: Editor, pos: number, comment: string
 
 export function removePlacemark(editor: Editor, pos: number): void {
   dispatchMeta(editor, { type: "remove", pos });
+}
+
+/** The last mark removed with its comment, while it can still be put back. */
+export function removedPlacemark(state: EditorState): { id: number; comment: string } | null {
+  const { removed } = getPluginState(state);
+  return removed ? { id: removed.id, comment: removed.comment } : null;
+}
+
+export function restoreRemovedPlacemark(editor: Editor): void {
+  dispatchMeta(editor, { type: "restore" });
 }
 
 /** Marked block index -> its comment ("" without one), for the gutter's bars and their tooltips. */
@@ -456,7 +528,14 @@ export const Placemarks = Extension.create({
           init: () => EMPTY_STATE,
           apply(tr, value) {
             const meta = tr.getMeta(placemarkKey) as PlacemarkMeta | undefined;
-            const mapped = tr.docChanged && value.marks.length > 0 ? { ...value, marks: mapMarks(value.marks, tr) } : value;
+            const mapped =
+              tr.docChanged && (value.marks.length > 0 || value.removed)
+                ? {
+                    ...value,
+                    marks: mapMarks(value.marks, tr),
+                    removed: value.removed ? mapRemoved(value.removed, tr) : null
+                  }
+                : value;
             return meta ? applyMeta(mapped, meta, tr.doc) : mapped;
           }
         },

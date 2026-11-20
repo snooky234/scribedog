@@ -984,7 +984,9 @@
     "placemarkEditComment": "Modifica commento",
     "placemarkRemove": "Rimuovi segnalibro",
     "placemarkCommentLabel": "Commento a questo segnalibro",
-    "placemarkCommentPlaceholder": "Da dove volevi riprendere?"
+    "placemarkCommentPlaceholder": "Da dove volevi riprendere?",
+    "placemarkRemoved": "Segnalibro con commento rimosso",
+    "placemarkRestore": "Annulla"
   },
   "fileLinkSuggest": {
     "hint": "Collega un file",
@@ -1135,7 +1137,7 @@
     "codeLinkHint": "Clic per aprire il link, clic destro per posizionare il cursore",
     "pageLineHint": "Qui finiscono le pagine nell'esportazione PDF e in stampa. Solo un ridimensionamento nella finestra di stampa le sposta.",
     "gutterBarSetPlacemark": "Clic destro: imposta segnalibro",
-    "gutterBarRemovePlacemark": "Clic destro: rimuovi segnalibro"
+    "gutterBarShowPlacemark": "Clic destro: mostra segnalibro"
   },
   "editorContextMenu": {
     "aiEdit": "Riscrivi con l’IA",

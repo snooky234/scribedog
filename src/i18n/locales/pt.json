@@ -984,7 +984,9 @@
     "placemarkEditComment": "Editar comentário",
     "placemarkRemove": "Remover marcador",
     "placemarkCommentLabel": "Comentário deste marcador",
-    "placemarkCommentPlaceholder": "O que você queria retomar aqui?"
+    "placemarkCommentPlaceholder": "O que você queria retomar aqui?",
+    "placemarkRemoved": "Marcador com comentário removido",
+    "placemarkRestore": "Desfazer"
   },
   "fileLinkSuggest": {
     "hint": "Vincular um arquivo",
@@ -1135,7 +1137,7 @@
     "codeLinkHint": "Clique para abrir o link, clique direito para posicionar o cursor",
     "pageLineHint": "Aqui terminam as páginas na exportação em PDF e na impressão. Só um redimensionamento na janela de impressão as desloca.",
     "gutterBarSetPlacemark": "Clique direito: definir marcador",
-    "gutterBarRemovePlacemark": "Clique direito: remover marcador"
+    "gutterBarShowPlacemark": "Clique direito: mostrar marcador"
   },
   "editorContextMenu": {
     "aiEdit": "Reescrever com IA",

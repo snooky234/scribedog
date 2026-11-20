@@ -271,7 +271,8 @@ comment, and next week you still know why you put it there.
 
 | Action | How |
 |---|---|
-| Set or remove a placemark | `Ctrl+Shift+B` in the block, or right-click its bar in the [block gutter](#block-numbers) |
+| Set a placemark | Right-click the block's bar in the [block gutter](#block-numbers), or press `Ctrl+Shift+B` in the block |
+| Remove a placemark | The `×` next to it in the details panel, or `Ctrl+Shift+B` in the block again |
 | Jump to the next one | `Alt+Page Down` |
 | Jump to the previous one | `Alt+Page Up` |
 | See all of them, add a comment | The **Placemarks** section of the [details panel](notes-and-vault.md#details-panel) |
@@ -282,9 +283,19 @@ shortcuts under **Settings, Keyboard shortcuts**.
 With the block gutter on, a marked block's bar turns amber. Without it, a
 short amber stroke appears in the left margin next to the block.
 
+Right-clicking an amber bar does not remove the placemark. It opens the
+details panel at that placemark, highlights it and opens its comment, so you
+can write or change it right away. `Enter` or `Escape` takes you back to
+your note.
+
 In the details panel, click a placemark to jump there. The speech bubble opens
 its comment: `Enter` saves, `Shift+Enter` starts a new line, `Escape`
 discards the change. The `×` removes the placemark.
+
+> [!TIP]
+> Removed a placemark with a comment by mistake? A notice with **Undo**
+> stays in the corner for a few seconds and brings it back, comment
+> included.
 
 ### Where they are stored
 

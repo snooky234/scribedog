@@ -996,7 +996,9 @@
     "placemarkEditComment": "Редагувати коментар",
     "placemarkRemove": "Видалити закладку",
     "placemarkCommentLabel": "Коментар до закладки",
-    "placemarkCommentPlaceholder": "До чого ви хотіли тут повернутися?"
+    "placemarkCommentPlaceholder": "До чого ви хотіли тут повернутися?",
+    "placemarkRemoved": "Закладку з коментарем видалено",
+    "placemarkRestore": "Скасувати"
   },
   "fileLinkSuggest": {
     "hint": "Посилання на файл",
@@ -1147,7 +1149,7 @@
     "codeLinkHint": "Клік відкриває посилання, правий клік ставить курсор",
     "pageLineHint": "Тут закінчуються сторінки під час експорту в PDF і друку. Зсунути їх може лише масштабування в діалозі друку.",
     "gutterBarSetPlacemark": "Правий клік: поставити закладку",
-    "gutterBarRemovePlacemark": "Правий клік: зняти закладку"
+    "gutterBarShowPlacemark": "Правий клік: показати закладку"
   },
   "editorContextMenu": {
     "aiEdit": "Переробити за допомогою ШІ",

@@ -9,6 +9,11 @@ import {
   listPlacemarks,
   loadPlacemarks,
   Placemarks,
+  placemarkRevealRequest,
+  removePlacemark,
+  removedPlacemark,
+  restoreRemovedPlacemark,
+  setOrRevealPlacemarkAt,
   setPlacemarkComment,
   togglePlacemarkAtSelection
 } from "@/lib/editor/placemarkPlugin";
@@ -99,6 +104,52 @@ describe("placemark plugin", () => {
     togglePlacemarkAtSelection(target);
     expect(listPlacemarks(target.state)).toEqual([]);
     expect(storedAnchors()).toEqual([]);
+  });
+
+  it("sets a mark from the gutter, and on a marked block asks for it instead of removing it", () => {
+    const target = createEditor("One", "Two");
+    loadPlacemarks(target, FILE, []);
+    const requests: Array<number | null> = [];
+    target.on("transaction", ({ transaction }) => requests.push(placemarkRevealRequest(transaction)));
+
+    setOrRevealPlacemarkAt(target.view, blockStart(target, 1) + 2);
+    expect(listPlacemarks(target.state).map((mark) => mark.blockNumber)).toEqual([2]);
+    expect(requests).toEqual([null]);
+
+    setOrRevealPlacemarkAt(target.view, blockStart(target, 1) + 1);
+    expect(listPlacemarks(target.state).map((mark) => mark.blockNumber)).toEqual([2]);
+    expect(requests).toEqual([null, blockStart(target, 1)]);
+  });
+
+  it("keeps a mark removed with its comment so it can be put back where its block went", () => {
+    const target = createEditor("One", "Two");
+    loadPlacemarks(target, FILE, [{ block: 1, quote: "Two", comment: "continue here" }]);
+    const [mark] = listPlacemarks(target.state);
+
+    removePlacemark(target, mark.pos);
+    expect(listPlacemarks(target.state)).toEqual([]);
+    expect(removedPlacemark(target.state)?.comment).toBe("continue here");
+
+    target.commands.insertContentAt(0, paragraph("New first"));
+    restoreRemovedPlacemark(target);
+
+    expect(removedPlacemark(target.state)).toBeNull();
+    expect(storedAnchors()).toEqual([{ block: 2, quote: "Two", comment: "continue here" }]);
+  });
+
+  it("offers no undo for a mark without a comment, and forgets the offer with the note", () => {
+    const target = createEditor("One", "Two");
+    loadPlacemarks(target, FILE, [{ block: 0, quote: "One" }, { block: 1, quote: "Two", comment: "note" }]);
+    const [plain, commented] = listPlacemarks(target.state);
+
+    removePlacemark(target, plain.pos);
+    expect(removedPlacemark(target.state)).toBeNull();
+
+    removePlacemark(target, commented.pos);
+    expect(removedPlacemark(target.state)).not.toBeNull();
+
+    clearPlacemarks(target);
+    expect(removedPlacemark(target.state)).toBeNull();
   });
 
   it("does nothing and reports nothing once detached from its note", () => {
