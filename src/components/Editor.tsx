@@ -21,6 +21,7 @@ import { LinkDialog, type LinkDialogResult } from "@/components/LinkDialog";
 import { anchorForTrigger, type PopoverAnchor } from "@/lib/usePopoverOverflowAlign";
 import { ReminderDialog } from "@/components/reminders/ReminderDialog";
 import { ReminderToast } from "@/components/reminders/ReminderToast";
+import { UndoToast } from "@/components/UndoToast";
 import { VoiceModelDownloadDialog } from "@/components/VoiceModelDownloadDialog";
 import { VoiceRecordingBanner } from "@/components/VoiceRecordingBanner";
 import { Toolbar } from "@/components/Toolbar";
@@ -2671,7 +2672,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       ) : null}
 
       {placemarkRequests.placemarkUndoVisible ? (
-        <ReminderToast
+        <UndoToast
           message={t("detailsPanel.placemarkRemoved")}
           actionLabel={t("detailsPanel.placemarkRestore")}
           onAction={placemarkRequests.undoPlacemarkRemoval}

@@ -110,3 +110,91 @@
   display: flex;
   gap: 0.4rem;
 }
+
+/* Undo offers (components/UndoToast.tsx): bottom centre, in the inverted
+   palette, so they stand out from the page and stay clear of the reminder
+   notices in the bottom right corner. */
+.undo-toast {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(30rem, calc(100vw - 2rem));
+  border-radius: 0.8rem;
+  background: rgb(var(--text-rgb));
+  color: rgb(var(--surface-rgb));
+  padding: 0.45rem 0.45rem 0.45rem 0.95rem;
+  box-shadow: 0 12px 32px rgba(var(--shadow-rgb), 0.28);
+  font-size: 0.88rem;
+  transform: translateX(-50%);
+  animation: undo-toast-in 0.18s ease-out;
+}
+
+.undo-toast__message {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.undo-toast__action,
+.undo-toast__dismiss {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+}
+
+.undo-toast__action {
+  padding: 0.3rem 0.6rem;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.undo-toast__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem;
+  opacity: 0.75;
+}
+
+.undo-toast__action:hover,
+.undo-toast__action:focus-visible,
+.undo-toast__dismiss:hover,
+.undo-toast__dismiss:focus-visible {
+  background: rgba(var(--surface-rgb), 0.16);
+  opacity: 1;
+}
+
+.undo-toast__action:focus-visible,
+.undo-toast__dismiss:focus-visible {
+  outline: 2px solid rgba(var(--surface-rgb), 0.7);
+  outline-offset: 1px;
+}
+
+.undo-toast__dismiss svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@keyframes undo-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .undo-toast {
+    animation: none;
+  }
+}
