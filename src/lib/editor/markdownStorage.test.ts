@@ -59,6 +59,14 @@ describe("getSelectionMarkdown", () => {
     expect(markdown).toBe("2. two\n3. three\n4. four");
   });
 
+  it("keeps the markdown when the selection spans a code block", () => {
+    const editor = open("Some **bold** text\n\n```python\nx = 1\n```\n\nAfter\n");
+    const markdown = getSelectionMarkdown(editor, 0, editor.state.doc.content.size);
+    editor.destroy();
+
+    expect(markdown).toBe("Some **bold** text\n\n```python\nx = 1\n```\n\nAfter");
+  });
+
   it("keeps the markers when the selection lies inside one bullet list", () => {
     const editor = open("- one\n- two\n");
     const list = editor.state.doc.child(0);

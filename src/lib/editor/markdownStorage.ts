@@ -1,3 +1,4 @@
+import { Fragment } from "@tiptap/pm/model";
 import type { Editor as TipTapEditor } from "@tiptap/react";
 
 // tiptap-markdown attaches its serializer to editor.storage.markdown but does
@@ -46,19 +47,25 @@ export function getSelectionMarkdown(editor: TipTapEditor, from: number, to: num
     // items come without it and the serializer writes them as bare paragraphs:
     // no "1." or "- ", and a blank line between each. The list goes back
     // around them, an ordered one counting from the first selected item.
-    let serializable: unknown = content;
+    //
+    // Everything else still goes in a document node: handed a bare fragment,
+    // the serializer calls the node renderers without a parent, and the code
+    // block's renderer (which looks at its parent for the list item case)
+    // throws. The catch below would then copy the whole selection without any
+    // markdown.
+    let blocks = content;
 
     if (inlineContent) {
-      serializable = editor.schema.topNodeType.create(null, editor.schema.nodes.paragraph.create(null, content));
+      blocks = Fragment.from(editor.schema.nodes.paragraph.create(null, content));
     } else if (LIST_TYPES.has(shared.type.name)) {
       const attrs =
         shared.type.name === "orderedList"
           ? { ...shared.attrs, start: (Number(shared.attrs.start) || 1) + $from.index(sharedDepth) }
           : shared.attrs;
-      serializable = editor.schema.topNodeType.create(null, shared.type.create(attrs, content));
+      blocks = Fragment.from(shared.type.create(attrs, content));
     }
 
-    return serializer.serialize(serializable).trim();
+    return serializer.serialize(editor.schema.topNodeType.create(null, blocks)).trim();
   } catch {
     return "";
   }
