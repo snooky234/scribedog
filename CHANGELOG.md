@@ -3,6 +3,16 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.26.1] - 2026-11-21
+
+### Highlights
+- Set the browser tab's title and icon yourself (server edition)
+
+### Bug Fixes
+- Keep the Markdown when copying a selection that contains a code block
+- Show a placemark on a second right-click instead of removing it
+- Show the placemark undo notice inverted at the bottom centre
+
 ## [0.26.0] - 2026-11-19
 
 ### Highlights
