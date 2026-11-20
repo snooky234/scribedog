@@ -67,13 +67,21 @@ var packageVersion = JSON.parse(readFileSync(new URL("./package.json", import.me
  * step with BASE_PATH_PLACEHOLDER on the server side.
  */
 var BASE_PATH_PLACEHOLDER = "/__SCRIBEDOG_BASE_PATH__";
+/**
+ * Same mechanism for the tab title format (SCRIBEDOG_TITLE_FORMAT). The
+ * server puts the format or an empty string here; the client reads an empty
+ * or unsubstituted value as "built-in format". Must match
+ * TITLE_FORMAT_PLACEHOLDER on the server side.
+ */
+var TITLE_FORMAT_PLACEHOLDER = "__SCRIBEDOG_TITLE_FORMAT__";
 function webIndexHtml() {
     return {
         name: "scribedog-web-index-html",
         transformIndexHtml: {
             order: "pre",
             handler: function (html) {
-                return html.replace("<title>", "<meta name=\"scribedog-base-path\" content=\"".concat(BASE_PATH_PLACEHOLDER, "\" />\n    <title>"));
+                return html.replace("<title>", "<meta name=\"scribedog-base-path\" content=\"".concat(BASE_PATH_PLACEHOLDER, "\" />\n") +
+                    "    <meta name=\"scribedog-title-format\" content=\"".concat(TITLE_FORMAT_PLACEHOLDER, "\" />\n    <title>"));
             }
         }
     };

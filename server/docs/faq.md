@@ -29,6 +29,12 @@ Yes. Proxy to the container's port 3000, forward the WebSocket upgrade for
 `/api/events`, do not strip a path prefix, and set `SCRIBEDOG_TRUST_PROXY`
 to the number of proxies. See [Configuration](configuration.md).
 
+**Can the browser tab show a different title or icon?**
+Yes. `SCRIBEDOG_TITLE_FORMAT` decides what the tab says (`{doc}` for only
+the note, a fixed text for always the same title), and `SCRIBEDOG_FAVICON`
+points to an icon of your own. Under Docker the icon has to be mounted into
+the container. See [Tab title and icon](configuration.md#tab-title-and-icon).
+
 **Can two people use one server?**
 Each person gets their own instance under a path prefix, with their own
 password and folder; [`examples/multi-instance/`](../examples/multi-instance/)

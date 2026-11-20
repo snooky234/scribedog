@@ -1,10 +1,19 @@
 import { useEffect } from "react";
 import { platform } from "@/platform";
-import { buildDocumentTitle } from "@/lib/documentTitle";
+import { buildDocumentTitle, parseTitleFormat, TITLE_FORMAT_META_NAME } from "@/lib/documentTitle";
 import { getFolderBasename } from "@/lib/fileSystem";
 import { useAppStore } from "@/store/useAppStore";
 import { useEditorSettingsStore } from "@/store/useEditorSettingsStore";
 import { sharedVaultNameFor, useSharedVaultsStore } from "@/store/useSharedVaultsStore";
+
+/**
+ * The format comes from a meta tag the server edition fills in
+ * (SCRIBEDOG_TITLE_FORMAT); the desktop build has no such tag and keeps the
+ * built-in one.
+ */
+function readTitleFormat(): string | null {
+  return parseTitleFormat(document.querySelector(`meta[name="${TITLE_FORMAT_META_NAME}"]`)?.getAttribute("content"));
+}
 
 /**
  * Keeps `document.title` on the open note or vault, for the browser tab,
@@ -32,7 +41,8 @@ export function useDocumentTitle(): void {
       notePath,
       vaultName,
       // With auto-save on, the marker would blink on every pause in typing.
-      showUnsaved: isDirty && !autoSaveEnabled
+      showUnsaved: isDirty && !autoSaveEnabled,
+      titleFormat: readTitleFormat()
     });
   }, [folderPath, notePath, isDirty, autoSaveEnabled, sharedServers]);
 }

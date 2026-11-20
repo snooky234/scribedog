@@ -65,19 +65,19 @@ describe("renderIndexHtml", () => {
   const template = `<meta name="scribedog-base-path" content="${BASE_PATH_PLACEHOLDER}"><script type="module" src="./assets/index-abc.js"></script>`;
 
   it("substitutes the placeholder with the prefix and leaves relative asset URLs alone", () => {
-    expect(renderIndexHtml(template, "/anna")).toBe(
+    expect(renderIndexHtml(template, { basePath: "/anna" })).toBe(
       '<meta name="scribedog-base-path" content="/anna"><script type="module" src="./assets/index-abc.js"></script>'
     );
   });
 
   it("removes the placeholder for the root", () => {
-    expect(renderIndexHtml(template, "")).toBe(
+    expect(renderIndexHtml(template, { basePath: "" })).toBe(
       '<meta name="scribedog-base-path" content=""><script type="module" src="./assets/index-abc.js"></script>'
     );
   });
 
   it("replaces every occurrence", () => {
-    expect(renderIndexHtml(`${BASE_PATH_PLACEHOLDER}|${BASE_PATH_PLACEHOLDER}`, "/x")).toBe("/x|/x");
+    expect(renderIndexHtml(`${BASE_PATH_PLACEHOLDER}|${BASE_PATH_PLACEHOLDER}`, { basePath: "/x" })).toBe("/x|/x");
   });
 });
 /**

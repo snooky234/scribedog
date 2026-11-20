@@ -73,7 +73,9 @@ async function main(): Promise<void> {
       cookieSecure: config.cookieSecure,
       webDistDir: config.webDistDir,
       user: config.user,
-      sharedPath: config.sharedPath
+      sharedPath: config.sharedPath,
+      titleFormat: config.titleFormat,
+      favicon: config.favicon?.path ?? null
     },
     "ScribeDog Server ready"
   );

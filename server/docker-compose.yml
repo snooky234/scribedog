@@ -33,10 +33,18 @@ services:
       SCRIBEDOG_BASE_PATH: ${SCRIBEDOG_BASE_PATH:-}
       # Empty = the built-in cloud providers. See .env.example.
       SCRIBEDOG_LLM_ALLOWED_HOSTS: ${SCRIBEDOG_LLM_ALLOWED_HOSTS:-}
+      # Empty = "{doc} - ScribeDog". See .env.example.
+      SCRIBEDOG_TITLE_FORMAT: ${SCRIBEDOG_TITLE_FORMAT:-}
+      # Empty = the ScribeDog icon. A path inside the container, see the
+      # commented volume below.
+      SCRIBEDOG_FAVICON: ${SCRIBEDOG_FAVICON:-}
     volumes:
       # A bind mount on purpose: the notes are ordinary files in an ordinary
       # folder, readable and backed up with any tool you already use.
       - ./scribedog-data:/data
+      # Your own tab icon: remove the # and set SCRIBEDOG_FAVICON=/favicon.png
+      # in .env (keep the extension: .svg, .png or .ico).
+      #- ./favicon.png:/favicon.png:ro
     expose:
       - "3000"
 

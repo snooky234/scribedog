@@ -16,6 +16,8 @@ again.
 | `SCRIBEDOG_HTTP_PORT` / `SCRIBEDOG_HTTPS_PORT` | `80` / `443` | Host ports Caddy listens on. |
 | `COMPOSE_FILE` | *(unset)* | `docker-compose.local.yml` runs ScribeDog for this one machine only: plain http on `127.0.0.1`, no Caddy, no certificate. See [Only on this machine, without HTTPS](getting-started.md#only-on-this-machine-without-https). |
 | `SCRIBEDOG_LOCAL_PORT` | `8080` | Port of that local setup, at `http://localhost:<port>/`. |
+| `SCRIBEDOG_TITLE_FORMAT` | `{doc} - ScribeDog` | What the browser tab says. See [Tab title and icon](#tab-title-and-icon). |
+| `SCRIBEDOG_FAVICON` | *(empty)* | Your own tab icon instead of the dog, as a path inside the container. See [Tab title and icon](#tab-title-and-icon). |
 | `SCRIBEDOG_IMAGE` | *(empty, build locally)* | A published image to run instead of building, e.g. `ghcr.io/snooky234/scribedog-server:0.26.0`. |
 | `PUID` / `PGID` | `1000` / `1000` | User and group the server runs as. The container starts as root, hands `./scribedog-data` to these ids and drops to them, so match them to your own user (`id -u`, `id -g`) and the notes stay yours on the host. |
 
@@ -83,6 +85,49 @@ Traefik in front, proxy `/anna` to the container as `/anna`, not as `/`.
 Changing the prefix later logs everyone out (the cookie was scoped to the old
 path), and the desktop app will need the server added again under the new
 address; that is all.
+
+## Tab title and icon
+
+By default the browser tab shows the open note first and the app second,
+e.g. `Meeting notes - ScribeDog`. `SCRIBEDOG_TITLE_FORMAT` changes that.
+`{doc}` stands for the open note, or for the vault's name in a shared vault
+with no note open:
+
+| `SCRIBEDOG_TITLE_FORMAT` | Note open | Nothing open |
+| --- | --- | --- |
+| *(unset)* | `Meeting notes - ScribeDog` | `ScribeDog` |
+| `{doc}` | `Meeting notes` | `ScribeDog` |
+| `ScribeDog` | `ScribeDog` | `ScribeDog` |
+| `{doc} \| Team notes` | `Meeting notes \| Team notes` | `Team notes` |
+
+With nothing open, `{doc}` and the separator next to it (`-`, `|`, `:` and
+the like) are left out; if nothing remains, the tab says `ScribeDog`. A note
+with unsaved changes still gets its `●` in front. The format may be up to 200
+characters, without line breaks or tabs.
+
+`SCRIBEDOG_FAVICON` replaces the dog in the tab with an icon of your own: an
+`.svg`, `.png` or `.ico` file of up to 1 MB. The server reads it once at
+start, so after replacing the file restart the container. A missing or
+unreadable file stops the start with a message naming the variable, rather
+than leaving the dog in place without a word.
+
+Under Docker the path is the one **inside the container**, so the file has
+to be mounted there. `docker-compose.yml` has the line ready: remove the `#`
+in front of
+
+```yaml
+      #- ./favicon.png:/favicon.png:ro
+```
+
+put your icon next to `docker-compose.yml` as `favicon.png` and set
+`SCRIBEDOG_FAVICON=/favicon.png` in `.env`. For an `.svg` or `.ico` change
+both file names in that line, since the server goes by the extension.
+Then run `docker compose up -d`.
+
+Both settings only change the browser tab. The desktop app keeps its own
+window title and icon, also when it opens this server's vault. In the
+[multi-instance setup](multiuser.md) add the two variables to the
+`environment` of each person's service, so every person can have their own.
 
 ## Several people on one host
 

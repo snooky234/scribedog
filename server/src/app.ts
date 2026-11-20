@@ -142,7 +142,12 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
       }
 
       if (deps.webDistDir) {
-        await scoped.register(staticSite, { webDistDir: deps.webDistDir, basePath: config.basePath });
+        await scoped.register(staticSite, {
+          webDistDir: deps.webDistDir,
+          basePath: config.basePath,
+          titleFormat: config.titleFormat,
+          favicon: config.favicon
+        });
       }
     },
     { prefix: config.basePath || undefined }

@@ -84,6 +84,12 @@ What the settings do:
 | `SCRIBEDOG_COOKIE_SECURE=false` | Plain HTTP needs a cookie without the `Secure` flag. On `127.0.0.1` the server logs this as fine for local use; on any other host it warns. |
 | `SCRIBEDOG_TRUST_PROXY=false` | There is no reverse proxy in front, so the server must not believe a forwarded address. |
 
+Two optional lines change how the browser tab looks, for example
+`set SCRIBEDOG_TITLE_FORMAT={doc}` for only the note's name and
+`set SCRIBEDOG_FAVICON=C:\Tools\scribedog-icon.png` for your own icon
+(`.svg`, `.png` or `.ico`). Here the path is simply one on this computer. See
+[Tab title and icon](configuration.md#tab-title-and-icon) for the details.
+
 Double-click `start.bat`. A console window opens and, after a moment, logs
 `ScribeDog Server ready`. Open <http://127.0.0.1:3000/> and sign in. On the
 first start with an empty folder, the server creates a `Welcome.md`.

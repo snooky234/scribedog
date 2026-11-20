@@ -26,6 +26,14 @@ const packageVersion = (JSON.parse(readFileSync(new URL("./package.json", import
  */
 const BASE_PATH_PLACEHOLDER = "/__SCRIBEDOG_BASE_PATH__";
 
+/**
+ * Same mechanism for the tab title format (SCRIBEDOG_TITLE_FORMAT). The
+ * server puts the format or an empty string here; the client reads an empty
+ * or unsubstituted value as "built-in format". Must match
+ * TITLE_FORMAT_PLACEHOLDER on the server side.
+ */
+const TITLE_FORMAT_PLACEHOLDER = "__SCRIBEDOG_TITLE_FORMAT__";
+
 function webIndexHtml(): PluginOption {
   return {
     name: "scribedog-web-index-html",
@@ -34,7 +42,8 @@ function webIndexHtml(): PluginOption {
       handler: (html) =>
         html.replace(
           "<title>",
-          `<meta name="scribedog-base-path" content="${BASE_PATH_PLACEHOLDER}" />\n    <title>`
+          `<meta name="scribedog-base-path" content="${BASE_PATH_PLACEHOLDER}" />\n` +
+            `    <meta name="scribedog-title-format" content="${TITLE_FORMAT_PLACEHOLDER}" />\n    <title>`
         )
     }
   };

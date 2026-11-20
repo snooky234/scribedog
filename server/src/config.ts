@@ -87,9 +87,77 @@ export type ServerConfig = {
    * so a compose file updated ahead of its .env keeps running.
    */
   sharedPath: string | null;
+  /**
+   * How the browser tab's title is put together, e.g. "{doc} - ScribeDog".
+   * Null keeps the client's built-in format. Validated here and handed to
+   * the page through a meta tag in index.html; the client does the rest.
+   */
+  titleFormat: string | null;
+  /**
+   * An icon of the operator's own instead of the dog, as an absolute path on
+   * the server's file system (inside the container under Docker). Only the
+   * extension is checked here; the file itself is read and checked once at
+   * startup by the static site, so a missing file stops the start.
+   */
+  favicon: FaviconConfig | null;
+};
+
+export type FaviconConfig = {
+  path: string;
+  contentType: string;
 };
 
 export class ConfigError extends Error {}
+
+/** Long enough for any real title, short enough that the tab shows the start of it. */
+const TITLE_FORMAT_MAX_LENGTH = 200;
+
+/**
+ * The tab title template. Empty means "built-in format". Control characters
+ * are refused rather than stripped: a title with a stray line break is a
+ * typo in the .env file, and saying so beats a title that looks different
+ * from what was typed.
+ */
+export function parseTitleFormat(raw: string | undefined): string | null {
+  const value = raw?.trim() ?? "";
+
+  if (!value) {
+    return null;
+  }
+
+  if (value.length > TITLE_FORMAT_MAX_LENGTH) {
+    throw new ConfigError(`SCRIBEDOG_TITLE_FORMAT is longer than ${TITLE_FORMAT_MAX_LENGTH} characters.`);
+  }
+
+  if (/[\u0000-\u001f\u007f]/.test(value)) {
+    throw new ConfigError("SCRIBEDOG_TITLE_FORMAT contains a control character (a line break or tab?).");
+  }
+
+  return value;
+}
+
+/** What a browser accepts as a tab icon, by file extension. */
+const FAVICON_CONTENT_TYPES: Record<string, string> = {
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".ico": "image/x-icon"
+};
+
+export function parseFavicon(raw: string | undefined): FaviconConfig | null {
+  const value = raw?.trim() ?? "";
+
+  if (!value) {
+    return null;
+  }
+
+  const contentType = FAVICON_CONTENT_TYPES[path.extname(value).toLowerCase()];
+
+  if (!contentType) {
+    throw new ConfigError(`SCRIBEDOG_FAVICON "${value}" is not a .svg, .png or .ico file.`);
+  }
+
+  return { path: path.resolve(value), contentType };
+}
 
 const USER_NAME_PATTERN = /^[a-z0-9][a-z0-9_-]{0,31}$/;
 
@@ -321,6 +389,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     loginLockMaxSeconds: parseInteger(env.SCRIBEDOG_LOGIN_LOCK_MAX_SECONDS, 900, "SCRIBEDOG_LOGIN_LOCK_MAX_SECONDS"),
     allowedOrigins: parseOrigins(env.SCRIBEDOG_ALLOWED_ORIGINS),
     llmAllowedHosts: parseLlmAllowedHosts(env.SCRIBEDOG_LLM_ALLOWED_HOSTS),
+    titleFormat: parseTitleFormat(env.SCRIBEDOG_TITLE_FORMAT),
+    favicon: parseFavicon(env.SCRIBEDOG_FAVICON),
     ...parseSharing(env)
   };
 }
