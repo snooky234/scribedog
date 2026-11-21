@@ -243,6 +243,10 @@ export const platform: Platform = {
       return { state: status.state, discardedAt: status.discardedAt };
     }
   },
+  preferences: {
+    read: (name) => serverApi.readPreference(name),
+    write: (name, value) => serverApi.writePreference(name, value)
+  },
   portable: {
     getStatus: async () => ({ mode: "off", configDir: "" })
   },

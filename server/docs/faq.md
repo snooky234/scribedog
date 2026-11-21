@@ -304,6 +304,12 @@ Encrypted on the server, under a key derived from your password. The browser
 sees a placeholder that says "stored". A password reset (not a change) makes
 them unreadable; enter them again then.
 
+**My AI settings are back to Ollama on localhost in another browser.**
+Since version 0.27 they are kept on the server and are the same in every
+browser. Before that each browser had its own, which is what you see on an
+older server. After the update, the first browser that opens the app hands
+its settings to the server. See [AI](ai.md#cloud-providers).
+
 **My Jan.ai or LM Studio asks for an API key. Where does it go?**
 In Settings → AI, like a cloud provider's key. It works when the model server
 is reached through the server, i.e. by its network address. For `localhost`

@@ -157,6 +157,7 @@ export const platform: Platform = {
     // is; there is no state to report.
     getStatus: async () => ({ state: "ready", discardedAt: null })
   },
+  preferences: null,
   portable: {
     // Resolved once per session: the Rust side detects the mode once at
     // startup, and the call also widens the fs scope to the returned

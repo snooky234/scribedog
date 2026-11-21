@@ -281,7 +281,11 @@ export function createServerApi(transport: ServerTransport, options: ServerApiOp
       request<void>(`/shared/notices/${encodeURIComponent(id)}/dismiss`, { method: "POST" }),
     secretStatus: () => request<RemoteSecretStatus>("/secrets"),
     storeSecret: (id: string, value: string) =>
-      request<void>(`/secrets/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify({ value }) })
+      request<void>(`/secrets/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify({ value }) }),
+    readPreference: async (name: string) =>
+      (await request<{ value: Record<string, unknown> | null }>(`/preferences/${encodeURIComponent(name)}`)).value,
+    writePreference: (name: string, value: Record<string, unknown>) =>
+      request<void>(`/preferences/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify({ value }) })
   };
 
   return { api, onUnauthorized, unauthorizedHandlers };

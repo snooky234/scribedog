@@ -19,8 +19,9 @@
   says which layout the folder is in (see [Updating](updating.md));
 - `.scribedog/server/` with the server's own files: `auth.json` (the
   password hash), `session-secret` (signs session cookies), `secrets.json`
-  (the encrypted API keys) and `tokens.json` (fingerprints of the desktop
-  apps' access keys). It is created on first start with mode `0600` and is
+  (the encrypted API keys), `preferences.json` (the AI settings without the
+  keys, see [AI](ai.md#cloud-providers)) and `tokens.json` (fingerprints of
+  the desktop apps' access keys). It is created on first start with mode `0600` and is
   the one place the file API never reaches.
 
 In a multi-instance setup with [shared vaults](multiuser.md#shared-vaults)

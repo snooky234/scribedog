@@ -186,6 +186,70 @@ function persistNonSecretSettings(settings: AiSettings) {
   const { apiKey, ...persistableSettings } = settings;
 
   window.localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(persistableSettings));
+  pushToServer(persistableSettings);
+}
+
+// In the server edition the settings belong to the instance, not to the
+// browser: localStorage is per origin and per device, so another browser,
+// another address for the same server or cleared site data used to start
+// over with the defaults. localStorage stays as the cache that answers when
+// the server cannot. Writes go out one after the other, so a quick second
+// change never lands before the first.
+const AI_SETTINGS_PREFERENCE = "ai-settings";
+let serverWrites: Promise<void> = Promise.resolve();
+
+function pushToServer(persistableSettings: Omit<AiSettings, "apiKey">) {
+  const preferences = platform.preferences;
+
+  if (!preferences) {
+    return;
+  }
+
+  serverWrites = serverWrites
+    .then(() => preferences.write(AI_SETTINGS_PREFERENCE, persistableSettings))
+    .catch((error: unknown) => {
+      console.warn("Could not store the AI settings on the server.", error);
+    });
+}
+
+/**
+ * The settings this browser starts with. With server-side preferences the
+ * server's copy wins; when the server has none yet, the first browser to load
+ * hands it its own (the settings people had before they moved to the server),
+ * so nobody has to enter them again.
+ */
+async function readInitialSettings(): Promise<AiSettings> {
+  const local = readStoredSettings();
+  const preferences = platform.preferences;
+
+  if (!preferences) {
+    return local;
+  }
+
+  try {
+    const remote = await preferences.read(AI_SETTINGS_PREFERENCE);
+
+    if (remote) {
+      const settings = normalizeSettings(remote as Partial<AiSettings>);
+      const { apiKey, ...persistableSettings } = settings;
+      window.localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(persistableSettings));
+      return { ...settings, apiKey: "" };
+    }
+
+    if (window.localStorage.getItem(AI_SETTINGS_STORAGE_KEY)) {
+      const { apiKey, ...persistableSettings } = local;
+      pushToServer(persistableSettings);
+    }
+  } catch {
+    // Server unreachable: this browser's last copy is better than the defaults.
+  }
+
+  return local;
+}
+
+/** Resolves once every queued write has reached the server (or failed). For the tests. */
+export function flushAiSettingsWrites(): Promise<void> {
+  return serverWrites;
 }
 
 function storeApiKeyForProvider(provider: AiProvider, apiKey: string) {
@@ -247,7 +311,7 @@ export const useAiSettingsStore = create<AiSettingsState>((set, get) => ({
       return;
     }
 
-    const storedSettings = readStoredSettings();
+    const storedSettings = await readInitialSettings();
     const apiKey = await loadStoredApiKey(storedSettings);
 
     set({ settings: { ...storedSettings, apiKey }, isLoaded: true });

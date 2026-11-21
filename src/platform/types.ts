@@ -437,6 +437,19 @@ export type CredentialsApi = {
 };
 
 /**
+ * Settings kept by the server for the whole instance instead of by the
+ * browser, so they follow the person to every browser and device that signs
+ * in. Only names the server knows are accepted ("ai-settings"); values are
+ * JSON objects without secrets, which stay with CredentialsApi. Null on the
+ * desktop, where the app's own storage already outlives every install.
+ */
+export type PreferencesApi = {
+  /** The stored object, or null when nothing was stored yet. */
+  read(name: string): Promise<Record<string, unknown> | null>;
+  write(name: string, value: Record<string, unknown>): Promise<void>;
+};
+
+/**
  * The vault search index and its per-vault vector store. Both live in the
  * Rust process on the desktop; the server edition has no equivalent yet.
  */
@@ -682,6 +695,7 @@ export type Platform = {
   http: { fetch(url: string, init?: RequestInit): Promise<Response> };
   window: WindowApi;
   credentials: CredentialsApi;
+  preferences: PreferencesApi | null;
   portable: { getStatus(): Promise<PortableStatus> };
   spellcheck: { checkDictionary(language: string): Promise<SpellcheckDictionaryStatus> };
 

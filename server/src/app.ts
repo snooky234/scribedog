@@ -11,6 +11,8 @@ import type { SessionConfig } from "./auth/session.js";
 import type { TokenStore } from "./auth/tokenStore.js";
 import type { ServerConfig } from "./config.js";
 import { llmRoutes } from "./llm/proxyRoutes.js";
+import { openPreferenceStore } from "./preferences/preferenceStore.js";
+import { preferenceRoutes } from "./preferences/routes.js";
 import { secretRoutes } from "./secrets/routes.js";
 import type { SecretStore } from "./secrets/secretStore.js";
 import { sharedRoutes } from "./shared/routes.js";
@@ -98,6 +100,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
       await scoped.register(fileRoutes, { vault, requireSession, prefix: "/api" });
       await scoped.register(exportRoutes, { vault, requireSession, prefix: "/api" });
       await scoped.register(secretRoutes, { secrets, authStore, session, requireSession, prefix: "/api" });
+      await scoped.register(preferenceRoutes, { preferences: openPreferenceStore(vault.realPath), requireSession, prefix: "/api" });
       await scoped.register(llmRoutes, {
         allowedHosts: config.llmAllowedHosts,
         secrets,

@@ -28,9 +28,20 @@ If you use your own gateway in front of a provider, add its host to
 [A model server elsewhere in your network](#a-model-server-elsewhere-in-your-network)
 for how the list is written).
 
-The AI settings themselves live in the browser, so each device keeps its own
-provider and model choice. The API key is stored once on the server and works
-from every device.
+The AI settings themselves (provider, address, model, context length and the
+agent's switches) are kept on the server too, in
+`.scribedog/server/preferences.json`, without the key. So every browser and
+device you sign in from starts with the same choice, and opening the server
+under another address, in a private window or after clearing the browser's
+site data no longer brings back the defaults. Changing a setting on one device
+changes it for all of them; another device that is already open picks it up
+the next time the page loads.
+
+When you update from a version that kept these settings in the browser, the
+first browser that opens the new version hands its settings to the server, so
+you do not have to enter them again. If you had different settings on
+different devices, that first browser's win; set the others again where they
+differ.
 
 ## The chat agent
 
@@ -71,7 +82,11 @@ something going wrong.
 Ollama, Jan.ai and LM Studio work too, with one difference to the desktop
 app: the *browser* talks to them, not the server. "localhost" in the API URL
 is therefore the device you are sitting at, not the server, and the model
-server there has to accept requests from a web page. Two things decide
+server there has to accept requests from a web page. Since the AI settings
+are the same on every device, a localhost address works only on devices that
+run the model server themselves; to use one model from your phone and your
+laptop, enter the address of the machine it runs on (see
+[A model server elsewhere in your network](#a-model-server-elsewhere-in-your-network)). Two things decide
 whether that works, and the app tells you which one is in the way when a
 request fails.
 
@@ -193,5 +208,5 @@ and shortcuts and the AI pages of the settings disappear, and the knowledge
 base stops updating in the background. Your AI settings and a stored API key
 stay where they are, so switching it back on finds everything as it was.
 
-Like the rest of the AI settings, the switch is kept per browser: hiding the
+Unlike the AI settings themselves, the switch is kept per browser: hiding the
 AI on your phone leaves it visible on your laptop.
