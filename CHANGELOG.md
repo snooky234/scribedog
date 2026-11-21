@@ -3,6 +3,11 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.26.2] - 2026-11-21
+
+### Highlights
+- Keep the AI settings on the server, so every browser and device starts with the same ones (server edition)
+
 ## [0.26.1] - 2026-11-21
 
 ### Highlights

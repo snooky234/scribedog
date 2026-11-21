@@ -305,7 +305,7 @@ sees a placeholder that says "stored". A password reset (not a change) makes
 them unreadable; enter them again then.
 
 **My AI settings are back to Ollama on localhost in another browser.**
-Since version 0.27 they are kept on the server and are the same in every
+Since version 0.26.2 they are kept on the server and are the same in every
 browser. Before that each browser had its own, which is what you see on an
 older server. After the update, the first browser that opens the app hands
 its settings to the server. See [AI](ai.md#cloud-providers).

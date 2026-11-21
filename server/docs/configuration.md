@@ -18,7 +18,7 @@ again.
 | `SCRIBEDOG_LOCAL_PORT` | `8080` | Port of that local setup, at `http://localhost:<port>/`. |
 | `SCRIBEDOG_TITLE_FORMAT` | `{doc} - ScribeDog` | What the browser tab says. See [Tab title and icon](#tab-title-and-icon). |
 | `SCRIBEDOG_FAVICON` | *(empty)* | Your own tab icon instead of the dog, as a path inside the container. See [Tab title and icon](#tab-title-and-icon). |
-| `SCRIBEDOG_IMAGE` | *(empty, build locally)* | A published image to run instead of building, e.g. `ghcr.io/snooky234/scribedog-server:0.26.1`. |
+| `SCRIBEDOG_IMAGE` | *(empty, build locally)* | A published image to run instead of building, e.g. `ghcr.io/snooky234/scribedog-server:0.26.2`. |
 | `PUID` / `PGID` | `1000` / `1000` | User and group the server runs as. The container starts as root, hands `./scribedog-data` to these ids and drops to them, so match them to your own user (`id -u`, `id -g`) and the notes stay yours on the host. |
 
 ## Settings the server itself understands
