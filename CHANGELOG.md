@@ -3,6 +3,17 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.27.0] - 2026-11-23
+
+> **Breaking (server edition on a home network):** HTTPS no longer uses Caddy's own certificate authority, and `SCRIBEDOG_TLS=internal` is gone. Until you switch, `docker compose up` stops with a message. Update `docker-compose.yml` and `caddy/Caddyfile` as well (or `git pull`), not just the image, then follow [Upgrading the certificate](server/docs/upgrading-certificates.md): create the certificate, install the new CA on every device and remove the old "Caddy Local Authority" one. Installations using Let's Encrypt are not affected.
+
+### Highlights
+- Give each installation its own certificate authority: its key is deleted right after it signs the server certificate, so the CA you install on your devices cannot vouch for any other site (server edition)
+- Remind you two months before the server certificate runs out, with a link to the renewal steps (server edition)
+
+### Bug Fixes
+- Show files that changed on the server while the live update connection was being set up, instead of only after the next change (server edition)
+
 ## [0.26.2] - 2026-11-21
 
 ### Highlights

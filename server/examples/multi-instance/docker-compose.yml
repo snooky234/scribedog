@@ -25,7 +25,7 @@ x-scribedog: &scribedog
   build:
     context: ../../..
     dockerfile: server/Dockerfile
-  image: ${SCRIBEDOG_IMAGE:-scribedog-server:0.26.2}
+  image: ${SCRIBEDOG_IMAGE:-scribedog-server:0.27.0}
   restart: unless-stopped
   expose:
     - "3000"
@@ -70,7 +70,7 @@ services:
     build:
       context: ../../..
       dockerfile: server/Dockerfile
-    image: ${SCRIBEDOG_IMAGE:-scribedog-server:0.26.2}
+    image: ${SCRIBEDOG_IMAGE:-scribedog-server:0.27.0}
     profiles: ["tools"]
     network_mode: none
     environment:
