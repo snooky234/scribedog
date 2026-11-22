@@ -69,6 +69,13 @@ function connect(): void {
   opened.onopen = () => {
     reconnectDelay = RECONNECT_MIN_MS;
     sendPresence();
+
+    // Whatever changed while there was no socket (between the app's first
+    // listing and this open, or during a reconnect after a laptop lid) sent
+    // no signal anyone heard. One refresh on open closes that gap.
+    for (const handler of handlers) {
+      handler(current.root);
+    }
   };
 
   opened.onmessage = (event) => {
