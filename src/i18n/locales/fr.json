@@ -1226,6 +1226,14 @@
     "portableBody": "Une nouvelle version est disponible. La version portable ne se met pas à jour toute seule : téléchargez le nouveau ZIP et remplacez les fichiers existants.",
     "openDownload": "Ouvrir la page de téléchargement"
   },
+  "certificateNotice": {
+    "title": "Le certificat du serveur expire bientôt",
+    "body": "Le certificat de ce serveur expire le {{date}}. Le renouvellement prend quelques minutes sur le serveur, puis le nouveau certificat est installé sur chaque appareil.",
+    "expiredTitle": "Le certificat du serveur a expiré",
+    "expiredBody": "Le certificat de ce serveur a expiré le {{date}}. Tant qu'il n'est pas renouvelé, les navigateurs avertissent et l'application de bureau ne peut pas se connecter.",
+    "guide": "Comment le renouveler",
+    "dismiss": "Fermer"
+  },
   "voice": {
     "micStart": "Démarrer la saisie vocale",
     "micStop": "Arrêter la saisie vocale et transcrire",
@@ -1440,9 +1448,13 @@
     "devicesHint": "Applications de bureau qui ont ouvert ce coffre avec une clé d'accès. Révoquer une clé déconnecte cet appareil sans changer le mot de passe ; changer le mot de passe les déconnecte tous.",
     "certificate": "Certificat du serveur",
     "certificateHint": "Téléchargez le certificat pour que le navigateur cesse d'avertir au sujet de ce serveur. Installé une fois sur cet appareil, le navigateur et l'application de bureau font confiance au serveur.",
-    "certificateInfo": "L'avertissement vient du fait que le serveur signe son certificat avec sa propre autorité de certification (CA) locale, faute de domaine public pour en obtenir un. Installer cette CA sur l'appareil lui dit de faire confiance au serveur : le navigateur n'avertit plus et l'application de bureau peut ouvrir ce coffre (elle a besoin de la CA dans le magasin système, accepter l'avertissement dans le navigateur ne lui suffit pas). Inutile si le serveur utilise un certificat Let's Encrypt.",
+    "certificateInfo": "Le serveur utilise un certificat d'une autorité de certification (CA) créée uniquement pour cette installation, faute de domaine public pour en obtenir un. Installer cette CA sur l'appareil lui dit de faire confiance au serveur : le navigateur n'avertit plus et l'application de bureau peut ouvrir ce coffre (elle a besoin de la CA dans le magasin système, accepter l'avertissement dans le navigateur ne lui suffit pas). La clé de la CA a été supprimée juste après la signature du certificat du serveur, personne ne peut donc s'en servir pour en émettre d'autres. Inutile si le serveur utilise un certificat Let's Encrypt.",
     "certificateGuide": "Comment l'installer sur chaque appareil",
-    "certificateDownload": "Télécharger le certificat"
+    "certificateDownload": "Télécharger le certificat",
+    "certificateValidUntil": "Valide jusqu'au {{date}}.",
+    "certificateExpiring": "Expire le {{date}}. Renouvelez-le à temps et installez le nouveau sur chaque appareil.",
+    "certificateExpired": "Expiré le {{date}}. Les navigateurs avertissent au sujet de ce serveur jusqu'à son renouvellement.",
+    "certificateRenewGuide": "Comment le renouveler"
   },
   "platform": {
     "notAvailable": "Cette fonction n'est pas disponible dans cette édition de ScribeDog.",

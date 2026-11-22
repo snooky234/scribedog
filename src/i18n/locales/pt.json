@@ -1226,6 +1226,14 @@
     "portableBody": "Uma nova versão está disponível. A versão portátil não se atualiza sozinha — baixe o novo ZIP e substitua os arquivos existentes.",
     "openDownload": "Abrir página de download"
   },
+  "certificateNotice": {
+    "title": "O certificado do servidor expira em breve",
+    "body": "O certificado deste servidor expira em {{date}}. Renovar leva alguns minutos no servidor; depois, o novo certificado vai para cada dispositivo.",
+    "expiredTitle": "O certificado do servidor expirou",
+    "expiredBody": "O certificado deste servidor expirou em {{date}}. Até ser renovado, os navegadores avisam e o aplicativo desktop não consegue se conectar.",
+    "guide": "Como renovar",
+    "dismiss": "Fechar"
+  },
   "voice": {
     "micStart": "Iniciar entrada de voz",
     "micStop": "Parar a entrada de voz e transcrever",
@@ -1440,9 +1448,13 @@
     "devicesHint": "Aplicações de desktop que abriram este cofre com uma chave de acesso. Revogar uma termina a sessão desse dispositivo sem alterar a palavra-passe; alterar a palavra-passe termina todas.",
     "certificate": "Certificado do servidor",
     "certificateHint": "Transfira o certificado para que o navegador deixe de avisar sobre este servidor. Instalado uma vez neste dispositivo, o navegador e a aplicação de desktop passam a confiar no servidor.",
-    "certificateInfo": "O aviso surge porque o servidor assina o seu certificado com uma autoridade de certificação (CA) local própria, já que não há um domínio público para obter um. Instalar essa CA no dispositivo diz-lhe para confiar no servidor: o navegador deixa de avisar e a aplicação de desktop pode abrir este cofre (precisa da CA no armazenamento do sistema; aceitar o aviso no navegador não lhe chega). Não é necessário se o servidor usar um certificado Let's Encrypt.",
+    "certificateInfo": "O servidor usa um certificado de uma autoridade certificadora (CA) criada só para esta instalação, já que não há um domínio público para obter um. Instalar essa CA neste dispositivo faz com que ele confie no servidor: o navegador deixa de avisar e o aplicativo desktop pode abrir este cofre (ele precisa da CA no repositório do sistema; aceitar o aviso no navegador não basta). A chave da CA foi apagada logo depois de assinar o certificado do servidor, então ninguém pode usá-la para emitir outros. Não é necessário se o servidor usa um certificado Let's Encrypt.",
     "certificateGuide": "Como instalá-lo em cada dispositivo",
-    "certificateDownload": "Transferir certificado"
+    "certificateDownload": "Transferir certificado",
+    "certificateValidUntil": "Válido até {{date}}.",
+    "certificateExpiring": "Expira em {{date}}. Renove a tempo e instale o novo em cada dispositivo.",
+    "certificateExpired": "Expirou em {{date}}. Os navegadores avisam sobre este servidor até que seja renovado.",
+    "certificateRenewGuide": "Como renovar"
   },
   "platform": {
     "notAvailable": "Este recurso não está disponível nesta edição do ScribeDog.",

@@ -12,7 +12,7 @@ again.
 | `SCRIBEDOG_BASE_PATH` | *(empty)* | Serve the app under a path prefix, e.g. `/anna`. See [Running under a path prefix](#running-under-a-path-prefix). |
 | `SCRIBEDOG_SITE_ADDRESS` | `localhost` | Host name or IP Caddy answers on: `localhost`, the LAN name or IP of the box, or a public domain. Several, separated by commas, if the box is reached under more than one name. |
 | `SCRIBEDOG_DEFAULT_SNI` | the site address | Only matters with several site addresses: which one's certificate answers a browser that names none, which is what browsers do when they open the app by IP address. Set it to that IP. |
-| `SCRIBEDOG_TLS` | `internal` | `internal` uses Caddy's local CA. For a public domain set your e-mail address and Caddy obtains a Let's Encrypt certificate. |
+| `SCRIBEDOG_TLS` | *(empty)* | Empty uses the certificate in `./certs` that `docker compose run --rm certificates` creates, see [The certificate](certificates.md). For a public domain set your e-mail address and Caddy obtains a Let's Encrypt certificate. |
 | `SCRIBEDOG_HTTP_PORT` / `SCRIBEDOG_HTTPS_PORT` | `80` / `443` | Host ports Caddy listens on. |
 | `COMPOSE_FILE` | *(unset)* | `docker-compose.local.yml` runs ScribeDog for this one machine only: plain http on `127.0.0.1`, no Caddy, no certificate. See [Only on this machine, without HTTPS](getting-started.md#only-on-this-machine-without-https). |
 | `SCRIBEDOG_LOCAL_PORT` | `8080` | Port of that local setup, at `http://localhost:<port>/`. |
@@ -49,10 +49,12 @@ ones that matter; you only need them if you run the server without it.
 The server speaks plain HTTP and expects a reverse proxy to terminate TLS.
 The compose file ships with Caddy for that:
 
-- **No domain (home network, IP or local host name):** keep
-  `SCRIBEDOG_TLS=internal`. Caddy uses its own local CA; import
-  `scribedog-ca.crt` as described in [Getting started](getting-started.md) so
-  browsers and the desktop app stop warning.
+- **No domain (home network, IP or local host name):** leave
+  `SCRIBEDOG_TLS` empty and create the installation's own certificate with
+  `docker compose run --rm certificates`. Install its CA once per device, see
+  [The certificate](certificates.md). The plain HTTP port hands out that CA at
+  `/scribedog-ca.crt`, answers `<base path>/api/health` and redirects
+  everything else to HTTPS (307).
 - **Public domain:** set `SCRIBEDOG_SITE_ADDRESS=notes.example.com` and
   `SCRIBEDOG_TLS=you@example.com`. Ports 80 and 443 must be reachable from
   the internet for Let's Encrypt.

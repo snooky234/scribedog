@@ -11,21 +11,29 @@
 
 {
 	default_sni {$SCRIBEDOG_DEFAULT_SNI:localhost}
+	# The HTTP port is configured below (see caddy/Caddyfile for why).
+	auto_https disable_redirects
+}
+
+# The CA certificate made by scripts/make-certs.mjs (see docs/certificates.md),
+# so that trusting it is opening one URL on the device.
+(ca_certificate) {
+	handle /scribedog-ca.crt {
+		root * /certs
+		rewrite * /ca.crt
+		header Content-Type application/x-x509-ca-cert
+		file_server
+	}
 }
 
 {$SCRIBEDOG_SITE_ADDRESS:localhost} {
-	tls {$SCRIBEDOG_TLS:internal}
+	# Empty SCRIBEDOG_TLS: the certificate in ./certs (docker-compose.yml
+	# fills in the paths). An e-mail address: Let's Encrypt.
+	tls {$SCRIBEDOG_TLS}
 
 	encode zstd gzip
 
-	# Lets a browser fetch the local CA's certificate directly, so trusting it
-	# (see docs/getting-started.md, "The certificate warning") is opening this
-	# URL on the device rather than moving a file there some other way.
-	handle /scribedog-ca.crt {
-		root * /data/caddy/pki/authorities/local
-		rewrite * /root.crt
-		file_server
-	}
+	import ca_certificate
 
 	# The part after the colon only ever shows up if the .env variable were
 	# somehow unset, which .env.example never leaves it as; change
@@ -43,5 +51,23 @@
 	# is its own source of typos, for a line nobody but a lost visitor sees.
 	handle {
 		respond "Not found. Ask whoever runs this ScribeDog for the address." 404
+	}
+}
+
+# Plain HTTP: the CA certificate, each instance's health check, and a 307 to
+# HTTPS for everything else.
+http:// {
+	import ca_certificate
+
+	handle {$PERSON1_BASE_PATH:/PERSON1_UNSET}/api/health {
+		reverse_proxy scribedog-1:3000
+	}
+
+	handle {$PERSON2_BASE_PATH:/PERSON2_UNSET}/api/health {
+		reverse_proxy scribedog-2:3000
+	}
+
+	handle {
+		redir https://{host}:{$SCRIBEDOG_HTTPS_PORT:443}{uri} 307
 	}
 }

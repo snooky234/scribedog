@@ -12,7 +12,8 @@
 }
 
 {$SCRIBEDOG_SITE_ADDRESS:localhost} {
-	tls {$SCRIBEDOG_TLS:internal}
+	# The certificate from scripts/make-certs.mjs, as in a real installation.
+	tls {$SCRIBEDOG_TLS}
 
 	encode zstd gzip
 
@@ -20,7 +21,8 @@
 }
 
 # The mock model (e2e/mock-llm). The name resolves to this Caddy inside the
-# compose network (a network alias), the certificate comes from the local CA.
+# compose network (a network alias). Its certificate comes from Caddy's own
+# CA, which nothing outside this test stack ever trusts.
 llm.e2e.internal {
 	tls internal
 

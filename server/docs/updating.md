@@ -6,6 +6,10 @@ As with any update, back up the data folder first (see
 [Backups](data-and-backups.md#backups)), so a bad update is a restore, not a
 loss.
 
+> **Updating to 0.27.0 or later from an older version on a home network?**
+> The certificate works differently now and needs a few steps on the server
+> and on every device: [Upgrading the certificate](upgrading-certificates.md).
+
 Images are published per version, with no `latest` tag: you pick a version
 and keep it until you decide to move. Put the one you want in `.env`,
 

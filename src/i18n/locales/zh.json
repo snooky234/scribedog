@@ -1225,6 +1225,14 @@
     "portableBody": "有新版本可用。便携版不会自动更新——请下载新的 ZIP 并替换现有文件。",
     "openDownload": "打开下载页面"
   },
+  "certificateNotice": {
+    "title": "服务器证书即将过期",
+    "body": "此服务器的证书将于 {{date}} 过期。在服务器上续期只需几分钟，之后需在每台设备上安装新证书。",
+    "expiredTitle": "服务器证书已过期",
+    "expiredBody": "此服务器的证书已于 {{date}} 过期。续期之前，浏览器会发出警告，桌面应用也无法连接。",
+    "guide": "如何续期",
+    "dismiss": "关闭"
+  },
   "voice": {
     "micStart": "开始语音输入",
     "micStop": "停止语音输入并转写",
@@ -1439,9 +1447,13 @@
     "devicesHint": "使用访问密钥打开过此保管库的桌面应用。撤销某一个只会让该设备退出登录，密码不变；修改密码会让全部设备退出登录。",
     "certificate": "服务器证书",
     "certificateHint": "下载证书后，浏览器不再对此服务器发出警告。在此设备上安装一次，浏览器和桌面应用即会信任该服务器。",
-    "certificateInfo": "出现警告是因为没有公共域名可用于获取证书，服务器用自己的本地证书颁发机构（CA）为证书签名。在设备上安装该 CA 后，设备就会信任服务器：浏览器不再警告，桌面应用也能打开此保管库（它需要系统证书存储中的 CA，仅在浏览器中接受警告是不够的）。如果服务器使用 Let's Encrypt 证书，则无需此操作。",
+    "certificateInfo": "由于没有可申请证书的公共域名，服务器使用的是专为此次安装创建的证书颁发机构 (CA) 签发的证书。在此设备上安装该 CA 后，设备会信任服务器：浏览器不再警告，桌面应用也能打开此保管库（桌面应用需要系统存储中的 CA，仅在浏览器中接受警告是不够的）。CA 的密钥在签署服务器证书后立即被删除，因此任何人都无法用它签发其他证书。如果服务器使用 Let's Encrypt 证书，则无需此操作。",
     "certificateGuide": "如何在每台设备上安装",
-    "certificateDownload": "下载证书"
+    "certificateDownload": "下载证书",
+    "certificateValidUntil": "有效期至 {{date}}。",
+    "certificateExpiring": "将于 {{date}} 过期。请及时续期，并在每台设备上安装新证书。",
+    "certificateExpired": "已于 {{date}} 过期。续期之前，浏览器会对此服务器发出警告。",
+    "certificateRenewGuide": "如何续期"
   },
   "platform": {
     "notAvailable": "此功能在这个版本的 ScribeDog 中不可用。",

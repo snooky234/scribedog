@@ -15,26 +15,55 @@
 	# drops the handshake. This names the site whose certificate answers such
 	# a client; docker-compose.yml defaults it to the site address.
 	default_sni {$SCRIBEDOG_DEFAULT_SNI:localhost}
+
+	# The HTTP port is set up below rather than by Caddy's automatic redirect,
+	# because it does more than redirect. Certificates for Let's Encrypt are
+	# still requested over it as usual.
+	auto_https disable_redirects
+}
+
+# The CA certificate of this installation (scripts/make-certs.mjs), so that
+# trusting it is opening one URL on the device. With Let's Encrypt there is
+# no such file and the URL answers 404, which is also how the app's settings
+# know not to offer the download.
+(ca_certificate) {
+	handle /scribedog-ca.crt {
+		root * /certs
+		rewrite * /ca.crt
+		header Content-Type application/x-x509-ca-cert
+		file_server
+	}
 }
 
 {$SCRIBEDOG_SITE_ADDRESS:localhost} {
-	# "internal": Caddy's own local CA, works for localhost, LAN names and
-	# plain IPs. For a public domain set SCRIBEDOG_TLS to your e-mail address
-	# and Caddy obtains a Let's Encrypt certificate instead.
-	tls {$SCRIBEDOG_TLS:internal}
+	# Empty SCRIBEDOG_TLS: the certificate made by scripts/make-certs.mjs
+	# (docker-compose.yml fills in the two file paths). An e-mail address:
+	# Caddy obtains a Let's Encrypt certificate for a public domain instead.
+	tls {$SCRIBEDOG_TLS}
 
 	encode zstd gzip
 
-	# Lets a browser fetch the local CA's certificate directly, so trusting it
-	# (see docs/getting-started.md, "The certificate warning") is opening this
-	# URL on the device rather than moving a file there some other way.
-	handle /scribedog-ca.crt {
-		root * /data/caddy/pki/authorities/local
-		rewrite * /root.crt
-		file_server
-	}
+	import ca_certificate
 
 	handle {
 		reverse_proxy scribedog:3000
+	}
+}
+
+# Plain HTTP: hands out the CA certificate (a device that does not trust it
+# yet cannot download it over HTTPS without a warning), answers health checks,
+# and sends everything else to HTTPS with a 307, which keeps the method and
+# body of a request instead of turning it into a GET.
+http:// {
+	import ca_certificate
+
+	# Under whatever SCRIBEDOG_BASE_PATH is, hence the leading wildcard.
+	@health path */api/health
+	handle @health {
+		reverse_proxy scribedog:3000
+	}
+
+	handle {
+		redir https://{host}:{$SCRIBEDOG_HTTPS_PORT:443}{uri} 307
 	}
 }

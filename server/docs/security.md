@@ -87,7 +87,18 @@ way to the provider you chose. The browser sees a placeholder. See [AI](ai.md).
 
 Never expose the server without TLS beyond `localhost`: the password and the
 access keys would travel in clear text. The bundled Caddy provides HTTPS; see
-[Configuration](configuration.md) for the local CA and for public domains.
+[The certificate](certificates.md) for the home network and
+[Configuration](configuration.md) for public domains.
+
+On a home network the installation has its own certificate authority. Its
+private key exists only while the certificate script runs: it signs the one
+server certificate and is discarded, never written to disk. The server keeps
+only its own key (`certs/server.key`, readable by root, mounted read-only
+into Caddy and not into the ScribeDog container), which cannot sign anything.
+So a break-in on the server cannot produce a certificate that a device
+trusting this CA would accept for another site. The CA additionally limits
+itself to the installation's addresses (Name Constraints); not every system
+enforces that, Android does not.
 
 ## What is not protected
 

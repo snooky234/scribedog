@@ -4,8 +4,8 @@
 
 **Do I need a domain?**
 No. On a home network, `SCRIBEDOG_SITE_ADDRESS` can be the box's name or IP
-and Caddy signs the certificate with its own CA; import that CA once per
-device (see [Getting started](getting-started.md)). A domain only matters if
+and the installation makes its own certificate; install its CA once per
+device (see [The certificate](certificates.md)). A domain only matters if
 you want Let's Encrypt or reach the server from the internet.
 
 **I only use it on one computer. Do I need HTTPS at all?**
@@ -14,14 +14,16 @@ without Caddy at <http://localhost:8080/>, reachable from that computer only.
 See [Getting started](getting-started.md#only-on-this-machine-without-https).
 
 **The browser says the connection is not private.**
-That is Caddy's local CA, which the browser does not know yet. Accept the
-warning, or import `scribedog-ca.crt` so it stops; the file is behind
-"Download certificate" in Settings, Account. Details in
-[Getting started](getting-started.md).
+The device does not know this installation's CA yet. Install it once
+(`http://<address>/scribedog-ca.crt`, or "Download certificate" in Settings,
+Account) as described in [The certificate](certificates.md). If it was
+installed and the warning is back, the certificate has run out or the
+server's address changed: [renew it](certificates.md#renewing-the-certificate).
 
 **I can reach the app on the server but not from my laptop.**
 Caddy answers only for the addresses in `SCRIBEDOG_SITE_ADDRESS`. Add the
-name or IP your laptop uses, run `docker compose up -d`, and check that
+name or IP your laptop uses, run `docker compose run --rm certificates` and
+`docker compose up -d`, install the new CA on your devices, and check that
 ports 443 (and 80) are open on the box's firewall.
 
 **Can I use my existing nginx or Traefik?**
@@ -78,9 +80,9 @@ context menu can save a note or a folder from the server as Markdown. See
 **The desktop app says the server cannot be reached, but the browser works.**
 Usually the certificate: the desktop app trusts the operating system's
 certificate store, and accepting a warning in the browser does not put the CA
-there. Import `scribedog-ca.crt` (Settings, Account, "Download certificate"
-in the browser) into the system store. On Linux, the app does not use
-Firefox's store.
+there. Install the CA into the system store as described in
+[The certificate](certificates.md). On Linux, the app does not use Firefox's
+store.
 
 **Can I add a server over plain HTTP?**
 Only `localhost`. Everything else must be HTTPS, because the password and the

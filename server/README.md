@@ -19,8 +19,9 @@ a single password protects the instance.
 
 The user guide lives in [`docs/`](docs/README.md):
 
-- [Getting started](docs/getting-started.md): install, first sign-in, the
-  certificate, phones.
+- [Getting started](docs/getting-started.md): install, first sign-in,
+  phones.
+- [The certificate](docs/certificates.md): installing and renewing it.
 - [Configuration](docs/configuration.md): settings, path prefix, several
   people on one host, reverse proxies.
 - [The desktop app as a client](docs/desktop-app.md)
@@ -39,14 +40,15 @@ Requirements: Docker with the Compose plugin.
 
 ```bash
 cd server
-cp .env.example .env         # set SCRIBEDOG_INIT_PASSWORD (8+ characters), PUID/PGID
-docker compose up -d --build # creates ./scribedog-data if it is not there
+cp .env.example .env                  # SCRIBEDOG_INIT_PASSWORD (8+ characters), PUID/PGID, SCRIBEDOG_SITE_ADDRESS
+docker compose run --rm certificates  # this installation's certificate
+docker compose up -d --build          # creates ./scribedog-data if it is not there
 ```
 
-Open <https://localhost/> and sign in with the password you set. Your browser
-will warn about the certificate on the first visit (Caddy signs it with its
-own local CA); [Getting started](docs/getting-started.md) explains how to
-import it once, and what to set so the server answers under its network name.
+Open `https://<site address>/` and sign in with the password you set. Your
+browser warns about the certificate until the device trusts this
+installation's CA; [The certificate](docs/certificates.md) explains how to
+install it once per device.
 
 To open the vault in the desktop app, choose "Add server vault…" in the
 sidebar's vault menu and enter the same address and password; see

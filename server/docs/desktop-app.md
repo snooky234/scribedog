@@ -36,10 +36,10 @@ See [Security](security.md) for what a key can and cannot do.
 
 The desktop app checks the server's certificate against the operating
 system's certificate store, the same store the browsers use (Firefox
-excepted). With a Let's Encrypt certificate nothing needs doing. With Caddy's
-local CA, import `scribedog-ca.crt` into the system store once, as described
-in [Getting started](getting-started.md); accepting the warning in a browser
-is not enough for the app. There is no option to skip the check.
+excepted). With a Let's Encrypt certificate nothing needs doing. Otherwise
+install the installation's CA into the system store once, as described in
+[The certificate](certificates.md); accepting the warning in a browser is not
+enough for the app. There is no option to skip the check.
 
 ## Working with a server vault
 

@@ -50,6 +50,9 @@ COPY --from=deps /app/server/node_modules ./node_modules
 COPY --from=server /app/server/dist ./dist
 COPY --from=web /app/dist-web /app/dist-web
 COPY server/package.json ./
+# The certificate script, run as `docker compose run --rm certificates`: it
+# ships with the image so it always matches the version that uses its files.
+COPY server/scripts ./scripts
 COPY --chmod=755 server/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 # The vault is a bind mount; the directory only exists here so a container
 # started without one still has somewhere writable.

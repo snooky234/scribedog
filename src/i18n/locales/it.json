@@ -1226,6 +1226,14 @@
     "portableBody": "È disponibile una nuova versione. La versione portatile non si aggiorna da sola: scarica il nuovo ZIP e sostituisci i file esistenti.",
     "openDownload": "Apri la pagina di download"
   },
+  "certificateNotice": {
+    "title": "Il certificato del server scade presto",
+    "body": "Il certificato di questo server scade il {{date}}. Il rinnovo richiede pochi minuti sul server, poi il nuovo certificato va installato su ogni dispositivo.",
+    "expiredTitle": "Il certificato del server è scaduto",
+    "expiredBody": "Il certificato di questo server è scaduto il {{date}}. Finché non viene rinnovato, i browser avvisano e l'app desktop non può connettersi.",
+    "guide": "Come rinnovarlo",
+    "dismiss": "Chiudi"
+  },
   "voice": {
     "micStart": "Avvia input vocale",
     "micStop": "Interrompi l'input vocale e trascrivi",
@@ -1440,9 +1448,13 @@
     "devicesHint": "App desktop che hanno aperto questo vault con una chiave di accesso. Revocarne una disconnette quel dispositivo senza cambiare la password; cambiare la password li disconnette tutti.",
     "certificate": "Certificato del server",
     "certificateHint": "Scarica il certificato perché il browser smetta di avvisare su questo server. Installato una volta su questo dispositivo, browser e app desktop si fidano del server.",
-    "certificateInfo": "L'avviso compare perché il server firma il proprio certificato con una propria autorità di certificazione (CA) locale, non avendo un dominio pubblico per ottenerne uno. Installare quella CA sul dispositivo gli dice di fidarsi del server: il browser smette di avvisare e l'app desktop può aprire questo vault (le serve la CA nell'archivio di sistema; accettare l'avviso nel browser non le basta). Non serve se il server usa un certificato Let's Encrypt.",
+    "certificateInfo": "Il server usa un certificato di un'autorità di certificazione (CA) creata solo per questa installazione, perché non c'è un dominio pubblico per cui ottenerne uno. Installare questa CA sul dispositivo gli dice di fidarsi del server: il browser smette di avvisare e l'app desktop può aprire questo vault (le serve la CA nell'archivio di sistema, accettare l'avviso nel browser non basta). La chiave della CA è stata eliminata subito dopo aver firmato il certificato del server, quindi nessuno può usarla per emetterne altri. Non serve se il server usa un certificato Let's Encrypt.",
     "certificateGuide": "Come installarlo su ogni dispositivo",
-    "certificateDownload": "Scarica certificato"
+    "certificateDownload": "Scarica certificato",
+    "certificateValidUntil": "Valido fino al {{date}}.",
+    "certificateExpiring": "Scade il {{date}}. Rinnovalo in tempo e installa il nuovo su ogni dispositivo.",
+    "certificateExpired": "Scaduto il {{date}}. I browser avvisano riguardo a questo server finché non viene rinnovato.",
+    "certificateRenewGuide": "Come rinnovarlo"
   },
   "platform": {
     "notAvailable": "Questa funzione non è disponibile in questa edizione di ScribeDog.",

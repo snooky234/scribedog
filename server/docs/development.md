@@ -68,7 +68,9 @@ They expect a note `Projects/Roadmap.md` in the vault (override with
 `SCRIBEDOG_E2E_NOTE`) and overwrite it. `SCRIBEDOG_E2E_MOCK_URL` points them
 at the mock if its port differs. The e2e compose file is for tests only: it
 turns certificate checks off in the server container so it accepts the
-mock's certificate from Caddy's local CA.
+mock's certificate from Caddy's local CA. The site itself uses a certificate
+from `docker compose run --rm certificates`, like a real installation; create
+it before the first `up`.
 
 ## The desktop app against a development server
 

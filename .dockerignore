@@ -30,7 +30,9 @@ server/.env
 server/.env.*
 !server/.env.example
 server/README.md
-server/scribedog-ca.crt
+# The certificates (server.key!) are mounted at runtime, never built in.
+server/certs
+server/examples/*/certs
 
 # Tests do not belong in the image.
 **/*.test.ts

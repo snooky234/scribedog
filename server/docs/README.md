@@ -11,7 +11,10 @@ for when you need it.
 ## Contents
 
 1. [Getting started](getting-started.md): requirements, installation, first
-   sign-in, the certificate warning, opening the app on a phone.
+   sign-in, opening the app on a phone.
+   - [The certificate](certificates.md): installing it on your devices,
+     renewing it. [Upgrading the certificate](upgrading-certificates.md) from
+     a version before 0.27.0.
 2. [Multiple users on one host](multiuser.md): fresh setup, moving a single
    instance to multi-user, adding or removing a person later.
 3. [On one Windows PC, without Docker](windows-without-docker.md): a local

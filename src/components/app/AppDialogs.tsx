@@ -11,6 +11,7 @@ import { SettingsDialog, type SettingsTab } from "@/components/SettingsDialog";
 import { ThemeBuilderDialog } from "@/components/ThemeBuilderDialog";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { UpdateNotification } from "@/components/UpdateNotification";
+import { CertificateNotice } from "@/components/web/CertificateNotice";
 import { VersionDiffDialog, type VersionDiffTarget } from "@/components/VersionDiffDialog";
 import type { DeleteTarget } from "@/hooks/useDeleteTarget";
 import type { FileVersion } from "@/lib/fileVersions";
@@ -235,6 +236,9 @@ export function AppDialogs({
       {availableUpdate ? (
         <UpdateNotification update={availableUpdate} onDismiss={onDismissUpdate} />
       ) : null}
+
+      {/* Server edition only; the update notice above is desktop only, so the two never overlap. */}
+      <CertificateNotice />
     </>
   );
 }

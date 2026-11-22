@@ -1226,6 +1226,14 @@
     "portableBody": "Hay una nueva versión disponible. La versión portátil no se actualiza sola: descarga el nuevo ZIP y reemplaza los archivos existentes.",
     "openDownload": "Abrir la página de descargas"
   },
+  "certificateNotice": {
+    "title": "El certificado del servidor caduca pronto",
+    "body": "El certificado de este servidor caduca el {{date}}. Renovarlo lleva unos minutos en el servidor; después, el nuevo certificado se instala en cada dispositivo.",
+    "expiredTitle": "El certificado del servidor ha caducado",
+    "expiredBody": "El certificado de este servidor caducó el {{date}}. Hasta que se renueve, los navegadores avisan y la aplicación de escritorio no puede conectarse.",
+    "guide": "Cómo renovarlo",
+    "dismiss": "Cerrar"
+  },
   "voice": {
     "micStart": "Iniciar entrada de voz",
     "micStop": "Detener la entrada de voz y transcribir",
@@ -1440,9 +1448,13 @@
     "devicesHint": "Aplicaciones de escritorio que abrieron esta bóveda con una clave de acceso. Revocar una desconecta ese dispositivo sin cambiar la contraseña; cambiar la contraseña los desconecta a todos.",
     "certificate": "Certificado del servidor",
     "certificateHint": "Descarga el certificado para que el navegador deje de avisar sobre este servidor. Instalado una vez en este dispositivo, el navegador y la aplicación de escritorio confían en el servidor.",
-    "certificateInfo": "El aviso aparece porque el servidor firma su certificado con su propia autoridad de certificación (CA) local, ya que no hay un dominio público para obtener uno. Instalar esa CA en el dispositivo le indica que confíe en el servidor: el navegador deja de avisar y la aplicación de escritorio puede abrir esta bóveda (necesita la CA en el almacén del sistema; aceptar el aviso en el navegador no le basta). No hace falta si el servidor usa un certificado de Let's Encrypt.",
+    "certificateInfo": "El servidor usa un certificado de una autoridad de certificación (CA) creada solo para esta instalación, ya que no hay un dominio público para el que obtener uno. Instalar esa CA en este dispositivo le indica que confíe en el servidor: el navegador deja de avisar y la aplicación de escritorio puede abrir este almacén (necesita la CA en el almacén del sistema; aceptar el aviso en el navegador no le basta). La clave de la CA se borró justo después de firmar el certificado del servidor, así que nadie puede usarla para emitir otros. No hace falta si el servidor usa un certificado de Let's Encrypt.",
     "certificateGuide": "Cómo instalarlo en cada dispositivo",
-    "certificateDownload": "Descargar certificado"
+    "certificateDownload": "Descargar certificado",
+    "certificateValidUntil": "Válido hasta el {{date}}.",
+    "certificateExpiring": "Caduca el {{date}}. Renuévalo a tiempo e instala el nuevo en cada dispositivo.",
+    "certificateExpired": "Caducó el {{date}}. Los navegadores avisan sobre este servidor hasta que se renueve.",
+    "certificateRenewGuide": "Cómo renovarlo"
   },
   "platform": {
     "notAvailable": "Esta función no está disponible en esta edición de ScribeDog.",

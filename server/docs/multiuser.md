@@ -38,8 +38,8 @@ your first `docker compose up`:
 
 - **Just one person:** delete `PERSON2`'s parts: its five `PERSON2_*`
   lines in `.env`, its `scribedog-2` block in `docker-compose.yml` (plus its
-  entry in `depends_on` and in Caddy's `environment:`), and its `handle`
-  block in the Caddyfile.
+  entry in `depends_on` and in Caddy's `environment:`), and its two `handle`
+  blocks in the Caddyfile (the site and the health check under `http://`).
 - **More than two people:** copy a `PERSON<N>` slot the same way
   [Adding another person later](#adding-another-person-later) describes,
   just before your first start instead of after.
@@ -69,8 +69,12 @@ your first `docker compose up`:
 
 ```bash
 docker compose pull
+docker compose run --rm certificates
 docker compose up -d
 ```
+
+The second command creates the certificate for `SCRIBEDOG_SITE_ADDRESS`;
+install it on every device as described in [The certificate](certificates.md).
 
 Or clone the repository and run `docker compose up -d --build` to build from
 source instead (same trade-off as [Getting started](getting-started.md#install)).
@@ -91,9 +95,9 @@ applies unchanged, one instance at a time:
   covers the common port conflict.
 - [First sign-in](getting-started.md#first-sign-in): the first login and the
   `Welcome.md` note that instance starts with.
-- [The certificate warning](getting-started.md#the-certificate-warning): why
-  the browser warns, and how to trust Caddy's local CA instead of clicking
-  through it every time.
+- [The certificate](certificates.md): create it once
+  (`docker compose run --rm certificates` in the multi-instance folder) and
+  install its CA on every device.
 - [On a phone](getting-started.md#on-a-phone) and
   [in the desktop app](getting-started.md#on-your-computer-in-the-desktop-app):
   using that instance outside the browser.
@@ -109,7 +113,8 @@ applies unchanged, one instance at a time:
      `SCRIBEDOG_USER` and data volume at the matching `PERSON3_*` variables.
      Keep the `/shared` volume and the other two `SCRIBEDOG_SHARED_*` lines
      as they are: every instance mounts the same folder.
-   - Add `- scribedog-3` to the `caddy` service's `depends_on:` list.
+   - Add `scribedog-3:` with `condition: service_started` under the `caddy`
+     service's `depends_on:`, like the two entries already there.
    - Add `PERSON3_BASE_PATH: ${PERSON3_BASE_PATH:-/PERSON3_UNSET}` to the
      `caddy` service's `environment:` block, next to
      `PERSON1_BASE_PATH` / `PERSON2_BASE_PATH`.
@@ -117,6 +122,12 @@ applies unchanged, one instance at a time:
    again just the next number:
    ```caddyfile
    handle {$PERSON3_BASE_PATH:/PERSON3_UNSET}* {
+       reverse_proxy scribedog-3:3000
+   }
+   ```
+   and, for the health check over plain HTTP, one in the `http://` block:
+   ```caddyfile
+   handle {$PERSON3_BASE_PATH:/PERSON3_UNSET}/api/health {
        reverse_proxy scribedog-3:3000
    }
    ```
@@ -141,7 +152,7 @@ applies unchanged, one instance at a time:
 2. Remove that `PERSON<N>` service block from `docker-compose.yml` (and drop
    it from Caddy's `depends_on` and from Caddy's `environment:` block).
 3. Remove the matching `handle {$PERSON2_BASE_PATH:/bob}* { ... }` block
-   from the Caddyfile.
+   from the Caddyfile, and its `/api/health` block under `http://`.
 4. Remove that person's `PERSON<N>_*` variables from `.env`.
 5. Run `docker compose up -d --remove-orphans`. This stops and removes the
    now-undefined container in one step; the remaining instances keep running.

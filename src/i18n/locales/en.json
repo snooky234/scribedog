@@ -1226,6 +1226,14 @@
     "portableBody": "A new version is available. The portable version does not update itself — download the new ZIP and replace the existing files.",
     "openDownload": "Open download page"
   },
+  "certificateNotice": {
+    "title": "Server certificate runs out soon",
+    "body": "The certificate of this server runs out on {{date}}. Renewing takes a few minutes on the server, then the new certificate goes onto every device.",
+    "expiredTitle": "Server certificate has run out",
+    "expiredBody": "The certificate of this server ran out on {{date}}. Until it is renewed, browsers warn and the desktop app cannot connect.",
+    "guide": "How to renew",
+    "dismiss": "Close"
+  },
   "voice": {
     "micStart": "Start voice input",
     "micStop": "Stop voice input and transcribe",
@@ -1440,9 +1448,13 @@
     "devicesHint": "Desktop apps that opened this vault with an access key. Revoking one signs that device out without changing the password; changing the password signs out all of them.",
     "certificate": "Server certificate",
     "certificateHint": "Download the certificate to stop the browser's warning about this server. Install it once on this device, then the browser and the desktop app trust the server.",
-    "certificateInfo": "The warning comes from the server signing its own certificate with a local certificate authority (CA), since there is no public domain to get one for. Installing that CA on this device tells it to trust the server: the browser stops warning, and the desktop app can open this vault (it needs the CA in the system store, accepting the warning in the browser is not enough). No need for this if the server uses a Let's Encrypt certificate.",
+    "certificateInfo": "The server uses a certificate from a certificate authority (CA) created for this installation alone, since there is no public domain to get one for. Installing that CA on this device tells it to trust the server: the browser stops warning, and the desktop app can open this vault (it needs the CA in the system store, accepting the warning in the browser is not enough). The CA's key was deleted right after it signed the server's certificate, so nobody can use it to issue any other. No need for this if the server uses a Let's Encrypt certificate.",
     "certificateGuide": "How to install it on each device",
-    "certificateDownload": "Download certificate"
+    "certificateDownload": "Download certificate",
+    "certificateValidUntil": "Valid until {{date}}.",
+    "certificateExpiring": "Runs out on {{date}}. Renew it in time and install the new one on every device.",
+    "certificateExpired": "Ran out on {{date}}. Browsers warn about this server until it is renewed.",
+    "certificateRenewGuide": "How to renew it"
   },
   "platform": {
     "notAvailable": "This feature is not available in this edition of ScribeDog.",

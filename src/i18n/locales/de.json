@@ -1226,6 +1226,14 @@
     "portableBody": "Eine neue Version steht bereit. Die portable Version aktualisiert sich nicht selbst — lade das neue ZIP herunter und ersetze die vorhandenen Dateien.",
     "openDownload": "Download-Seite öffnen"
   },
+  "certificateNotice": {
+    "title": "Server-Zertifikat läuft bald ab",
+    "body": "Das Zertifikat dieses Servers läuft am {{date}} ab. Das Erneuern dauert auf dem Server ein paar Minuten, danach kommt das neue Zertifikat auf jedes Gerät.",
+    "expiredTitle": "Server-Zertifikat ist abgelaufen",
+    "expiredBody": "Das Zertifikat dieses Servers ist am {{date}} abgelaufen. Bis es erneuert ist, warnen Browser, und die Desktop-App kann sich nicht verbinden.",
+    "guide": "So wird es erneuert",
+    "dismiss": "Schließen"
+  },
   "voice": {
     "micStart": "Spracheingabe starten",
     "micStop": "Spracheingabe stoppen und transkribieren",
@@ -1440,9 +1448,13 @@
     "devicesHint": "Desktop-Apps, die dieses Vault mit einem Zugriffsschlüssel geöffnet haben. Widerrufen meldet das Gerät ab, ohne das Passwort zu ändern; eine Passwortänderung meldet alle ab.",
     "certificate": "Server-Zertifikat",
     "certificateHint": "Lade das Zertifikat herunter, damit der Browser nicht mehr vor diesem Server warnt. Einmal auf diesem Gerät installiert, vertrauen Browser und Desktop-App dem Server.",
-    "certificateInfo": "Die Warnung kommt daher, dass der Server sein Zertifikat mit einer eigenen, lokalen Zertifizierungsstelle (CA) signiert, weil es keine öffentliche Domain gibt, für die er eines bekommen könnte. Wird diese CA auf dem Gerät installiert, vertraut es dem Server: Der Browser warnt nicht mehr, und die Desktop-App kann dieses Vault öffnen (sie braucht die CA im Systemspeicher, die Warnung im Browser wegzuklicken reicht ihr nicht). Nutzt der Server ein Let's-Encrypt-Zertifikat, ist das nicht nötig.",
+    "certificateInfo": "Der Server nutzt ein Zertifikat einer Zertifizierungsstelle (CA), die nur für diese Installation erstellt wurde, weil es keine öffentliche Domain gibt, für die er eines bekommen könnte. Wird diese CA auf dem Gerät installiert, vertraut es dem Server: Der Browser warnt nicht mehr, und die Desktop-App kann dieses Vault öffnen (sie braucht die CA im Systemspeicher, die Warnung im Browser wegzuklicken reicht ihr nicht). Der Schlüssel der CA wurde gelöscht, gleich nachdem sie das Server-Zertifikat unterschrieben hat, also kann niemand mit ihr weitere Zertifikate ausstellen. Nutzt der Server ein Let's-Encrypt-Zertifikat, ist das nicht nötig.",
     "certificateGuide": "So wird es auf jedem Gerät installiert",
-    "certificateDownload": "Zertifikat herunterladen"
+    "certificateDownload": "Zertifikat herunterladen",
+    "certificateValidUntil": "Gültig bis {{date}}.",
+    "certificateExpiring": "Läuft am {{date}} ab. Rechtzeitig erneuern und das neue auf jedem Gerät installieren.",
+    "certificateExpired": "Am {{date}} abgelaufen. Browser warnen vor diesem Server, bis es erneuert ist.",
+    "certificateRenewGuide": "So wird es erneuert"
   },
   "platform": {
     "notAvailable": "Diese Funktion ist in dieser Ausgabe von ScribeDog nicht verfügbar.",

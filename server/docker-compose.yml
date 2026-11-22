@@ -1,12 +1,13 @@
-# ScribeDog Server Edition: one ScribeDog instance behind Caddy (automatic HTTPS).
+# ScribeDog Server Edition: one ScribeDog instance behind Caddy (HTTPS).
 #
 # Quick start:
-#   cp .env.example .env         # set SCRIBEDOG_INIT_PASSWORD at least
-#   mkdir -p scribedog-data      # your notes live here, as plain .md files
+#   cp .env.example .env                  # password and the site address at least
+#   mkdir -p scribedog-data               # your notes live here, as plain .md files
+#   docker compose run --rm certificates  # this installation's certificate, once
 #   docker compose up -d --build
-#   open https://localhost/      (or https://<host>/<base path>/)
+#   open https://<site address>/          (or https://<host>/<base path>/)
 #
-# See docs/getting-started.md and docs/configuration.md for the base path, a real domain, and trusting Caddy's local CA.
+# See docs/getting-started.md, docs/certificates.md and docs/configuration.md.
 
 services:
   scribedog:
@@ -48,11 +49,70 @@ services:
     expose:
       - "3000"
 
+  # Creates ./certs (CA and server certificate) with scripts/make-certs.mjs.
+  # Not part of `up`; run it on its own, once and again to renew:
+  #   docker compose run --rm certificates                (SCRIBEDOG_SITE_ADDRESS)
+  #   docker compose run --rm certificates 192.168.1.50 nas.fritz.box
+  # The script ships in the ScribeDog image (scripts/make-certs.mjs), so it
+  # always matches the version that uses its files.
+  certificates:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    image: ${SCRIBEDOG_IMAGE:-scribedog-server:0.26.2}
+    profiles: ["tools"]
+    network_mode: none
+    environment:
+      SCRIBEDOG_SITE_ADDRESS: ${SCRIBEDOG_SITE_ADDRESS:-localhost}
+      # The new files are handed to this user, the key stays root's.
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+    volumes:
+      - ./certs:/certs
+    entrypoint: ["node", "scripts/make-certs.mjs", "--out", "/certs"]
+
+  # Stops `docker compose up` with an explanation when the certificate is
+  # missing (or .env still asks for Caddy's own CA, which is gone), instead
+  # of a Caddy that fails and restarts in the background. Read its message
+  # with `docker compose logs certificate-check`.
+  certificate-check:
+    image: caddy:2-alpine
+    restart: "no"
+    network_mode: none
+    environment:
+      SCRIBEDOG_TLS: ${SCRIBEDOG_TLS:-}
+    volumes:
+      - ./certs:/certs:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        docs=https://github.com/snooky234/scribedog/blob/main/server/docs
+        case "$$SCRIBEDOG_TLS" in
+          "") ;;
+          internal)
+            echo "ScribeDog: SCRIBEDOG_TLS=internal (Caddy's own CA) is no longer supported."
+            echo "Set SCRIBEDOG_TLS= (empty) in .env, then: docker compose run --rm certificates"
+            echo "Step by step: $$docs/upgrading-certificates.md"
+            exit 1 ;;
+          *) exit 0 ;;
+        esac
+        for file in ca.crt server.crt server.key; do
+          if [ ! -s "/certs/$$file" ]; then
+            echo "ScribeDog: there is no certificate yet (/certs/$$file is missing)."
+            echo "Create it once with: docker compose run --rm certificates"
+            echo "Then: docker compose up -d. Details: $$docs/certificates.md"
+            exit 1
+          fi
+        done
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
     depends_on:
-      - scribedog
+      scribedog:
+        condition: service_started
+      certificate-check:
+        condition: service_completed_successfully
     ports:
       - "${SCRIBEDOG_HTTP_PORT:-80}:80"
       - "${SCRIBEDOG_HTTPS_PORT:-443}:443"
@@ -66,11 +126,17 @@ services:
       # browser opening the app by IP address. The site address itself unless
       # that is a list; then set it to the address the phones use.
       SCRIBEDOG_DEFAULT_SNI: ${SCRIBEDOG_DEFAULT_SNI:-${SCRIBEDOG_SITE_ADDRESS:-localhost}}
-      # "internal" = Caddy's own local CA (no domain needed). For a real domain
-      # set this to your e-mail address and Caddy fetches a public certificate.
-      SCRIBEDOG_TLS: ${SCRIBEDOG_TLS:-internal}
+      # Empty = the certificate in ./certs (docker compose run --rm
+      # certificates). For a public domain set your e-mail address and Caddy
+      # fetches a Let's Encrypt certificate instead.
+      SCRIBEDOG_TLS: ${SCRIBEDOG_TLS:-/certs/server.crt /certs/server.key}
+      # The HTTP port redirects here; it has to know the port on the host.
+      SCRIBEDOG_HTTPS_PORT: ${SCRIBEDOG_HTTPS_PORT:-443}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Read-only and never part of an image: the server key stays in this
+      # folder on the host.
+      - ./certs:/certs:ro
       - caddy-data:/data
       - caddy-config:/config
 

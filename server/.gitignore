@@ -5,4 +5,6 @@ examples/*/*-data/
 examples/*/.env
 test-results/
 playwright-report/
-scribedog-ca.crt
+# Certificates from `docker compose run --rm certificates`; server.key must never be committed.
+certs/
+examples/*/certs/

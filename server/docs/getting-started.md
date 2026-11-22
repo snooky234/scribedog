@@ -45,7 +45,8 @@ Open `.env` and set three things:
   app on this same machine. Opening it from a phone, another computer, or
   anywhere else on the network (the usual case for a Pi or home server) needs
   the box's LAN IP or host name here instead, e.g. `192.168.1.50`, or Caddy
-  will not answer that request at all.
+  will not answer that request at all. The certificate is made for this
+  address, so give the box a fixed one in your router.
 
 `SCRIBEDOG_IMAGE` is already set to the current version, so there is nothing
 to change there for the latest release. Two reasons you might still touch it:
@@ -53,10 +54,12 @@ you would rather pull from Docker Hub than GHCR (same image, set it to
 `snooky234/scribedog-server:0.26.2`, no registry host needed in the name), or
 you want an older version on purpose (pin that tag instead).
 
-Then start it:
+Then create this installation's certificate (see
+[The certificate](#the-certificate) below) and start it:
 
 ```bash
 docker compose pull
+docker compose run --rm certificates
 docker compose up -d
 ```
 
@@ -72,9 +75,10 @@ Open `.env` and set four things: `SCRIBEDOG_INIT_PASSWORD`, `PUID`/`PGID` and
 `SCRIBEDOG_SITE_ADDRESS` as in option 1, plus `SCRIBEDOG_IMAGE`: empty it (it
 comes pre-filled from `.env.example`) so Compose builds instead of pulling.
 
-Then start it:
+Then create the certificate (the first run builds the image) and start it:
 
 ```bash
+docker compose run --rm certificates
 docker compose up -d --build
 ```
 
@@ -123,6 +127,12 @@ a NAS admin UI). Run `docker compose down` first, then set
 e.g. `8080` and `8443`, and start it again; see
 [Configuration](configuration.md) for both variables.
 
+If it stops with `service "certificate-check" didn't complete successfully`,
+`docker compose logs certificate-check` says why: usually there is no
+certificate yet (`docker compose run --rm certificates`), or `.env` still
+has `SCRIBEDOG_TLS=internal` from an older version (see
+[Upgrading the certificate](upgrading-certificates.md)).
+
 ## First sign-in
 
 Open <https://localhost/> on the machine itself, or `https://<name-or-IP>/`
@@ -131,35 +141,22 @@ On the very first start with an empty folder the server creates a
 `Welcome.md` so there is something to open.
 
 If the box answers under more than one name or IP, list them all in
-`SCRIBEDOG_SITE_ADDRESS`, separated by commas, and run `docker compose up -d`
-again. See [Configuration](configuration.md).
+`SCRIBEDOG_SITE_ADDRESS`, separated by commas, then run
+`docker compose run --rm certificates` and `docker compose up -d` again (the
+certificate has to name every address). See [Configuration](configuration.md).
 
-## The certificate warning
+## The certificate
 
-Your browser will warn about the certificate on the first visit: Caddy signs
-it with its own local certificate authority (CA), because there is no public
-domain to get a certificate for. You can accept the warning, or import the
-CA once so every browser on the device trusts it (and, if you use it, the
-[desktop app](desktop-app.md), which needs the CA in the system store). Do
-this on each device you use ScribeDog from, not just once: on the device in
-question, download it from Settings, Account, "Download certificate" (the
-button is only there while Caddy's own CA is in use; or open
-`https://<host>/scribedog-ca.crt` directly, same host and port as ScribeDog
-itself), then add `scribedog-ca.crt` to the trust store:
+`docker compose run --rm certificates` makes a certificate for this
+installation alone, valid for 825 days. Until a device trusts it, the browser
+warns on the first visit. Install it once per device: open
+`http://<address>/scribedog-ca.crt` there (or, once signed in, **Settings,
+Account, Download certificate**), add it to the device's trust store and
+compare the fingerprint the command printed. Step by step for every system,
+and how to renew it: [The certificate](certificates.md).
 
-| Where | How |
-| --- | --- |
-| Windows | Double-click the file, "Install Certificate", current user, "Place all certificates in the following store", *Trusted Root Certification Authorities*. Confirm the security warning. |
-| macOS | Double-click the file to add it to Keychain Access, open it there and set "When using this certificate" to *Always Trust*. |
-| Linux | Depends on the distribution; for Debian and Ubuntu copy it to `/usr/local/share/ca-certificates/scribedog-ca.crt` and run `sudo update-ca-certificates`. Firefox has its own store: Settings, Privacy & Security, Certificates, View Certificates, Import. |
-| Android | Settings, Security, Encryption & credentials, Install a certificate, CA certificate. |
-| iOS | Open `https://<host>/scribedog-ca.crt` in Safari on the device itself, install the profile under Settings, then enable it under Settings, General, About, Certificate Trust Settings. |
-
-The download goes through the same warning as the site itself, so there is
-nothing extra to click past. If you would rather distribute one file to
-several people yourself instead of having each open that URL, run
-`docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt
-./scribedog-ca.crt` on the host instead and send them that.
+Its key is deleted the moment it has signed the server's certificate, so the
+CA you install cannot vouch for anything else.
 
 With a public domain and ports 80 and 443 reachable from the internet you can
 skip all this: set `SCRIBEDOG_SITE_ADDRESS` to the domain and `SCRIBEDOG_TLS`

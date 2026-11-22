@@ -70,10 +70,11 @@ Add the site to the home screen (Chrome: "Add to Home screen", Safari: share
 sheet, "Add to Home Screen") and it opens without the browser chrome. The
 session lasts 60 days of use, so the password is asked for rarely.
 
-Chrome and Safari on phones show a certificate warning for Caddy's local CA
-just like the desktop browsers; accept the warning once, then download the
-certificate from Settings, Account and install it on the device (see
-[Getting started](getting-started.md)), or keep accepting the warning.
+Chrome and Safari on phones warn about the certificate until the device
+trusts this installation's CA, just like the desktop browsers. Open
+`http://<address>/scribedog-ca.crt` on the phone and install it as described
+in [The certificate](certificates.md); on an iPhone or iPad, remember to
+switch on full trust for it afterwards.
 
 ## Dictation
 
