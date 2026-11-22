@@ -17,24 +17,23 @@ const PASSWORD = process.env.SCRIBEDOG_E2E_PASSWORD ?? "e2e-test-password";
 const MOCK_URL = (process.env.SCRIBEDOG_E2E_MOCK_URL ?? "http://localhost:9081").replace(/\/$/, "");
 const NOTE = process.env.SCRIBEDOG_E2E_NOTE ?? "Projects/Roadmap.md";
 
+// The provider the tests use: the mock behind the LLM proxy, with the
+// agent's file access switched on. The key itself is stored on the server
+// (see signInWithAgent); this is only the non-secret part.
+const AI_SETTINGS = {
+  provider: "openai",
+  apiUrl: "https://llm.e2e.internal",
+  model: "mock-model",
+  agentFileAccess: true,
+  agentAllowDelete: true,
+  agentPlanning: "auto"
+};
+
 test.beforeEach(async ({ context }) => {
-  await context.addInitScript(() => {
+  await context.addInitScript((settings) => {
     window.localStorage.setItem("scribedog-language", "en");
-    // The provider the tests use: the mock behind the LLM proxy, with the
-    // agent's file access switched on. The key itself is stored on the
-    // server (see signInWithAgent); this is only the non-secret part.
-    window.localStorage.setItem(
-      "scribedog-ai-settings",
-      JSON.stringify({
-        provider: "openai",
-        apiUrl: "https://llm.e2e.internal",
-        model: "mock-model",
-        agentFileAccess: true,
-        agentAllowDelete: true,
-        agentPlanning: "auto"
-      })
-    );
-  });
+    window.localStorage.setItem("scribedog-ai-settings", JSON.stringify(settings));
+  }, AI_SETTINGS);
 });
 
 function basePath(page: Page): string {
@@ -74,6 +73,10 @@ async function signInWithAgent(page: Page): Promise<void> {
 
   const stored = await page.request.put(`${basePath(page)}/api/secrets/openai`, { data: { value: "sk-mock" } });
   expect(stored.ok()).toBe(true);
+  // The server's copy of the AI settings wins over the browser's, so the
+  // mock provider has to be stored there as well.
+  const settings = await page.request.put(`${basePath(page)}/api/preferences/ai-settings`, { data: { value: AI_SETTINGS } });
+  expect(settings.ok()).toBe(true);
   await clearStagedChanges(page);
   await page.reload();
   await expect(page.getByTestId("logout")).toBeVisible();
@@ -173,7 +176,8 @@ test("proposes a new note through the proxy, applies it, and takes it back", asy
   await expect.poll(() => readOnServer(page, ".scribedog/chat-sessions.json")).toContain(`e2e:create ${title}`);
 
   // Undo the revision: the note the agent created is gone again.
-  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  // The chat turn's undo, not the editor toolbar's button of the same name.
+  await page.getByTitle("Take this revision back", { exact: true }).click();
   await page.getByRole("button", { name: "Take back", exact: true }).click();
   await expect.poll(() => existsOnServer(page, path)).toBe(false);
   await expect(treeRow(page, path)).toHaveCount(0);
@@ -210,7 +214,8 @@ test("an edit to a note that is not open is reviewed when that note is opened", 
   // Undo restores the wording from the checkpoint's copy. (Compared by
   // wording, not byte for byte: the note was open in the editor, and the
   // copy is the editor's canonical form of it, without the trailing newline.)
-  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  // The chat turn's undo, not the editor toolbar's button of the same name.
+  await page.getByTitle("Take this revision back", { exact: true }).click();
   await page.getByRole("button", { name: "Take back", exact: true }).click();
   await expect.poll(() => readOnServer(page, path)).toContain(`The old wording ${stamp} lives here.`);
   expect(await readOnServer(page, path)).not.toContain("The new wording");

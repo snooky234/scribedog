@@ -134,13 +134,15 @@ test("an expired session brings the login form back over the app", async ({ page
   await signIn(page);
   await openNote(page, NOTE);
 
-  // Take the cookie away behind the app's back, as an expiry would, then
-  // trigger a request: the next save runs into a 401.
-  await context.clearCookies();
+  // Make an unsaved edit first, then take the cookie away behind the app's
+  // back, as an expiry would: the next save runs into a 401. In this order
+  // because any background request after the cookie is gone already brings
+  // the login form up, which would then cover the editor before the click.
   const editor = page.getByTestId("editor");
   await editor.locator("p").last().click();
   await expect(editor).toHaveClass(/ProseMirror-focused/);
   await page.keyboard.type(" x");
+  await context.clearCookies();
   await page.keyboard.press("Control+s");
 
   await expect(page.getByTestId("password")).toBeVisible();

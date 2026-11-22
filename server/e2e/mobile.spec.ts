@@ -16,14 +16,13 @@ import { devices, expect, test, type Page } from "@playwright/test";
 const PASSWORD = process.env.SCRIBEDOG_E2E_PASSWORD ?? "e2e-test-password";
 const NOTE = process.env.SCRIBEDOG_E2E_NOTE ?? "Projects/Roadmap.md";
 
+const AI_SETTINGS = { provider: "openai", apiUrl: "https://llm.e2e.internal", model: "mock-model" };
+
 test.beforeEach(async ({ context }) => {
-  await context.addInitScript(() => {
+  await context.addInitScript((settings) => {
     window.localStorage.setItem("scribedog-language", "en");
-    window.localStorage.setItem(
-      "scribedog-ai-settings",
-      JSON.stringify({ provider: "openai", apiUrl: "https://llm.e2e.internal", model: "mock-model" })
-    );
-  });
+    window.localStorage.setItem("scribedog-ai-settings", JSON.stringify(settings));
+  }, AI_SETTINGS);
 });
 
 function basePath(page: Page): string {
@@ -52,6 +51,12 @@ async function signIn(page: Page): Promise<void> {
   await page.goto("./");
   await page.getByTestId("password").fill(PASSWORD);
   await page.getByTestId("login").click();
+  await expect(page.getByTestId("logout")).toBeVisible();
+
+  // The server's copy of the AI settings wins over the browser's.
+  const stored = await page.request.put(`${basePath(page)}/api/preferences/ai-settings`, { data: { value: AI_SETTINGS } });
+  expect(stored.ok()).toBe(true);
+  await page.reload();
   await expect(page.getByTestId("logout")).toBeVisible();
 }
 
@@ -312,8 +317,8 @@ test.describe("phone (iPhone 14)", () => {
   });
 });
 
-test.describe("tablet (iPad Mini)", () => {
-  test.use(device("iPad Mini"));
+test.describe("tablet (iPad Mini, landscape)", () => {
+  test.use(device("iPad Mini landscape"));
 
   test("the file list stays docked, the chat is a side sheet next to the editor", async ({ page }) => {
     await signIn(page);

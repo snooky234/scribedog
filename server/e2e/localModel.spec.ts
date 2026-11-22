@@ -17,19 +17,19 @@ const PASSWORD = process.env.SCRIBEDOG_E2E_PASSWORD ?? "e2e-test-password";
 const MOCK_URL = (process.env.SCRIBEDOG_E2E_MOCK_URL ?? "http://localhost:9081").replace(/\/$/, "");
 const NOTE = process.env.SCRIBEDOG_E2E_NOTE ?? "Projects/Roadmap.md";
 
+// LM Studio's shape: OpenAI-compatible on a local port, no key. Set per
+// describe block by seedSettings, and stored on the server by signIn, since
+// the server's copy of the AI settings wins over the browser's.
+let aiSettings: Record<string, unknown> = {};
+
 function seedSettings(apiUrl: string) {
-  return ({ context }: { context: BrowserContext }) =>
-    context.addInitScript(
-      ({ url }) => {
-        window.localStorage.setItem("scribedog-language", "en");
-        // LM Studio's shape: OpenAI-compatible on a local port, no key.
-        window.localStorage.setItem(
-          "scribedog-ai-settings",
-          JSON.stringify({ provider: "lmstudio", apiUrl: url, model: "mock-model", agentFileAccess: false, agentPlanning: "off" })
-        );
-      },
-      { url: apiUrl }
-    );
+  return ({ context }: { context: BrowserContext }) => {
+    aiSettings = { provider: "lmstudio", apiUrl, model: "mock-model", agentFileAccess: false, agentPlanning: "off" };
+    return context.addInitScript((settings) => {
+      window.localStorage.setItem("scribedog-language", "en");
+      window.localStorage.setItem("scribedog-ai-settings", JSON.stringify(settings));
+    }, aiSettings);
+  };
 }
 
 const treeRow = (page: Page, title: string) => page.getByRole("treeitem").and(page.getByTitle(title, { exact: true }));
@@ -38,6 +38,12 @@ async function signIn(page: Page): Promise<void> {
   await page.goto("./");
   await page.getByTestId("password").fill(PASSWORD);
   await page.getByTestId("login").click();
+  await expect(page.getByTestId("logout")).toBeVisible();
+
+  const basePath = new URL(page.url()).pathname.replace(/\/$/, "");
+  const stored = await page.request.put(`${basePath}/api/preferences/ai-settings`, { data: { value: aiSettings } });
+  expect(stored.ok()).toBe(true);
+  await page.reload();
   await expect(page.getByTestId("logout")).toBeVisible();
 
   const segments = NOTE.split("/");
