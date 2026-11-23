@@ -61,6 +61,80 @@
   gap: 0.5rem;
 }
 
+/* On touch devices up to tablet size the action row stays one line and is
+   swiped sideways, fading out at whichever end has more buttons, instead of
+   wrapping a lone button into a second row. A mouse has no swipe and the
+   scrollbar is hidden, so the desktop keeps wrapping. The padding keeps the
+   reminder count over the bell's corner and the focus rings inside the
+   scroll box (an overflow-x box clips vertically too); the negative margin
+   gives that room back so the row does not move, and on the right it reaches
+   through the panel's padding, so the fade ends on the panel edge. */
+@property --sidebar-actions-fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --sidebar-actions-fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@media (pointer: coarse) and (max-width: 1400px) {
+  .sidebar-panel__actions {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding: 0.4rem 1rem 0.25rem 0.25rem;
+    margin: -0.4rem -1rem -0.25rem -0.25rem;
+  }
+
+  .sidebar-panel__actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar-panel__actions > * {
+    flex-shrink: 0;
+  }
+
+  /* The fade follows the scroll position: none at the start, full at the
+     end while there is more to see. Without scroll-driven animations the
+     row is simply cut, since a fixed fade would dim the last button once it
+     is scrolled into view. A row that fits has an inactive timeline, so both
+     fades stay at zero. */
+  @supports (animation-timeline: scroll()) {
+    .sidebar-panel__actions {
+      --sidebar-actions-fade: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--sidebar-actions-fade-start),
+        #000 calc(100% - var(--sidebar-actions-fade-end)),
+        transparent 100%
+      );
+      -webkit-mask-image: var(--sidebar-actions-fade);
+      mask-image: var(--sidebar-actions-fade);
+      animation: sidebar-actions-fade linear both;
+      animation-timeline: scroll(self inline);
+    }
+  }
+}
+
+@keyframes sidebar-actions-fade {
+  from {
+    --sidebar-actions-fade-start: 0px;
+    --sidebar-actions-fade-end: 2.5rem;
+  }
+
+  to {
+    --sidebar-actions-fade-start: 2.5rem;
+    --sidebar-actions-fade-end: 0px;
+  }
+}
+
 .sidebar-panel__folder-wrap {
   flex: 1 1 100%;
   min-width: 0;
