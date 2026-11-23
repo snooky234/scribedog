@@ -35,6 +35,18 @@ describe("formatAiError", () => {
     expect(formatAiError(new Error("fetch failed"), t)).toBe("fetch failed editor.aiTipConnection");
   });
 
+  it.each([
+    "------------ While executing CallExpression at line 100 ... Error: Jinja Exception: No user query found in messages.",
+    "This model's maximum context length is 8192 tokens. However, your messages resulted in 9000 tokens.",
+    "context_length_exceeded",
+    "the request exceeds the available context size, try increasing it",
+    "prompt is too long: 210000 tokens > 200000 maximum",
+    "Trying to keep the first 5000 tokens when context the overflows. However, the model is loaded with context length of only 4096 tokens"
+  ])("replaces a context overflow with the context tip: %s", (message) => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(formatAiError(new Error(message), t)).toBe("editor.aiContextTooSmall");
+  });
+
   it("falls back to the generic tip", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     expect(formatAiError(new Error("something else"), t)).toBe("something else editor.aiTipGeneric");

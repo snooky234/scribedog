@@ -1111,6 +1111,7 @@
     "aiTipModel": "Astuce : Ouvrez les paramètres IA et saisissez un modèle valide.",
     "aiTipConnection": "Astuce : Vérifiez qu'Ollama ou Jan.ai est en cours d'exécution et que l'URL de l'API est accessible.",
     "aiTipGeneric": "Astuce : Vérifiez les paramètres IA et réessayez.",
+    "aiContextTooSmall": "Le document est trop long pour la fenêtre de contexte du modèle. Augmente la longueur du contexte dans les paramètres IA (avec LM Studio et Jan.ai, aussi au chargement du modèle), si le modèle et la mémoire le permettent. Le plus souvent, il vaut mieux découper le document en plusieurs notes plus courtes.",
     "aiThinking": "Réflexion …",
     "aiGenerating": "L'IA rédige …",
     "dropDocumentHint": "Les documents ne sont pas insérés dans le texte — déposez-les sur la liste des fichiers pour les importer comme note.",

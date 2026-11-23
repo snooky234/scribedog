@@ -1111,6 +1111,7 @@
     "aiTipModel": "Tip: Open the AI settings and enter a valid model.",
     "aiTipConnection": "Tip: Check whether Ollama or Jan.ai is running and the API URL is reachable.",
     "aiTipGeneric": "Tip: Check the AI settings and try again.",
+    "aiContextTooSmall": "The document is too long for the model's context window. Increase the context length in the AI settings (with LM Studio and Jan.ai also where the model is loaded), if the model and your memory allow it. Splitting the document into several smaller notes is usually the better choice.",
     "aiThinking": "Thinking …",
     "aiGenerating": "AI is writing …",
     "dropDocumentHint": "Documents are not inserted into the text — drop them on the file list to import them as a note.",

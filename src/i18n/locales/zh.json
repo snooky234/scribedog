@@ -1110,6 +1110,7 @@
     "aiTipModel": "提示：打开 AI 设置并输入一个有效的模型。",
     "aiTipConnection": "提示：请检查 Ollama 或 Jan.ai 是否正在运行，以及 API 地址是否可访问。",
     "aiTipGeneric": "提示：请检查 AI 设置并重试。",
+    "aiContextTooSmall": "文档太长，超出了模型的上下文窗口。如果模型和内存允许，请在 AI 设置中增大上下文长度（使用 LM Studio 和 Jan.ai 时，加载模型时也需要设置）。通常更好的做法是把文档拆分成几篇较短的笔记。",
     "aiThinking": "思考中……",
     "aiGenerating": "AI 正在生成……",
     "dropDocumentHint": "文档不会插入正文，拖到文件列表即可作为笔记导入。",

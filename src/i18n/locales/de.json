@@ -1111,6 +1111,7 @@
     "aiTipModel": "Tipp: Öffne die KI-Einstellungen und trage ein gültiges Modell ein.",
     "aiTipConnection": "Tipp: Prüfe, ob Ollama oder Jan.ai läuft und die API-URL erreichbar ist.",
     "aiTipGeneric": "Tipp: Prüfe die KI-Einstellungen und versuche es erneut.",
+    "aiContextTooSmall": "Das Dokument ist zu lang für das Kontextfenster des Modells. Erhöhe die Kontextlänge in den KI-Einstellungen (bei LM Studio und Jan.ai auch beim Laden des Modells), sofern Modell und Arbeitsspeicher das hergeben. Meist ist es besser, das Dokument in mehrere kleinere Notizen aufzuteilen.",
     "aiThinking": "Denkt nach …",
     "aiGenerating": "KI schreibt …",
     "dropDocumentHint": "Dokumente werden nicht in den Text eingefügt – zieh sie in die Dateiliste, um sie als Notiz zu importieren.",
