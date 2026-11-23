@@ -3,6 +3,12 @@
 All notable changes to ScribeDog are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.27.1] - 2026-11-23
+
+### Bug Fixes
+- When a document does not fit into the model's context window, the chat and the AI actions now say so and suggest raising the context length or splitting the note, instead of showing the raw server error
+- The sidebar action row can be swiped again on touch devices
+
 ## [0.27.0] - 2026-11-23
 
 > **Breaking (server edition on a home network):** HTTPS no longer uses Caddy's own certificate authority, and `SCRIBEDOG_TLS=internal` is gone. Until you switch, `docker compose up` stops with a message. Update `docker-compose.yml` and `caddy/Caddyfile` as well (or `git pull`), not just the image, then follow [Upgrading the certificate](server/docs/upgrading-certificates.md): create the certificate, install the new CA on every device and remove the old "Caddy Local Authority" one. Installations using Let's Encrypt are not affected.
