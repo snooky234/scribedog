@@ -78,6 +78,14 @@ there is no warning to click through first) or, once signed in, use
 The desktop app uses the system store, so on Windows, macOS and Linux the
 system step is enough for it.
 
+> **Antivirus with HTTPS scanning (Avast, AVG and similar).** These programs
+> open HTTPS connections themselves and check the certificate with their
+> own code. Avast blocks the site with "the server certificate is invalid"
+> even when the CA is installed, while Windows and the browser accept it.
+> Add an exception for the server in the antivirus, for example
+> `https://192.168.1.50/*` (Avast: Settings, General, Exceptions), then
+> restart the browser. The exception covers the desktop app as well.
+
 ### Comparing the fingerprint
 
 The file could have been swapped on its way to the device, so compare its

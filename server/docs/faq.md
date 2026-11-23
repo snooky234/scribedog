@@ -20,6 +20,12 @@ Account) as described in [The certificate](certificates.md). If it was
 installed and the warning is back, the certificate has run out or the
 server's address changed: [renew it](certificates.md#renewing-the-certificate).
 
+**Avast says the certificate is invalid, although the CA is installed.**
+Antivirus programs with HTTPS scanning check certificates with their own
+code, and Avast rejects this one. Add an exception for the server's address
+in the antivirus, see
+[The certificate](certificates.md#installing-it-on-your-devices).
+
 **I can reach the app on the server but not from my laptop.**
 Caddy answers only for the addresses in `SCRIBEDOG_SITE_ADDRESS`. Add the
 name or IP your laptop uses, run `docker compose run --rm certificates` and
